@@ -7,13 +7,13 @@
 **Change id:** hello-world-greeting
 **Target:** PR #2 / branch `feat/hello-world-greeting`
 **Pipeline URL:** https://github.com/afs-2026-zha2-group-3/pawtrip/pull/2/checks
-**Commit:** 4f184b321a356414da723e5a630622b81aab2403
+**Commit:** 4f184b321a356414da723e5a630622b81aab2403(代码);PR head bd7726a098b98903ec49254d1bdaac0ee95d91b0(报告提交)
 
 ## Summary
 
 | Phase | Status | Conclusion | Upstream URL | Notes |
 |-------|--------|------------|--------------|-------|
-| ci | Pass | All jobs success | https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43436740601 | Server CI + Web CI |
+| ci | Pass | All jobs success | https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43436740601 | Server CI + Web CI;代码提交与 PR 同步后两轮均全绿 |
 | cd | n/a | 未配置部署流水线 | — | 按 `pipeline-iac` 规则,CD 不在当前范围 |
 | **Overall** | **Pass** | CI 全绿 | — | — |
 
@@ -31,6 +31,8 @@
 |-------|-----------|--------|----------|-----|----------------|
 | ci | Server tests (`./mvnw -B test`) | success | 42s | https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43436740601/job/131923694267 | — |
 | ci | Web build (`npm ci` + `npm run build`) | success | 19s | https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43436740732/job/131923695338 | — |
+| ci | Server tests(PR head 同步重跑) | success | 25s | https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43437143835/job/131925078446 | — |
+| ci | Web build(PR head 同步重跑) | success | 17s | https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43437143848/job/131925079095 | — |
 
 ## 失败详情
 
@@ -50,12 +52,12 @@
 |---|------|--------|--------|
 | 1 | 无独立 secret scan / SAST / dependency audit job | CI 工作流范围 | accepted(当前仓库 CI 契约仅覆盖 build/test) |
 | 2 | 无 CD 证据 | 仓库未配置部署流水线 | accepted(`pipeline-iac` 明确 CD 不在范围) |
-| 3 | 后续 docs-only 提交不会触发 CI | `paths` 过滤 | accepted(不影响本次代码 SHA 的 E1) |
+| 3 | PR synchronize 时 GitHub 按 PR 整体 diff 重新触发 CI,docs-only 提交也会重跑 | `paths` 过滤 + PR 事件语义 | accepted(不影响代码 SHA 的 E1) |
 
 ## Artifacts (if any)
 
-- Server CI run:`43436740601`
-- Web CI run:`43436740732`
+- Server CI run:`43436740601`,`43437143835`(PR head 重跑)
+- Web CI run:`43436740732`,`43437143848`(PR head 重跑)
 - PR:https://github.com/afs-2026-zha2-group-3/pawtrip/pull/2
 
 ## Human confirmation
