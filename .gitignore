@@ -1,6 +1,42 @@
-node_modules
+# macOS
 .DS_Store
-dist
+
+# IDE workspaces (IntelliJ IDEA, VS Code, Visual Studio, Eclipse, NetBeans)
+.idea/
+*.iml
+.vscode/
+.vs/
+.settings/
+.classpath
+.project
+.metadata/
+nbproject/private/
+
+# Java and Gradle compilation outputs and local caches
+target/
+build/
+out/
+.gradle/
+*.class
+
+# Frontend dependencies, build outputs, and bundler caches
+node_modules/
+dist/
+.vite/
+.next/
+.parcel-cache/
+*.tsbuildinfo
+
+# Coverage and end-to-end test reports
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Local installer state (portable host assets are committed)
+.agents/
+
+# Pawtrip additions
 dist-ssr
 *.local
 .env
@@ -20,16 +56,10 @@ todos.json
 !.env.example
 
 # Java / Maven
-target/
-*.class
 .apt_generated
-.classpath
 .factorypath
-.project
 .settings
 .springBeans
 .sts4-cache
-.idea/
 *.iws
-*.iml
 *.ipr
