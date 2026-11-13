@@ -16,7 +16,7 @@
 1. CI 平台为 GitHub Actions，按应用拆分为两个工作流：`.github/workflows/web.yml` 与 `.github/workflows/server.yml`。不新增第二套 CI 产品（Jenkins、GitLab CI 等），确需引入时必须先在同一变更中修改本规则。
 2. 触发边界：两个工作流均响应发往 `main` 的 pull request 与 `main` 分支的 push，并用 `paths` 限定仅当对应代码、依赖或工作流自身变更时运行。web 监听 `apps/web/**`、根 `package.json`、`package-lock.json`、`.npmrc` 与 `.github/workflows/web.yml`；server 监听 `apps/server/**` 与 `.github/workflows/server.yml`。仅文档类变更（`docs/**`、`openspec/**`、根目录 `*.md` 等）不触发 CI。
 3. CI 阶段与门禁以 `docs/feedback/verification-commands.md` 的命令契约为准：web 工作流执行 `npm ci` 与 `npm run build`；server 工作流在 `apps/server` 执行 `./mvnw -B test`。增删门禁必须同时更新该契约与对应工作流。
-4. runner 使用 GitHub 托管 `ubuntu-latest`，Node 24、Temurin JDK 21，并启用 npm 与 Maven 依赖缓存。`.npmrc` 指向组织内部 Artifactory，托管 runner 不可达，因此公共源覆盖只允许写在 CI 步骤中（`npm config set registry https://registry.npmjs.org/`），不得改写仓库 `.npmrc`。
+4. runner 使用 GitHub 托管 `ubuntu-latest`，Node 24、Temurin JDK 21，并启用 npm 与 Maven 依赖缓存。`.npmrc` 指向组织内部 Artifactory，托管 runner 不可达，因此公共源覆盖只允许通过 CI 环境变量 `NPM_CONFIG_REGISTRY=https://registry.npmjs.org/`（或 npm 命令参数）设置；`npm config set` 写入用户级配置、优先级低于项目 `.npmrc`，不得用于覆盖，也不得改写仓库 `.npmrc`。
 5. CD 边界：本仓库当前没有部署流水线。发布与部署不属于 CI 范围，须通过 `/sdd:deploy-artifacts` 并取得人工批准；CI 工作流不得持有部署凭据或触发部署。引入部署自动化必须先更新本规则。
 6. 制品命名：后端构建产物为 Maven 默认命名 `apps/server/target/pawtrip-server-<version>.jar`，前端构建产物输出到 `apps/web/dist/`。CI 仅校验构建与测试，不上传或发布发布制品；任何对外发布的制品命名须先在本规则登记。
 7. IaC：当前未配置 IaC 工具或基础设施目录。引入 IaC 必须由变更规格记录工具、目录约定、状态后端与密钥注入方式；在此之前不得临时添加 `terraform/`、`infra/` 或 `iac/` 骨架。
@@ -40,7 +40,7 @@
 ### Good
 
 - 新增前端 lint 门禁：同一次变更中更新 `verification-commands.md`、`web.yml` 与本规则第 3 条。
-- 依赖安装沿用工作流内的公共源覆盖，仓库 `.npmrc` 保持内部 Artifactory 不变。
+- 依赖安装沿用工作流内的 `NPM_CONFIG_REGISTRY` 公共源覆盖，仓库 `.npmrc` 保持内部 Artifactory 不变。
 
 ### Bad
 
