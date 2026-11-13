@@ -51,7 +51,7 @@
 
 | Slot | Status | Source |
 |------|--------|--------|
-| E1 Machine | Pass | 本地白名单命令 2/2 通过(仓库无远程 CI) |
+| E1 Machine | Pass | CI 报告(`openspec/changes/hello-world-greeting/ci-report.md`,PR #2 全绿)+ 本地白名单命令 2/2 通过 |
 | E2 AI | Pass | 本报告 + API 测试 + 浏览器 E2E |
 | E3 Human | Pending | 待 QA/负责人复核;不由 agent 签署 |
 
