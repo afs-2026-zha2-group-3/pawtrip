@@ -29,6 +29,7 @@
   "devDependencies": {
     "@rolldown/plugin-babel": "^0.2.3",
     "@tanstack/devtools-vite": "latest",
+    "@tanstack/intent": "^0.5.6",
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
@@ -40,5 +41,10 @@
   },
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@1.6.0"
+  },
+  "intent": {
+    "skills": [
+      "*"
+    ]
   }
 }
