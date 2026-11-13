@@ -2,6 +2,8 @@
 
 This guide applies to coding agents working in this repository. Read the relevant spec, implementation, and tests before editing. Write repository documentation in Chinese.
 
+与用户对话使用中文
+
 ## Four development principles
 
 1. **Think before coding.** State assumptions that affect the implementation. If two interpretations would produce different behavior, illustrate the difference and clarify the intended outcome. If a simpler approach would work, explain its tradeoffs.
