@@ -26,6 +26,8 @@
 | 模板 UI | Header / Footer / ThemeToggle / About / Devtools | out | 本次删除 |
 | UI 基础 | shadcn/ui（Base UI）组件 | in | 唯一 UI 组件来源 |
 | UI 基础 | Radix 版本组件、其他 UI 组件库、手写 CSS 类 | out | 明确禁止 |
+| 认证 | 未登录访问 `/` 或 `/paws` | in | 跳转 `/login`，不展示受保护内容 |
+| 认证 | 登录、登出、会话查询与 CSRF | out（复用） | 来自 REQ-003，本次只提供 shadcn UI 与路由编排 |
 
 ## ③ 跨 REQ 一致性
 
@@ -42,9 +44,10 @@
 
 | surface | trigger | recipient | content + display fields | channel | cardinality | source |
 |---|---|---|---|---|---|---|
-| 顶部 Tab 导航 | 打开 `/` 或 `/paws` | 访客 | `Home` / `Paws` 标签 + 选中态 | 页面顶部 | 固定 2 个 | REQ-004 |
+| 顶部 Tab 导航 | 已登录打开 `/` 或 `/paws` | 已登录用户 | `Home` / `Paws` 标签 + 选中态 + `Log out` | 页面顶部 | 固定 2 个 | REQ-004 |
 | Home 内容 | 打开 `/` | 访客 | `greeting.message` | 页面 Card | 1 条 | `openspec/specs/home-page/spec.md` |
-| Paws 内容 | 打开 `/paws` | 访客 | 空 | 页面 | 0 | REQ-004 |
+| Paws 内容 | 已登录打开 `/paws` | 已登录用户 | 空 | 页面 | 0 | REQ-004 |
+| 登录页 | 未登录或访问 `/login` | 访客 | 用户名/密码表单、通用错误 | 页面 Card | 1 | REQ-003 |
 | 路由错误页 | 首次加载失败 | 访客 | `ApiError.detail` + 重试按钮 | `errorComponent` | 1 | `openspec/specs/frontend-api-request/spec.md` |
 | 404 页 | 未知路由 | 访客 | 固定文案 + 返回首页入口 | `notFoundComponent` | 1 | `openspec/specs/frontend-api-request/spec.md` |
 
@@ -55,3 +58,4 @@
 - 2026-11-14：确认 Paws 内容为空，不加载数据。
 - 2026-11-14：确认不新增数据契约、不调整接口。
 - 2026-11-14：确认 shadcn/ui 底层 primitive 使用 Base UI（非 Radix）；组件来自官方 `base-nova` registry。
+- 2026-11-14：rebase 主分支登录（REQ-003），保留 `/`、`/paws` 与 shadcn 外壳，接入 `_authenticated` 守卫、`/login` 与登出；认证协议不重复实现。
