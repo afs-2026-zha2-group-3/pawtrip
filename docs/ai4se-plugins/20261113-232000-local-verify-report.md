@@ -96,7 +96,7 @@
 
 | Slot | Status | Source |
 |------|--------|--------|
-| E1 Machine | Pass | 本地白名单命令（`npm run build`、`./mvnw test`、`openspec validate --strict`）均 exit 0；仓库无远程 CI |
+| E1 Machine | Pass | 本地白名单命令（`npm run build`、`./mvnw test`、`openspec validate --strict`）均 exit 0；PR #4 的 Server tests / Web build 均 SUCCESS（见 `20261113-232500-pipeline-report.md`） |
 | E2 AI | Pass | 本报告 + 代码检索 + 浏览器 E2E |
 | E3 Human | Pending | G2 人工签核待进行 |
 
