@@ -79,4 +79,9 @@ cd apps/server
 npm run dev
 ```
 
-- 重置数据库:停止后端,删除 `apps/server/data/pawtrip.db`,重新启动。
+- 重置数据库:停止后端,删除 `apps/server/data/pawtrip.db`,重新启动。Flyway 会依次执行 `V1`(问候语)与 `V2`(用户表);迁移不注入任何账号。若本地已有旧版 `V2` 记录并出现 Flyway 校验失败,同样按此方式重置。
+- 注入本地/测试账号:后端首次启动、`app_user` 表创建后,在根目录运行 `npm run seed:users`。账号与密码集中定义在 `scripts/seed-users.mjs`,可自行增删;脚本以 bcrypt 哈希幂等写入,重复运行不会产生重复账号。
+- 指定其他数据库:`npm run seed:users -- <db-path>` 或设置 `SEED_DB` 环境变量。
+- 登录:打开 `http://localhost:3000/` 会跳转到 `/login`;使用种子脚本中的账号登录后进入首页。
+- 登出:顶部导航栏“退出登录”;登出后受保护页面会再次跳转 `/login`。
+- 认证使用服务端会话 cookie(`JSESSIONID`),不使用 JWT,也不在浏览器存储中保存认证令牌。

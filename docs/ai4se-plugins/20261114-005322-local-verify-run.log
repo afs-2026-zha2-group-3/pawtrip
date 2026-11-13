@@ -1,0 +1,432 @@
+===== CMD: npm run build =====
+cwd: /c/Users/luoec3/.qoder-cn/worktrees/app/9a6cfe/pawtrip
+started: 2026-11-14T00:53:22+0800
+npm warn Unknown user config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> build
+> npm run build -w apps/web
+
+npm warn Unknown env config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> build
+> vite build
+
+[36mvite v8.3.8 [32mbuilding client environment for production...[36m[39m
+transforming...
+
+[@tanstack/devtools-vite] Removed devtools code from: /src/routes/__root.tsx
+
+✓ 200 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/client/assets/styles-E3tDAa6H.css          25.67 kB │ gzip:   6.16 kB
+dist/client/assets/_authenticated-aRetGoGe.js    0.62 kB │ gzip:   0.41 kB
+dist/client/assets/_authenticated-BMgm6YBE.js    0.71 kB │ gzip:   0.45 kB
+dist/client/assets/about-CQfqEJ_p.js             0.72 kB │ gzip:   0.43 kB
+dist/client/assets/login-O5XSZ-Ua.js             2.09 kB │ gzip:   0.93 kB
+dist/client/assets/index-DjmB5rli.js           391.36 kB │ gzip: 124.75 kB
+
+[32m✓ built in 470ms[39m
+[36mvite v8.3.8 [32mbuilding ssr environment for production...[36m[39m
+transforming...
+
+[@tanstack/devtools-vite] Removed devtools code from: /src/routes/__root.tsx
+
+✓ 68 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/server/assets/start-DCuTSEuX.js                        0.13 kB │ gzip:  0.12 kB
+dist/server/assets/empty-plugin-adapters-Butv5p6u.js        0.21 kB │ gzip:  0.15 kB
+dist/server/assets/about-CD0uVqQ0.js                        0.95 kB │ gzip:  0.50 kB
+dist/server/assets/_authenticated-BvqSkAbe.js               1.04 kB │ gzip:  0.57 kB
+dist/server/assets/_tanstack-start-manifest_v-DfFVGIXe.js   1.25 kB │ gzip:  0.41 kB
+dist/server/assets/_authenticated-CH4-UQOY.js               1.30 kB │ gzip:  0.64 kB
+dist/server/assets/request-C6Xw_Xb2.js                      3.34 kB │ gzip:  1.41 kB
+dist/server/assets/login-DQrZ9TOg.js                        3.45 kB │ gzip:  1.22 kB
+dist/server/assets/router-DOKEPvf7.js                      17.59 kB │ gzip:  5.00 kB
+dist/server/server.js                                      92.54 kB │ gzip: 23.44 kB
+
+[32m✓ built in 246ms[39m
+exit: 0
+ended: 2026-11-14T00:53:29+0800
+
+===== CMD: cd apps/server && ./mvnw test =====
+cwd: /c/Users/luoec3/.qoder-cn/worktrees/app/9a6cfe/pawtrip
+started: 2026-11-14T00:53:30+0800
+[INFO] Scanning for projects...
+[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to central-cms2 (https://artifact.cargosmart.com/artifactory/maven-repository-virtual-external): HTTP Status: 401
+[INFO] Loaded 22551 auto-discovered prefixes for remote repository central-cms2 (prefixes-central-cms2.txt)
+[INFO] 
+[INFO] ---------------------< com.pawtrip:pawtrip-server >---------------------
+[INFO] Building pawtrip-server 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ pawtrip-server ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ pawtrip-server ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ pawtrip-server ---
+[INFO] skip non existing resourceDirectory C:\Users\luoec3\.qoder-cn\worktrees\app\9a6cfe\pawtrip\apps\server\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ pawtrip-server ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ pawtrip-server ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.pawtrip.server.auth.AuthApiTest
+00:53:58.224 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pawtrip.server.auth.AuthApiTest]: AuthApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+00:53:58.340 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.auth.AuthApiTest
+00:53:58.391 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pawtrip.server.auth.AuthApiTest]: AuthApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+00:53:58.393 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.auth.AuthApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-14T00:53:58.625+08:00  INFO 64092 --- [pawtrip-server] [           main] com.pawtrip.server.auth.AuthApiTest      : Starting AuthApiTest using Java 25.0.5 with PID 64092 (started by luoec3 in C:\Users\luoec3\.qoder-cn\worktrees\app\9a6cfe\pawtrip\apps\server)
+2026-11-14T00:53:58.626+08:00  INFO 64092 --- [pawtrip-server] [           main] com.pawtrip.server.auth.AuthApiTest      : No active profile set, falling back to 1 default profile: "default"
+2026-11-14T00:53:59.023+08:00  INFO 64092 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-11-14T00:53:59.062+08:00  INFO 64092 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 34 ms. Found 2 JPA repository interfaces.
+2026-11-14T00:53:59.433+08:00  INFO 64092 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.sqlite.SQLiteJDBCLoader in an unnamed module (file:/C:/Users/luoec3/.m2/repository/org/xerial/sqlite-jdbc/3.53.4.0/sqlite-jdbc-3.53.4.0.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+2026-11-14T00:53:59.590+08:00  INFO 64092 --- [pawtrip-server] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.sqlite.jdbc4.JDBC4Connection@668a32a4
+2026-11-14T00:53:59.591+08:00  INFO 64092 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-14T00:53:59.597+08:00  INFO 64092 --- [pawtrip-server] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:target\auth-api-test.db (SQLite 3.53)
+2026-11-14T00:53:59.634+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-14T00:53:59.636+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 2 migrations (execution time 00:00.011s)
+2026-11-14T00:53:59.637+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-14T00:53:59.655+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-14T00:53:59.659+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-14T00:53:59.670+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create app user"
+2026-11-14T00:53:59.678+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 2 migrations to schema "main", now at version v2 (execution time 00:00.004s)
+2026-11-14T00:53:59.740+08:00  INFO 64092 --- [pawtrip-server] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-11-14T00:53:59.776+08:00  INFO 64092 --- [pawtrip-server] [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.4.13.Final
+2026-11-14T00:54:00.045+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-11-14T00:54:00.081+08:00  INFO 64092 --- [pawtrip-server] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:sqlite:target\auth-api-test.db]
+	Database driver: SQLite JDBC
+	Database dialect: SQLiteDialect
+	Database version: 3.53.4
+	Default catalog/schema: undefined/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: SERIALIZABLE [default SERIALIZABLE]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-11-14T00:54:00.542+08:00  INFO 64092 --- [pawtrip-server] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-11-14T00:54:00.548+08:00  INFO 64092 --- [pawtrip-server] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-11-14T00:54:00.593+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-11-14T00:54:00.823+08:00  INFO 64092 --- [pawtrip-server] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name appUserDetailsService
+2026-11-14T00:54:01.108+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-14T00:54:01.108+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-14T00:54:01.110+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 2 ms
+2026-11-14T00:54:01.154+08:00  INFO 64092 --- [pawtrip-server] [           main] com.pawtrip.server.auth.AuthApiTest      : Started AuthApiTest in 2.721 seconds (process running for 3.746)
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (C:\Users\luoec3\.m2\repository\net\bytebuddy\byte-buddy-agent\1.18.15\byte-buddy-agent-1.18.15.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+2026-11-14T00:54:02.518+08:00  INFO 64092 --- [pawtrip-server] [           main] c.p.s.a.JsonAuthenticationFailureHandler : Authentication failed for /api/auth/login
+2026-11-14T00:54:03.008+08:00  INFO 64092 --- [pawtrip-server] [           main] c.p.s.a.JsonAuthenticationFailureHandler : Authentication failed for /api/auth/login
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.905 s -- in com.pawtrip.server.auth.AuthApiTest
+[INFO] Running com.pawtrip.server.auth.SecuritySessionTest
+2026-11-14T00:54:03.015+08:00  INFO 64092 --- [pawtrip-server] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pawtrip.server.auth.SecuritySessionTest]: SecuritySessionTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-14T00:54:03.016+08:00  INFO 64092 --- [pawtrip-server] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.auth.SecuritySessionTest
+2026-11-14T00:54:03.016+08:00  INFO 64092 --- [pawtrip-server] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pawtrip.server.auth.SecuritySessionTest]: SecuritySessionTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-14T00:54:03.017+08:00  INFO 64092 --- [pawtrip-server] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.auth.SecuritySessionTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-14T00:54:03.036+08:00  INFO 64092 --- [pawtrip-server] [           main] c.p.server.auth.SecuritySessionTest      : Starting SecuritySessionTest using Java 25.0.5 with PID 64092 (started by luoec3 in C:\Users\luoec3\.qoder-cn\worktrees\app\9a6cfe\pawtrip\apps\server)
+2026-11-14T00:54:03.036+08:00  INFO 64092 --- [pawtrip-server] [           main] c.p.server.auth.SecuritySessionTest      : No active profile set, falling back to 1 default profile: "default"
+2026-11-14T00:54:03.133+08:00  INFO 64092 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-11-14T00:54:03.145+08:00  INFO 64092 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 10 ms. Found 2 JPA repository interfaces.
+2026-11-14T00:54:03.254+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 0 (http)
+2026-11-14T00:54:03.265+08:00  INFO 64092 --- [pawtrip-server] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-11-14T00:54:03.265+08:00  INFO 64092 --- [pawtrip-server] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.27]
+2026-11-14T00:54:03.310+08:00  INFO 64092 --- [pawtrip-server] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 272 ms
+2026-11-14T00:54:03.348+08:00  INFO 64092 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-11-14T00:54:03.351+08:00  INFO 64092 --- [pawtrip-server] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection org.sqlite.jdbc4.JDBC4Connection@1581c6fe
+2026-11-14T00:54:03.351+08:00  INFO 64092 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-11-14T00:54:03.352+08:00  INFO 64092 --- [pawtrip-server] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:target\security-session-test.db (SQLite 3.53)
+2026-11-14T00:54:03.356+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-14T00:54:03.356+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 2 migrations (execution time 00:00.002s)
+2026-11-14T00:54:03.357+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-14T00:54:03.364+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-14T00:54:03.366+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-14T00:54:03.373+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create app user"
+2026-11-14T00:54:03.378+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 2 migrations to schema "main", now at version v2 (execution time 00:00.002s)
+2026-11-14T00:54:03.388+08:00  INFO 64092 --- [pawtrip-server] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-11-14T00:54:03.399+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-11-14T00:54:03.401+08:00  INFO 64092 --- [pawtrip-server] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:sqlite:target\security-session-test.db]
+	Database driver: SQLite JDBC
+	Database dialect: SQLiteDialect
+	Database version: 3.53.4
+	Default catalog/schema: undefined/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: SERIALIZABLE [default SERIALIZABLE]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-11-14T00:54:03.418+08:00  INFO 64092 --- [pawtrip-server] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-11-14T00:54:03.419+08:00  INFO 64092 --- [pawtrip-server] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-11-14T00:54:03.448+08:00  INFO 64092 --- [pawtrip-server] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name appUserDetailsService
+2026-11-14T00:54:03.520+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 51224 (http) with context path '/'
+2026-11-14T00:54:03.522+08:00  INFO 64092 --- [pawtrip-server] [           main] c.p.server.auth.SecuritySessionTest      : Started SecuritySessionTest in 0.502 seconds (process running for 6.113)
+2026-11-14T00:54:03.699+08:00  INFO 64092 --- [pawtrip-server] [o-auto-1-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-11-14T00:54:03.700+08:00  INFO 64092 --- [pawtrip-server] [o-auto-1-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-11-14T00:54:03.700+08:00  INFO 64092 --- [pawtrip-server] [o-auto-1-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 0 ms
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.916 s -- in com.pawtrip.server.auth.SecuritySessionTest
+[INFO] Running com.pawtrip.server.error.GlobalExceptionHandlerTest
+2026-11-14T00:54:03.931+08:00 ERROR 64092 --- [pawtrip-server] [           main] c.p.server.error.GlobalExceptionHandler  : Unhandled exception
+
+java.lang.RuntimeException: boom
+	at com.pawtrip.server.error.GlobalExceptionHandlerTest.mapsUnexpectedExceptionToInternalError(GlobalExceptionHandlerTest.java:19) ~[test-classes/:na]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565) ~[na:na]
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:701) ~[junit-platform-commons-6.0.3.jar:6.0.3]
+	at org.junit.platform.commons.support.ReflectionSupport.invokeMethod(ReflectionSupport.java:502) ~[junit-platform-commons-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.support.MethodReflectionUtils.invoke(MethodReflectionUtils.java:45) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:61) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:124) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:163) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:148) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:86) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:123) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:105) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:99) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:66) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:47) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:39) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:104) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:98) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invokeVoid(InterceptingExecutableInvoker.java:71) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$0(TestMethodTestDescriptor.java:219) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:215) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:157) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:70) ~[junit-jupiter-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:176) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604) ~[na:na]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604) ~[na:na]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:36) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:52) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:58) ~[junit-platform-engine-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.executeEngine(EngineExecutionOrchestrator.java:246) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.failOrExecuteEngine(EngineExecutionOrchestrator.java:218) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:179) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:108) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:66) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:157) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:65) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:125) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:114) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.InterceptingLauncher.lambda$execute$2(InterceptingLauncher.java:57) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.ClasspathAlignmentCheckingLauncherInterceptor.intercept(ClasspathAlignmentCheckingLauncherInterceptor.java:25) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.InterceptingLauncher.execute(InterceptingLauncher.java:56) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:58) ~[junit-platform-launcher-6.0.3.jar:6.0.3]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565) ~[na:na]
+	at org.apache.maven.surefire.api.util.ReflectionUtils.invokeMethodWithArray(ReflectionUtils.java:125) ~[surefire-api-3.5.6.jar:3.5.6]
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.executeWithCancellationToken(LauncherAdapter.java:68) ~[surefire-junit-platform-3.5.6.jar:3.5.6]
+	at org.apache.maven.surefire.junitplatform.LauncherAdapter.execute(LauncherAdapter.java:54) ~[surefire-junit-platform-3.5.6.jar:3.5.6]
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.execute(JUnitPlatformProvider.java:203) ~[surefire-junit-platform-3.5.6.jar:3.5.6]
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invokeAllTests(JUnitPlatformProvider.java:168) ~[surefire-junit-platform-3.5.6.jar:3.5.6]
+	at org.apache.maven.surefire.junitplatform.JUnitPlatformProvider.invoke(JUnitPlatformProvider.java:136) ~[surefire-junit-platform-3.5.6.jar:3.5.6]
+	at org.apache.maven.surefire.booter.ForkedBooter.runSuitesInProcess(ForkedBooter.java:385) ~[surefire-booter-3.5.6.jar:3.5.6]
+	at org.apache.maven.surefire.booter.ForkedBooter.execute(ForkedBooter.java:162) ~[surefire-booter-3.5.6.jar:3.5.6]
+	at org.apache.maven.surefire.booter.ForkedBooter.run(ForkedBooter.java:507) ~[surefire-booter-3.5.6.jar:3.5.6]
+	at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:495) ~[surefire-booter-3.5.6.jar:3.5.6]
+
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.pawtrip.server.error.GlobalExceptionHandlerTest
+[INFO] Running com.pawtrip.server.greeting.GreetingApiTest
+2026-11-14T00:54:03.940+08:00  INFO 64092 --- [pawtrip-server] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pawtrip.server.greeting.GreetingApiTest]: GreetingApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-14T00:54:03.951+08:00  INFO 64092 --- [pawtrip-server] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.greeting.GreetingApiTest
+2026-11-14T00:54:03.952+08:00  INFO 64092 --- [pawtrip-server] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pawtrip.server.greeting.GreetingApiTest]: GreetingApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-14T00:54:03.953+08:00  INFO 64092 --- [pawtrip-server] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.greeting.GreetingApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-14T00:54:03.966+08:00  INFO 64092 --- [pawtrip-server] [           main] c.p.server.greeting.GreetingApiTest      : Starting GreetingApiTest using Java 25.0.5 with PID 64092 (started by luoec3 in C:\Users\luoec3\.qoder-cn\worktrees\app\9a6cfe\pawtrip\apps\server)
+2026-11-14T00:54:03.966+08:00  INFO 64092 --- [pawtrip-server] [           main] c.p.server.greeting.GreetingApiTest      : No active profile set, falling back to 1 default profile: "default"
+2026-11-14T00:54:04.066+08:00  INFO 64092 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-11-14T00:54:04.077+08:00  INFO 64092 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 11 ms. Found 2 JPA repository interfaces.
+2026-11-14T00:54:04.106+08:00  INFO 64092 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Starting...
+2026-11-14T00:54:04.108+08:00  INFO 64092 --- [pawtrip-server] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-3 - Added connection org.sqlite.jdbc4.JDBC4Connection@7e634ead
+2026-11-14T00:54:04.108+08:00  INFO 64092 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Start completed.
+2026-11-14T00:54:04.109+08:00  INFO 64092 --- [pawtrip-server] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:target\greeting-api-test.db (SQLite 3.53)
+2026-11-14T00:54:04.114+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-14T00:54:04.114+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 2 migrations (execution time 00:00.001s)
+2026-11-14T00:54:04.115+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-14T00:54:04.122+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-14T00:54:04.123+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-14T00:54:04.130+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create app user"
+2026-11-14T00:54:04.135+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 2 migrations to schema "main", now at version v2 (execution time 00:00.002s)
+2026-11-14T00:54:04.143+08:00  INFO 64092 --- [pawtrip-server] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-11-14T00:54:04.154+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-11-14T00:54:04.155+08:00  INFO 64092 --- [pawtrip-server] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:sqlite:target\greeting-api-test.db]
+	Database driver: SQLite JDBC
+	Database dialect: SQLiteDialect
+	Database version: 3.53.4
+	Default catalog/schema: undefined/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: SERIALIZABLE [default SERIALIZABLE]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-11-14T00:54:04.169+08:00  INFO 64092 --- [pawtrip-server] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-11-14T00:54:04.169+08:00  INFO 64092 --- [pawtrip-server] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-11-14T00:54:04.196+08:00  INFO 64092 --- [pawtrip-server] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name appUserDetailsService
+2026-11-14T00:54:04.221+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-14T00:54:04.221+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-14T00:54:04.221+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-14T00:54:04.228+08:00  INFO 64092 --- [pawtrip-server] [           main] c.p.server.greeting.GreetingApiTest      : Started GreetingApiTest in 0.273 seconds (process running for 6.82)
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.483 s -- in com.pawtrip.server.greeting.GreetingApiTest
+[INFO] Running com.pawtrip.server.greeting.GreetingNotFoundApiTest
+2026-11-14T00:54:04.426+08:00  INFO 64092 --- [pawtrip-server] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pawtrip.server.greeting.GreetingNotFoundApiTest]: GreetingNotFoundApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-14T00:54:04.436+08:00  INFO 64092 --- [pawtrip-server] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.greeting.GreetingNotFoundApiTest
+2026-11-14T00:54:04.436+08:00  INFO 64092 --- [pawtrip-server] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pawtrip.server.greeting.GreetingNotFoundApiTest]: GreetingNotFoundApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-14T00:54:04.439+08:00  INFO 64092 --- [pawtrip-server] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.greeting.GreetingNotFoundApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-14T00:54:04.452+08:00  INFO 64092 --- [pawtrip-server] [           main] c.p.s.greeting.GreetingNotFoundApiTest   : Starting GreetingNotFoundApiTest using Java 25.0.5 with PID 64092 (started by luoec3 in C:\Users\luoec3\.qoder-cn\worktrees\app\9a6cfe\pawtrip\apps\server)
+2026-11-14T00:54:04.453+08:00  INFO 64092 --- [pawtrip-server] [           main] c.p.s.greeting.GreetingNotFoundApiTest   : No active profile set, falling back to 1 default profile: "default"
+2026-11-14T00:54:04.637+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-14T00:54:04.637+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-14T00:54:04.637+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-14T00:54:04.639+08:00  INFO 64092 --- [pawtrip-server] [           main] c.p.s.greeting.GreetingNotFoundApiTest   : Started GreetingNotFoundApiTest in 0.198 seconds (process running for 7.23)
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.235 s -- in com.pawtrip.server.greeting.GreetingNotFoundApiTest
+[INFO] Running com.pawtrip.server.ServerApplicationTests
+2026-11-14T00:54:04.661+08:00  INFO 64092 --- [pawtrip-server] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pawtrip.server.ServerApplicationTests]: ServerApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-14T00:54:04.668+08:00  INFO 64092 --- [pawtrip-server] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.ServerApplicationTests
+2026-11-14T00:54:04.668+08:00  INFO 64092 --- [pawtrip-server] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pawtrip.server.ServerApplicationTests]: ServerApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-14T00:54:04.669+08:00  INFO 64092 --- [pawtrip-server] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.ServerApplicationTests
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-14T00:54:04.679+08:00  INFO 64092 --- [pawtrip-server] [           main] c.pawtrip.server.ServerApplicationTests  : Starting ServerApplicationTests using Java 25.0.5 with PID 64092 (started by luoec3 in C:\Users\luoec3\.qoder-cn\worktrees\app\9a6cfe\pawtrip\apps\server)
+2026-11-14T00:54:04.679+08:00  INFO 64092 --- [pawtrip-server] [           main] c.pawtrip.server.ServerApplicationTests  : No active profile set, falling back to 1 default profile: "default"
+2026-11-14T00:54:04.744+08:00  INFO 64092 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-11-14T00:54:04.758+08:00  INFO 64092 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 13 ms. Found 2 JPA repository interfaces.
+2026-11-14T00:54:04.781+08:00  INFO 64092 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Starting...
+2026-11-14T00:54:04.784+08:00  INFO 64092 --- [pawtrip-server] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-4 - Added connection org.sqlite.jdbc4.JDBC4Connection@13e8149a
+2026-11-14T00:54:04.784+08:00  INFO 64092 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Start completed.
+2026-11-14T00:54:04.784+08:00  INFO 64092 --- [pawtrip-server] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:data/pawtrip.db (SQLite 3.53)
+2026-11-14T00:54:04.789+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 2 migrations (execution time 00:00.002s)
+2026-11-14T00:54:04.789+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": 2
+2026-11-14T00:54:04.789+08:00  INFO 64092 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Schema "main" is up to date. No migration necessary.
+2026-11-14T00:54:04.797+08:00  INFO 64092 --- [pawtrip-server] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-11-14T00:54:04.807+08:00  INFO 64092 --- [pawtrip-server] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-11-14T00:54:04.808+08:00  INFO 64092 --- [pawtrip-server] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:sqlite:data/pawtrip.db]
+	Database driver: SQLite JDBC
+	Database dialect: SQLiteDialect
+	Database version: 3.53.4
+	Default catalog/schema: undefined/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: SERIALIZABLE [default SERIALIZABLE]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-11-14T00:54:04.823+08:00  INFO 64092 --- [pawtrip-server] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-11-14T00:54:04.823+08:00  INFO 64092 --- [pawtrip-server] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-11-14T00:54:04.851+08:00  INFO 64092 --- [pawtrip-server] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name appUserDetailsService
+2026-11-14T00:54:04.882+08:00  INFO 64092 --- [pawtrip-server] [           main] c.pawtrip.server.ServerApplicationTests  : Started ServerApplicationTests in 0.21 seconds (process running for 7.473)
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.223 s -- in com.pawtrip.server.ServerApplicationTests
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  10.720 s
+[INFO] Finished at: 2026-11-14T00:54:05+08:00
+[INFO] ------------------------------------------------------------------------
+exit: 0
+ended: 2026-11-14T00:54:05+0800
+

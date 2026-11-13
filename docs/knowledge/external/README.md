@@ -47,6 +47,26 @@ Before editing files for a substantial task:
   - Flyway:https://documentation.red-gate.com/flyway
   - SQLite JDBC:https://github.com/xerial/sqlite-jdbc
 
+### Spring Security 7.1.2
+
+- `spring-boot-starter-security` 版本由 Spring Boot BOM 管理（`7.1.2`）；测试使用 `spring-security-test`。
+- 使用 `SecurityFilterChain` 配置 `formLogin`（`/api/auth/login`）、`logout`（`/api/auth/logout`）、`csrf(csrf -> csrf.spa())`、`sessionManagement().sessionFixation().changeSessionId()`，并禁用 `httpBasic` 与 `rememberMe`。
+- SPA CSRF：`CookieCsrfTokenRepository` 配合 `CsrfCookieFilter` 在响应中下发可读的 `XSRF-TOKEN` cookie，前端以 `X-XSRF-TOKEN` 请求头回传。
+- 安全层错误通过自定义 `AuthenticationEntryPoint` / `AccessDeniedHandler` 输出 Problem Details，而不是默认 HTML 页面或重定向。
+- 文档：
+  - Spring Security 参考：https://docs.spring.io/spring-security/reference/
+  - SPA CSRF 配置：https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html#csrf-integration-javascript-spa
+  - 会话管理与会话固定：https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html
+  - 表单登录：https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/form.html
+
+### 本地账号种子脚本
+
+- `scripts/seed-users.mjs` 使用 Node 24 内置 `node:sqlite`（`DatabaseSync`）访问开发库，并用根目录 devDependency `bcryptjs` 生成 cost 10 的 BCrypt 哈希后写入 `app_user`。
+- 脚本通过 `ON CONFLICT(username)` 幂等 upsert；默认数据库为 `apps/server/data/pawtrip.db`，可用位置参数或 `SEED_DB` 指定其他路径。
+- 文档：
+  - bcryptjs:https://github.com/dcodeIO/bcrypt.js
+  - Node `node:sqlite`:https://nodejs.org/api/sqlite.html
+
 ### 错误响应:Problem Details
 
 - 错误响应采用 RFC 9457 Problem Details(`application/problem+json`),通过 Spring `ProblemDetail` 与 `ResponseEntityExceptionHandler` 输出,扩展稳定字段 `code`。
@@ -54,6 +74,15 @@ Before editing files for a substantial task:
 - 文档:
   - RFC 9457:https://www.rfc-editor.org/rfc/rfc9457
   - Spring MVC Problem Details:https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html
+
+### TanStack Router 认证路由
+
+- 使用 pathless layout（`_authenticated.tsx`）包裹受保护页面；守卫在客户端读取 auth query，未登录跳转 `/login`。
+- 认证查询仅在客户端启用，避免 SSR 阶段在没有浏览器会话上下文时取数导致误判。
+- 文档：
+  - Authenticated Routes：https://tanstack.com/router/latest/docs/framework/react/guide/authenticated-routes
+  - Pathless layouts：https://tanstack.com/router/latest/docs/framework/react/guide/route-trees#pathless-routes
+  - Router navigation：https://tanstack.com/router/latest/docs/framework/react/guide/navigation
 
 ### TanStack Query
 
