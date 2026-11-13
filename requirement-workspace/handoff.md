@@ -15,4 +15,4 @@
 | requirement | change package | status |
 |---|---|---|
 | REQ-001 | `openspec/changes/archive/2026-11-13-hello-world-greeting/` | G2 Pass;G3 Pass(SA=Echo Luo);已归档,Living Spec 已合并 |
-| REQ-002 | `openspec/changes/refactor-data-access-and-query/` | G1 Revision 2 Pass、G2 Pass(IO/SA=Echo Luo);PR #4 已合并(`38ca56b`);G2 决策文档待 docs PR 合并后进入 P5 归档 |
+| REQ-002 | `openspec/changes/archive/2026-11-13-refactor-data-access-and-query/` | G1 Revision 2 Pass、G2 Pass(IO/SA=Echo Luo);已归档,4 个 Living Spec 已合并;待 G3 人工签核(归档 PR) |
