@@ -21,7 +21,7 @@ pawtrip/
 ### 前端（apps/web）
 
 - Vite 8、React 19、TanStack Router / Start、Tailwind CSS 4
-- 文件路由位于 `apps/web/src/routes`，`src/routeTree.gen.ts` 由插件生成
+- shadcn/ui
 
 ### 后端（apps/server）
 

@@ -1,6 +1,6 @@
 # Agent engineering guide
 
-This guide applies to coding agents working in this repository. Read the relevant spec, implementation, and tests before editing. Write repository documentation in English.
+This guide applies to coding agents working in this repository. Read the relevant spec, implementation, and tests before editing. Write repository documentation in Chinese.
 
 ## Four development principles
 
@@ -12,5 +12,4 @@ This guide applies to coding agents working in this repository. Read the relevan
 ## Knowledge
 Please refer to the [knowledge base](docs/knowledge/_INDEX.md) for additional information.
 
-## Reference
-UI design please refer to [shadcn/ui](https://ui.shadcn.com/docs)
+进行架构设计或代码编写时, 凡涉及外部库, 必须先通过知识库取得准确的文档, 确认用法后再实施, 不得凭记忆或猜测直接编码。
