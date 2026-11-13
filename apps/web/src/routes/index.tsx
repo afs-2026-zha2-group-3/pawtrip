@@ -1,28 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { greetingQueryOptions } from "../queries/greeting";
 
 export const Route = createFileRoute("/")({ component: App });
 
-type Greeting = { message: string };
-
 function App() {
-  const [message, setMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-
-    fetch("/api/greeting")
-      .then((response) => response.json())
-      .then((greeting: Greeting) => {
-        if (active) {
-          setMessage(greeting.message);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data } = useQuery(greetingQueryOptions);
+  const message = data?.message ?? "";
 
   return (
     <main className="page-wrap px-4 pb-8 pt-14">

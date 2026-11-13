@@ -1,0 +1,203 @@
+===== CMD: npm run build =====
+cwd: /c/Users/luoec3/workspace/ita/pawtrip
+started: 2026-11-13T22:48:49+0800
+npm warn Unknown user config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> build
+> npm run build -w apps/web
+
+npm warn Unknown env config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> build
+> vite build
+
+[36mvite v8.3.8 [32mbuilding client environment for production...[36m[39m
+transforming...
+
+[@tanstack/devtools-vite] Removed devtools code from: /src/routes/__root.tsx
+
+✓ 192 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/client/assets/styles-CWmSl5yp.css   24.25 kB │ gzip:   5.86 kB
+dist/client/assets/about-Cu7aUex7.js      0.72 kB │ gzip:   0.43 kB
+dist/client/assets/routes-BRrUVMnZ.js     8.60 kB │ gzip:   3.26 kB
+dist/client/assets/index-C-mLDrkM.js    376.21 kB │ gzip: 120.26 kB
+
+[32m✓ built in 404ms[39m
+[36mvite v8.3.8 [32mbuilding ssr environment for production...[36m[39m
+transforming...
+
+[@tanstack/devtools-vite] Removed devtools code from: /src/routes/__root.tsx
+
+✓ 60 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/server/assets/start-DCuTSEuX.js                        0.13 kB │ gzip:  0.12 kB
+dist/server/assets/empty-plugin-adapters-Butv5p6u.js        0.21 kB │ gzip:  0.15 kB
+dist/server/assets/_tanstack-start-manifest_v-C3mH0ODA.js   0.69 kB │ gzip:  0.33 kB
+dist/server/assets/about-C106R88A.js                        0.93 kB │ gzip:  0.49 kB
+dist/server/assets/routes-DPqB2MPD.js                       1.12 kB │ gzip:  0.60 kB
+dist/server/assets/router-CbsZRgA3.js                      11.70 kB │ gzip:  3.47 kB
+dist/server/server.js                                      92.52 kB │ gzip: 23.43 kB
+
+[32m✓ built in 231ms[39m
+exit: 0
+ended: 2026-11-13T22:48:56+0800
+
+===== CMD: cd apps/server && ./mvnw test =====
+cwd: /c/Users/luoec3/workspace/ita/pawtrip
+started: 2026-11-13T22:48:58+0800
+[INFO] Scanning for projects...
+[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to central-cms2 (https://artifact.cargosmart.com/artifactory/maven-repository-virtual-external): HTTP Status: 401
+[INFO] Loaded 22551 auto-discovered prefixes for remote repository central-cms2 (prefixes-central-cms2.txt)
+[INFO] 
+[INFO] ---------------------< com.pawtrip:pawtrip-server >---------------------
+[INFO] Building pawtrip-server 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ pawtrip-server ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ pawtrip-server ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ pawtrip-server ---
+[INFO] skip non existing resourceDirectory C:\Users\luoec3\workspace\ita\pawtrip\apps\server\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ pawtrip-server ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ pawtrip-server ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.pawtrip.server.greeting.GreetingApiTest
+22:49:26.311 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pawtrip.server.greeting.GreetingApiTest]: GreetingApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+22:49:26.423 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.greeting.GreetingApiTest
+22:49:26.481 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pawtrip.server.greeting.GreetingApiTest]: GreetingApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+22:49:26.483 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.greeting.GreetingApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-13T22:49:26.733+08:00  INFO 44360 --- [pawtrip-server] [           main] c.p.server.greeting.GreetingApiTest      : Starting GreetingApiTest using Java 25.0.5 with PID 44360 (started by luoec3 in C:\Users\luoec3\workspace\ita\pawtrip\apps\server)
+2026-11-13T22:49:26.734+08:00  INFO 44360 --- [pawtrip-server] [           main] c.p.server.greeting.GreetingApiTest      : No active profile set, falling back to 1 default profile: "default"
+2026-11-13T22:49:27.136+08:00  INFO 44360 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-11-13T22:49:27.171+08:00  INFO 44360 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 28 ms. Found 1 JPA repository interface.
+2026-11-13T22:49:27.505+08:00  INFO 44360 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.sqlite.SQLiteJDBCLoader in an unnamed module (file:/C:/Users/luoec3/.m2/repository/org/xerial/sqlite-jdbc/3.53.4.0/sqlite-jdbc-3.53.4.0.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+2026-11-13T22:49:27.682+08:00  INFO 44360 --- [pawtrip-server] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.sqlite.jdbc4.JDBC4Connection@45e140ae
+2026-11-13T22:49:27.684+08:00  INFO 44360 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-13T22:49:27.689+08:00  INFO 44360 --- [pawtrip-server] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:target\greeting-api-test.db (SQLite 3.53)
+2026-11-13T22:49:27.740+08:00  INFO 44360 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-13T22:49:27.743+08:00  INFO 44360 --- [pawtrip-server] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 1 migration (execution time 00:00.010s)
+2026-11-13T22:49:27.745+08:00  INFO 44360 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-13T22:49:27.765+08:00  INFO 44360 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-13T22:49:27.770+08:00  INFO 44360 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-13T22:49:27.783+08:00  INFO 44360 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 1 migration to schema "main", now at version v1 (execution time 00:00.004s)
+2026-11-13T22:49:27.853+08:00  INFO 44360 --- [pawtrip-server] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-11-13T22:49:27.891+08:00  INFO 44360 --- [pawtrip-server] [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.4.13.Final
+2026-11-13T22:49:28.161+08:00  INFO 44360 --- [pawtrip-server] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-11-13T22:49:28.196+08:00  INFO 44360 --- [pawtrip-server] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:sqlite:target\greeting-api-test.db]
+	Database driver: SQLite JDBC
+	Database dialect: SQLiteDialect
+	Database version: 3.53.4
+	Default catalog/schema: undefined/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: SERIALIZABLE [default SERIALIZABLE]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-11-13T22:49:28.632+08:00  INFO 44360 --- [pawtrip-server] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-11-13T22:49:28.639+08:00  INFO 44360 --- [pawtrip-server] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-11-13T22:49:28.694+08:00  INFO 44360 --- [pawtrip-server] [           main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-11-13T22:49:29.091+08:00  INFO 44360 --- [pawtrip-server] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-13T22:49:29.092+08:00  INFO 44360 --- [pawtrip-server] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-13T22:49:29.093+08:00  INFO 44360 --- [pawtrip-server] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-13T22:49:29.111+08:00  INFO 44360 --- [pawtrip-server] [           main] c.p.server.greeting.GreetingApiTest      : Started GreetingApiTest in 2.586 seconds (process running for 3.593)
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+WARNING: A Java agent has been loaded dynamically (C:\Users\luoec3\.m2\repository\net\bytebuddy\byte-buddy-agent\1.18.15\byte-buddy-agent-1.18.15.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.070 s -- in com.pawtrip.server.greeting.GreetingApiTest
+[INFO] Running com.pawtrip.server.ServerApplicationTests
+2026-11-13T22:49:30.253+08:00  INFO 44360 --- [pawtrip-server] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pawtrip.server.ServerApplicationTests]: ServerApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-13T22:49:30.258+08:00  INFO 44360 --- [pawtrip-server] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.ServerApplicationTests
+2026-11-13T22:49:30.258+08:00  INFO 44360 --- [pawtrip-server] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pawtrip.server.ServerApplicationTests]: ServerApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-13T22:49:30.261+08:00  INFO 44360 --- [pawtrip-server] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.ServerApplicationTests
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-13T22:49:30.281+08:00  INFO 44360 --- [pawtrip-server] [           main] c.pawtrip.server.ServerApplicationTests  : Starting ServerApplicationTests using Java 25.0.5 with PID 44360 (started by luoec3 in C:\Users\luoec3\workspace\ita\pawtrip\apps\server)
+2026-11-13T22:49:30.282+08:00  INFO 44360 --- [pawtrip-server] [           main] c.pawtrip.server.ServerApplicationTests  : No active profile set, falling back to 1 default profile: "default"
+2026-11-13T22:49:30.386+08:00  INFO 44360 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-11-13T22:49:30.395+08:00  INFO 44360 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 9 ms. Found 1 JPA repository interface.
+2026-11-13T22:49:30.432+08:00  INFO 44360 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-11-13T22:49:30.436+08:00  INFO 44360 --- [pawtrip-server] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection org.sqlite.jdbc4.JDBC4Connection@105c253a
+2026-11-13T22:49:30.436+08:00  INFO 44360 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-11-13T22:49:30.436+08:00  INFO 44360 --- [pawtrip-server] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:data/pawtrip.db (SQLite 3.53)
+2026-11-13T22:49:30.444+08:00  INFO 44360 --- [pawtrip-server] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 1 migration (execution time 00:00.002s)
+2026-11-13T22:49:30.444+08:00  INFO 44360 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": 1
+2026-11-13T22:49:30.444+08:00  INFO 44360 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Schema "main" is up to date. No migration necessary.
+2026-11-13T22:49:30.453+08:00  INFO 44360 --- [pawtrip-server] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-11-13T22:49:30.469+08:00  INFO 44360 --- [pawtrip-server] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-11-13T22:49:30.471+08:00  INFO 44360 --- [pawtrip-server] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:sqlite:data/pawtrip.db]
+	Database driver: SQLite JDBC
+	Database dialect: SQLiteDialect
+	Database version: 3.53.4
+	Default catalog/schema: undefined/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: SERIALIZABLE [default SERIALIZABLE]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-11-13T22:49:30.488+08:00  INFO 44360 --- [pawtrip-server] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-11-13T22:49:30.490+08:00  INFO 44360 --- [pawtrip-server] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-11-13T22:49:30.564+08:00  INFO 44360 --- [pawtrip-server] [           main] c.pawtrip.server.ServerApplicationTests  : Started ServerApplicationTests in 0.3 seconds (process running for 5.045)
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.317 s -- in com.pawtrip.server.ServerApplicationTests
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  8.941 s
+[INFO] Finished at: 2026-11-13T22:49:30+08:00
+[INFO] ------------------------------------------------------------------------
+exit: 0
+ended: 2026-11-13T22:49:31+0800
+
