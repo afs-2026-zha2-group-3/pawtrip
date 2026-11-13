@@ -62,14 +62,25 @@ links for both hosts. Commit the bundled sources and their host projections toge
 
 ### 开发
 
+首次启动前安装依赖:
+
 ```bash
 npm install
 ```
 
+按顺序在两个终端启动后端与前端:
+
+```bash
+cd apps/server
+./mvnw spring-boot:run
+```
+
 ```bash
 npm run dev
-
-cd apps/server
-mvnw spring-boot:run
 ```
+
+- 后端:`http://localhost:8080`。首次启动自动创建 `apps/server/data/pawtrip.db`,Flyway 执行 `V1__create_greeting.sql` 建表并种入 "Hello World"。
+- 前端:`http://localhost:3000`。开发代理将 `/api/*` 转发到后端,后端不配置 CORS。
+- 接口验收:`curl http://localhost:8080/api/greeting` 返回 `{"message":"Hello World"}`;打开首页应显示同一文本。
+- 重置数据库:停止后端,删除 `apps/server/data/pawtrip.db`,重新启动。
 

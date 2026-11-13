@@ -37,6 +37,9 @@ test-results/
 .agents/
 
 # Pawtrip additions
+# Local SQLite data (keep the directory, ignore the database files)
+apps/server/data/*
+!apps/server/data/.gitkeep
 dist-ssr
 *.local
 .env

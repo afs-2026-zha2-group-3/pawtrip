@@ -1,6 +1,11 @@
 spring:
   application:
     name: pawtrip-server
+  datasource:
+    url: jdbc:sqlite:data/pawtrip.db
+    driver-class-name: org.sqlite.JDBC
+  flyway:
+    locations: classpath:db/migration
 
 server:
   port: 8080
