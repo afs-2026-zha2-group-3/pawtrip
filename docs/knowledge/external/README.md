@@ -19,23 +19,11 @@ Before editing files for a substantial task:
 - Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
 - Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
 
-## UI
+### UI
 
-### shadcn/ui
+#### shadcn/ui
 
 - llm index: https://www.shadcn.com.cn/llms.txt
 - local skill: [`.agents/skills/shadcn/SKILL.md`](../../../.agents/skills/shadcn/SKILL.md)
 
 ## Backend
-
-### Spring Boot / Maven
-
-- Spring Boot 文档：https://docs.spring.io/spring-boot/
-- Spring Initializr：https://start.spring.io/
-- Maven Wrapper：https://maven.apache.org/wrapper/
-- 本机 JDK 21（scoop）：`scoop reset corretto21-jdk`
-
-## 相关条目
-
-- [架构概览](../architecture/README.md)
-- [本地环境与常用命令](../operations/README.md)
