@@ -2,4 +2,4 @@
 
 | id | title | status | openspec change | notes |
 |---|---|---|---|---|
-| REQ-001 | Hello World 首页全链路 | G1-passed | `hello-world-greeting` | G1 Pass(2026-11-13);Delta Spec / AC-DoV / lint 已产出;可进入 P3 |
+| REQ-001 | Hello World 首页全链路 | P4-local-verified | `hello-world-greeting` | G1/P3 Pass(2026-11-13);本地验证 Pass(2026-11-13):测试/构建/E2E 通过;待 PR / CI / G2 |

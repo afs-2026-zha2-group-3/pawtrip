@@ -1,0 +1,168 @@
+===== CMD: npm run build =====
+cwd: /c/Users/luoec3/workspace/ita/pawtrip
+started: 2026-11-13T21:11:45+0800
+npm warn Unknown user config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> build
+> npm run build -w apps/web
+
+npm warn Unknown env config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> build
+> vite build
+
+[36mvite v8.3.8 [32mbuilding client environment for production...[36m[39m
+transforming...
+
+[@tanstack/devtools-vite] Removed devtools code from: /src/routes/__root.tsx
+
+✓ 144 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/client/assets/styles-CWmSl5yp.css   24.25 kB │ gzip:   5.86 kB
+dist/client/assets/routes-C6jD2nBU.js     0.67 kB │ gzip:   0.44 kB
+dist/client/assets/about-DS0seS7M.js      0.72 kB │ gzip:   0.43 kB
+dist/client/assets/index-1-P_iJWe.js    348.36 kB │ gzip: 112.36 kB
+
+[32m✓ built in 390ms[39m
+[36mvite v8.3.8 [32mbuilding ssr environment for production...[36m[39m
+transforming...
+
+[@tanstack/devtools-vite] Removed devtools code from: /src/routes/__root.tsx
+
+✓ 59 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/server/assets/start-DCuTSEuX.js                        0.13 kB │ gzip:  0.12 kB
+dist/server/assets/empty-plugin-adapters-Butv5p6u.js        0.21 kB │ gzip:  0.15 kB
+dist/server/assets/_tanstack-start-manifest_v-C3-FZsP8.js   0.69 kB │ gzip:  0.33 kB
+dist/server/assets/about-C106R88A.js                        0.93 kB │ gzip:  0.49 kB
+dist/server/assets/routes-DJX1t4PZ.js                       0.97 kB │ gzip:  0.53 kB
+dist/server/assets/router-xyelUwHj.js                      11.32 kB │ gzip:  3.34 kB
+dist/server/server.js                                      92.52 kB │ gzip: 23.43 kB
+
+[32m✓ built in 178ms[39m
+exit: 0
+ended: 2026-11-13T21:11:53+0800
+
+===== CMD: cd apps/server && ./mvnw test =====
+cwd: /c/Users/luoec3/workspace/ita/pawtrip
+started: 2026-11-13T21:11:54+0800
+[INFO] Scanning for projects...
+[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to central-cms2 (https://artifact.cargosmart.com/artifactory/maven-repository-virtual-external): HTTP Status: 401
+[INFO] Loaded 22551 auto-discovered prefixes for remote repository central-cms2 (prefixes-central-cms2.txt)
+[INFO] 
+[INFO] ---------------------< com.pawtrip:pawtrip-server >---------------------
+[INFO] Building pawtrip-server 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ pawtrip-server ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ pawtrip-server ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ pawtrip-server ---
+[INFO] skip non existing resourceDirectory C:\Users\luoec3\workspace\ita\pawtrip\apps\server\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ pawtrip-server ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ pawtrip-server ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.pawtrip.server.greeting.GreetingApiTest
+21:12:25.423 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pawtrip.server.greeting.GreetingApiTest]: GreetingApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+21:12:25.551 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.greeting.GreetingApiTest
+21:12:25.636 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pawtrip.server.greeting.GreetingApiTest]: GreetingApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+21:12:25.642 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.greeting.GreetingApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-13T21:12:25.979+08:00  INFO 43344 --- [pawtrip-server] [           main] c.p.server.greeting.GreetingApiTest      : Starting GreetingApiTest using Java 25.0.5 with PID 43344 (started by luoec3 in C:\Users\luoec3\workspace\ita\pawtrip\apps\server)
+2026-11-13T21:12:25.980+08:00  INFO 43344 --- [pawtrip-server] [           main] c.p.server.greeting.GreetingApiTest      : No active profile set, falling back to 1 default profile: "default"
+2026-11-13T21:12:26.807+08:00  INFO 43344 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.sqlite.SQLiteJDBCLoader in an unnamed module (file:/C:/Users/luoec3/.m2/repository/org/xerial/sqlite-jdbc/3.53.4.0/sqlite-jdbc-3.53.4.0.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+2026-11-13T21:12:26.975+08:00  INFO 43344 --- [pawtrip-server] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.sqlite.jdbc4.JDBC4Connection@44bc2449
+2026-11-13T21:12:26.977+08:00  INFO 43344 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-13T21:12:26.984+08:00  INFO 43344 --- [pawtrip-server] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:target\greeting-api-test.db (SQLite 3.53)
+2026-11-13T21:12:27.024+08:00  INFO 43344 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-13T21:12:27.026+08:00  INFO 43344 --- [pawtrip-server] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 1 migration (execution time 00:00.012s)
+2026-11-13T21:12:27.035+08:00  INFO 43344 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-13T21:12:27.055+08:00  INFO 43344 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-13T21:12:27.060+08:00  INFO 43344 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-13T21:12:27.073+08:00  INFO 43344 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 1 migration to schema "main", now at version v1 (execution time 00:00.004s)
+2026-11-13T21:12:27.447+08:00  INFO 43344 --- [pawtrip-server] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-13T21:12:27.447+08:00  INFO 43344 --- [pawtrip-server] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-13T21:12:27.448+08:00  INFO 43344 --- [pawtrip-server] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-11-13T21:12:27.465+08:00  INFO 43344 --- [pawtrip-server] [           main] c.p.server.greeting.GreetingApiTest      : Started GreetingApiTest in 1.751 seconds (process running for 2.901)
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+WARNING: A Java agent has been loaded dynamically (C:\Users\luoec3\.m2\repository\net\bytebuddy\byte-buddy-agent\1.18.15\byte-buddy-agent-1.18.15.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.416 s -- in com.pawtrip.server.greeting.GreetingApiTest
+[INFO] Running com.pawtrip.server.ServerApplicationTests
+2026-11-13T21:12:28.701+08:00  INFO 43344 --- [pawtrip-server] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pawtrip.server.ServerApplicationTests]: ServerApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-13T21:12:28.707+08:00  INFO 43344 --- [pawtrip-server] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.ServerApplicationTests
+2026-11-13T21:12:28.709+08:00  INFO 43344 --- [pawtrip-server] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pawtrip.server.ServerApplicationTests]: ServerApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-11-13T21:12:28.710+08:00  INFO 43344 --- [pawtrip-server] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pawtrip.server.ServerApplication for test class com.pawtrip.server.ServerApplicationTests
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-13T21:12:28.733+08:00  INFO 43344 --- [pawtrip-server] [           main] c.pawtrip.server.ServerApplicationTests  : Starting ServerApplicationTests using Java 25.0.5 with PID 43344 (started by luoec3 in C:\Users\luoec3\workspace\ita\pawtrip\apps\server)
+2026-11-13T21:12:28.733+08:00  INFO 43344 --- [pawtrip-server] [           main] c.pawtrip.server.ServerApplicationTests  : No active profile set, falling back to 1 default profile: "default"
+2026-11-13T21:12:28.851+08:00  INFO 43344 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-11-13T21:12:28.855+08:00  INFO 43344 --- [pawtrip-server] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection org.sqlite.jdbc4.JDBC4Connection@5340ccb9
+2026-11-13T21:12:28.855+08:00  INFO 43344 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-11-13T21:12:28.856+08:00  INFO 43344 --- [pawtrip-server] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:data/pawtrip.db (SQLite 3.53)
+2026-11-13T21:12:28.861+08:00  INFO 43344 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-13T21:12:28.862+08:00  INFO 43344 --- [pawtrip-server] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 1 migration (execution time 00:00.001s)
+2026-11-13T21:12:28.862+08:00  INFO 43344 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-13T21:12:28.873+08:00  INFO 43344 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-13T21:12:28.876+08:00  INFO 43344 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-13T21:12:28.885+08:00  INFO 43344 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 1 migration to schema "main", now at version v1 (execution time 00:00.003s)
+2026-11-13T21:12:28.957+08:00  INFO 43344 --- [pawtrip-server] [           main] c.pawtrip.server.ServerApplicationTests  : Started ServerApplicationTests in 0.244 seconds (process running for 4.393)
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.269 s -- in com.pawtrip.server.ServerApplicationTests
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  8.399 s
+[INFO] Finished at: 2026-11-13T21:12:29+08:00
+[INFO] ------------------------------------------------------------------------
+exit: 0
+ended: 2026-11-13T21:12:29+0800
+

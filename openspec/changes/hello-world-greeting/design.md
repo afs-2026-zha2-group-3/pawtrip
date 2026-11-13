@@ -5,6 +5,7 @@ PawTrip 目前只有脚手架:`apps/server` 是 Spring Boot 4.1.2 / Java 21 的�
 上游需求:[REQ-001](../../../requirement-workspace/requirements/REQ-001-hello-world-home-page.md)
 影响分析:[impact-brief.md](../../../requirement-workspace/impact-brief.md)
 细化契约:[deep-dive.md](../../../requirement-workspace/deep-dive.md)
+验收设计:[atdd-design.md](atdd-design.md)
 
 ## Goals / Non-Goals
 
@@ -62,8 +63,10 @@ PawTrip 目前只有脚手架:`apps/server` 是 Spring Boot 4.1.2 / Java 21 的�
 ### 7. 测试采用后端接口集成测试
 
 - 新增一个后端集成测试,使用临时 SQLite 数据库启动上下文,验证 `GET /api/greeting` 的状态码、`Content-Type` 与响应体;直接覆盖 R1 的兼容性风险。
-- 前端不新增组件测试,首页行为由浏览器端到端验收覆盖(OQ-4 已确认)。
+- 该测试在实现之前先编写并保持失败,实现完成后转绿;分层、fixtures 与反向验证见 [atdd-design.md](atdd-design.md)。
+- 前端不新增组件测试,首页行为由浏览器端到端验收覆盖(OQ-4 已确认);E2E 使用可重复的人工步骤,不引入 Playwright/Cypress。
 - 备选:仅依赖构建与手工验收(无法在 CI 中兜底兼容性回归)、前后端都加测试(超出最小范围),均不采用。
+- 本次不纳入 NFR 测试(与需求方确认),CI 门禁因仓库无流水线而记为 N/A。
 
 ## Risks / Trade-offs
 
