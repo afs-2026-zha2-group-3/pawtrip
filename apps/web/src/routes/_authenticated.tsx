@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authQueryOptions } from "../queries/auth";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -27,11 +28,13 @@ function AuthenticatedLayout() {
 
 function AuthLoading() {
   return (
-    <main className="page-wrap px-4 pb-8 pt-14">
-      <section className="island-shell rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
-        <p className="island-kicker mb-3">PawTrip</p>
-        <p className="m-0 text-base leading-8 text-[var(--sea-ink-soft)]">Checking your session…</p>
-      </section>
+    <main className="mx-auto w-full max-w-3xl p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>PawTrip</CardTitle>
+          <CardDescription>Checking your session…</CardDescription>
+        </CardHeader>
+      </Card>
     </main>
   );
 }

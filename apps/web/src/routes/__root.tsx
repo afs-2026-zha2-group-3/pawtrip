@@ -1,20 +1,32 @@
+import type { ReactNode } from "react";
 import {
   HeadContent,
   Link,
   Scripts,
   createRootRouteWithContext,
+  useNavigate,
+  useRouterState,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "../lib/http/api-error";
-import { TanStackDevtools } from "@tanstack/react-devtools";
-import Footer from "../components/Footer";
-import Header from "../components/Header";
+import { authQueryOptions, logout } from "../queries/auth";
 
 import appCss from "../styles.css?url";
-
-const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`;
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -27,7 +39,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "TanStack Start Starter",
+        title: "PawTrip",
       },
     ],
     links: [
@@ -42,6 +54,66 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   notFoundComponent: NotFoundComponent,
 });
 
+function AppHeader() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const isClient = typeof window !== "undefined";
+  const auth = useQuery({ ...authQueryOptions, enabled: isClient });
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      queryClient.clear();
+      void navigate({ to: "/login", replace: true });
+    },
+  });
+
+  return (
+    <header className="relative flex items-center justify-center px-4 py-4">
+      <AppTabs />
+      {auth.isSuccess ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="absolute right-4"
+          onClick={() => logoutMutation.mutate()}
+          disabled={logoutMutation.isPending}
+        >
+          {logoutMutation.isPending ? "Signing out…" : "Log out"}
+        </Button>
+      ) : null}
+      {logoutMutation.isError ? (
+        <p
+          className="absolute right-4 top-full text-xs font-medium text-destructive"
+          role="alert"
+        >
+          Logout failed
+        </p>
+      ) : null}
+    </header>
+  );
+}
+
+function AppTabs() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const navigate = useNavigate();
+  const activeTab = pathname === "/paws" ? "paws" : "home";
+
+  return (
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) =>
+        navigate({ to: value === "paws" ? "/paws" : "/" })
+      }
+    >
+      <TabsList>
+        <TabsTrigger value="home">Home</TabsTrigger>
+        <TabsTrigger value="paws">Paws</TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
+}
+
 function RootErrorComponent({ error, reset }: ErrorComponentProps) {
   const queryClient = useQueryClient();
   const message = error instanceof ApiError ? error.detail : "Something went wrong.";
@@ -52,66 +124,47 @@ function RootErrorComponent({ error, reset }: ErrorComponentProps) {
   };
 
   return (
-    <main className="page-wrap px-4 pb-8 pt-14">
-      <section className="island-shell rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
-        <p className="island-kicker mb-3">PawTrip</p>
-        <h1 className="display-title mb-3 text-3xl font-bold text-[var(--sea-ink)]">
-          Unable to load this page
-        </h1>
-        <p className="mb-6 text-base leading-8 text-[var(--sea-ink-soft)]">{message}</p>
-        <button
-          type="button"
-          onClick={handleRetry}
-          className="rounded-full bg-[var(--sea-ink)] px-5 py-2 text-sm font-semibold text-white"
-        >
-          Try again
-        </button>
-      </section>
+    <main className="mx-auto w-full max-w-3xl p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Unable to load this page</CardTitle>
+          <CardDescription>{message}</CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Button onClick={handleRetry}>Try again</Button>
+        </CardFooter>
+      </Card>
     </main>
   );
 }
 
 function NotFoundComponent() {
   return (
-    <main className="page-wrap px-4 pb-8 pt-14">
-      <section className="island-shell rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
-        <p className="island-kicker mb-3">PawTrip</p>
-        <h1 className="display-title mb-3 text-3xl font-bold text-[var(--sea-ink)]">
-          Page not found
-        </h1>
-        <p className="mb-6 text-base leading-8 text-[var(--sea-ink-soft)]">
-          The page you requested does not exist.
-        </p>
-        <Link to="/" className="font-semibold text-[var(--sea-ink)] underline">
-          Back to home
-        </Link>
-      </section>
+    <main className="mx-auto w-full max-w-3xl p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Page not found</CardTitle>
+          <CardDescription>The page you requested does not exist.</CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Link to="/" className={buttonVariants()}>
+            Back to home
+          </Link>
+        </CardFooter>
+      </Card>
     </main>
   );
 }
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+function RootDocument({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
-        <Header />
+      <body className="min-h-svh bg-background text-foreground antialiased">
+        <AppHeader />
         {children}
-        <Footer />
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
         <Scripts />
       </body>
     </html>

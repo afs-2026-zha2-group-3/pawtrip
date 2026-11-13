@@ -1,21 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { greetingQueryOptions } from "../../queries/greeting";
 
-export const Route = createFileRoute("/_authenticated/")({ component: App });
+export const Route = createFileRoute("/_authenticated/")({
+  component: HomePage,
+});
 
-function App() {
+function HomePage() {
   const { data } = useQuery(greetingQueryOptions);
   const message = data?.message ?? "";
 
   return (
-    <main className="page-wrap px-4 pb-8 pt-14">
-      <section className="island-shell relative overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
-        <p className="island-kicker mb-3">PawTrip</p>
-        <h1 className="display-title mb-5 text-4xl leading-[1.02] font-bold tracking-tight text-[var(--sea-ink)] sm:text-6xl">
-          {message}
-        </h1>
-      </section>
+    <main className="mx-auto w-full max-w-3xl p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>{message}</CardTitle>
+        </CardHeader>
+      </Card>
     </main>
   );
 }
