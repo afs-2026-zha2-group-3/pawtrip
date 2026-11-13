@@ -9,3 +9,9 @@
 |---|---|---|
 | `requirements/` entries | `openspec/changes/<id>/` proposal inputs | After `/sdd:pre-spec-req` |
 | Ready / analysis packs | change package or archive | Project convention |
+
+## Current mappings
+
+| requirement | change package | status |
+|---|---|---|
+| REQ-001 | `openspec/changes/hello-world-greeting/` | proposal / specs / design / tasks 已生成 |
