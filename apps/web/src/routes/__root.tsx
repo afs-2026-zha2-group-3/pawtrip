@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   HeadContent,
   Link,
@@ -14,6 +14,17 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -57,6 +68,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function AppHeader() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const isClient = typeof window !== "undefined";
   const auth = useQuery({ ...authQueryOptions, enabled: isClient });
   const logoutMutation = useMutation({
@@ -71,16 +83,44 @@ function AppHeader() {
     <header className="relative flex items-center justify-center px-4 py-4">
       <AppTabs />
       {auth.isSuccess ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="absolute right-4"
-          onClick={() => logoutMutation.mutate()}
-          disabled={logoutMutation.isPending}
+        <AlertDialog
+          open={logoutDialogOpen}
+          onOpenChange={setLogoutDialogOpen}
         >
-          {logoutMutation.isPending ? "Signing out…" : "Log out"}
-        </Button>
+          <AlertDialogTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-4"
+                disabled={logoutMutation.isPending}
+              />
+            }
+          >
+            {logoutMutation.isPending ? "Signing out…" : "Log out"}
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Log out?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You will need to sign in again to access PawTrip.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={() => {
+                  setLogoutDialogOpen(false);
+                  logoutMutation.mutate();
+                }}
+              >
+                Log out
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       ) : null}
       {logoutMutation.isError ? (
         <p
@@ -157,13 +197,15 @@ function NotFoundComponent() {
 }
 
 function RootDocument({ children }: { children: ReactNode }) {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body className="min-h-svh bg-background text-foreground antialiased">
-        <AppHeader />
+        {pathname === "/login" ? null : <AppHeader />}
         {children}
         <Scripts />
       </body>

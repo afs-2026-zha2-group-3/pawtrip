@@ -16,7 +16,39 @@
 - **GIVEN** 改造完成
 - **WHEN** 检查 `apps/web/src/components` 与路由组件
 - **THEN** 界面交互组件来自 `apps/web/src/components/ui/`
-- **AND** 页面中不存在自研的按钮、标签页或卡片实现
+- **AND** 页面中不存在自研的按钮、标签页、卡片、输入框或标签实现
+
+### Requirement: 登录与会话界面使用 shadcn/ui
+
+登录页与会话检查态 SHALL 使用 shadcn/ui 组件组合；登录表单 MUST 包含用户名、密码输入与提交按钮，失败时展示可观察的错误提示。顶部登出入口 SHALL 使用 shadcn `Button`，且仅在已登录时显示；点击后 MUST 使用 shadcn `AlertDialog` 进行二次确认。
+
+#### Scenario: 登录页组件来源
+
+- **GIVEN** 用户访问 `/login`
+- **WHEN** 页面渲染
+- **THEN** 表单使用 `Card`、`Input`、`Label` 与 `Button`
+- **AND** 不出现手写样式的输入框或按钮
+
+#### Scenario: 登录失败提示
+
+- **GIVEN** 用户输入错误凭据并提交
+- **WHEN** 登录请求返回 `401`
+- **THEN** 页面停留在 `/login`
+- **AND** 展示通用失败提示，不区分用户名与密码错误
+
+#### Scenario: 已登录显示登出
+
+- **GIVEN** auth query 返回已登录用户
+- **WHEN** 页面渲染顶部导航
+- **THEN** 显示 `Log out` 按钮
+- **AND** 未登录时不显示
+
+#### Scenario: 登出确认弹窗来源
+
+- **GIVEN** 已登录用户点击 `Log out`
+- **WHEN** 需要二次确认
+- **THEN** 使用 `apps/web/src/components/ui/alert-dialog` 提供的 shadcn `AlertDialog`
+- **AND** 不出现浏览器原生 `confirm` 或手写弹层
 
 ### Requirement: 禁止手写样式与多余包裹标签
 

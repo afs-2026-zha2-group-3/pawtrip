@@ -3,7 +3,7 @@
 - Change id: `refactor-web-ui-with-shadcn`
 - Phase: `p2`
 - Focus: change folder + Living Spec trace (`openspec/specs/`)
-- Timestamp: 2026-11-14（Revision 2：技术基座由 Radix 改为 shadcn/ui + Base UI；Delta Spec 未变，复核仍为 Pass）
+- Timestamp: 2026-11-14（Revision 3：rebase REQ-003 登录，需求编号改为 REQ-004，Delta Spec 增加受保护路由与登录 UI 要求；复核仍为 Pass）
 - Artifact level: 3 + design（proposal + specs + tasks + design）
 - Verdict: **Pass**
 - Counts: BLOCKER 0 / WARNING 0 / SUGGESTION 0 / N/A 1
@@ -32,7 +32,7 @@
 | S1 Spec 结构符合 OpenSpec schema | Pass | 三个 delta 使用 `## ADDED Requirements` + `### Requirement` + `#### Scenario` |
 | S2 引用前缀合法 | Pass | 变更包内无未知前缀 |
 | S2b `@knowledge:` 可解析 | N/A | 变更包内无 `@knowledge:` 引用 |
-| S2c `@rule:<ID>` 可解析 | Pass | REQ-003 的 `@rule:spec-first` 对应 `docs/knowledge/rules/process/spec-first.md` |
+| S2c `@rule:<ID>` 可解析 | Pass | REQ-004 的 `@rule:spec-first` 对应 `docs/knowledge/rules/process/spec-first.md` |
 | S3 每个 Requirement 追溯到 proposal What Changes | Pass | 见 `dov-ac-review.md` Traceability 表 |
 | S4 Scenario 使用 Given/When/Then | Pass | 所有场景均含 GIVEN / WHEN / THEN |
 | S5 Scenario 归属 Requirement | Pass | 无孤儿 Scenario；项目沿用 Requirement 标题而非数字编号 |
@@ -62,7 +62,7 @@
 | C6 `@knowledge:` / `@rule:` 可达 | Pass | `@rule:spec-first` 可达；无 `@knowledge:` |
 | p2 范围扩展 / 丢失 | Pass | Delta 与 proposal 范围一致；无 API/后端 delta |
 | p2 Delta 内部一致性 | Pass | 三个 capability 的 actors、约束、场景互不冲突 |
-| p2 关键场景有归属 | Pass | S1–S8 均映射到 `web-app-shell`、`paws-page` 或既有 Living Spec |
+| p2 关键场景有归属 | Pass | S1–S11 均映射到 `web-app-shell`、`paws-page`、`ui-foundation` 或既有 Living Spec / REQ-003 认证契约 |
 | p2 任务与 Delta 方向一致 | Pass | 无与 Delta 冲突的任务 |
 
 ## N/A / Skipped
@@ -71,7 +71,7 @@
 
 ## Fix suggestions
 
-- 无提交前必须修复项。实现阶段注意：shadcn CLI 初始化参数（`--base base` / base-nova）、`routeTree.gen.ts` 重新生成、Base UI Tabs 在 SSR 下的受控路径映射。
+- 无提交前必须修复项。实现阶段注意：shadcn CLI 初始化参数（`--base base` / base-nova）、`routeTree.gen.ts` 重新生成、Base UI Tabs 在 SSR 下的受控路径映射、auth query 仅客户端启用与登录跳转时序。
 
 ## Residual risks
 
