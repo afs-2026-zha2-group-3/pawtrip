@@ -1,5 +1,7 @@
 # AGENTS.md
 
+前后端同仓：`apps/web`（Vite / TanStack Start）与 `apps/server`（Spring Boot / Maven）。
+
 开始改动前，先阅读项目文档：
 
 - [docs/architecture.md](docs/architecture.md) — 技术栈、目录结构、运行时模型、编码约定与常用命令。

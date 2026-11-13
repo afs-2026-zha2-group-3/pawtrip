@@ -16,4 +16,13 @@ Before editing files for a substantial task:
 ### shadcn/ui
 
 - llm index: https://www.shadcn.com.cn/llms.txt
-- local skills: `.agent/skills/shadcn`
+- local skills: `.agents/skills/shadcn`
+
+## Backend
+
+### Spring Boot / Maven
+
+- Spring Boot 文档：https://docs.spring.io/spring-boot/
+- Spring Initializr：https://start.spring.io/
+- Maven Wrapper：https://maven.apache.org/wrapper/
+- 本机 JDK 21（scoop）：`scoop reset corretto21-jdk`

@@ -18,3 +18,18 @@ todos.json
 # dotenv environment variable files
 .env.*
 !.env.example
+
+# Java / Maven
+target/
+*.class
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+.idea/
+*.iws
+*.iml
+*.ipr
