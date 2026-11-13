@@ -12,7 +12,7 @@
 - **AND** 该文本来自 `/api/greeting` 的响应
 - **AND** 不发生登录跳转
 
-#### Scenario: 未登录用户打开首页
+#### Scenario: 访客打开首页
 
 - **GIVEN** 浏览器没有有效登录会话
 - **WHEN** 用户打开 `http://localhost:3000/`
