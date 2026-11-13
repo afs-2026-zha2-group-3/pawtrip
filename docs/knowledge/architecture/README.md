@@ -21,7 +21,7 @@ pawtrip/
 ### 前端（apps/web）
 
 - Vite 8、React 19、TanStack Router / Start、Tailwind CSS 4
-- shadcn/ui
+- shadcn/ui，底层 primitive 为 Base UI（`@base-ui/react`，`base-nova` 风格）
 
 ### 后端（apps/server）
 
@@ -88,6 +88,12 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 - 未捕获异常记录服务端错误日志并返回 `500` + `INTERNAL_ERROR`，不向客户端泄露堆栈或内部细节。
 - `spring.mvc.problemdetails.enabled=true`，框架内建异常也走同一 Problem Details 格式。
 
+### 前端 UI 基础
+
+- UI 组件统一来自 `apps/web/src/components/ui/`，使用 shadcn/ui 的 Base UI 版本；不引入 Radix 版本或其他 UI 组件库。
+- 页面结构与交互只通过组件库组合和 Tailwind 布局工具类表达；`apps/web/src/styles.css` 仅保留 Tailwind、`shadcn/tailwind.css` 与主题令牌，不新增自定义类。
+- 应用外壳位于 `apps/web/src/routes/__root.tsx`：顶部居中的 `Home` / `Paws` 两个 Tab 与真实路由 `/`、`/paws` 同步；`/` 展示问候语，`/paws` 内容为空。
+
 ### 前端服务端状态
 
 - 服务端数据统一使用 TanStack Query 获取与缓存；`QueryClient` 在 `getRouter` 内按请求创建，并通过 `setupRouterSsrQueryIntegration` 接入 router context。
@@ -105,6 +111,6 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 ## 测试与验证
 
 - 后端：`cd apps/server && ./mvnw test`，包含使用临时 SQLite 文件的接口验收测试与错误路径测试。认证 E2E 前先运行根目录 `npm run seed:users` 注入本地测试账号。
-- 前端：根目录 `npm run build`。
-- 端到端：冷启动后端后确认数据库文件与接口，再启动前端确认首页展示；已覆盖首次加载失败、后台刷新失败与未知路由，CORS 不在当前范围。
+- 前端：根目录 `npm run build`；类型检查 `npx tsc --noEmit -p apps/web/tsconfig.json`。
+- 端到端：冷启动后端后确认数据库文件与接口，再启动前端验证登录/登出、受保护路由跳转、`/` 问候语、`/paws`、Tab 切换、前进后退、404 与首页首次加载失败；CORS 不在当前范围。
 - 
