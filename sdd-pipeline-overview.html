@@ -1,0 +1,1148 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI4SE · SDD 交付流水线</title>
+<style>
+  :root{
+    --bg:#f5f6f8;
+    --card:#ffffff;
+    --ink:#0f172a;
+    --muted:#64748b;
+    --faint:#94a3b8;
+    --line:#e6eaf0;
+    --line-strong:#cfd7e3;
+    --core:#1d4ed8;
+    --gate:#0f172a;
+    --gate-accent:#f59e0b;
+    --human-bg:#fffbeb;
+    --human-line:#fcd34d;
+    --human-ink:#92400e;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font:14px/1.55 var(--sans);
+    -webkit-font-smoothing:antialiased;
+    padding:32px 20px 56px;
+  }
+  .sheet{
+    max-width:1400px;margin:0 auto;background:var(--card);
+    border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    box-shadow:0 1px 2px rgba(15,23,42,.04),0 16px 40px -18px rgba(15,23,42,.18);
+  }
+
+  /* ---------- header ---------- */
+  .top{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:28px;
+    padding:26px 28px 20px;border-bottom:1px solid var(--line);
+  }
+  .title h1{margin:0 0 6px;font-size:21px;line-height:1.3;letter-spacing:-.01em}
+  .title p{margin:0;font-size:13px;color:var(--muted)}
+  .stats{display:flex;gap:10px;margin-top:16px}
+  .stat{
+    display:flex;align-items:baseline;gap:6px;padding:6px 10px;
+    border:1px solid var(--line);border-radius:9px;background:#fafbfc;
+  }
+  .stat .num{font:600 15px/1 var(--mono);color:var(--ink)}
+  .stat .lbl{font-size:11.5px;color:var(--muted)}
+  .side{display:flex;flex-direction:column;align-items:flex-end;gap:12px;padding-top:2px}
+  .lang{
+    display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;
+    overflow:hidden;background:#fff;
+  }
+  .lang button{
+    border:0;background:transparent;padding:4px 11px;cursor:pointer;
+    font:600 11.5px/1.4 var(--sans);color:var(--muted);
+  }
+  .lang button + button{border-left:1px solid var(--line)}
+  .lang button.on{background:var(--ink);color:#fff}
+  .lang button:focus-visible{outline:2px solid var(--core);outline-offset:-2px}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted)}
+  .legend .key{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+  .swatch{width:16px;height:10px;border-radius:3px;border:1px solid var(--line-strong);background:#fff}
+  .swatch.opt{border-style:dashed;background:#f8fafc}
+  .swatch.human{border-color:var(--human-line);background:var(--human-bg)}
+  .swatch.gate{border-color:var(--gate);background:var(--gate)}
+  .switches{display:flex;flex-wrap:wrap;gap:18px;justify-content:flex-end}
+  .switch{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+  .switch input{position:absolute;opacity:0;pointer-events:none}
+  .track{
+    width:34px;height:19px;border-radius:999px;background:#e2e8f0;position:relative;
+    transition:background .18s ease;flex:0 0 auto;
+  }
+  .thumb{
+    position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.25);transition:transform .18s ease;
+  }
+  .switch input:checked + .track{background:var(--ink)}
+  .switch input:checked + .track .thumb{transform:translateX(15px)}
+
+  /* ---------- phases ---------- */
+  .phase{
+    display:grid;grid-template-columns:176px minmax(0,1fr);gap:20px;
+    padding:20px 28px;border-bottom:1px solid var(--line);
+  }
+  .phase:last-of-type{border-bottom:0}
+  .phase-head{display:flex;gap:11px;align-items:flex-start;padding-top:1px}
+  .pnum{
+    flex:0 0 auto;font:600 11.5px/1 var(--mono);letter-spacing:.05em;
+    padding:7px 8px;border:1px solid var(--line-strong);border-radius:8px;
+    color:var(--muted);background:#f8fafc;
+  }
+  .phase-head h2{margin:0 0 4px;font-size:14.5px;letter-spacing:-.005em}
+  .phase-head p{margin:0;font-size:11.5px;line-height:1.5;color:var(--muted)}
+  .phase-body{min-width:0}
+
+  .flow{display:flex;flex-wrap:wrap;align-items:center;row-gap:10px}
+  .node{
+    display:flex;flex:0 0 auto;flex-direction:column;justify-content:center;gap:2px;
+    padding:6px 10px;border:1px solid var(--line-strong);border-radius:10px;
+    background:#fff;min-width:0;transition:border-color .15s ease,box-shadow .15s ease;
+  }
+  .node:hover{border-color:var(--faint);box-shadow:0 2px 10px -2px rgba(15,23,42,.12)}
+  .node .name{
+    display:flex;align-items:center;gap:5px;
+    font:600 12px/1.35 var(--mono);color:var(--core);white-space:nowrap;
+  }
+  .node .desc{font-size:11px;line-height:1.4;color:var(--muted)}
+  .node .desc.sub{font-size:10px;line-height:1.35;color:var(--faint)}
+  .node .tag{
+    font-size:10px;line-height:1.7;padding:0 6px;border-radius:999px;
+    border:1px solid var(--line-strong);color:var(--muted);background:#fff;
+  }
+  .node .tag.opt{border-color:#cbd5e1;background:#f1f5f9;color:#64748b}
+
+  .node.optional{border-style:dashed;background:#fcfcfd}
+  .node.optional .name{color:#475569}
+
+  .node.gate{background:var(--gate);border-color:var(--gate);padding-right:13px}
+  .node.gate .name{color:#fff}
+  .node.gate .desc{color:#cbd5e1}
+  .node.gate .tag{background:rgba(245,158,11,.16);border-color:rgba(245,158,11,.5);color:#fbbf24}
+  .node.gate .diamond{color:var(--gate-accent);font-size:10px}
+
+  .node.human{background:var(--human-bg);border-color:var(--human-line)}
+  .node.human .name{font-family:var(--sans);color:var(--human-ink)}
+  .node.human .desc{color:#a16207}
+
+  .node.org{border-style:dashed;background:#f8fafc}
+  .node.org .name{font-family:var(--sans);color:#334155}
+  .node.org .tag{border-color:#cbd5e1;background:#fff;color:#64748b}
+
+  .nested{
+    display:inline-flex;align-items:center;gap:4px;margin-top:1px;
+    font:500 10.5px/1.4 var(--mono);color:var(--faint);white-space:nowrap;
+  }
+  .arrow{flex:0 0 auto;color:var(--faint);font-size:12px;padding:0 5px;user-select:none}
+  .pair{display:flex;flex:0 0 auto;align-items:center;gap:4px}
+  .or{font-size:10.5px;color:var(--faint);padding:0 4px;white-space:nowrap}
+  .break{flex-basis:100%;height:0}
+  .after{display:flex;flex:0 0 auto;align-items:center;margin-left:auto}
+
+  /* ---------- outputs ---------- */
+  .outputs{
+    display:flex;flex-wrap:wrap;align-items:center;gap:5px 6px;
+    margin-top:12px;padding-top:9px;border-top:1px dashed var(--line);
+    font-size:11.5px;line-height:1.6;color:var(--muted);
+  }
+  .outputs b{margin-right:4px;color:var(--ink);font-weight:600}
+  .out-sum{font-size:11px;color:var(--muted);margin-right:2px}
+  .out-sum::after{content:"：";color:var(--faint)}
+  html[lang="en"] .out-sum::after{content:":"}
+  .outputs code,.art-files code{
+    font:500 10.5px/1.5 var(--mono);background:#f1f5f9;border:1px solid var(--line);
+    border-radius:5px;padding:1px 5px;color:#334155;
+    overflow-wrap:anywhere;white-space:normal;
+  }
+  .outputs .sep{color:var(--faint);font-size:10px}
+  .out-opt code{border-style:dashed;background:#fff;color:var(--faint)}
+  .chip-wrap{display:inline-flex;align-items:center;gap:1px}
+
+  /* ---------- artifact details ---------- */
+  .artifacts{
+    margin-top:10px;border:1px dashed var(--line-strong);border-radius:10px;
+    background:#fcfcfd;
+  }
+  .artifacts summary{
+    display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;
+    font-size:11.5px;color:var(--muted);list-style:none;
+  }
+  .artifacts summary::-webkit-details-marker{display:none}
+  .artifacts summary::before{
+    content:"";width:0;height:0;flex:0 0 auto;
+    border-left:5px solid var(--faint);border-top:4px solid transparent;border-bottom:4px solid transparent;
+    transition:transform .15s ease;
+  }
+  .artifacts[open] summary::before{transform:rotate(90deg)}
+  .artifacts summary .hint{margin-left:auto;font-size:10.5px;color:var(--faint)}
+  .art-body{padding:2px 12px 12px}
+  .art-row{
+    display:grid;grid-template-columns:172px minmax(0,1fr);gap:10px;
+    padding:6px 0;border-top:1px dashed var(--line);font-size:11px;
+  }
+  .art-row:first-child{border-top:0}
+  .art-skill{font:600 11px/1.6 var(--mono);color:#475569;overflow-wrap:anywhere}
+  .art-files{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;color:var(--muted);line-height:1.6}
+  .ann{
+    font-size:10px;color:var(--faint);border:1px solid var(--line);
+    border-radius:999px;padding:0 6px;background:#fff;white-space:nowrap;
+  }
+  .art-placeholders{
+    margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);
+    font-size:10.5px;line-height:1.6;color:var(--faint);
+  }
+
+  /* ---------- footer ---------- */
+  .crosscut{
+    display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;
+    padding:13px 28px;border-top:1px solid var(--line);
+    font-size:12px;line-height:1.6;color:var(--muted);background:#fff;
+  }
+  .crosscut .k{color:var(--ink);font-weight:600}
+  .crosscut code,.notes code,.art-placeholders code{
+    font:500 11.5px/1 var(--mono);padding:1px 4px;border-radius:4px;
+    background:#eef2f7;color:#334155;
+  }
+  .notes{padding:18px 28px 24px;background:#fafbfc;border-top:1px solid var(--line)}
+  .notes h3{
+    margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--faint);
+  }
+  .notes ol{margin:0;padding-left:20px;font-size:12px;line-height:1.75;color:var(--muted)}
+  .notes li{margin-bottom:5px}
+  .notes li b{color:var(--ink);font-weight:600}
+  sup.fn{font-size:9.5px;color:var(--core);font-weight:600;margin-left:1px}
+
+  body.hide-optional [data-opt]{display:none !important}
+
+  @media (max-width:920px){
+    body{padding:16px 12px 40px}
+    .top{flex-direction:column;padding:22px}
+    .side{align-items:flex-start}
+    .switches{justify-content:flex-start}
+    .phase{grid-template-columns:1fr;gap:12px;padding:20px 22px}
+    .crosscut,.notes{padding-left:22px;padding-right:22px}
+    .art-row{grid-template-columns:1fr;gap:2px}
+  }
+  @media print{
+    body{background:#fff;padding:0}
+    .sheet{border:0;border-radius:0;box-shadow:none}
+    .lang,.switch{display:none}
+    .phase{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="top">
+    <div class="title">
+      <h1 data-i18n="title">AI4SE · SDD 交付流水线</h1>
+      <p data-i18n="subtitle">六阶段规格驱动交付：从项目基线到归档演进。核心 22 个 skill，可选 6 个，人工 Gate 3 个。</p>
+      <div class="stats">
+        <div class="stat"><span class="num">6</span><span class="lbl" data-i18n="stat.stages">阶段</span></div>
+        <div class="stat"><span class="num">28</span><span class="lbl" data-i18n="stat.skills">skill<sup class="fn">4</sup></span></div>
+        <div class="stat"><span class="num">3</span><span class="lbl" data-i18n="stat.gates">人工 Gate</span></div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="zh" class="on" aria-pressed="true">中文</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <div class="legend">
+        <span class="key"><span class="swatch"></span><span data-i18n="legend.core">核心 skill</span></span>
+        <span class="key"><span class="swatch opt"></span><span data-i18n="legend.opt">可选 skill</span></span>
+        <span class="key"><span class="swatch human"></span><span data-i18n="legend.human">人工步骤</span></span>
+        <span class="key"><span class="swatch gate"></span><span data-i18n="legend.gate">人工 Gate</span></span>
+      </div>
+      <div class="switches">
+        <label class="switch">
+          <input type="checkbox" id="optToggle">
+          <span class="track"><span class="thumb"></span></span>
+          <span id="optLabel" data-i18n="toggle.optHide">隐藏可选步骤</span>
+        </label>
+        <label class="switch">
+          <input type="checkbox" id="artToggle">
+          <span class="track"><span class="thumb"></span></span>
+          <span id="artLabel" data-i18n="toggle.artShow">显示产物明细</span>
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <!-- P0 -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="pnum">P0</span>
+      <div>
+        <h2 data-i18n="p0.title">项目基线</h2>
+        <p data-i18n="p0.goal">起点：让 Agent 有上下文。Rules 覆盖分支 / 流水线 / 环境 / IaC。</p>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="flow">
+        <div class="node">
+          <span class="name">repo-understand</span>
+          <span class="desc" data-i18n="d.repoUnderstand">仓库理解（棕地）<sup class="fn">1</sup></span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="name">bootstrap</span>
+          <span class="desc" data-i18n="d.bootstrap">基线布局</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="name">rules-govern</span>
+          <span class="desc" data-i18n="d.rulesGovern">Rules 权威</span>
+        </div>
+        <span class="arrow" data-opt>→</span>
+        <div class="node optional" data-opt>
+          <span class="name">pipeline-iac<span class="tag opt" data-i18n="tag.optional">可选</span></span>
+          <span class="desc" data-i18n="d.pipelineIac">流水线 / IaC 骨架</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="name">quality-checklist</span>
+          <span class="desc" data-i18n="d.qualityP0">P0 DoV</span>
+        </div>
+      </div>
+      <div class="outputs">
+        <b data-i18n="out.label">产出</b>
+        <span class="out-sum" data-i18n="out.sum.p0">（specs 布局 · Rules 载体 · 知识库槽位 · 首个 harness · 可选 CI/IaC）</span>
+        <code>AGENTS.md</code><span class="sep">·</span>
+        <code>docs/knowledge/rules/**</code><span class="sep">·</span>
+        <code>openspec/</code><span class="sep">·</span>
+        <code>scripts/</code><span class="sep">·</span>
+        <span class="out-opt"><code data-i18n="out.ci">CI / IaC</code></span>
+      </div>
+      <details class="artifacts">
+        <summary><span data-i18n="art.summary">产物明细</span><span class="hint" data-i18n="art.hint">按 skill</span></summary>
+        <div class="art-body">
+          <div class="art-row">
+            <div class="art-skill">repo-understand</div>
+            <div class="art-files">
+              <code>docs/ai4se-plugins/&lt;ts&gt;-repo-understand-checkpoints.md</code>
+              <code>&lt;ts&gt;-repo-understand-brief.md</code><span class="ann" data-i18n="a.optional">可选</span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">bootstrap</div>
+            <div class="art-files">
+              <code>AGENTS.md</code><code>README.md</code><code>docs/knowledge/**</code>
+              <code>requirement-workspace/**</code><code>openspec/**</code>
+              <code>scripts/*.sh</code><span class="ann" data-i18n="a.stubs">占位</span>
+              <code>&lt;ts&gt;-bootstrap-checkpoints.md</code>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">rules-govern</div>
+            <div class="art-files">
+              <code>docs/knowledge/rules/**</code><code>.qoder/rules/ai4se/</code>
+              <code>&lt;ts&gt;-rules-govern-checkpoints.md</code>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">pipeline-iac</div>
+            <div class="art-files">
+              <code>&lt;ts&gt;-pipeline-iac-plan.md</code>
+              <code>&lt;ts&gt;-pipeline-iac-checkpoints.md</code>
+              <span class="ann" data-i18n="a.perRules">按 Rules / 模板</span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">quality-checklist</div>
+            <div class="art-files">
+              <code>&lt;ts&gt;-quality-checklist-report.md</code>
+              <code>&lt;ts&gt;-quality-checklist-checkpoints.md</code>
+            </div>
+          </div>
+          <div class="art-placeholders" data-i18n="art.placeholders">命名占位符：<code>&lt;ts&gt;</code> = <code>YYYYMMDD-HHMMSS</code> · <code>&lt;change-id&gt;</code> = kebab-case · <code>&lt;workdir&gt;</code> = <code>requirement-workspace/</code><sup class="fn">7</sup></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- P1 -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="pnum">P1</span>
+      <div>
+        <h2 data-i18n="p1.title">意图与提案</h2>
+        <p data-i18n="p1.goal">模糊意图 → 可判定的 OpenSpec 提案，和/或可管理的故事。</p>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="flow">
+        <div class="node optional" data-opt>
+          <span class="name">explore<span class="tag opt" data-i18n="tag.optional">可选</span></span>
+          <span class="desc" data-i18n="d.explore">意图探索</span>
+        </div>
+        <span class="arrow" data-opt>→</span>
+        <div class="node">
+          <span class="name">pre-spec-workdir</span>
+          <span class="desc" data-i18n="d.preSpecWorkdir">预规格目录</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="name">pre-spec-req</span>
+          <span class="desc" data-i18n="d.preSpecReq">需求结构化 + 12 项 DoR<sup class="fn">2</sup></span>
+          <span class="nested" data-i18n="d.impactNested">↳ impact-analysis（内嵌）</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="pair">
+          <div class="node">
+            <span class="name">proposal-split</span>
+            <span class="desc" data-i18n="d.proposalSplit">OpenSpec 提案包</span>
+          </div>
+          <span class="or" data-i18n="d.or">和/或</span>
+          <div class="node">
+            <span class="name">story-split</span>
+            <span class="desc" data-i18n="d.storySplit">敏捷故事</span>
+          </div>
+        </div>
+        <span class="arrow" data-opt>→</span>
+        <div class="node optional" data-opt>
+          <span class="name">agent-evalset<span class="tag opt" data-i18n="tag.optional">可选</span></span>
+          <span class="desc" data-i18n="d.agentEvalset">Agent 评测集</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="name">quality-checklist</span>
+          <span class="desc" data-i18n="d.qualityP1">P1 DoV</span>
+        </div>
+      </div>
+      <div class="outputs">
+        <b data-i18n="out.label">产出</b>
+        <span class="out-sum" data-i18n="out.sum.p1">（pre-spec workdir · 需求条目 · 影响分析简报 · OpenSpec 提案和/或故事清单）</span>
+        <code>requirement-workspace/requirements/*.md</code><span class="sep">·</span>
+        <code>impact-brief.md</code><span class="sep">·</span>
+        <code>openspec/changes/&lt;change-id&gt;/proposal.md</code><span class="sep">·</span>
+        <code>stories.md</code>
+      </div>
+      <details class="artifacts">
+        <summary><span data-i18n="art.summary">产物明细</span><span class="hint" data-i18n="art.hint">按 skill</span></summary>
+        <div class="art-body">
+          <div class="art-row">
+            <div class="art-skill">explore</div>
+            <div class="art-files"><code>&lt;workdir&gt;/exploration/&lt;ts&gt;-&lt;method&gt;.md</code></div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">pre-spec-workdir</div>
+            <div class="art-files">
+              <code>&lt;workdir&gt;/README.md</code><code>handoff.md</code><code>registry.md</code>
+              <code>intents/</code><code>requirements/</code><code>_templates/</code>
+              <code>analysis/</code><code>ready/</code><code>archive/</code>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">pre-spec-req</div>
+            <div class="art-files">
+              <code>&lt;workdir&gt;/requirements/&lt;REQ-ID&gt;-&lt;slug&gt;.md</code>
+              <code>&lt;workdir&gt;/deep-dive.md</code><span class="ann" data-i18n="a.optional">可选</span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">impact-analysis</div>
+            <div class="art-files"><code>&lt;workdir&gt;/impact-brief.md</code></div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">proposal-split</div>
+            <div class="art-files">
+              <code>openspec/changes/&lt;change-id&gt;/proposal.md</code>
+              <code>.openspec.yaml</code>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">story-split</div>
+            <div class="art-files">
+              <code>&lt;workdir&gt;/stories.md</code>
+              <code>&lt;workdir&gt;/stories/&lt;change-name&gt;.story.md</code><span class="ann" data-i18n="a.optional">可选</span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">agent-evalset</div>
+            <div class="art-files"><code>&lt;workdir&gt;/evaluation/&lt;ts&gt;-agent-eval-scheme.md</code></div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">quality-checklist</div>
+            <div class="art-files">
+              <code>&lt;ts&gt;-quality-checklist-report.md</code>
+              <code>&lt;ts&gt;-quality-checklist-checkpoints.md</code>
+            </div>
+          </div>
+          <div class="art-placeholders" data-i18n="art.placeholders">命名占位符：<code>&lt;ts&gt;</code> = <code>YYYYMMDD-HHMMSS</code> · <code>&lt;change-id&gt;</code> = kebab-case · <code>&lt;workdir&gt;</code> = <code>requirement-workspace/</code><sup class="fn">7</sup></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- P2 -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="pnum">P2</span>
+      <div>
+        <h2 data-i18n="p2.title">规格对齐</h2>
+        <p data-i18n="p2.goal">提案 → 可验证的 Delta Spec，通过 G1。</p>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="flow">
+        <div class="node">
+          <span class="name">delta-craft</span>
+          <span class="desc" data-i18n="d.deltaCraft">Delta Spec + AC/DoV 审查</span>
+        </div>
+        <span class="arrow" data-opt>→</span>
+        <div class="node optional" data-opt>
+          <span class="name">consistency-lint<span class="tag opt" data-i18n="tag.optional">可选</span></span>
+          <span class="desc" data-i18n="d.consistencyP2">一致性检查（phase=p2）</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node human">
+          <span class="name" data-i18n="d.humanName">人工澄清</span>
+          <span class="desc" data-i18n="d.humanDesc">与 IO/SA 澄清残留歧义</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node gate">
+          <span class="name"><span class="diamond">◆</span>g1-decision-record<span class="tag" data-i18n="tag.human">人工</span></span>
+          <span class="desc" data-i18n="d.g1Desc">G1 对齐 · 人工签署<sup class="fn">9</sup></span>
+          <span class="desc sub" data-i18n="d.g1Roles">IO（Intent Owner）+ SA（Spec Architect）</span>
+        </div>
+      </div>
+      <div class="outputs">
+        <b data-i18n="out.label">产出</b>
+        <span class="out-sum" data-i18n="out.sum.p2">（Delta Spec · AC/DoV 评审 · G1 决策记录）</span>
+        <code>openspec/changes/&lt;change-id&gt;/specs/**/spec.md</code><span class="sep">·</span>
+        <code>dov-ac-review.md</code><span class="sep">·</span>
+        <code>g1-decision.md</code>
+      </div>
+      <details class="artifacts">
+        <summary><span data-i18n="art.summary">产物明细</span><span class="hint" data-i18n="art.hint">按 skill</span></summary>
+        <div class="art-body">
+          <div class="art-row">
+            <div class="art-skill">delta-craft</div>
+            <div class="art-files">
+              <code>openspec/changes/&lt;change-id&gt;/specs/&lt;capability&gt;/spec.md</code>
+              <code>dov-ac-review.md</code>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">consistency-lint</div>
+            <div class="art-files">
+              <code>openspec/changes/&lt;change-id&gt;/consistency-lint.md</code>
+              <span class="ann" data-i18n="a.orRules">或 Rules 路径</span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill" data-i18n="d.humanName">人工澄清</div>
+            <div class="art-files"><span class="ann" data-i18n="a.noFile">无本地文件</span></div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">g1-decision-record</div>
+            <div class="art-files">
+              <code>openspec/changes/&lt;change-id&gt;/g1-decision.md</code>
+              <span class="ann" data-i18n="a.orRules">或 Rules 路径</span>
+              <span class="ann" data-i18n="a.replyOnly">可仅回复</span>
+            </div>
+          </div>
+          <div class="art-placeholders" data-i18n="art.placeholders">命名占位符：<code>&lt;ts&gt;</code> = <code>YYYYMMDD-HHMMSS</code> · <code>&lt;change-id&gt;</code> = kebab-case · <code>&lt;workdir&gt;</code> = <code>requirement-workspace/</code><sup class="fn">7</sup></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- P3 -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="pnum">P3</span>
+      <div>
+        <h2 data-i18n="p3.title">设计与拆解</h2>
+        <p data-i18n="p3.goal">规格 → ATDD 设计 + 可执行任务。</p>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="flow">
+        <div class="node">
+          <span class="name">atdd-design</span>
+          <span class="desc" data-i18n="d.atddDesign">API + E2E 验收层 / 门 / fixtures</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="name">task-plan</span>
+          <span class="desc" data-i18n="d.taskPlan">design/tasks + 对齐自检</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="name">quality-checklist</span>
+          <span class="desc" data-i18n="d.qualityP3">P3 DoV</span>
+        </div>
+      </div>
+      <div class="outputs">
+        <b data-i18n="out.label">产出</b>
+        <span class="out-sum" data-i18n="out.sum.p3">（ATDD 设计 · design/tasks · 对齐自检 · P3 检查结果）</span>
+        <span class="chip-wrap"><code>openspec/changes/&lt;change-id&gt;/atdd-design.md</code><sup class="fn">8</sup></span><span class="sep">·</span>
+        <code>design.md</code><span class="sep">·</span>
+        <code>tasks.md</code>
+      </div>
+      <details class="artifacts">
+        <summary><span data-i18n="art.summary">产物明细</span><span class="hint" data-i18n="art.hint">按 skill</span></summary>
+        <div class="art-body">
+          <div class="art-row">
+            <div class="art-skill">atdd-design</div>
+            <div class="art-files">
+              <code>openspec/changes/&lt;change-id&gt;/atdd-design.md</code>
+              <span class="ann" data-i18n="a.suggested">建议约定</span>
+              <span class="ann" data-i18n="a.noFixed">未强制</span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">task-plan</div>
+            <div class="art-files">
+              <code>openspec/changes/&lt;change-id&gt;/design.md</code>
+              <code>openspec/changes/&lt;change-id&gt;/tasks.md</code>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">quality-checklist</div>
+            <div class="art-files">
+              <code>&lt;ts&gt;-quality-checklist-report.md</code>
+              <code>&lt;ts&gt;-quality-checklist-checkpoints.md</code>
+            </div>
+          </div>
+          <div class="art-placeholders" data-i18n="art.placeholders">命名占位符：<code>&lt;ts&gt;</code> = <code>YYYYMMDD-HHMMSS</code> · <code>&lt;change-id&gt;</code> = kebab-case · <code>&lt;workdir&gt;</code> = <code>requirement-workspace/</code><sup class="fn">7</sup></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- P4 -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="pnum">P4</span>
+      <div>
+        <h2 data-i18n="p4.title">实现与验证</h2>
+        <p data-i18n="p4.goal">按 ATDD 实现 → 本地验证 → PR/CI → 部署 → CD → G2。</p>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="flow">
+        <div class="node">
+          <span class="name">atdd-apply</span>
+          <span class="desc" data-i18n="d.atddApply">TDD 实现 + 单测</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="name">local-verify-report</span>
+          <span class="desc" data-i18n="d.localVerify">本地证据；Fail 默认阻断<sup class="fn">3</sup></span>
+          <span class="desc sub" data-i18n="d.waiverRole">豁免：VL（或指定角色）签署</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="name">pr-submit</span>
+          <span class="desc" data-i18n="d.prSubmit">GitLab MR</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="name">pipeline-report</span>
+          <span class="desc" data-i18n="d.pipelineCi">phase=ci</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="name">deploy-artifacts</span>
+          <span class="desc" data-i18n="d.deploy">合并后触发 CD</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="name">pipeline-report</span>
+          <span class="desc" data-i18n="d.pipelineCd">phase=cd</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node gate">
+          <span class="name"><span class="diamond">◆</span>g2-decision-record<span class="tag" data-i18n="tag.human">人工</span></span>
+          <span class="desc" data-i18n="d.g2Desc">G2 验证 · 人工签署<sup class="fn">9</sup></span>
+          <span class="desc sub" data-i18n="d.g2Roles">VL（Verification Lead）</span>
+        </div>
+      </div>
+      <div class="outputs">
+        <b data-i18n="out.label">产出</b>
+        <span class="out-sum" data-i18n="out.sum.p4">（代码增量 · 本地/CI/CD 报告 · PR/部署记录 · G2 决策记录）</span>
+        <code data-i18n="out.code">代码 + 测试</code><span class="sep">·</span>
+        <code>docs/ai4se-plugins/&lt;ts&gt;-local-verify-report.md</code><span class="sep">·</span>
+        <code>docs/ai4se-plugins/&lt;ts&gt;-pipeline-report.md</code><span class="sep">·</span>
+        <code>g2-decision.md</code><span class="sep">·</span>
+        <code>MR URL</code><span class="sep">·</span>
+        <code>deploy run id</code>
+      </div>
+      <details class="artifacts">
+        <summary><span data-i18n="art.summary">产物明细</span><span class="hint" data-i18n="art.hint">按 skill</span></summary>
+        <div class="art-body">
+          <div class="art-row">
+            <div class="art-skill">atdd-apply</div>
+            <div class="art-files">
+              <code>src/**</code><code>tests/**</code>
+              <span class="ann" data-i18n="a.projectNaming">项目命名</span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">local-verify-report</div>
+            <div class="art-files">
+              <code>docs/ai4se-plugins/&lt;ts&gt;-local-verify-report.md</code>
+              <code>&lt;ts&gt;-local-verify-report-checkpoints.md</code>
+              <span class="ann" data-i18n="a.embedded">内嵌 <code>## Waiver</code></span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">pr-submit</div>
+            <div class="art-files"><span class="ann" data-i18n="a.noFile">无本地文件</span><code>MR URL</code></div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">pipeline-report (ci)</div>
+            <div class="art-files">
+              <code>&lt;ts&gt;-pipeline-report.md</code>
+              <code>&lt;ts&gt;-pipeline-report-checkpoints.md</code>
+              <code>openspec/changes/&lt;change-id&gt;/ci-report.md</code><span class="ann" data-i18n="a.optional">可选</span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">deploy-artifacts</div>
+            <div class="art-files"><span class="ann" data-i18n="a.noFile">无本地文件</span><code>run id / URL</code></div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">pipeline-report (cd)</div>
+            <div class="art-files"><code>&lt;ts&gt;-pipeline-report.md</code></div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">g2-decision-record</div>
+            <div class="art-files">
+              <code>openspec/changes/&lt;change-id&gt;/g2-decision.md</code>
+              <span class="ann" data-i18n="a.orRules">或 Rules 路径</span>
+              <span class="ann" data-i18n="a.replyOnly">可仅回复</span>
+            </div>
+          </div>
+          <div class="art-placeholders" data-i18n="art.placeholders">命名占位符：<code>&lt;ts&gt;</code> = <code>YYYYMMDD-HHMMSS</code> · <code>&lt;change-id&gt;</code> = kebab-case · <code>&lt;workdir&gt;</code> = <code>requirement-workspace/</code><sup class="fn">7</sup></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- P5 -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="pnum">P5</span>
+      <div>
+        <h2 data-i18n="p5.title">归档与演进</h2>
+        <p data-i18n="p5.goal">Living Spec 合并、经验沉淀、G3。</p>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="flow">
+        <div class="node">
+          <span class="name">living-merge</span>
+          <span class="desc" data-i18n="d.livingMerge">人工确认后归档 + 知识库更新</span>
+        </div>
+        <span class="arrow" data-opt>→</span>
+        <div class="node optional" data-opt>
+          <span class="name">consistency-lint<span class="tag opt" data-i18n="tag.optional">可选</span></span>
+          <span class="desc" data-i18n="d.consistencyP5">一致性检查（phase=p5）</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node">
+          <span class="name">change-summary</span>
+          <span class="desc" data-i18n="d.changeSummary">执行摘要</span>
+        </div>
+        <span class="arrow" data-opt>→</span>
+        <div class="node optional" data-opt>
+          <span class="name">evolve<span class="tag opt" data-i18n="tag.optional">可选</span></span>
+          <span class="desc" data-i18n="d.evolve">harness / Rules 演进候选</span>
+        </div>
+        <span class="arrow" data-opt>→</span>
+        <div class="node optional" data-opt>
+          <span class="name">followups<span class="tag opt" data-i18n="tag.optional">可选</span></span>
+          <span class="desc" data-i18n="d.followups">技术债 / 业务 backlog</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node gate">
+          <span class="name"><span class="diamond">◆</span>g3-decision-record<span class="tag" data-i18n="tag.human">人工</span></span>
+          <span class="desc" data-i18n="d.g3Desc">G3 归档 · 人工签署<sup class="fn">9</sup></span>
+          <span class="desc sub" data-i18n="d.g3Roles">SA（Spec Architect）</span>
+        </div>
+        <div class="break"></div>
+        <div class="after">
+          <span class="arrow">→</span>
+          <div class="node org">
+            <span class="name"><span data-i18n="d.aoName">AO 资产治理</span><span class="tag" data-i18n="tag.org">组织流程</span></span>
+            <span class="desc" data-i18n="d.aoDesc">收集 AI4SE 改进诉求</span>
+          </div>
+        </div>
+      </div>
+      <div class="outputs">
+        <b data-i18n="out.label">产出</b>
+        <span class="out-sum" data-i18n="out.sum.p5">（Living Spec 更新 · 变更摘要 · G3 决策记录 · 可选 lint / 演进 / 后续项）</span>
+        <code>openspec/specs/**/spec.md</code><span class="sep">·</span>
+        <code>openspec/changes/archive/</code><span class="sep">·</span>
+        <code>change-summary.md</code><span class="sep">·</span>
+        <code>followups.md</code><span class="sep">·</span>
+        <code>g3-decision.md</code>
+      </div>
+      <details class="artifacts">
+        <summary><span data-i18n="art.summary">产物明细</span><span class="hint" data-i18n="art.hint">按 skill</span></summary>
+        <div class="art-body">
+          <div class="art-row">
+            <div class="art-skill">living-merge</div>
+            <div class="art-files">
+              <code>openspec/specs/&lt;capability&gt;/spec.md</code>
+              <code>openspec/changes/archive/</code>
+              <span class="ann" data-i18n="a.ruleScript">KB 脚本由 Rules 指定</span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">consistency-lint</div>
+            <div class="art-files">
+              <code>openspec/changes/&lt;change-id&gt;/consistency-lint.md</code>
+              <span class="ann" data-i18n="a.orRules">或 Rules 路径</span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">change-summary</div>
+            <div class="art-files">
+              <code>openspec/changes/&lt;change-id&gt;/change-summary.md</code>
+              <span class="ann" data-i18n="a.orRules">或 Rules 路径</span>
+              <span class="ann" data-i18n="a.replyOnly">可仅回复</span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">evolve</div>
+            <div class="art-files">
+              <code>docs/ai4se-plugins/&lt;ts&gt;-evolve-proposals.md</code>
+              <code>&lt;ts&gt;-evolve-checkpoints.md</code>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">followups</div>
+            <div class="art-files">
+              <code>openspec/changes/&lt;change-id&gt;/followups.md</code>
+              <span class="ann" data-i18n="a.orRules">或 Rules 路径</span>
+              <span class="ann" data-i18n="a.replyOnly">可仅回复</span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill">g3-decision-record</div>
+            <div class="art-files">
+              <code>openspec/changes/&lt;change-id&gt;/g3-decision.md</code>
+              <span class="ann" data-i18n="a.orRules">或 Rules 路径</span>
+              <span class="ann" data-i18n="a.replyOnly">可仅回复</span>
+            </div>
+          </div>
+          <div class="art-row">
+            <div class="art-skill" data-i18n="d.aoName">AO 资产治理</div>
+            <div class="art-files"><span class="ann" data-i18n="a.noFile">无本地文件</span></div>
+          </div>
+          <div class="art-placeholders" data-i18n="art.placeholders">命名占位符：<code>&lt;ts&gt;</code> = <code>YYYYMMDD-HHMMSS</code> · <code>&lt;change-id&gt;</code> = kebab-case · <code>&lt;workdir&gt;</code> = <code>requirement-workspace/</code><sup class="fn">7</sup></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <div class="crosscut">
+    <span data-i18n="crosscut"><span class="k">横切 skill</span>：<code>repo-understand</code>（P0 起点 · 棕地）与 <code>quality-checklist</code>（P0/P1/P3 链尾 DoV<sup class="fn">5</sup>）被多阶段复用；G1/G2/G3 三个 Gate 禁止模型自动调用，必须由人明确触发并签字<sup class="fn">6</sup>。</span>
+  </div>
+
+  <div class="notes">
+    <h3 data-i18n="notes.title">口径与注脚</h3>
+    <ol>
+      <li data-i18n="n1"><b>repo-understand</b> 仅在棕地作为 P0 第一步；greenfield 直接进入 <code>bootstrap</code>。P1 可在 impact-analysis 前单独重跑以刷新仓库理解。</li>
+      <li data-i18n="n2"><b>12 项 DoR</b>：进入内嵌 impact-analysis 前的硬门只校验 ①–⑧；⑨–⑫ 仅在执行 optional deep-dive 后适用。</li>
+      <li data-i18n="n3"><b>local-verify-report Fail</b> 默认停止后续链路；只有 VL（或指定角色）人工签署的完整 Waiver 可继续。</li>
+      <li data-i18n="n4"><b>28 skill</b> = 22 核心 + 6 可选，不含 6 个 <code>/sdd:pN</code> 阶段门面；按 slash 命令计共 34 条。</li>
+      <li data-i18n="n5"><b>quality-checklist</b> 支持 <code>stage=p0…p5</code>，但默认 recipe 只在 P0 / P1 / P3 链尾调用；P2 / P4 / P5 需要显式补跑。</li>
+      <li data-i18n="n6"><b>G1 / G2 / G3</b> 均为 <code>gate: true</code> + <code>disable-model-invocation: true</code>，禁止模型自动调用，必须由人明确触发并签字。</li>
+      <li data-i18n="n7"><b>命名占位符</b>：<code>&lt;ts&gt;</code> = <code>YYYYMMDD-HHMMSS</code>；<code>&lt;change-id&gt;</code> = kebab-case；<code>&lt;workdir&gt;</code> 默认 <code>requirement-workspace/</code>。项目 Rules 可覆盖报告与决策记录路径。</li>
+      <li data-i18n="n8"><b>atdd-design</b> 没有强制文件名；图中 <code>atdd-design.md</code> 是建议约定，需在项目 Rules 或习惯中固化后才可依赖。</li>
+      <li data-i18n="n9"><b>签署人</b>：G1 双签 = IO（Intent Owner）+ SA（Spec Architect）；G2 单签 = VL（Verification Lead）；G3 单签 = SA（Spec Architect）；P4 Waiver 由 VL（或指定角色）签署。AO（AI4SE Orchestrator）只提交改进诉求，不是签署人。</li>
+    </ol>
+  </div>
+
+</div>
+
+<script>
+  var I18N = {
+    zh: {
+      title: "AI4SE · SDD 交付流水线",
+      subtitle: "六阶段规格驱动交付：从项目基线到归档演进。核心 22 个 skill，可选 6 个，人工 Gate 3 个。",
+      "stat.stages": "阶段",
+      "stat.skills": 'skill<sup class="fn">4</sup>',
+      "stat.gates": "人工 Gate",
+      "legend.core": "核心 skill",
+      "legend.opt": "可选 skill",
+      "legend.human": "人工步骤",
+      "legend.gate": "人工 Gate",
+      "toggle.optHide": "隐藏可选步骤",
+      "toggle.optShow": "显示可选步骤",
+      "toggle.artShow": "显示产物明细",
+      "toggle.artHide": "隐藏产物明细",
+      "p0.title": "项目基线",
+      "p0.goal": "起点：让 Agent 有上下文。Rules 覆盖分支 / 流水线 / 环境 / IaC。",
+      "p1.title": "意图与提案",
+      "p1.goal": "模糊意图 → 可判定的 OpenSpec 提案，和/或可管理的故事。",
+      "p2.title": "规格对齐",
+      "p2.goal": "提案 → 可验证的 Delta Spec，通过 G1。",
+      "p3.title": "设计与拆解",
+      "p3.goal": "规格 → ATDD 设计 + 可执行任务。",
+      "p4.title": "实现与验证",
+      "p4.goal": "按 ATDD 实现 → 本地验证 → PR/CI → 部署 → CD → G2。",
+      "p5.title": "归档与演进",
+      "p5.goal": "Living Spec 合并、经验沉淀、G3。",
+      "d.repoUnderstand": '仓库理解（棕地）<sup class="fn">1</sup>',
+      "d.bootstrap": "基线布局",
+      "d.rulesGovern": "Rules 权威",
+      "d.pipelineIac": "流水线 / IaC 骨架",
+      "d.qualityP0": "P0 DoV",
+      "d.explore": "意图探索",
+      "d.preSpecWorkdir": "预规格目录",
+      "d.preSpecReq": '需求结构化 + 12 项 DoR<sup class="fn">2</sup>',
+      "d.impactNested": "↳ impact-analysis（内嵌）",
+      "d.proposalSplit": "OpenSpec 提案包",
+      "d.storySplit": "敏捷故事",
+      "d.or": "和/或",
+      "d.agentEvalset": "Agent 评测集",
+      "d.qualityP1": "P1 DoV",
+      "d.deltaCraft": "Delta Spec + AC/DoV 审查",
+      "d.consistencyP2": "一致性检查（phase=p2）",
+      "d.humanName": "人工澄清",
+      "d.humanDesc": "与 IO/SA 澄清残留歧义",
+      "d.g1Desc": 'G1 对齐 · 人工签署<sup class="fn">9</sup>',
+      "d.g1Roles": "IO（Intent Owner）+ SA（Spec Architect）",
+      "d.atddDesign": "API + E2E 验收层 / 门 / fixtures",
+      "d.taskPlan": "design/tasks + 对齐自检",
+      "d.qualityP3": "P3 DoV",
+      "d.atddApply": "TDD 实现 + 单测",
+      "d.localVerify": '本地证据；Fail 默认阻断<sup class="fn">3</sup>',
+      "d.prSubmit": "GitLab MR",
+      "d.pipelineCi": "phase=ci",
+      "d.deploy": "合并后触发 CD",
+      "d.pipelineCd": "phase=cd",
+      "d.g2Desc": 'G2 验证 · 人工签署<sup class="fn">9</sup>',
+      "d.g2Roles": "VL（Verification Lead）",
+      "d.livingMerge": "人工确认后归档 + 知识库更新",
+      "d.consistencyP5": "一致性检查（phase=p5）",
+      "d.changeSummary": "执行摘要",
+      "d.evolve": "harness / Rules 演进候选",
+      "d.followups": "技术债 / 业务 backlog",
+      "d.g3Desc": 'G3 归档 · 人工签署<sup class="fn">9</sup>',
+      "d.g3Roles": "SA（Spec Architect）",
+      "d.waiverRole": "豁免：VL（或指定角色）签署",
+      "d.aoName": "AO 资产治理",
+      "d.aoDesc": "收集 AI4SE 改进诉求",
+      "tag.optional": "可选",
+      "tag.human": "人工",
+      "tag.org": "组织流程",
+      "out.label": "产出",
+      "out.code": "代码 + 测试",
+      "out.ci": "CI / IaC",
+      "out.sum.p0": "（specs 布局 · Rules 载体 · 知识库槽位 · 首个 harness · 可选 CI/IaC）",
+      "out.sum.p1": "（pre-spec workdir · 需求条目 · 影响分析简报 · OpenSpec 提案和/或故事清单）",
+      "out.sum.p2": "（Delta Spec · AC/DoV 评审 · G1 决策记录）",
+      "out.sum.p3": "（ATDD 设计 · design/tasks · 对齐自检 · P3 检查结果）",
+      "out.sum.p4": "（代码增量 · 本地/CI/CD 报告 · PR/部署记录 · G2 决策记录）",
+      "out.sum.p5": "（Living Spec 更新 · 变更摘要 · G3 决策记录 · 可选 lint / 演进 / 后续项）",
+      "art.summary": "产物明细",
+      "art.hint": "按 skill",
+      "art.placeholders": '命名占位符：<code>&lt;ts&gt;</code> = <code>YYYYMMDD-HHMMSS</code> · <code>&lt;change-id&gt;</code> = kebab-case · <code>&lt;workdir&gt;</code> = <code>requirement-workspace/</code><sup class="fn">7</sup>',
+      "a.optional": "可选",
+      "a.stubs": "占位",
+      "a.orRules": "或 Rules 路径",
+      "a.replyOnly": "可仅回复",
+      "a.noFile": "无本地文件",
+      "a.noFixed": "未强制",
+      "a.suggested": "建议约定",
+      "a.projectNaming": "项目命名",
+      "a.embedded": '内嵌 <code>## Waiver</code>',
+      "a.perRules": "按 Rules / 模板",
+      "a.ruleScript": "KB 脚本由 Rules 指定",
+      "crosscut": '<span class="k">横切 skill</span>：<code>repo-understand</code>（P0 起点 · 棕地）与 <code>quality-checklist</code>（P0/P1/P3 链尾 DoV<sup class="fn">5</sup>）被多阶段复用；G1/G2/G3 三个 Gate 禁止模型自动调用，必须由人明确触发并签字<sup class="fn">6</sup>。',
+      "notes.title": "口径与注脚",
+      "n1": '<b>repo-understand</b> 仅在棕地作为 P0 第一步；greenfield 直接进入 <code>bootstrap</code>。P1 可在 impact-analysis 前单独重跑以刷新仓库理解。',
+      "n2": '<b>12 项 DoR</b>：进入内嵌 impact-analysis 前的硬门只校验 ①–⑧；⑨–⑫ 仅在执行 optional deep-dive 后适用。',
+      "n3": '<b>local-verify-report Fail</b> 默认停止后续链路；只有 VL（或指定角色）人工签署的完整 Waiver 可继续。',
+      "n4": '<b>28 skill</b> = 22 核心 + 6 可选，不含 6 个 <code>/sdd:pN</code> 阶段门面；按 slash 命令计共 34 条。',
+      "n5": '<b>quality-checklist</b> 支持 <code>stage=p0…p5</code>，但默认 recipe 只在 P0 / P1 / P3 链尾调用；P2 / P4 / P5 需要显式补跑。',
+      "n6": '<b>G1 / G2 / G3</b> 均为 <code>gate: true</code> + <code>disable-model-invocation: true</code>，禁止模型自动调用，必须由人明确触发并签字。',
+      "n7": '<b>命名占位符</b>：<code>&lt;ts&gt;</code> = <code>YYYYMMDD-HHMMSS</code>；<code>&lt;change-id&gt;</code> = kebab-case；<code>&lt;workdir&gt;</code> 默认 <code>requirement-workspace/</code>。项目 Rules 可覆盖报告与决策记录路径。',
+      "n8": '<b>atdd-design</b> 没有强制文件名；图中 <code>atdd-design.md</code> 是建议约定，需在项目 Rules 或习惯中固化后才可依赖。',
+      "n9": '<b>签署人</b>：G1 双签 = IO（Intent Owner）+ SA（Spec Architect）；G2 单签 = VL（Verification Lead）；G3 单签 = SA（Spec Architect）；P4 Waiver 由 VL（或指定角色）签署。AO（AI4SE Orchestrator）只提交改进诉求，不是签署人。'
+    },
+    en: {
+      title: "AI4SE · SDD Delivery Pipeline",
+      subtitle: "Six-stage spec-driven delivery, from project baseline to archive and evolution. 22 core skills, 6 optional, 3 human gates.",
+      "stat.stages": "Stages",
+      "stat.skills": 'skills<sup class="fn">4</sup>',
+      "stat.gates": "Human gates",
+      "legend.core": "Core skill",
+      "legend.opt": "Optional skill",
+      "legend.human": "Human step",
+      "legend.gate": "Human gate",
+      "toggle.optHide": "Hide optional steps",
+      "toggle.optShow": "Show optional steps",
+      "toggle.artShow": "Show artifact details",
+      "toggle.artHide": "Hide artifact details",
+      "p0.title": "Project baseline establishment",
+      "p0.goal": "Starting point: give the agent context. Rules cover branch / pipeline / environment / IaC.",
+      "p1.title": "Intent Discovery and Proposal",
+      "p1.goal": "Fuzzy intent → decidable OpenSpec proposal and/or manageable stories.",
+      "p2.title": "Specification definition and alignment",
+      "p2.goal": "Proposal → verifiable Delta Spec; pass G1.",
+      "p3.title": "Design planning and disassembly",
+      "p3.goal": "Spec → ATDD design + executable tasks.",
+      "p4.title": "Implementation verification and feedback",
+      "p4.goal": "Implement per ATDD → local verify → PR/CI → deploy → CD → G2.",
+      "p5.title": "Precipitation archiving and evolution",
+      "p5.goal": "Living Spec merge, experience capture, and G3.",
+      "d.repoUnderstand": 'Repo understanding (brownfield)<sup class="fn">1</sup>',
+      "d.bootstrap": "Baseline layout",
+      "d.rulesGovern": "Rules authority",
+      "d.pipelineIac": "Pipeline / IaC skeleton",
+      "d.qualityP0": "P0 DoV",
+      "d.explore": "Intent exploration",
+      "d.preSpecWorkdir": "Pre-spec workdir",
+      "d.preSpecReq": 'Structured requirements + 12-item DoR<sup class="fn">2</sup>',
+      "d.impactNested": "↳ impact-analysis (embedded)",
+      "d.proposalSplit": "OpenSpec proposal",
+      "d.storySplit": "Agile stories",
+      "d.or": "and/or",
+      "d.agentEvalset": "Agent evalset",
+      "d.qualityP1": "P1 DoV",
+      "d.deltaCraft": "Delta Spec + AC/DoV review",
+      "d.consistencyP2": "Consistency lint (phase=p2)",
+      "d.humanName": "Human clarify",
+      "d.humanDesc": "Resolve residual ambiguity with IO/SA",
+      "d.g1Desc": 'G1 align · human sign-off<sup class="fn">9</sup>',
+      "d.g1Roles": "IO (Intent Owner) + SA (Spec Architect)",
+      "d.atddDesign": "API + E2E acceptance layers / gates / fixtures",
+      "d.taskPlan": "design/tasks + alignment self-check",
+      "d.qualityP3": "P3 DoV",
+      "d.atddApply": "TDD implementation + unit tests",
+      "d.localVerify": 'Local evidence; Fail blocks by default<sup class="fn">3</sup>',
+      "d.prSubmit": "GitLab MR",
+      "d.pipelineCi": "phase=ci",
+      "d.deploy": "Trigger CD after merge",
+      "d.pipelineCd": "phase=cd",
+      "d.g2Desc": 'G2 verify · human sign-off<sup class="fn">9</sup>',
+      "d.g2Roles": "VL (Verification Lead)",
+      "d.livingMerge": "Human-confirmed archive + KB update",
+      "d.consistencyP5": "Consistency lint (phase=p5)",
+      "d.changeSummary": "Execution summary",
+      "d.evolve": "harness / Rules evolution candidates",
+      "d.followups": "Tech debt / business backlog",
+      "d.g3Desc": 'G3 archive · human sign-off<sup class="fn">9</sup>',
+      "d.g3Roles": "SA (Spec Architect)",
+      "d.waiverRole": "Waiver: VL (or designated role)",
+      "d.aoName": "AO asset governance",
+      "d.aoDesc": "Collect AI4SE improvement asks",
+      "tag.optional": "Optional",
+      "tag.human": "Human",
+      "tag.org": "Org process",
+      "out.label": "Outputs",
+      "out.code": "code + tests",
+      "out.ci": "CI / IaC",
+      "out.sum.p0": "(specs layout · Rules carrier · KB slots · first harness · optional CI/IaC)",
+      "out.sum.p1": "(pre-spec workdir · requirement entries · impact brief · proposal and/or stories)",
+      "out.sum.p2": "(Delta Spec · AC/DoV review · G1 decision)",
+      "out.sum.p3": "(ATDD design · design/tasks · alignment self-check · P3 checklist)",
+      "out.sum.p4": "(code increment · local/CI/CD reports · PR/deploy records · G2 decision)",
+      "out.sum.p5": "(Living Spec update · change summary · G3 decision · optional lint / evolve / follow-ups)",
+      "art.summary": "Artifact details",
+      "art.hint": "by skill",
+      "art.placeholders": 'Placeholders: <code>&lt;ts&gt;</code> = <code>YYYYMMDD-HHMMSS</code> · <code>&lt;change-id&gt;</code> = kebab-case · <code>&lt;workdir&gt;</code> = <code>requirement-workspace/</code><sup class="fn">7</sup>',
+      "a.optional": "optional",
+      "a.stubs": "stubs",
+      "a.orRules": "or Rules path",
+      "a.replyOnly": "reply-only OK",
+      "a.noFile": "no local file",
+      "a.noFixed": "not enforced",
+      "a.suggested": "suggested convention",
+      "a.projectNaming": "project naming",
+      "a.embedded": 'embeds <code>## Waiver</code>',
+      "a.perRules": "per Rules / templates",
+      "a.ruleScript": "KB script per Rules",
+      "crosscut": '<span class="k">Cross-cutting skills</span>: <code>repo-understand</code> (P0 start · brownfield) and <code>quality-checklist</code> (DoV at the end of P0/P1/P3<sup class="fn">5</sup>) are reused across stages; G1/G2/G3 must never be auto-invoked — a human triggers and signs each gate<sup class="fn">6</sup>.',
+      "notes.title": "Notes & conventions",
+      "n1": '<b>repo-understand</b> is the P0 first step only on brownfield; greenfield goes straight to <code>bootstrap</code>. P1 may re-run it before impact-analysis to refresh repo understanding.',
+      "n2": '<b>12-item DoR</b>: the hard gate before embedded impact-analysis checks only ①–⑧; ⑨–⑫ apply only after the optional deep-dive.',
+      "n3": '<b>local-verify-report Fail</b> stops the chain by default; only a complete waiver signed by VL (or a designated role) allows continuation.',
+      "n4": '<b>28 skills</b> = 22 core + 6 optional, excluding the 6 <code>/sdd:pN</code> stage facades; 34 slash commands in total.',
+      "n5": '<b>quality-checklist</b> supports <code>stage=p0…p5</code>, but the default recipes call it only at the end of P0 / P1 / P3; P2 / P4 / P5 require an explicit run.',
+      "n6": '<b>G1 / G2 / G3</b> are <code>gate: true</code> + <code>disable-model-invocation: true</code>; the model must not auto-invoke them — a human triggers and signs each gate.',
+      "n7": '<b>Naming placeholders</b>: <code>&lt;ts&gt;</code> = <code>YYYYMMDD-HHMMSS</code>; <code>&lt;change-id&gt;</code> = kebab-case; <code>&lt;workdir&gt;</code> defaults to <code>requirement-workspace/</code>. Project Rules may override report and decision-record paths.',
+      "n8": '<b>atdd-design</b> has no enforced filename; <code>atdd-design.md</code> in the diagram is a suggested convention and becomes reliable only after it is fixed in Project Rules or team practice.',
+      "n9": '<b>Signatories</b>: G1 dual sign-off = IO (Intent Owner) + SA (Spec Architect); G2 single = VL (Verification Lead); G3 single = SA (Spec Architect); P4 waiver is signed by VL (or a designated role). AO (AI4SE Orchestrator) submits asks only and is not a signer.'
+    }
+  };
+
+  var lang = "zh";
+  var optToggle = document.getElementById("optToggle");
+  var optLabel = document.getElementById("optLabel");
+  var artToggle = document.getElementById("artToggle");
+  var artLabel = document.getElementById("artLabel");
+
+  function t(key) {
+    var table = I18N[lang] || I18N.zh;
+    return table[key] !== undefined ? table[key] : I18N.zh[key];
+  }
+
+  function syncOptLabel() {
+    optLabel.textContent = optToggle.checked ? t("toggle.optShow") : t("toggle.optHide");
+  }
+
+  function syncArtLabel() {
+    artLabel.textContent = artToggle.checked ? t("toggle.artHide") : t("toggle.artShow");
+  }
+
+  function applyLang(next) {
+    lang = next;
+    document.documentElement.lang = next === "zh" ? "zh-CN" : "en";
+    document.title = t("title");
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      var key = el.getAttribute("data-i18n");
+      var value = t(key);
+      if (value !== undefined) el.innerHTML = value;
+    });
+    document.querySelectorAll("[data-lang]").forEach(function (btn) {
+      var on = btn.getAttribute("data-lang") === next;
+      btn.classList.toggle("on", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    syncOptLabel();
+    syncArtLabel();
+    try { localStorage.setItem("sddPipelineLang", next); } catch (e) {}
+  }
+
+  document.querySelectorAll("[data-lang]").forEach(function (btn) {
+    btn.addEventListener("click", function () { applyLang(btn.getAttribute("data-lang")); });
+  });
+
+  optToggle.addEventListener("change", function () {
+    document.body.classList.toggle("hide-optional", optToggle.checked);
+    syncOptLabel();
+  });
+
+  artToggle.addEventListener("change", function () {
+    document.querySelectorAll("details.artifacts").forEach(function (d) {
+      d.open = artToggle.checked;
+    });
+    syncArtLabel();
+  });
+
+  try {
+    var saved = localStorage.getItem("sddPipelineLang");
+    if (saved === "en" || saved === "zh") lang = saved;
+  } catch (e) {}
+  applyLang(lang);
+</script>
+</body>
+</html>
