@@ -5,7 +5,7 @@
   - Living-merge:OpenSpec archive 成功;归档位置 [archive/2026-11-13-refactor-web-ui-with-shadcn](.)
   - Change summary:[change-summary.md](change-summary.md)
   - Archive completeness:3 份 Delta Spec 已合并(`+10 ~0 -0`);新增 `ui-foundation`、`web-app-shell`、`paws-page` 三个 Living Spec;`openspec validate --all --strict` 11/11 通过;活动 change 目录已清空
-  - PR:功能 PR [#10](https://github.com/afs-2026-zha2-group-3/pawtrip/pull/10) 合并 `fb106ca`;归档 PR:本分支 PR(待合并)
+  - PR:功能 PR [#10](https://github.com/afs-2026-zha2-group-3/pawtrip/pull/10) 合并 `fb106ca`;归档 PR [#11](https://github.com/afs-2026-zha2-group-3/pawtrip/pull/11) 合并 `0f84657`
   - KB update:`Skipped (not configured)` —— `scripts/kb-lint.sh` 为占位脚本,未宣称 KB 校验通过
 - Findings:
   - Merge:PR #10 无冲突合并;`main` 历史包含功能、Revision 4 验证、G2 与 CI 报告。
