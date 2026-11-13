@@ -1,35 +1,26 @@
-name: CI
+name: Server CI
 
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'apps/server/**'
+      - '.github/workflows/server.yml'
   push:
     branches: [main]
+    paths:
+      - 'apps/server/**'
+      - '.github/workflows/server.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: server-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  web:
-    name: Web build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - name: Use public npm registry
-        run: npm config set registry https://registry.npmjs.org/
-      - run: npm ci
-      - run: npm run build
-
-  server:
+  test:
     name: Server tests
     runs-on: ubuntu-latest
     steps:
