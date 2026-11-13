@@ -23,6 +23,12 @@ PawTrip 当前只有前端与后端脚手架,尚无任何贯通数据层到页�
 
 - 无。`openspec/specs/` 当前为空,本次为首个 change,所有能力均为新增。
 
+## Non-Goals
+
+- 多语言、问候语管理 UI、用户账户与权限
+- 接口失败 / 超时时的重试、降级与友好错误页(本次仅验收正常路径)
+- 生产部署、CI/CD 与跨域方案(仅开发代理)
+
 ## Impact
 
 - **代码**:
@@ -33,6 +39,6 @@ PawTrip 当前只有前端与后端脚手架,尚无任何贯通数据层到页�
   - `apps/web/src/routes/index.tsx`:替换为问候展示页
 - **依赖**:SQLite JDBC 驱动、Flyway;具体版本与兼容性在实现前按官方文档核实
 - **数据**:本地嵌入式 SQLite 文件,无需独立数据库服务;文件不应提交到 Git
-- **不在范围**:多语言、问候语管理 UI、用户账户与权限、部署与 CI/CD、接口失败态处理
+- **上游 / 下游**:无上游外部系统;下游为 `apps/web` 首页与本地开发者验收流程
 - **风险**:Spring Boot 4.1.2 与 SQLite/Flyway 的兼容性;TanStack Start SSR 期间的相对 URL 请求;种子迁移对已存在数据库文件的幂等性
 - **工作量**:S(约 0.5–1 人日),详见 [impact brief](../../../requirement-workspace/impact-brief.md)

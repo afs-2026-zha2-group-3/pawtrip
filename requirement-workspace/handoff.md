@@ -14,4 +14,4 @@
 
 | requirement | change package | status |
 |---|---|---|
-| REQ-001 | `openspec/changes/hello-world-greeting/` | proposal / specs / design / tasks 已生成 |
+| REQ-001 | `openspec/changes/hello-world-greeting/` | G1 Pass(2026-11-13);可进入 P3 设计阶段 |

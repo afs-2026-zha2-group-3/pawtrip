@@ -1,7 +1,7 @@
 ---
 id: REQ-001
 title: Hello World 首页全链路
-status: ready-for-split
+status: in-change
 discovery: Go (2026-11-13)
 impact: ../impact-brief.md
 deep_dive: ../deep-dive.md
@@ -109,10 +109,8 @@ PawTrip 当前只有脚手架,无业务功能;`openspec/specs/` 为空,本次是
 
 ### Affected Capabilities
 
-- **ADDED** `greeting-api`:后端问候查询接口
-- **ADDED** `greeting-store`:SQLite `greeting` 表与迁移种子
-- **MODIFIED** `web-home`:首页由模板内容改为问候展示
-- **MODIFIED** `web-dev-proxy`:新增 `/api` 开发代理
+- **ADDED** `greeting`:SQLite `greeting` 表、Flyway 种子与 `GET /api/greeting` 查询
+- **ADDED** `home-page`:首页经开发代理请求 `/api/greeting` 并展示 `message`
 
 ### Open Questions
 

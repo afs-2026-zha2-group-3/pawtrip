@@ -25,7 +25,8 @@ PawTrip 目前只有脚手架:`apps/server` 是 Spring Boot 4.1.2 / Java 21 的�
 
 ### 1. 使用嵌入式 SQLite 文件 + Flyway 管理 schema
 
-- 数据源为本地文件,默认路径 `apps/server/data/pawtrip.db`,通过配置项可覆盖;文件加入 `.gitignore`(OQ-1 仍为 deferred,此为实现默认值)。
+- 数据源为本地文件,默认路径 `apps/server/data/pawtrip.db`,通过配置项可覆盖;数据库目录 `apps/server/data/` 加入 `.gitignore`(OQ-1 已确认)。
+- `greeting` 表为最小两列:`id INTEGER PRIMARY KEY`、`message TEXT NOT NULL`(OQ-3 已确认)。
 - `V1__create_greeting.sql` 同时建表与插入种子,保证首次启动即可查询。
 - 备选:内存数据库 H2(不符合“SQLite”约束)、外部数据库(不符合无独立服务的约束),均不采用。
 
@@ -45,7 +46,7 @@ PawTrip 目前只有脚手架:`apps/server` 是 Spring Boot 4.1.2 / Java 21 的�
 - TanStack Start 默认进行服务端渲染;组件在服务端执行时,相对 URL `/api/greeting` 无法直接请求。
 - 因此首页在客户端挂载后通过 `useEffect` 请求同源 `/api/greeting`,拿到 `message` 后再渲染文本。
 - 备选:路由 loader 或 server function;前者仍需处理服务端绝对地址,后者会绕开既有 `/api` 代理契约,均不采用。
-- 初始渲染到数据返回之间不承诺特定 UI;失败态不在本次范围(OQ-2 deferred)。
+- 初始渲染到数据返回之间不承诺特定 UI;失败态不在本次范围(OQ-2 已确认非目标)。
 
 ### 5. 开发期使用 Vite 代理
 
@@ -56,6 +57,13 @@ PawTrip 目前只有脚手架:`apps/server` 是 Spring Boot 4.1.2 / Java 21 的�
 
 - 依赖 Flyway 的迁移历史表保证 V1 只执行一次。
 - 验收应使用全新数据库文件;若本地已有旧文件,需先删除或通过新迁移演进,不在本 change 增加额外逻辑。
+- 备选:应用启动时执行 `INSERT OR IGNORE` 或先查后插;会引入业务代码写种子的额外路径,且无法替代 schema 版本管理,不采用。
+
+### 7. 测试采用后端接口集成测试
+
+- 新增一个后端集成测试,使用临时 SQLite 数据库启动上下文,验证 `GET /api/greeting` 的状态码、`Content-Type` 与响应体;直接覆盖 R1 的兼容性风险。
+- 前端不新增组件测试,首页行为由浏览器端到端验收覆盖(OQ-4 已确认)。
+- 备选:仅依赖构建与手工验收(无法在 CI 中兜底兼容性回归)、前后端都加测试(超出最小范围),均不采用。
 
 ## Risks / Trade-offs
 
