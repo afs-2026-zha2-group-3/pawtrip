@@ -12,11 +12,12 @@ cd apps/server && ./mvnw test
 
 ## Runtime
 
-- `cd apps/server && ./mvnw test`：后端上下文测试与 `GET /api/greeting` 接口验收测试（临时 SQLite）。
+- `cd apps/server && ./mvnw test`：后端上下文、认证与 `GET /api/greeting` 接口验收测试（临时 SQLite）。
 
 ## System
 
-1. 删除 `apps/server/data/pawtrip.db` 后启动后端，确认数据库文件自动创建。
-2. `curl http://localhost:8080/api/greeting` 返回 `200` 与 `{"message":"Hello World"}`。
-3. 启动前端并访问 `http://localhost:3000/`，页面展示同一文本。
-4. 修改数据库 `message` 后刷新首页，确认展示随接口变化；验证后删除数据库文件并重启恢复。
+1. 删除 `apps/server/data/pawtrip.db` 后启动后端，确认数据库文件自动创建且 `app_user` 为空。
+2. 在根目录运行 `npm run seed:users`，确认测试账号写入。
+3. 无 cookie `curl http://localhost:8080/api/greeting` 返回 `401` + `application/problem+json` + `code=UNAUTHENTICATED`。
+4. 使用脚本账号登录后携带会话 cookie 请求 `GET /api/greeting`，返回 `200` 与 `{"message":"Hello World"}`。
+5. 启动前端并访问 `http://localhost:3000/`：未登录跳转 `/login`；登录后展示同一文本且顶部出现“退出登录”。

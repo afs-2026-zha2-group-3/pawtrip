@@ -16,3 +16,4 @@
 |---|---|---|
 | REQ-001 | `openspec/changes/archive/2026-11-13-hello-world-greeting/` | G2 Pass;G3 Pass(SA=Echo Luo);已归档,Living Spec 已合并 |
 | REQ-002 | `openspec/changes/archive/2026-11-13-refactor-data-access-and-query/` | G1 Revision 2 Pass、G2 Pass(IO/SA=Echo Luo)、G3 Pass(SA=Echo Luo);已归档,4 个 Living Spec 已合并 |
+| REQ-003 | `openspec/changes/add-user-login/` | 进行中;P1–P4 完成,G1 Pass(IO/SA=Echo Luo);本地验证 Pass、CI E1 全绿;G2 Pass(VL=Echo Luo);待合并 PR #7 与归档 |

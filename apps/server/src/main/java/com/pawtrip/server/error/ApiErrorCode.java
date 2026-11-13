@@ -6,6 +6,9 @@ public enum ApiErrorCode {
 
 	GREETING_NOT_FOUND(HttpStatus.NOT_FOUND, "Greeting not found"),
 	VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Validation failed"),
+	UNAUTHENTICATED(HttpStatus.UNAUTHORIZED, "Authentication required"),
+	INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "Invalid credentials"),
+	ACCESS_DENIED(HttpStatus.FORBIDDEN, "Access denied"),
 	INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
 
 	private final HttpStatus status;

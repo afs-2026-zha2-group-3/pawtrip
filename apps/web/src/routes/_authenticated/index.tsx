@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { greetingQueryOptions } from "../queries/greeting";
+import { greetingQueryOptions } from "../../queries/greeting";
 
-export const Route = createFileRoute("/")({ component: App });
+export const Route = createFileRoute("/_authenticated/")({ component: App });
 
 function App() {
   const { data } = useQuery(greetingQueryOptions);

@@ -1,7 +1,21 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ThemeToggle from "./ThemeToggle";
+import { authQueryOptions, logout } from "../queries/auth";
 
 export default function Header() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const isClient = typeof window !== "undefined";
+  const auth = useQuery({ ...authQueryOptions, enabled: isClient });
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      queryClient.clear();
+      void navigate({ to: "/login", replace: true });
+    },
+  });
+
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--header-bg)] px-4 backdrop-blur-lg">
       <nav className="page-wrap flex flex-wrap items-center gap-x-3 gap-y-2 py-3 sm:py-4">
@@ -63,6 +77,21 @@ export default function Header() {
           </a>
 
           <ThemeToggle />
+          {auth.isSuccess ? (
+            <button
+              type="button"
+              className="rounded-xl px-2 py-2 text-sm font-semibold text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)] disabled:opacity-60"
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+            >
+              {logoutMutation.isPending ? "Signing out…" : "Log out"}
+            </button>
+          ) : null}
+          {logoutMutation.isError ? (
+            <span className="text-xs font-semibold text-red-600" role="alert">
+              Logout failed
+            </span>
+          ) : null}
         </div>
       </nav>
     </header>
