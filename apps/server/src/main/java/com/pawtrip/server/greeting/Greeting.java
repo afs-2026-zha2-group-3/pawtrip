@@ -1,0 +1,30 @@
+package com.pawtrip.server.greeting;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "greeting")
+public class Greeting {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	private String message;
+
+	protected Greeting() {
+	}
+
+	public Long getId() {
+		return this.id;
+	}
+
+	public String getMessage() {
+		return this.message;
+	}
+
+}
