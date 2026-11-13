@@ -6,8 +6,8 @@
   - local-verify:`docs/ai4se-plugins/20261113-232000-local-verify-report.md`（Overall Pass）
   - pipeline ci:[ci-report.md](ci-report.md)、`docs/ai4se-plugins/20261113-232500-pipeline-report.md`（Overall Pass，E1 全绿）
   - pipeline cd:n/a（仓库无部署流水线，`pipeline-iac` 明确 CD 不在当前范围）
-  - PR:[#4](https://github.com/afs-2026-zha2-group-3/pawtrip/pull/4)，mergeable CLEAN，Server tests / Web build SUCCESS
-  - post-merge CI:待 PR 合并后补充（合并尚未执行）
+  - PR:[#4](https://github.com/afs-2026-zha2-group-3/pawtrip/pull/4)，已合并（merge commit `38ca56b`），合并前 Server tests / Web build SUCCESS
+  - post-merge CI:`38ca56b` 的 Server CI `43453818558` 与 Web CI `43453818694` 均 success
 
 ## Dimension results
 

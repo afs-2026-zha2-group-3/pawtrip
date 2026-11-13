@@ -35,6 +35,8 @@
 | ci | Web build（PR synchronize 重跑） | success | 19s | https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43452259646/job/131977169970 | — |
 | ci | Server tests（最终 head 重跑） | success | 30s | https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43452450966/job/131977844562 | — |
 | ci | Web build（最终 head 重跑） | success | 18s | https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43452450957/job/131977844470 | — |
+| ci | Server tests（合并后 main `38ca56b`） | success | — | https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43453818558 | — |
+| ci | Web build（合并后 main `38ca56b`） | success | — | https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43453818694 | — |
 
 ## 失败详情
 
