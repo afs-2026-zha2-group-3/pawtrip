@@ -107,5 +107,3 @@ npm run preview   # 预览构建产物
 cd apps/server
 mvnw package
 ```
-
-更多约定见 [docs/architecture.md](docs/architecture.md)。

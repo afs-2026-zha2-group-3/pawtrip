@@ -1,3 +1,41 @@
-# External systems knowledge
+---
+id: kb.external.references
+title: Pawtrip external dependencies and docs
+area: external
+---
 
-Access notes for external systems (MCP, APIs, vendors).
+# 三方依赖与外部文档
+
+## Frontend
+
+### Tanstack
+
+Use the repository's installed Intent. If it is unavailable, report the missing dependency instead of downloading a replacement.
+Before editing files for a substantial task:
+
+- Run `npm exec --no -- intent list` from the workspace root to see available local skills.
+- If a listed skill matches the task, run `npm exec --no -- intent load <package>#<skill>` before changing files.
+- Use the loaded `SKILL.md` guidance while making the change.
+- Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
+- Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
+
+## UI
+
+### shadcn/ui
+
+- llm index: https://www.shadcn.com.cn/llms.txt
+- local skill: [`.agents/skills/shadcn/SKILL.md`](../../../.agents/skills/shadcn/SKILL.md)
+
+## Backend
+
+### Spring Boot / Maven
+
+- Spring Boot 文档：https://docs.spring.io/spring-boot/
+- Spring Initializr：https://start.spring.io/
+- Maven Wrapper：https://maven.apache.org/wrapper/
+- 本机 JDK 21（scoop）：`scoop reset corretto21-jdk`
+
+## 相关条目
+
+- [架构概览](../architecture/README.md)
+- [本地环境与常用命令](../operations/README.md)
