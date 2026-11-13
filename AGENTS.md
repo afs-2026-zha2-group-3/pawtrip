@@ -14,7 +14,7 @@ This guide applies to coding agents working in this repository. Read the relevan
 ## Knowledge
 Please refer to the [knowledge base](docs/knowledge/_INDEX.md) for additional information.
 
-进行架构设计或代码编写时, 凡涉及外部库, 必须先通过知识库取得准确的文档, 确认用法后再实施, 不得凭记忆或猜测直接编码。
+进行架构设计或代码编写时, 凡涉及外部库, 必须先通过上述knowledge知识库取得准确的文档, 确认用法后再实施, 不得凭记忆或猜测直接编码。只有knowledge找不到相关文档时，才从web检索文档。
 
 ## Rules pointers
 
