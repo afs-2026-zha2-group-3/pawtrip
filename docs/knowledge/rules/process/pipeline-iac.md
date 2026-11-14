@@ -14,7 +14,7 @@
 ## Rule
 
 1. CI 平台为 GitHub Actions，按应用拆分为两个工作流：`.github/workflows/web.yml` 与 `.github/workflows/server.yml`。不新增第二套 CI 产品（Jenkins、GitLab CI 等），确需引入时必须先在同一变更中修改本规则。
-2. 触发边界：两个工作流均响应发往 `main` 的 pull request 与 `main` 分支的 push，并用 `paths` 限定仅当对应代码、依赖或工作流自身变更时运行。web 监听 `apps/web/**`、根 `package.json`、`package-lock.json`、`.npmrc` 与 `.github/workflows/web.yml`；server 监听 `apps/server/**` 与 `.github/workflows/server.yml`。仅文档类变更（`docs/**`、`openspec/**`、根目录 `*.md` 等）不触发 CI。
+2. 触发边界：两个工作流均响应发往 `main` 的 pull request 创建/重新打开事件，并响应所有分支的 push；均用 `paths` 限定对应代码、依赖或工作流自身变更。PR 事件仅监听 `opened`、`reopened`，用于按 PR 累计变更执行初次检查；后续提交由 push 事件按 push 差异过滤，避免 PR 中已有代码变更导致纯文档提交重复运行 CI。web 监听 `apps/web/**`、根 `package.json`、`package-lock.json`、`.npmrc` 与 `.github/workflows/web.yml`；server 监听 `apps/server/**` 与 `.github/workflows/server.yml`。仅文档类 push（`docs/**`、`openspec/**`、根目录 `*.md` 等）不触发 CI。
 3. CI 阶段与门禁以 `docs/feedback/verification-commands.md` 的命令契约为准：web 工作流执行 `npm ci` 与 `npm run build`；server 工作流在 `apps/server` 执行 `./mvnw -B test`。增删门禁必须同时更新该契约与对应工作流。
 4. runner 使用 GitHub 托管 `ubuntu-latest`，Node 24、Temurin JDK 21，并启用 npm 与 Maven 依赖缓存。`.npmrc` 指向组织内部 Artifactory，托管 runner 不可达，因此公共源覆盖只允许通过 CI 环境变量 `NPM_CONFIG_REGISTRY=https://registry.npmjs.org/`（或 npm 命令参数）设置；`npm config set` 写入用户级配置、优先级低于项目 `.npmrc`，不得用于覆盖，也不得改写仓库 `.npmrc`。
 5. CD 边界：本仓库当前没有部署流水线。发布与部署不属于 CI 范围，须通过 `/sdd:deploy-artifacts` 并取得人工批准；CI 工作流不得持有部署凭据或触发部署。引入部署自动化必须先更新本规则。
@@ -30,7 +30,7 @@
 
 | Check | Blocks |
 |---|---|
-| 两个工作流的 `paths` 过滤保持 web/server 按应用隔离，且文档类变更不触发 CI | pr-merge |
+| 两个工作流保持 web/server 按应用隔离；PR 创建/重新打开时按 PR 变更检查，后续 push 按 push 差异过滤，纯文档 push 不触发 CI | pr-merge |
 | CI 各工作流与 `docs/feedback/verification-commands.md` 一致，且全部通过 | pr-merge |
 | 工作流保持 `permissions: contents: read`、无明文密钥、不包含部署触发 | pr-merge |
 | 新增 CI/CD/IaC 能力已登记在本规则 | pr-merge |

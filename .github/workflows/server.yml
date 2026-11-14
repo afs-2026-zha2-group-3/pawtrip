@@ -3,11 +3,12 @@ name: Server CI
 on:
   pull_request:
     branches: [main]
+    types: [opened, reopened]
     paths:
       - 'apps/server/**'
       - '.github/workflows/server.yml'
   push:
-    branches: [main]
+    branches: ['**']
     paths:
       - 'apps/server/**'
       - '.github/workflows/server.yml'
