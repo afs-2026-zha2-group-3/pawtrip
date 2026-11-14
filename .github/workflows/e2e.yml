@@ -1,0 +1,74 @@
+name: E2E CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened]
+    paths:
+      - 'apps/server/**'
+      - 'apps/web/**'
+      - 'e2e/**'
+      - 'scripts/run-e2e.mjs'
+      - 'scripts/seed-users.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.npmrc'
+      - 'playwright.config.ts'
+      - '.github/workflows/e2e.yml'
+  push:
+    branches: ['**']
+    paths:
+      - 'apps/server/**'
+      - 'apps/web/**'
+      - 'e2e/**'
+      - 'scripts/run-e2e.mjs'
+      - 'scripts/seed-users.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.npmrc'
+      - 'playwright.config.ts'
+      - '.github/workflows/e2e.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Browser E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: apps/server/pom.xml
+      - run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run E2E tests
+        run: npm run test:e2e
+      - name: Upload Playwright diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-e2e-diagnostics
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

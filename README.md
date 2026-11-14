@@ -9,7 +9,7 @@ Cloning does not require access to the author's machine or another private repos
 
 1. Clone your class's `ai4se-baseline` repository and open its root in Qoder or
    GitHub Copilot.
-2. Install Node.js 20.19 or later and Git. For OpenSpec commands, install the
+2. Install Node.js 24 or later and Git. For OpenSpec commands, install the
    matching CLI: `npm install -g @fission-ai/openspec@1.16.1`.
 3. Run `node --test scripts/portability.test.mjs` to check the bundled files.
    Run `openspec --version` to check the separately installed CLI.
@@ -85,3 +85,35 @@ npm run dev
 - 登录:打开 `http://localhost:3000/` 会跳转到 `/login`;使用种子脚本中的账号登录后进入首页。
 - 登出:顶部导航栏“退出登录”;登出后受保护页面会再次跳转 `/login`。
 - 认证使用服务端会话 cookie(`JSESSIONID`),不使用 JWT,也不在浏览器存储中保存认证令牌。
+
+### E2E 测试
+
+E2E 测试需要 Node.js 24+、Java 21+。Node.js 24 是因为账号种子脚本使用内置的 `node:sqlite`。
+
+安装项目 npm 依赖：
+
+```bash
+npm install
+```
+
+`npm install` 只安装 Playwright 测试包，不会下载浏览器。本地有头测试使用机器上已安装的 Google Chrome，不需要安装 Playwright 管理的浏览器。本地有头运行（会打开 Chrome 窗口）：
+
+```bash
+npm run test:e2e:headed
+```
+
+无头运行（与 CI 相同的测试模式）：
+
+```bash
+npm run test:e2e
+```
+
+本地若要运行无头测试，需另行安装 Playwright Chromium：
+
+```bash
+npx playwright install chromium
+```
+
+CI 会自动安装 Chromium 及所需系统依赖。
+
+这两个命令都会自动启动后端和前端、运行测试并清理子进程。每次运行在系统临时目录创建全新的 SQLite 数据库，先执行 Flyway 迁移，再将测试账号写入该库；不会读取、清理或修改 `apps/server/data/pawtrip.db`。测试服务使用独立的 `18080`（后端）和 `3100`（前端）端口；若端口已被占用，命令会失败而不会复用已有服务。Playwright 报告保存在 `playwright-report/`，失败诊断保存在 `test-results/`。

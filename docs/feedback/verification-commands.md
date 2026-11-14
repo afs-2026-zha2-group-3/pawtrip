@@ -5,6 +5,7 @@
 <!-- ai4se-verify-commands -->
 npm run build
 cd apps/server && ./mvnw test
+CI=true npm run test:e2e
 
 ## Static
 
@@ -13,6 +14,7 @@ cd apps/server && ./mvnw test
 ## Runtime
 
 - `cd apps/server && ./mvnw test`：后端上下文、认证与 `GET /api/greeting` 接口验收测试（临时 SQLite）。
+- `CI=true npm run test:e2e`：启动隔离的前后端和临时 SQLite，通过 Playwright Chromium 验收认证浏览器流程；CI 先安装 Chromium 及系统依赖。
 
 ## System
 

@@ -9,7 +9,7 @@ const config = defineConfig({
   resolve: { tsconfigPaths: true },
   server: {
     proxy: {
-      "/api": "http://localhost:8080",
+      "/api": process.env.PAWTRIP_API_PROXY_TARGET ?? "http://localhost:8080",
     },
   },
   plugins: [tailwindcss(), tanstackStart(), viteReact()],
