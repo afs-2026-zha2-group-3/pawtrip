@@ -33,6 +33,17 @@ Before editing files for a substantial task:
 - 依赖版本由 `spring-boot-dependencies:4.1.2` 统一管理。
 - 文档:https://docs.spring.io/spring-boot/
 
+### 地图集成：高德 Web 服务与 Spring REST Client
+
+- 高德 POI 2.0：本项目使用 Web 服务 API 的关键词搜索 `/v5/place/text` 与周边搜索 `/v5/place/around`，均为 GET；高德要求服务端 Key，分页每页 1–25 条，同一查询最多获取 200 条。周边搜索未提供关键词和类型时，默认类型为餐饮、生活服务、商务住宅，默认半径为 5000 米。
+- 高德路线规划 2.0：仅供未来扩展参考，不属于当前实现。接口类型和参数各异；例如驾车路线参数过长时文档要求改用 POST，因此共用传输层不应固化成 POI 专用动态代理。
+- Spring REST Clients：使用 Spring Framework `RestClient` 作为同步、可复用的 HTTP 客户端，不新增第三方客户端依赖；配置连接/读取超时，并在集成边界屏蔽含凭据 URL 和敏感查询参数的底层异常。
+- 文档：
+  - 高德搜索 POI 2.0：https://lbs.amap.com/api/webservice/guide/api-advanced/newpoisearch
+  - 高德路线规划 2.0（未来扩展参考）：https://lbs.amap.com/api/webservice/guide/api/newroute
+  - Spring Framework REST Clients：https://docs.spring.io/spring-framework/reference/integration/rest-clients.html
+  - Spring Boot Externalized Configuration：https://docs.spring.io/spring-boot/reference/features/external-config.html
+
 ### Spring Data JPA / Hibernate / Flyway / SQLite
 
 - `spring-boot-starter-data-jpa`:引入 Spring Data JPA、Hibernate 与事务管理;Hibernate 版本由 Spring Boot BOM 管理(`7.4.13.Final`)。

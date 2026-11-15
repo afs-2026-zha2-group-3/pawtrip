@@ -33,6 +33,23 @@ pawtrip/
 - 数据库：SQLite 文件 `apps/server/data/pawtrip.db`，由 Flyway 迁移建表（`V1` 问候语、`V2` 用户表）；测试账号由种子脚本按需注入
 - 数据库文件属于本地运行产物，已由 `.gitignore` 排除
 
+### 地图集成分层
+
+后端地图能力按应用端口与基础设施适配器组织：
+
+```text
+com.pawtrip.server
+├─ application/
+│  ├─ model/maps/          内部地点搜索请求、分页元数据及原始 POI JSON
+│  └─ port/maps/           应用功能调用的地点搜索端口
+└─ infrastructure/amap/
+   ├─ config/              高德服务端配置（AMAP_API_KEY 等）
+   ├─ transport/           共用同步 HTTP 客户端、凭据注入及安全错误转换
+   └─ api/                 高德具体 API 适配器（当前为 POI 搜索）
+```
+
+依赖方向为应用功能依赖 `application.port.maps`，`infrastructure.amap.api` 实现该端口并依赖共享传输和配置；应用模型不依赖 Controller、HTTP 响应类型或高德传输。POI 搜索仅是内部能力，本次不增加 Controller、`/api/pois/*` 路由或单独的 `poi` 包。高德凭据只从服务端配置读取，缺失时应用仍可启动，实际调用再以类型化错误失败。
+
 ## 运行拓扑
 
 ```text
