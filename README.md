@@ -68,7 +68,7 @@ links for both hosts. Commit the bundled sources and their host projections toge
 npm install
 ```
 
-配置高德 POI 搜索 Key：在仓库根目录创建 `.env` 并设置 `AMAP_API_KEY`，或直接设置进程环境变量。`.env` 已被 Git 忽略，不要提交真实密钥。后端启动时会根据应用产物位置自动查找仓库根目录的 `.env`，不受启动时当前目录影响；进程环境变量 `AMAP_API_KEY` 优先于文件值。没有 `.env` 时后端仍可启动，但实际调用高德 POI 搜索需要配置 Key。
+配置高德 POI 搜索 Key：复制仓库根目录 `.env.example` 为 `.env`，再填写真实的 `AMAP_API_KEY`。`.env` 已被 Git 忽略，不要提交真实密钥。后端启动时会根据应用产物位置自动查找仓库根目录的 `.env`，不受启动时当前目录影响；进程环境变量 `AMAP_API_KEY` 优先于文件值。没有 `.env` 时后端仍可启动，但实际调用高德 POI 搜索需要配置 Key。
 
 如果部署 JAR 位于仓库之外，请在启动进程的环境中设置 `PAWTRIP_ENV_FILE` 为 `.env` 的绝对路径；该变量不能只写在待加载的 `.env` 文件中。
 
