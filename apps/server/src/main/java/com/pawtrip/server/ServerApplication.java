@@ -1,5 +1,6 @@
 package com.pawtrip.server;
 
+import com.pawtrip.server.infrastructure.amap.config.AmapDotenvInitializer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -7,7 +8,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class ServerApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ServerApplication.class, args);
+		SpringApplication application = new SpringApplication(ServerApplication.class);
+		application.addInitializers(new AmapDotenvInitializer());
+		application.run(args);
 	}
 
 }

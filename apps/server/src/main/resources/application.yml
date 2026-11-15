@@ -25,3 +25,9 @@ server:
         http-only: true
         same-site: lax
         secure: false
+
+amap:
+  api-key: ${AMAP_API_KEY:}
+  base-url: https://restapi.amap.com
+  connect-timeout: 2s
+  read-timeout: 5s
