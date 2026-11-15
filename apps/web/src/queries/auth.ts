@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { request } from "../lib/http/request";
 
-export type CurrentUser = { username: string };
+export type CurrentUser = { username: string; role: "USER" | "ADMIN" };
 
 export const authQueryOptions = queryOptions({
   queryKey: ["auth", "me"],

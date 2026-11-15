@@ -1,0 +1,386 @@
+package com.pawtrip.server.location;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.pawtrip.server.application.model.maps.PlaceSearchResult;
+import com.pawtrip.server.application.model.maps.PlaceTypeSearchRequest;
+import com.pawtrip.server.application.port.maps.PlaceSearchPort;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class AdminLocationApiTest {
+
+	private static final Path DB_PATH = Path.of("target", "admin-location-api-test.db");
+	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
+
+	@DynamicPropertySource
+	static void datasourceProperties(DynamicPropertyRegistry registry) {
+		try {
+			Files.deleteIfExists(DB_PATH);
+		}
+		catch (IOException exception) {
+			throw new UncheckedIOException("Failed to reset test database", exception);
+		}
+		registry.add("spring.datasource.url", () -> "jdbc:sqlite:" + DB_PATH + "?foreign_keys=on");
+	}
+
+	@Autowired
+	MockMvc mockMvc;
+
+	@Autowired
+	PawtripLocationRepository locationRepository;
+
+	@Autowired
+	LocationPhotoRepository photoRepository;
+
+	@MockitoBean
+	PlaceSearchPort placeSearchPort;
+
+	@BeforeEach
+	void clearLocations() {
+		this.photoRepository.deleteAll();
+		this.locationRepository.deleteAll();
+	}
+
+	@Test
+	void returnsAdministrativeTreeAndTypeGroups() throws Exception {
+		MvcResult regionsResult = this.mockMvc.perform(get("/api/admin/regions").with(user("admin").roles("ADMIN")))
+				.andExpect(status().isOk())
+				.andReturn();
+		JsonNode regions = JSON_MAPPER.readTree(regionsResult.getResponse().getContentAsString());
+		JsonNode zhejiang = findRegion(regions, "330000");
+		assertThat(zhejiang.path("name").asString()).isEqualTo("浙江省");
+		assertThat(findRegion(zhejiang.path("children"), "330100").path("level").asString()).isEqualTo("city");
+		assertThat(hasProvinceLeaf(regions)).isTrue();
+
+		this.mockMvc.perform(get("/api/admin/location-types").with(user("admin").roles("ADMIN")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].key").value("attraction"))
+				.andExpect(jsonPath("$[0].label").value("景点"))
+				.andExpect(jsonPath("$[0].typeCodes[0]").value("110000"));
+	}
+
+	@Test
+	void amapPageIncludesSavedCandidatesAndCapsReachableCount() throws Exception {
+		this.locationRepository.saveAndFlush(location("poi-saved", "330106", "attraction"));
+		JsonNode savedPoi = JSON_MAPPER.readTree("""
+				{"id":"poi-saved","name":"Saved Park","typecode":"110000","address":"Hangzhou","adcode":"330106","future":{"value":true}}
+				""");
+		JsonNode newPoi = JSON_MAPPER.readTree("""
+				{"id":"poi-new","name":"New Park","typecode":"110000","address":"Hangzhou","adcode":"330106"}
+				""");
+		given(this.placeSearchPort.searchByTypes(any()))
+				.willReturn(new PlaceSearchResult(231, 2, 2, List.of(savedPoi, newPoi)));
+
+		this.mockMvc.perform(get("/api/admin/locations/amap")
+					.with(user("admin").roles("ADMIN"))
+					.param("regionCode", "330100")
+					.param("typeGroup", "attraction")
+					.param("page", "2")
+					.param("pageSize", "2"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.page").value(2))
+				.andExpect(jsonPath("$.pageSize").value(2))
+				.andExpect(jsonPath("$.totalElements").value(200))
+				.andExpect(jsonPath("$.totalPages").value(100))
+				.andExpect(jsonPath("$.hasNext").value(true))
+				.andExpect(jsonPath("$.hasPrevious").value(true))
+				.andExpect(jsonPath("$.items.length()").value(2))
+				.andExpect(jsonPath("$.items[0].poiId").value("poi-saved"))
+				.andExpect(jsonPath("$.items[0].saved").value(true))
+				.andExpect(jsonPath("$.items[0].poi.future.value").value(true))
+				.andExpect(jsonPath("$.items[1].poiId").value("poi-new"))
+				.andExpect(jsonPath("$.items[1].saved").value(false));
+
+		var request = org.mockito.ArgumentCaptor.forClass(PlaceTypeSearchRequest.class);
+		verify(this.placeSearchPort).searchByTypes(request.capture());
+		assertThat(request.getValue().typeCodes()).containsExactly("110000");
+		assertThat(request.getValue().regionCode()).isEqualTo("330100");
+		assertThat(request.getValue().pageNum()).isEqualTo(2);
+		assertThat(request.getValue().pageSize()).isEqualTo(2);
+	}
+
+	@Test
+	void amapRegionMayBeProvinceLeafOrCityAndUnknownFiltersAreRejected() throws Exception {
+		given(this.placeSearchPort.searchByTypes(any()))
+				.willReturn(new PlaceSearchResult(0, 1, 10, List.of()));
+
+		this.mockMvc.perform(get("/api/admin/locations/amap")
+					.with(user("admin").roles("ADMIN"))
+					.param("regionCode", "110000")
+					.param("typeGroup", "attraction"))
+				.andExpect(status().isOk());
+		this.mockMvc.perform(get("/api/admin/locations/amap")
+					.with(user("admin").roles("ADMIN"))
+					.param("regionCode", "330100")
+					.param("typeGroup", "attraction"))
+				.andExpect(status().isOk());
+
+		var request = org.mockito.ArgumentCaptor.forClass(PlaceTypeSearchRequest.class);
+		org.mockito.Mockito.verify(this.placeSearchPort, org.mockito.Mockito.times(2))
+				.searchByTypes(request.capture());
+		assertThat(request.getAllValues()).extracting(PlaceTypeSearchRequest::regionCode)
+				.containsExactly("110000", "330100");
+
+		this.mockMvc.perform(get("/api/admin/locations/amap")
+					.with(user("admin").roles("ADMIN"))
+					.param("regionCode", "999999")
+					.param("typeGroup", "attraction"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+		this.mockMvc.perform(get("/api/admin/locations/amap")
+					.with(user("admin").roles("ADMIN"))
+					.param("typeGroup", "untrusted-type-code"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+		org.mockito.Mockito.verifyNoMoreInteractions(this.placeSearchPort);
+	}
+
+	@Test
+	void savedLocationsUseDatabaseFilteringAndPagingWithoutCallingAmap() throws Exception {
+		this.locationRepository.saveAllAndFlush(List.of(
+				location("poi-hangzhou", "330106", "attraction"),
+				location("poi-ningbo", "330205", "attraction"),
+				location("poi-hefei", "340105", "attraction"),
+				location("poi-hotel", "330106", "hotel")));
+
+		this.mockMvc.perform(get("/api/admin/locations")
+					.with(user("admin").roles("ADMIN"))
+					.param("regionCode", "330000")
+					.param("typeGroup", "attraction")
+					.param("page", "1")
+					.param("pageSize", "1"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.page").value(1))
+				.andExpect(jsonPath("$.pageSize").value(1))
+				.andExpect(jsonPath("$.totalElements").value(2))
+				.andExpect(jsonPath("$.totalPages").value(2))
+				.andExpect(jsonPath("$.hasNext").value(true))
+				.andExpect(jsonPath("$.items[0].poiId").value("poi-hangzhou"));
+
+		this.mockMvc.perform(get("/api/admin/locations")
+					.with(user("admin").roles("ADMIN"))
+					.param("regionCode", "330100")
+					.param("typeGroup", "attraction")
+					.param("page", "1")
+					.param("pageSize", "10"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.totalElements").value(1))
+				.andExpect(jsonPath("$.items[0].poiId").value("poi-hangzhou"));
+
+		verifyNoInteractions(this.placeSearchPort);
+	}
+
+	@Test
+	void firstSavePersistsPhotoSourceUrlWithoutFetchingAndSavedDetailIsDatabaseOnly() throws Exception {
+		given(this.placeSearchPort.getPlaceById("poi-first-save")).willReturn(JSON_MAPPER.readTree("""
+				{"id":"poi-first-save","name":"Lake Park","typecode":"110201","address":"Hangzhou","location":"120.1,30.2","adcode":"330106","business":{"rating":"4.8","future":{"open":true}},"photos":[{"title":"Main gate","url":"https://img.example.test/gate.jpg","future":{"rank":3}}],"future_field":{"retained":true}}
+				"""));
+
+		this.mockMvc.perform(post("/api/admin/locations")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"poiId":"poi-first-save","typeGroup":"attraction","minVisitHours":2,"maxVisitHours":5}
+						"""))
+				.andExpect(status().isCreated())
+				.andExpect(header().string("Location", "/api/admin/locations/poi-first-save"))
+				.andExpect(jsonPath("$.poi.future_field.retained").value(true))
+				.andExpect(jsonPath("$.business.future.open").value(true))
+				.andExpect(jsonPath("$.minVisitHours").value(2))
+				.andExpect(jsonPath("$.photos.length()").value(1))
+				.andExpect(jsonPath("$.photos[0].sourceUrl").value("https://img.example.test/gate.jpg"))
+				.andExpect(jsonPath("$.photos[0].metadata.future.rank").value(3));
+
+		this.mockMvc.perform(get("/api/admin/locations/poi-first-save").with(user("admin").roles("ADMIN")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.poiId").value("poi-first-save"))
+				.andExpect(jsonPath("$.business.rating").value("4.8"))
+				.andExpect(jsonPath("$.photos[0].metadata.title").value("Main gate"));
+
+		this.mockMvc.perform(get("/api/admin/locations/poi-first-save/photos/1")
+					.with(user("admin").roles("ADMIN")))
+				.andExpect(status().isNotFound());
+		this.mockMvc.perform(post("/api/admin/locations/poi-first-save/photos/retry")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf()))
+				.andExpect(status().isNotFound());
+
+		verify(this.placeSearchPort).getPlaceById("poi-first-save");
+		org.mockito.Mockito.verifyNoMoreInteractions(this.placeSearchPort);
+	}
+
+
+	@Test
+	void upstreamDetailFailureLeavesNoPartialLocation() throws Exception {
+		given(this.placeSearchPort.getPlaceById("poi-failed-save"))
+				.willThrow(new com.pawtrip.server.application.model.maps.PlaceSearchException(
+						com.pawtrip.server.application.model.maps.PlaceSearchException.Code.UPSTREAM_FAILURE,
+						"sensitive upstream message"));
+
+		this.mockMvc.perform(post("/api/admin/locations")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"poiId":"poi-failed-save","typeGroup":"attraction"}
+						"""))
+				.andExpect(status().isBadGateway())
+				.andExpect(jsonPath("$.code").value("UPSTREAM_FAILURE"))
+				.andExpect(jsonPath("$.detail").value("Map service request failed"));
+
+		assertThat(this.locationRepository.existsByPoiId("poi-failed-save")).isFalse();
+		assertThat(this.photoRepository.count()).isZero();
+	}
+
+	@Test
+	void duplicateCreateConflictsAndInvalidVisitHoursAreRejectedBeforeAmapCall() throws Exception {
+		this.locationRepository.saveAndFlush(location("poi-already-saved", null, "attraction"));
+		this.mockMvc.perform(post("/api/admin/locations")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"poiId":"poi-already-saved","typeGroup":"attraction"}
+						"""))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("LOCATION_CONFLICT"));
+
+		this.mockMvc.perform(post("/api/admin/locations")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"poiId":"poi-negative-hours","typeGroup":"attraction","minVisitHours":-1}
+						"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+		this.mockMvc.perform(post("/api/admin/locations")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"poiId":"poi-inverted-hours","typeGroup":"attraction","minVisitHours":5,"maxVisitHours":2}
+						"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+		verifyNoInteractions(this.placeSearchPort);
+	}
+
+	@Test
+	void editingKeepsDatabasePageOrderAndDoesNotCallAmap() throws Exception {
+		this.locationRepository.saveAllAndFlush(List.of(
+				location("poi-order-1", null, "attraction"),
+				location("poi-order-2", null, "attraction"),
+				location("poi-order-3", null, "attraction")));
+
+		this.mockMvc.perform(get("/api/admin/locations")
+					.with(user("admin").roles("ADMIN"))
+					.param("typeGroup", "attraction")
+					.param("page", "2")
+					.param("pageSize", "1"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items[0].poiId").value("poi-order-2"))
+				.andExpect(jsonPath("$.totalElements").value(3));
+
+		this.mockMvc.perform(patch("/api/admin/locations/poi-order-2")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"minVisitHours":3,"maxVisitHours":4}
+						"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.minVisitHours").value(3))
+				.andExpect(jsonPath("$.maxVisitHours").value(4));
+
+		this.mockMvc.perform(get("/api/admin/locations")
+					.with(user("admin").roles("ADMIN"))
+					.param("typeGroup", "attraction")
+					.param("page", "2")
+					.param("pageSize", "1"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items[0].poiId").value("poi-order-2"))
+				.andExpect(jsonPath("$.totalElements").value(3))
+				.andExpect(jsonPath("$.page").value(2));
+
+		verifyNoInteractions(this.placeSearchPort);
+	}
+
+	@Test
+	void rejectsInvalidPagination() throws Exception {
+		this.mockMvc.perform(get("/api/admin/locations/amap")
+					.with(user("admin").roles("ADMIN"))
+					.param("typeGroup", "attraction")
+					.param("page", "9")
+					.param("pageSize", "25"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+		verifyNoInteractions(this.placeSearchPort);
+	}
+
+	private static boolean hasProvinceLeaf(JsonNode regions) {
+		for (JsonNode region : regions) {
+			if ("province".equals(region.path("level").asString()) && region.path("children").isEmpty()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static JsonNode findRegion(JsonNode regions, String adcode) {
+		for (JsonNode region : regions) {
+			if (adcode.equals(region.path("adcode").asString())) {
+				return region;
+			}
+		}
+		throw new AssertionError("Region not found: " + adcode);
+	}
+
+	private static PawtripLocation location(String poiId, String regionCode, String typeGroup) {
+		return new PawtripLocation(
+				poiId,
+				poiId,
+				typeGroup.equals("attraction") ? "110000" : "050000",
+				typeGroup,
+				null,
+				null,
+				null,
+				regionCode,
+				"{}",
+				"{}",
+				null,
+				null);
+	}
+}

@@ -70,6 +70,8 @@ npm install
 
 配置高德 POI 搜索 Key：复制仓库根目录 `.env.example` 为 `.env`，再填写真实的 `AMAP_API_KEY`。`.env` 已被 Git 忽略，不要提交真实密钥。后端启动时会根据应用产物位置自动查找仓库根目录的 `.env`，不受启动时当前目录影响；进程环境变量 `AMAP_API_KEY` 优先于文件值。没有 `.env` 时后端仍可启动，但实际调用高德 POI 搜索需要配置 Key。
 
+图片下载仅允许 HTTPS 且默认精确匹配 `store.is.autonavi.com`，同时限制重定向次数、连接/读取超时及单张大小（默认 5 MiB）。若高德返回的照片使用其他已确认的官方图片 host，可通过 `location.images.allowed-hosts` 配置精确 host 列表；不要配置通配符或未验证的域名。
+
 如果部署 JAR 位于仓库之外，请在启动进程的环境中设置 `PAWTRIP_ENV_FILE` 为 `.env` 的绝对路径；该变量不能只写在待加载的 `.env` 文件中。
 
 按顺序在两个终端启动后端与前端:
@@ -83,10 +85,10 @@ cd apps/server
 npm run dev
 ```
 
-- 重置数据库:停止后端,删除 `apps/server/data/pawtrip.db`,重新启动。Flyway 会依次执行 `V1`(问候语)与 `V2`(用户表);迁移不注入任何账号。若本地已有旧版 `V2` 记录并出现 Flyway 校验失败,同样按此方式重置。
-- 注入本地/测试账号:后端首次启动、`app_user` 表创建后,在根目录运行 `npm run seed:users`。账号与密码集中定义在 `scripts/seed-users.mjs`,可自行增删;脚本以 bcrypt 哈希幂等写入,重复运行不会产生重复账号。
+- 重置数据库:停止后端,删除 `apps/server/data/pawtrip.db`,重新启动。Flyway 会依次执行所有版本化迁移,只创建/更新 schema 并导入固定行政区数据,不会创建账号。已有 V2 数据升级时,V3 为 `app_user.role` 设置默认 `USER`,保留原账号;若确实遇到旧版 V2 校验失败,先备份后再按需重置数据库。
+- 注入本地/测试账号:后端首次启动、Flyway 完成迁移后,在根目录运行 `npm run seed:users`。脚本通过 bcrypt 哈希并按用户名幂等 upsert 账号和角色。默认普通账号为 `demo` / `pawtrip-demo` 与 `tester` / `pawtrip-test`;管理员开发/测试账号为 `admin` / `pawtrip-admin` 与 `admin-tester` / `pawtrip-admin-test`。这些凭据仅供本地开发与测试,不得用于其他环境。
 - 指定其他数据库:`npm run seed:users -- <db-path>` 或设置 `SEED_DB` 环境变量。
-- 登录:打开 `http://localhost:3000/` 会跳转到 `/login`;使用种子脚本中的账号登录后进入首页。
+- 登录:打开 `http://localhost:3000/` 会跳转到 `/login`;使用种子脚本中的普通或管理员账号登录后进入首页。
 - 登出:顶部导航栏“退出登录”;登出后受保护页面会再次跳转 `/login`。
 - 认证使用服务端会话 cookie(`JSESSIONID`),不使用 JWT,也不在浏览器存储中保存认证令牌。
 

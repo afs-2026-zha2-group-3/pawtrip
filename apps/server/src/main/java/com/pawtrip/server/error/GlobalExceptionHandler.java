@@ -1,5 +1,6 @@
 package com.pawtrip.server.error;
 
+import com.pawtrip.server.application.model.maps.PlaceSearchException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,25 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	ResponseEntity<ProblemDetail> handleApiException(ApiException exception, HttpServletRequest request) {
 		ProblemDetail problem = problem(exception.getCode(), exception.getMessage(), request);
 		return ResponseEntity.status(exception.getCode().getStatus())
+				.contentType(MediaType.APPLICATION_PROBLEM_JSON)
+				.body(problem);
+	}
+
+	@ExceptionHandler(PlaceSearchException.class)
+	ResponseEntity<ProblemDetail> handlePlaceSearchException(PlaceSearchException exception,
+			HttpServletRequest request) {
+		ApiErrorCode code = switch (exception.code()) {
+			case INVALID_ARGUMENT -> ApiErrorCode.VALIDATION_ERROR;
+			case NOT_FOUND -> ApiErrorCode.PLACE_NOT_FOUND;
+			case MISSING_CONFIGURATION, UPSTREAM_FAILURE -> ApiErrorCode.UPSTREAM_FAILURE;
+		};
+		String detail = switch (exception.code()) {
+			case INVALID_ARGUMENT -> "Invalid place search request";
+			case NOT_FOUND -> "AMap POI was not found";
+			case MISSING_CONFIGURATION, UPSTREAM_FAILURE -> "Map service request failed";
+		};
+		ProblemDetail problem = problem(code, detail, request);
+		return ResponseEntity.status(code.getStatus())
 				.contentType(MediaType.APPLICATION_PROBLEM_JSON)
 				.body(problem);
 	}

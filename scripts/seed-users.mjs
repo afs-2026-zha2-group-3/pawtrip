@@ -7,8 +7,10 @@ import bcrypt from "bcryptjs";
 
 // Local/test accounts only. Do not reuse these credentials outside development.
 const accounts = [
-	{ username: "demo", password: "pawtrip-demo", enabled: true },
-	{ username: "tester", password: "pawtrip-test", enabled: true },
+	{ username: "demo", password: "pawtrip-demo", enabled: true, role: "USER" },
+	{ username: "tester", password: "pawtrip-test", enabled: true, role: "USER" },
+	{ username: "admin", password: "pawtrip-admin", enabled: true, role: "ADMIN" },
+	{ username: "admin-tester", password: "pawtrip-admin-test", enabled: true, role: "ADMIN" },
 ];
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -35,19 +37,20 @@ if (!hasTable) {
 }
 
 const upsert = db.prepare(`
-	INSERT INTO app_user (username, password_hash, enabled)
-	VALUES (?, ?, ?)
+	INSERT INTO app_user (username, password_hash, enabled, role)
+	VALUES (?, ?, ?, ?)
 	ON CONFLICT(username) DO UPDATE SET
 		password_hash = excluded.password_hash,
-		enabled = excluded.enabled
+		enabled = excluded.enabled,
+		role = excluded.role
 `);
 
 db.exec("BEGIN");
 try {
-	for (const { username, password, enabled } of accounts) {
+	for (const { username, password, enabled, role } of accounts) {
 		const passwordHash = bcrypt.hashSync(password, 10);
-		upsert.run(username, passwordHash, enabled ? 1 : 0);
-		console.log(`Seeded ${username} (enabled=${enabled})`);
+		upsert.run(username, passwordHash, enabled ? 1 : 0, role);
+		console.log(`Seeded ${username} (enabled=${enabled}, role=${role})`);
 	}
 	db.exec("COMMIT");
 } catch (error) {

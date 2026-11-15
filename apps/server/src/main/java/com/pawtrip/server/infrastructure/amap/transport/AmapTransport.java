@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import tools.jackson.databind.JsonNode;
@@ -18,7 +19,7 @@ public class AmapTransport {
 	private final RestClient restClient;
 	private final AmapProperties properties;
 
-	public AmapTransport(RestClient amapRestClient, AmapProperties properties) {
+	public AmapTransport(@Qualifier("amapRestClient") RestClient amapRestClient, AmapProperties properties) {
 		this.restClient = amapRestClient;
 		this.properties = properties;
 	}

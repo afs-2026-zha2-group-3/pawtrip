@@ -50,6 +50,10 @@ com.pawtrip.server
 
 依赖方向为应用功能依赖 `application.port.maps`，`infrastructure.amap.api` 实现该端口并依赖共享传输和配置；应用模型不依赖 Controller、HTTP 响应类型或高德传输。POI 搜索仅是内部能力，本次不增加 Controller、`/api/pois/*` 路由或单独的 `poi` 包。高德凭据只从服务端配置读取，缺失时应用仍可启动，实际调用再以类型化错误失败。
 
+### 地点管理功能模块
+
+`com.pawtrip.server.location` 是地点管理功能模块，包含管理员 API、应用服务、地点/行政区/照片持久化实体及 Spring Data 仓库。`AdminLocationController` 只依赖地点管理应用服务；应用服务依赖仓库和 `application.port.maps.PlaceSearchPort`，不得直接依赖 `infrastructure.amap` 实现。管理 API 位于 `/api/admin/**`，由 Spring Security 在服务端要求 `ADMIN`。高德候选查询调用地图端口；已保存地点查询只访问数据库。
+
 ## 运行拓扑
 
 ```text

@@ -15,6 +15,7 @@ public class PlaceSearchException extends RuntimeException {
 
 	public enum Code {
 		INVALID_ARGUMENT,
+		NOT_FOUND,
 		MISSING_CONFIGURATION,
 		UPSTREAM_FAILURE
 	}

@@ -2,7 +2,7 @@ spring:
   application:
     name: pawtrip-server
   datasource:
-    url: jdbc:sqlite:data/pawtrip.db
+    url: jdbc:sqlite:data/pawtrip.db?foreign_keys=on
     driver-class-name: org.sqlite.JDBC
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
@@ -31,3 +31,5 @@ amap:
   base-url: https://restapi.amap.com
   connect-timeout: 2s
   read-timeout: 5s
+
+
