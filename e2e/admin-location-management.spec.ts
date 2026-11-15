@@ -1,0 +1,536 @@
+import { expect, test, type Page, type Route } from "@playwright/test";
+
+async function mockUser(page: Page, role: "USER" | "ADMIN" | null) {
+  await page.route("**/api/auth/me", async (route) => {
+    if (role === null) {
+      await route.fulfill({
+        status: 401,
+        contentType: "application/problem+json",
+        body: JSON.stringify({
+          status: 401,
+          title: "Unauthorized",
+          detail: "Authentication is required.",
+          code: "UNAUTHENTICATED",
+        }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      headers: { "Set-Cookie": "XSRF-TOKEN=e2e-token; Path=/; SameSite=Lax" },
+      json: { username: role.toLowerCase(), role },
+    });
+  });
+}
+
+async function mockAdminLocationLists(page: Page) {
+  const listRequests = { amap: 0, saved: 0 };
+  page.on("request", (request) => {
+    const pathname = new URL(request.url()).pathname;
+    if (pathname === "/api/admin/locations/amap") listRequests.amap += 1;
+    if (pathname === "/api/admin/locations") listRequests.saved += 1;
+  });
+
+  await page.route("**/api/admin/regions", async (route) => {
+    await route.fulfill({
+      json: [
+        {
+          adcode: "110000",
+          name: "北京市",
+          level: "PROVINCE",
+          children: [],
+        },
+        {
+          adcode: "320000",
+          name: "江苏省",
+          level: "PROVINCE",
+          children: [
+            {
+              adcode: "320100",
+              name: "南京市",
+              level: "CITY",
+              children: [],
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  await page.route("**/api/admin/location-types", async (route) => {
+    await route.fulfill({
+      json: [{ key: "attraction", label: "景点", typeCodes: ["110000"] }],
+    });
+  });
+
+  await page.route(/\/api\/admin\/locations\/amap(?:\?.*)?$/, async (route) => {
+    if (route.request().method() !== "GET") {
+      await route.fallback();
+      return;
+    }
+    await fulfillAmapPage(route);
+  });
+
+  await page.route(/\/api\/admin\/locations(?:\?.*)?$/, async (route) => {
+    if (route.request().method() !== "GET") {
+      await route.fallback();
+      return;
+    }
+    await fulfillSavedPage(route);
+  });
+
+  return listRequests;
+}
+
+async function fulfillAmapPage(route: Route) {
+  const url = new URL(route.request().url());
+  const pageNumber = Number(url.searchParams.get("page") ?? "1");
+  const regionCode = url.searchParams.get("regionCode");
+  const regionName = regionCode === "320100"
+    ? "南京市"
+    : regionCode === "110000" ? "北京市" : "全部地区";
+  const items = pageNumber === 1
+    ? [
+        {
+          poiId: "candidate-saved",
+          name: `${regionName}已保存景点`,
+          typeCode: "110000",
+          address: "南京市中山路 1 号",
+          location: "118.78,32.04",
+          regionCode,
+          saved: true,
+          poi: {},
+        },
+        {
+          poiId: "candidate-new",
+          name: `${regionName}未保存景点`,
+          typeCode: "110000",
+          address: "南京市中山路 2 号",
+          location: "118.79,32.05",
+          regionCode,
+          saved: false,
+          poi: {},
+        },
+      ]
+    : [
+        {
+          poiId: "candidate-page-two",
+          name: `${regionName}第二页景点`,
+          typeCode: "110000",
+          address: "南京市中山路 3 号",
+          location: "118.80,32.06",
+          regionCode,
+          saved: false,
+          poi: {},
+        },
+      ];
+
+  await route.fulfill({
+    json: {
+      items,
+      page: pageNumber,
+      pageSize: 10,
+      totalElements: 15,
+      totalPages: 2,
+      hasNext: pageNumber === 1,
+      hasPrevious: pageNumber > 1,
+    },
+  });
+}
+
+async function selectNanjingCity(page: Page) {
+  await page.getByRole("button", { name: "城市筛选" }).click();
+  const jiangsuProvince = page.locator("summary").filter({ hasText: "江苏省" });
+  await expect(jiangsuProvince).toBeVisible();
+  await expect(page.getByRole("button", { name: "南京市", exact: true })).toBeHidden();
+  await jiangsuProvince.click();
+  await expect(page.getByRole("button", { name: "南京市", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "南京市", exact: true }).click();
+}
+
+async function fulfillSavedPage(route: Route) {
+  const url = new URL(route.request().url());
+  const pageNumber = Number(url.searchParams.get("page") ?? "1");
+  const regionCode = url.searchParams.get("regionCode");
+  const regionName = regionCode === "320100"
+    ? "南京市"
+    : regionCode === "110000" ? "北京市" : "全部地区";
+  const items = pageNumber === 1
+    ? [
+        {
+          poiId: "saved-one",
+          name: `${regionName}Pawtrip地点一`,
+          typeCode: "110000",
+          typeGroup: "attraction",
+          address: "南京市中山路 1 号",
+          longitude: 118.78,
+          latitude: 32.04,
+          regionCode,
+          minVisitHours: 1,
+          maxVisitHours: 3,
+        },
+      ]
+    : [
+        {
+          poiId: "saved-two",
+          name: `${regionName}Pawtrip地点二`,
+          typeCode: "110000",
+          typeGroup: "attraction",
+          address: "南京市中山路 2 号",
+          longitude: 118.79,
+          latitude: 32.05,
+          regionCode,
+          minVisitHours: null,
+          maxVisitHours: null,
+        },
+      ];
+
+  await route.fulfill({
+    json: {
+      items,
+      page: pageNumber,
+      pageSize: 10,
+      totalElements: 11,
+      totalPages: 2,
+      hasNext: pageNumber === 1,
+      hasPrevious: pageNumber > 1,
+    },
+  });
+}
+
+test("ADMIN sees the location tab and can filter and paginate both server tables", async ({
+  page,
+}) => {
+  await mockUser(page, "ADMIN");
+  const listRequests = await mockAdminLocationLists(page);
+
+  await page.goto("/");
+  const navigationTab = page.getByRole("tab", { name: "地点管理" });
+  await expect(navigationTab).toBeVisible();
+  await navigationTab.click();
+
+  await expect(page).toHaveURL(/\/admin\/locations$/);
+  await expect(page.locator("main").getByRole("heading", { name: "地点管理" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "所有地点" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "pawtrip地点" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "地点名称" })).toBeVisible();
+  await expect(page.getByText("请选择城市后查询")).toBeVisible();
+  expect(listRequests.amap).toBe(0);
+  await expect(page.getByRole("combobox", { name: "地点类型筛选" })).toContainText("景点");
+
+  const firstAmapPage = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/admin/locations/amap" && url.searchParams.get("page") === "1";
+  });
+  await selectNanjingCity(page);
+  const firstAmapUrl = new URL((await firstAmapPage).url());
+  expect(firstAmapUrl.searchParams.get("typeGroup")).toBe("attraction");
+  expect(firstAmapUrl.searchParams.get("regionCode")).toBe("320100");
+  await expect(page.getByRole("cell", { name: "南京市已保存景点", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "已添加到 Pawtrip" })).toBeVisible();
+
+  const amapSecondPage = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/admin/locations/amap" && url.searchParams.get("page") === "2";
+  });
+  await page.getByRole("button", { name: "下一页" }).click();
+  expect(new URL((await amapSecondPage).url()).searchParams.get("page")).toBe("2");
+  await expect(page.getByRole("cell", { name: "南京市第二页景点", exact: true })).toBeVisible();
+
+  const filteredAmapPage = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/admin/locations/amap"
+      && url.searchParams.get("regionCode") === "110000"
+      && url.searchParams.get("page") === "1";
+  });
+  await page.getByRole("button", { name: "城市筛选" }).click();
+  await page.getByRole("button", { name: "北京市", exact: true }).click();
+  expect(new URL((await filteredAmapPage).url()).searchParams.get("regionCode")).toBe("110000");
+  await expect(page.getByRole("cell", { name: "北京市未保存景点", exact: true })).toBeVisible();
+
+  const savedFirstPage = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/admin/locations"
+      && url.searchParams.get("page") === "1"
+      && url.searchParams.get("regionCode") === "110000";
+  });
+  await page.getByRole("tab", { name: "pawtrip地点" }).click();
+  await savedFirstPage;
+  await expect(page.getByRole("columnheader", { name: "最少游玩时间（小时）" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "北京市Pawtrip地点一", exact: true })).toBeVisible();
+
+  const savedSecondPage = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/admin/locations" && url.searchParams.get("page") === "2";
+  });
+  await page.getByRole("button", { name: "下一页" }).click();
+  expect(new URL((await savedSecondPage).url()).searchParams.get("page")).toBe("2");
+  await expect(page.getByRole("cell", { name: "北京市Pawtrip地点二", exact: true })).toBeVisible();
+});
+
+test("Amap pagination continues when the API count only reflects a full current page", async ({
+  page,
+}) => {
+  await mockUser(page, "ADMIN");
+  await mockAdminLocationLists(page);
+  await page.route(/\/api\/admin\/locations\/amap(?:\?.*)?$/, async (route) => {
+    const url = new URL(route.request().url());
+    const pageNumber = Number(url.searchParams.get("page") ?? "1");
+    const items = Array.from({ length: 10 }, (_, index) => ({
+      poiId: `page-${pageNumber}-poi-${index + 1}`,
+      name: pageNumber === 1
+        ? `南京市第一页地点 ${index + 1}`
+        : `南京市第二页地点 ${index + 1}`,
+      typeCode: "110000",
+      address: "南京市中山路",
+      location: "118.78,32.04",
+      regionCode: "320100",
+      saved: false,
+      poi: {},
+    }));
+
+    await route.fulfill({
+      json: {
+        items,
+        page: pageNumber,
+        pageSize: 10,
+        totalElements: 10,
+        totalPages: 1,
+        hasNext: false,
+        hasPrevious: pageNumber > 1,
+      },
+    });
+  });
+
+  await page.goto("/admin/locations");
+  await selectNanjingCity(page);
+  await expect(page.getByRole("cell", { name: "南京市第一页地点 1", exact: true })).toBeVisible();
+  await expect(page.getByText("第 1 页", { exact: true })).toBeVisible();
+
+  const secondPage = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/admin/locations/amap" && url.searchParams.get("page") === "2";
+  });
+  await page.getByRole("button", { name: "下一页" }).click();
+  await secondPage;
+  await expect(page.getByRole("cell", { name: "南京市第二页地点 1", exact: true })).toBeVisible();
+  await expect(page.getByText("第 2 页", { exact: true })).toBeVisible();
+});
+
+test("saving an Amap candidate validates visit hours and updates the current row without refetching", async ({
+  page,
+}) => {
+  await mockUser(page, "ADMIN");
+  const listRequests = await mockAdminLocationLists(page);
+  let createCalls = 0;
+  let createBody: Record<string, unknown> | undefined;
+  await page.route("**/api/admin/locations", async (route) => {
+    if (route.request().method() !== "POST") {
+      await route.fallback();
+      return;
+    }
+    createCalls += 1;
+    createBody = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({
+      status: 201,
+      json: {
+        poiId: "candidate-new",
+        typeGroup: "attraction",
+        minVisitHours: 2,
+        maxVisitHours: 4,
+        poi: { id: "candidate-new", name: "南京市未保存景点", address: "南京市中山路 2 号" },
+        business: { tel: "025-12345678", detail: { source: "database" } },
+        photos: [],
+      },
+    });
+  });
+
+  await page.goto("/admin/locations");
+  await expect(page.getByText("请选择城市后查询")).toBeVisible();
+  expect(listRequests.amap).toBe(0);
+  await selectNanjingCity(page);
+  await expect(page.getByRole("cell", { name: "南京市未保存景点", exact: true })).toBeVisible();
+  const initialAmapRequests = listRequests.amap;
+  await page.getByRole("button", { name: "编辑 南京市未保存景点" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "保存地点" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("地点名称")).toBeVisible();
+  await expect(dialog.getByText("商业信息")).toHaveCount(0);
+  await expect(dialog.getByText("地点照片")).toHaveCount(0);
+  await dialog.getByLabel("最少游玩时间（小时）").fill("3.5");
+  await dialog.getByLabel("最多游玩时间（小时）").fill("4");
+  await dialog.getByRole("button", { name: "保存地点" }).click();
+  await expect(dialog.getByRole("alert")).toHaveText("游玩时间必须为不小于 0 的整数小时。");
+  expect(createCalls).toBe(0);
+
+  await dialog.getByLabel("最少游玩时间（小时）").fill("3");
+  await dialog.getByLabel("最多游玩时间（小时）").fill("1");
+  await dialog.getByRole("button", { name: "保存地点" }).click();
+  await expect(dialog.getByRole("alert")).toHaveText("最少游玩时间不能大于最多游玩时间。");
+  expect(createCalls).toBe(0);
+
+  await dialog.getByLabel("最多游玩时间（小时）").fill("4");
+  await dialog.getByRole("button", { name: "保存地点" }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(createCalls).toBe(1);
+  expect(createBody).toMatchObject({
+    poiId: "candidate-new",
+    typeGroup: "attraction",
+    minVisitHours: 3,
+    maxVisitHours: 4,
+  });
+  await expect(page.getByRole("row", { name: /南京市未保存景点/ }).getByText("已添加到 Pawtrip")).toBeVisible();
+  await expect(page.getByRole("button", { name: "编辑 南京市未保存景点" })).toBeDisabled();
+  await expect.poll(() => listRequests.amap).toBe(initialAmapRequests);
+  await expect(page.getByText("第 1 页", { exact: true })).toBeVisible();
+});
+
+test("saved location details use direct photo URLs and preserve the current list page", async ({
+  page,
+}) => {
+  await mockUser(page, "ADMIN");
+  const listRequests = await mockAdminLocationLists(page);
+  let detailReads = 0;
+  let patchCalls = 0;
+  let photoApiCalls = 0;
+  let directImageRequests = 0;
+  const updatedDetail = savedDetail(4, 6);
+  page.on("request", (request) => {
+    const pathname = new URL(request.url()).pathname;
+    if (pathname.startsWith("/api/admin/locations/saved-two/photos/")) photoApiCalls += 1;
+  });
+  await page.route("https://images.example.test/photo.jpg", async (route) => {
+    directImageRequests += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: "image/png",
+      body: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lpcAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    });
+  });
+  await page.route("https://images.example.test/missing.jpg", async (route) => {
+    await route.abort();
+  });
+  let patchHasSucceeded = false;
+
+  await page.route("**/api/admin/locations/saved-two", async (route) => {
+    if (route.request().method() === "GET") {
+      detailReads += 1;
+      await route.fulfill({
+        json: patchHasSucceeded ? updatedDetail : savedDetail(null, null),
+      });
+      return;
+    }
+    if (route.request().method() === "PATCH") {
+      patchCalls += 1;
+      expect(route.request().postDataJSON()).toEqual({ minVisitHours: 4, maxVisitHours: 6 });
+      patchHasSucceeded = true;
+      await route.fulfill({ json: updatedDetail });
+      return;
+    }
+    await route.fallback();
+  });
+
+  await page.goto("/admin/locations");
+  await page.getByRole("tab", { name: "pawtrip地点" }).click();
+  await expect(page.getByRole("cell", { name: "全部地区Pawtrip地点一", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "下一页" }).click();
+  await expect(page.getByRole("cell", { name: "全部地区Pawtrip地点二", exact: true })).toBeVisible();
+
+  const savedListReads = listRequests.saved;
+  const amapListReads = listRequests.amap;
+  await page.getByRole("button", { name: "编辑 全部地区Pawtrip地点二" }).click();
+  const dialog = page.getByRole("dialog", { name: "数据库景点详情" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText(/DB 商业信息/)).toBeVisible();
+  await expect(dialog.getByText(/完整的 POI 扩展字段/)).toBeVisible();
+  await expect(dialog.getByRole("img", { name: "主照片" })).toBeVisible();
+  await expect(dialog.getByRole("img", { name: "主照片" })).toHaveAttribute(
+    "src",
+    "https://images.example.test/photo.jpg",
+  );
+  await expect(dialog.getByText("图片暂不可用。")).toBeVisible();
+  expect(detailReads).toBeGreaterThan(0);
+  await expect(page.getByText("共 11 条 · 第 2 / 2 页")).toBeVisible();
+
+  await dialog.getByLabel("最少游玩时间（小时）").fill("4");
+  await dialog.getByLabel("最多游玩时间（小时）").fill("6");
+  await dialog.getByRole("button", { name: "保存修改" }).click();
+  await expect(dialog.getByText("地点信息已更新。", { exact: true })).toBeVisible();
+  await expect(dialog.getByLabel("最少游玩时间（小时）")).toHaveValue("4");
+  await expect(dialog.getByLabel("最多游玩时间（小时）")).toHaveValue("6");
+  expect(patchCalls).toBe(1);
+  await dialog.getByRole("button", { name: "关闭", exact: true }).click();
+  const savedRow = page.getByRole("row", { name: /全部地区Pawtrip地点二/ });
+  await expect(savedRow).toContainText("4");
+  await expect(savedRow).toContainText("6");
+  await expect(page.getByText("共 11 条 · 第 2 / 2 页")).toBeVisible();
+
+  await page.getByRole("button", { name: "编辑 全部地区Pawtrip地点二" }).click();
+  const reopenedDialog = page.getByRole("dialog", { name: "数据库景点详情" });
+  await expect(reopenedDialog.getByLabel("最少游玩时间（小时）")).toHaveValue("4");
+  await expect(reopenedDialog.getByRole("img", { name: "主照片" })).toHaveAttribute(
+    "src",
+    "https://images.example.test/photo.jpg",
+  );
+  await expect(reopenedDialog.getByRole("button", { name: /获取图片|重试/ })).toHaveCount(0);
+  expect(directImageRequests).toBeGreaterThan(0);
+  expect(photoApiCalls).toBe(0);
+  await expect.poll(() => listRequests.saved).toBe(savedListReads);
+  await expect.poll(() => listRequests.amap).toBe(amapListReads);
+});
+
+test("USER is redirected away from the admin location route", async ({ page }) => {
+  await mockUser(page, "USER");
+  await page.goto("/admin/locations");
+
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator("main").getByRole("heading", { name: "地点管理" })).toHaveCount(0);
+  await expect(page.getByRole("tab", { name: "地点管理" })).toHaveCount(0);
+});
+
+function savedDetail(minVisitHours: number | null, maxVisitHours: number | null) {
+  return {
+    poiId: "saved-two",
+    typeGroup: "attraction",
+    minVisitHours,
+    maxVisitHours,
+    poi: {
+      id: "saved-two",
+      name: "数据库景点详情",
+      address: "数据库地址",
+      extension: { note: "完整的 POI 扩展字段" },
+    },
+    business: { name: "DB 商业信息", tel: "025-98765432" },
+    photos: [
+      {
+        photoId: 7,
+        order: 0,
+        title: "主照片",
+        sourceUrl: "https://images.example.test/photo.jpg",
+        metadata: { url: "https://images.example.test/photo.jpg", custom: "保留元数据" },
+      },
+      {
+        photoId: 8,
+        order: 1,
+        title: "失效来源",
+        sourceUrl: "https://images.example.test/missing.jpg",
+        metadata: { url: "https://images.example.test/missing.jpg" },
+      },
+    ],
+  };
+}
+
+test("anonymous visitors are redirected to login from the admin location route", async ({
+  page,
+}) => {
+  await mockUser(page, null);
+  await page.goto("/admin/locations");
+
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(page.locator("main").getByRole("heading", { name: "地点管理" })).toHaveCount(0);
+});

@@ -4,6 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import net from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -60,6 +61,27 @@ function assertPortAvailable(port) {
       );
     });
   });
+}
+
+function verifySeededUsers(databasePath) {
+  const expectedRoles = new Map([
+    ["demo", "USER"],
+    ["tester", "USER"],
+    ["admin", "ADMIN"],
+    ["admin-tester", "ADMIN"],
+  ]);
+  const database = new DatabaseSync(databasePath);
+
+  try {
+    const users = database
+      .prepare("SELECT username, role FROM app_user ORDER BY username")
+      .all();
+    if (users.length !== expectedRoles.size || users.some((user) => expectedRoles.get(user.username) !== user.role)) {
+      throw new Error("E2E seed verification failed: account count or roles are incorrect.");
+    }
+  } finally {
+    database.close();
+  }
 }
 
 function delay(milliseconds) {
@@ -177,7 +199,7 @@ async function main() {
       env: {
         ...process.env,
         SERVER_PORT: String(backendPort),
-        SPRING_DATASOURCE_URL: `jdbc:sqlite:${databasePath}`,
+        SPRING_DATASOURCE_URL: `jdbc:sqlite:${databasePath}?foreign_keys=on`,
       },
       shell: process.platform === "win32",
     });
@@ -189,13 +211,16 @@ async function main() {
       "E2E backend",
     );
 
-    const seedExitCode = await runProcess(
-      process.execPath,
-      ["scripts/seed-users.mjs", databasePath],
-    );
-    if (seedExitCode !== 0) {
-      throw new Error(`E2E user seeding failed with exit code ${seedExitCode}.`);
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const seedExitCode = await runProcess(
+        process.execPath,
+        ["scripts/seed-users.mjs", databasePath],
+      );
+      if (seedExitCode !== 0) {
+        throw new Error(`E2E user seeding failed on run ${attempt + 1} with exit code ${seedExitCode}.`);
+      }
     }
+    verifySeededUsers(databasePath);
 
     const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
     const frontend = startProcess(

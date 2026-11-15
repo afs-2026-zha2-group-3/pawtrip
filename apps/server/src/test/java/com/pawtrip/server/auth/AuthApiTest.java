@@ -45,7 +45,7 @@ class AuthApiTest {
 		catch (IOException ex) {
 			throw new UncheckedIOException("Failed to reset test database", ex);
 		}
-		registry.add("spring.datasource.url", () -> "jdbc:sqlite:" + DB_PATH);
+		registry.add("spring.datasource.url", () -> "jdbc:sqlite:" + DB_PATH + "?foreign_keys=on");
 	}
 
 	@Autowired
@@ -61,12 +61,20 @@ class AuthApiTest {
 
 	private String password;
 
+	private String adminUsername;
+
+	private String adminPassword;
+
 	@BeforeEach
 	void createUser() {
 		this.username = "auth-user-" + UUID.randomUUID();
 		this.password = UUID.randomUUID().toString();
 		this.appUserRepository
 			.save(new AppUser(this.username, this.passwordEncoder.encode(this.password), true));
+		this.adminUsername = "auth-admin-" + UUID.randomUUID();
+		this.adminPassword = UUID.randomUUID().toString();
+		this.appUserRepository.save(new AppUser(this.adminUsername,
+				this.passwordEncoder.encode(this.adminPassword), true, UserRole.ADMIN));
 	}
 
 	@Test
@@ -119,7 +127,9 @@ class AuthApiTest {
 		mockMvc.perform(get("/api/auth/me").session(session))
 			.andExpect(status().isOk())
 			.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-			.andExpect(jsonPath("$.username").value(this.username));
+			.andExpect(jsonPath("$.username").value(this.username))
+			.andExpect(jsonPath("$.role").value("USER"))
+			.andExpect(jsonPath("$.passwordHash").doesNotExist());
 	}
 
 	@Test
@@ -169,6 +179,33 @@ class AuthApiTest {
 			.andExpect(status().isOk());
 	}
 
+	@Test
+	void adminApiRequiresAdminRole() throws Exception {
+		mockMvc.perform(get("/api/admin/regions"))
+			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
+
+		MvcResult userLogin = login();
+		MockHttpSession userSession = (MockHttpSession) userLogin.getRequest().getSession(false);
+		mockMvc.perform(get("/api/admin/regions").session(userSession))
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+
+		MvcResult adminLogin = mockMvc.perform(post("/api/auth/login").with(csrf())
+				.contentType(MediaType.APPLICATION_FORM_URLENCODED)
+				.param("username", this.adminUsername)
+				.param("password", this.adminPassword))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.username").value(this.adminUsername))
+			.andExpect(jsonPath("$.role").value("ADMIN"))
+			.andExpect(jsonPath("$.passwordHash").doesNotExist())
+			.andReturn();
+		MockHttpSession adminSession = (MockHttpSession) adminLogin.getRequest().getSession(false);
+		mockMvc.perform(get("/api/admin/regions").session(adminSession))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].adcode").exists());
+	}
+
 	private MvcResult login() throws Exception {
 		return mockMvc
 			.perform(post("/api/auth/login").with(csrf())
@@ -178,6 +215,8 @@ class AuthApiTest {
 			.andExpect(status().isOk())
 			.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
 			.andExpect(jsonPath("$.username").value(this.username))
+			.andExpect(jsonPath("$.role").value("USER"))
+			.andExpect(jsonPath("$.passwordHash").doesNotExist())
 			.andReturn();
 	}
 

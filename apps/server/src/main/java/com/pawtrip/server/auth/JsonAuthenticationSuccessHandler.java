@@ -28,7 +28,7 @@ public class JsonAuthenticationSuccessHandler implements AuthenticationSuccessHa
 		response.setStatus(HttpServletResponse.SC_OK);
 		response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 		response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-		this.objectMapper.writeValue(response.getOutputStream(), Map.of("username", authentication.getName()));
+		this.objectMapper.writeValue(response.getOutputStream(), CurrentUserResponse.from(authentication));
 	}
 
 }

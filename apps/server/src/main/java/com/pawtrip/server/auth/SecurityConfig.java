@@ -28,6 +28,7 @@ public class SecurityConfig {
 			.authorizeHttpRequests(authorize -> authorize
 				.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
 				.requestMatchers("/api/auth/login", "/api/auth/me", "/api/auth/logout", "/error").permitAll()
+				.requestMatchers("/api/admin/**").hasRole("ADMIN")
 				.requestMatchers("/api/**").authenticated()
 				.anyRequest().denyAll())
 			.formLogin(form -> form

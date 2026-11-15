@@ -9,6 +9,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import com.pawtrip.server.application.model.maps.KeywordPlaceSearchRequest;
 import com.pawtrip.server.application.model.maps.NearbyPlaceSearchRequest;
 import com.pawtrip.server.application.model.maps.PlaceSearchException;
+import com.pawtrip.server.application.model.maps.PlaceTypeSearchRequest;
 import com.pawtrip.server.infrastructure.amap.config.AmapProperties;
 import com.pawtrip.server.infrastructure.amap.transport.AmapTransport;
 import java.io.IOException;
@@ -21,6 +22,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -84,6 +86,118 @@ class AmapPlaceSearchAdapterTest {
 		assertThat(result.pageNum()).isEqualTo(1);
 		assertThat(result.pageSize()).isEqualTo(10);
 		assertThat(result.pois().getFirst().path("name").asString("")).isEqualTo("Paw Cafe");
+		mockServer.verify();
+	}
+
+	@Test
+	void typeSearchWithoutKeywordsMapsTypeCodesRegionAndStrictLimitToTextEndpoint() {
+		mockServer
+				.expect(
+						request -> {
+							assertThat(request.getURI().getPath()).isEqualTo("/v5/place/text");
+						assertThat(queryParameters(request.getURI()))
+								.containsEntry("types", "110000|110100")
+								.containsEntry("region", "330100")
+								.containsEntry("city_limit", "true")
+								.containsEntry("page_num", "2")
+								.containsEntry("page_size", "25")
+								.doesNotContainKey("keywords");
+					})
+				.andRespond(withSuccess(
+						"{\"status\":\"1\",\"infocode\":\"10000\",\"count\":\"25\",\"pois\":[]}",
+						MediaType.APPLICATION_JSON));
+
+		var result = adapter.searchByTypes(new PlaceTypeSearchRequest(
+				List.of("110000", "110100"), "330100", 2, 25));
+
+		assertThat(result.totalCount()).isEqualTo(25);
+		assertThat(result.pageNum()).isEqualTo(2);
+		assertThat(result.pageSize()).isEqualTo(25);
+		mockServer.verify();
+	}
+
+	@Test
+	void detailSearchRequestsBusinessAndPhotosAndPreservesUnknownNestedFields() throws IOException {
+		String poiId = "B000A7BM4H";
+		String response = """
+				{"status":"1","infocode":"10000","pois":[{"id":"B000A7BM4H","name":"景点","business":{"rating":"4.8","vendor_extra":{"open":true}},"photos":[{"title":"门口","url":"https://img.example.test/a.jpg","future":{"rank":2}}],"future_field":{"nested":[1,2]}}]}
+				""";
+		JsonNode expected = jsonMapper.readTree(response).path("pois").get(0);
+		mockServer
+				.expect(request -> {
+					assertThat(request.getURI().getPath()).isEqualTo("/v5/place/detail");
+					assertThat(queryParameters(request.getURI()))
+							.containsEntry("id", poiId)
+							.containsEntry("show_fields", "business,photos")
+							.containsEntry("key", "test-api-key");
+				})
+				.andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+
+		assertThat(adapter.getPlaceById(poiId)).isEqualTo(expected);
+		mockServer.verify();
+	}
+
+	@Test
+	void detailSearchAllowsMissingOptionalFieldsAndPreservesUnknownFields() {
+		mockServer
+				.expect(request -> assertThat(request.getURI().getPath()).isEqualTo("/v5/place/detail"))
+				.andRespond(withSuccess(
+						"{\"status\":\"1\",\"infocode\":\"10000\",\"pois\":[{\"id\":\"B000A7BM4H\",\"name\":\"No extras\",\"custom\":{\"retained\":true}}]}",
+						MediaType.APPLICATION_JSON));
+
+		JsonNode result = adapter.getPlaceById("B000A7BM4H");
+
+		assertThat(result.path("name").asString()).isEqualTo("No extras");
+		assertThat(result.has("business")).isFalse();
+		assertThat(result.has("photos")).isFalse();
+		assertThat(result.path("custom").path("retained").asBoolean()).isTrue();
+		mockServer.verify();
+	}
+
+	@Test
+	@ExtendWith(OutputCaptureExtension.class)
+	void detailSearchTranslatesUpstreamFailuresWithoutLeakingCredentialsOrPoiData(CapturedOutput output) {
+		mockServer
+				.expect(request -> assertThat(request.getURI().getPath()).isEqualTo("/v5/place/detail"))
+				.andRespond(withServiceUnavailable().body("test-api-key private-poi-id"));
+
+		assertThatThrownBy(() -> adapter.getPlaceById("B000A7BM4H"))
+				.isInstanceOf(PlaceSearchException.class)
+				.hasMessage("AMap POI search failed");
+		assertThat(output.getAll()).doesNotContain("test-api-key", "private-poi-id", "key=");
+		mockServer.verify();
+	}
+
+	@Test
+	void detailSearchReturnsNotFoundForAnEmptySuccessfulResponse() {
+		mockServer
+				.expect(request -> assertThat(request.getURI().getPath()).isEqualTo("/v5/place/detail"))
+				.andRespond(withSuccess(
+						"{\"status\":\"1\",\"infocode\":\"10000\",\"pois\":[]}",
+						MediaType.APPLICATION_JSON));
+
+		assertThatThrownBy(() -> adapter.getPlaceById("B000A7BM4H"))
+				.isInstanceOf(PlaceSearchException.class)
+				.satisfies(exception -> assertThat(((PlaceSearchException) exception).code())
+						.isEqualTo(PlaceSearchException.Code.NOT_FOUND));
+		mockServer.verify();
+	}
+
+	@Test
+	void typeSearchAllowsLastPartiallyReachablePageAndRejectsPagesPastTwoHundredResults() {
+		mockServer
+				.expect(request -> assertThat(queryParameters(request.getURI()))
+						.containsEntry("page_num", "9")
+						.containsEntry("page_size", "24"))
+				.andRespond(withSuccess(
+						"{\"status\":\"1\",\"infocode\":\"10000\",\"count\":\"200\",\"pois\":[]}",
+						MediaType.APPLICATION_JSON));
+
+		adapter.searchByTypes(new PlaceTypeSearchRequest(List.of("110000"), null, 9, 24));
+		assertInvalidArgument(() -> adapter.searchByTypes(
+				new PlaceTypeSearchRequest(List.of("110000"), null, 9, 25)));
+		assertInvalidArgument(() -> adapter.searchByTypes(
+				new PlaceTypeSearchRequest(List.of("110000"), null, 101, 1)));
 		mockServer.verify();
 	}
 
@@ -195,8 +309,7 @@ class AmapPlaceSearchAdapterTest {
 		assertInvalidArgument(
 				() -> adapter.searchByKeyword(new KeywordPlaceSearchRequest("cafe", 9, 25)));
 		assertInvalidArgument(
-				() ->
-						adapter.searchNearby(
+						() -> adapter.searchNearby(
 								new NearbyPlaceSearchRequest(
 										new BigDecimal("0.0000001"),
 										BigDecimal.ZERO,
@@ -205,6 +318,12 @@ class AmapPlaceSearchAdapterTest {
 										null,
 										null,
 										null)));
+				assertInvalidArgument(() -> adapter.searchByTypes(new PlaceTypeSearchRequest(List.of(), null, 1, 25)));
+				assertInvalidArgument(() -> adapter.searchByTypes(
+						new PlaceTypeSearchRequest(List.of("not-a-type"), null, 1, 25)));
+				assertInvalidArgument(() -> adapter.searchByTypes(
+						new PlaceTypeSearchRequest(List.of("110000"), "invalid-region", 1, 25)));
+				assertInvalidArgument(() -> adapter.getPlaceById("invalid|poi-id"));
 		assertInvalidArgument(
 				() ->
 						adapter.searchNearby(

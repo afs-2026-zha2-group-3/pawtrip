@@ -5,7 +5,12 @@ import org.springframework.http.HttpStatus;
 public enum ApiErrorCode {
 
 	GREETING_NOT_FOUND(HttpStatus.NOT_FOUND, "Greeting not found"),
+	PLACE_NOT_FOUND(HttpStatus.NOT_FOUND, "Place not found"),
+	LOCATION_NOT_FOUND(HttpStatus.NOT_FOUND, "Location not found"),
+	LOCATION_CONFLICT(HttpStatus.CONFLICT, "Location conflict"),
+
 	VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Validation failed"),
+	UPSTREAM_FAILURE(HttpStatus.BAD_GATEWAY, "Upstream service failure"),
 	UNAUTHENTICATED(HttpStatus.UNAUTHORIZED, "Authentication required"),
 	INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "Invalid credentials"),
 	ACCESS_DENIED(HttpStatus.FORBIDDEN, "Access denied"),

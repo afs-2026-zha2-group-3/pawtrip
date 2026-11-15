@@ -16,10 +16,22 @@ class AuthController {
 				|| authentication instanceof AnonymousAuthenticationToken) {
 			throw new UnauthenticatedException();
 		}
-		return new CurrentUserResponse(authentication.getName());
+		return CurrentUserResponse.from(authentication);
 	}
 
-	record CurrentUserResponse(String username) {
+}
+
+record CurrentUserResponse(String username, String role) {
+
+	static CurrentUserResponse from(Authentication authentication) {
+		String role = authentication.getAuthorities()
+			.stream()
+			.map(authority -> authority.getAuthority())
+			.filter(authority -> authority.startsWith("ROLE_"))
+			.map(authority -> authority.substring("ROLE_".length()))
+			.findFirst()
+			.orElseThrow(() -> new IllegalStateException("Authenticated user has no role"));
+		return new CurrentUserResponse(authentication.getName(), role);
 	}
 
 }

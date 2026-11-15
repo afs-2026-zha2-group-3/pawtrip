@@ -137,18 +137,33 @@ function AppHeader() {
 function AppTabs() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const navigate = useNavigate();
-  const activeTab = pathname === "/paws" ? "paws" : "home";
+  const isClient = typeof window !== "undefined";
+  const auth = useQuery({ ...authQueryOptions, enabled: isClient });
+  const activeTab = pathname === "/paws"
+    ? "paws"
+    : pathname === "/admin/locations"
+      ? "locations"
+      : "home";
 
   return (
     <Tabs
       value={activeTab}
-      onValueChange={(value) =>
-        navigate({ to: value === "paws" ? "/paws" : "/" })
-      }
+      onValueChange={(value) => {
+        if (value === "paws") {
+          void navigate({ to: "/paws" });
+        } else if (value === "locations") {
+          void navigate({ to: "/admin/locations" });
+        } else {
+          void navigate({ to: "/" });
+        }
+      }}
     >
-      <TabsList>
+      <TabsList aria-label="主导航">
         <TabsTrigger value="home">Home</TabsTrigger>
         <TabsTrigger value="paws">Paws</TabsTrigger>
+        {auth.data?.role === "ADMIN" ? (
+          <TabsTrigger value="locations">地点管理</TabsTrigger>
+        ) : null}
       </TabsList>
     </Tabs>
   );
