@@ -1,0 +1,30 @@
+# Intent capture: issue #15 选择目的地（US-47）
+
+- 来源：https://github.com/afs-2026-zha2-group-3/pawtrip/issues/15（2026-11-16 由需求方粘贴全文）
+- 优先级：Must
+- 关联原型：`C:\Users\HUANGHA11\Downloads\prototype-p1-p2.html`（P1/P2 行前规划链，dest-1 / dest-3 屏幕溯源标注 `#15 · US-47`）
+
+## Story
+
+As a 计划携宠出行的用户
+I want 搜索并选择目的地城市，按养犬政策筛选出宠物友好的目的地
+So that 我能快速确定适合带宠物前往的地方，作为后续交通选择和行程规划的基础
+
+## Acceptance Criteria
+
+- **AC-1 搜索并选定目的地**：Given 用户进入目的地选择 When 搜索城市并选中 Then 该城市成为行程规划的目的地
+- **AC-2 宠物友好筛选**：Given 目的地候选列表 When 用户启用宠物友好筛选 Then 仅展示符合养犬政策筛选条件的目的地（MVP 按有无禁养政策判断）
+- **AC-3 选定目的地生效**：Given 已选定目的地 When 用户进入政策查看或行程生成 Then 相关功能使用已选定的目的地
+- **AC-4 禁养犬种提醒**：Given 用户档案中的品种命中所选目的地的禁养犬种名单 When 用户选中该目的地 Then 给出高亮提醒（复用 US-04 逻辑）
+
+## 原型口径补充（dest-1 / dest-3）
+
+- 搜索按城市名/省份关键字过滤；候选卡片含「政策已收录/未收录」Badge，命中禁养叠加「档案品种禁养」红色 Badge
+- 宠物友好筛选口径（原型 footnote）：政策已收录，且档案品种不在该城市禁养名单内；设施与评价维度不做
+- 禁养判定：品种名精确匹配；无档案、政策未收录、品种为空或「其他」不触发判定
+- 选定后展示「规划上下文」（目的地、档案摘要、政策状态）；命中禁养仍可继续规划但红色提醒持续生效
+- 种子数据：杭州/成都/深圳（政策已收录）、大理/拉萨（未收录），各含 policies、banned、source、updated
+## 修订记录（2026-11-16，合并 main 后）
+
+- 编号 REQ-005 → REQ-006（main 已将 REQ-005 用于地点宠物政策）；上文为 issue #15 原始意图捕获，保留原型口径。
+- 实现口径以 change `destination-selection` 的 proposal/spec/design 为准：候选=全部城市级行政区、服务端搜索/限养数筛选、sessionStorage 选定、政策数据占位 TODO（V14 移除）。
