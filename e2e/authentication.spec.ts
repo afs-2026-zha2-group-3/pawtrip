@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const username = "demo";
-const password = "pawtrip-demo";
+const password = "123456";
 
 async function openLogin(page: import("@playwright/test").Page) {
   const authResponse = page.waitForResponse(

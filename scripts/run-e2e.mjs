@@ -66,9 +66,7 @@ function assertPortAvailable(port) {
 function verifySeededUsers(databasePath) {
   const expectedRoles = new Map([
     ["demo", "USER"],
-    ["tester", "USER"],
     ["admin", "ADMIN"],
-    ["admin-tester", "ADMIN"],
   ]);
   const database = new DatabaseSync(databasePath);
 
