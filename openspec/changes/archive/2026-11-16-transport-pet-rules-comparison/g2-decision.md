@@ -35,19 +35,22 @@
 
 **Conditional Pass**（本地 G2 通过，附带 1 项流水线条件）
 
-理由：V1–V8 中 V1/V2/V4–V8 Pass，V3 的 Partial 属「无数据」而非缺实现；W4 合并门禁已闭合（8 条规则 `verifiedOn` 均为 2026-11-16）；无 CRITICAL。E1 已有 `push` 触发的 CI 全绿证据（人工确认），但缺 run id 与 PR 版（`pull_request` 事件）运行，因此仍不能记无条件 Pass。
+理由：V1–V8 中 V1/V2/V4–V8 Pass，V3 的 Partial 属「无数据」而非缺实现；W4 合并门禁已闭合（8 条规则 `verifiedOn` 均为 2026-11-16）；无 CRITICAL。E1 已升级为机器证据（三轮 push run 共 10 个 job 全 success）。
+
+**2026-11-16 条件收口**：条件 1 已闭合（PR #45 合并，`e1169b4`）；条件 2（窄屏 Tab 目视）经需求方决定转为 accepted waiver（见下表第 1 行）。本 change 的 G2 条件全部收口，可进 G3。
 
 ## Conditions + owners
 
 | 条件 | Owner | 时点 |
 |---|---|---|
 | 推送分支并创建 PR 后，回填 `pipeline-report`（E1），CI 全绿方可进 G3 | kitty | **已闭合**（2026-11-16）：PR #45 + E1 机器证据全绿 |
-| 窄屏 Tab 布局人工目视一次（G1 遗留的 IO 跟踪项） | kitty | 本 G2 之后、合并前 |
+| 窄屏 Tab 布局人工目视一次（G1 遗留的 IO 跟踪项） | kitty | **转为 waiver**（2026-11-16）：需求方决定不动浏览器，见下表第 1 行 |
 
 ## Waivers / accepted risks
 
 | 风险 | 处置 |
 |---|---|
+| **WAIVER：窄屏 Tab（5 项）布局未人工目视**（G1 遗留的 IO 跟踪项） | **accepted waiver** — 需求方 2026-11-16 明确「不动浏览器，记为 accepted waiver + residual risk」；依据：Tab 容器沿用 `web-app-shell` 既有 `AppTabs`（`routes/__root.tsx`），本 change 仅新增 1 项且位置在「城市」之后、管理员 Tab 之前，未改容器布局；兜底：E2E 已覆盖导航与守卫。**残留风险**：窄屏（≤375px）下 5 项可能换行过密或横向溢出，未被自动化或人工验证；若后续 IO 反馈问题，只需调整 Tab 排序/缩写文案，不需改数据层 |
 | W1：`npm run test:e2e` 退出码 1（EBUSY） | **accepted** — 需求方 2026-11-16 明确不修；证据以 `32 passed` 为准 |
 | 规则复核方式为官方页面摘要比对（官网 405 / TLS 超时） | **accepted** — 见报告「规则复核闭合」；发布前建议人工目视一次 |
 | 规则时效性（高铁试点扩围、航司政策调整） | **accepted** — `verifiedOn` + 页面免责声明 + 一次常量变更即可更新 |
@@ -56,14 +59,15 @@
 ## Approvers
 
 - **VL**: kitty（沿用 2026-11-16 G1 会话中「全签 kitty」的指定；本轮用户明确选择「直接进 G2」）
+- **Waiver 授权**: kitty（2026-11-16 指示「窄屏目视不动浏览器，记为 accepted waiver + residual risk，进入下一步」）
 - 本记录由 Agent 起草，签核人非 Agent 自身。
 
 ## Next
 
 1. 本记录与下游 REQ-008 的 G2 记录均已提交
 2. PR #45 已合并入 `main`（merge commit `e1169b4`）；E1 已升级为机器证据（Web/E2E/Server 三个 job 全 success）
-3. 窄屏 Tab 目视（残留条件）+ G3 签核
-4. G3 + `/sdd:living-merge` → `/sdd:archive-change`
+3. 窄屏 Tab 目视已转 waiver（2026-11-16），无残留阻塞项
+4. G3 签核 + `/sdd:living-merge` → `/sdd:archive-change`
 
 ## Traceability appendix
 
