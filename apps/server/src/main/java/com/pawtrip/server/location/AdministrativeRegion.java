@@ -1,8 +1,18 @@
 package com.pawtrip.server.location;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.pawtrip.server.pet.DogBreed;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 @Entity
@@ -31,6 +41,16 @@ public class AdministrativeRegion {
 	@Column(name = "max_single_pet_weight_kg")
 	private Double maxSinglePetWeightKg;
 
+	@Column(name = "max_single_pet_shoulder_height_cm")
+	private Double maxSinglePetShoulderHeightCm;
+
+	@ManyToMany(fetch = FetchType.LAZY)
+	@JoinTable(name = "city_allowed_dog_breed",
+			joinColumns = @JoinColumn(name = "adcode"),
+			inverseJoinColumns = @JoinColumn(name = "dog_breed_id"))
+	@OrderBy("id ASC")
+	private List<DogBreed> allowedDogBreeds = new ArrayList<>();
+
 	@Column(name = "leash_required")
 	private Boolean leashRequired;
 
@@ -42,6 +62,9 @@ public class AdministrativeRegion {
 
 	@Column(name = "reservation_required")
 	private Boolean reservationRequired;
+
+	@Column(name = "allowed_pet_types")
+	private String allowedPetTypes;
 
 	protected AdministrativeRegion() {
 	}
@@ -82,6 +105,19 @@ public class AdministrativeRegion {
 		return this.maxSinglePetWeightKg;
 	}
 
+	public Double getMaxSinglePetShoulderHeightCm() {
+		return this.maxSinglePetShoulderHeightCm;
+	}
+
+	public List<DogBreed> getAllowedDogBreeds() {
+		return List.copyOf(this.allowedDogBreeds);
+	}
+
+	public void updateAllowedDogBreeds(List<DogBreed> allowedDogBreeds) {
+		this.allowedDogBreeds.clear();
+		this.allowedDogBreeds.addAll(allowedDogBreeds);
+	}
+
 	public Boolean getLeashRequired() {
 		return this.leashRequired;
 	}
@@ -98,10 +134,17 @@ public class AdministrativeRegion {
 		return this.reservationRequired;
 	}
 
-	public void updatePetPolicies(Integer maxPetsPerPerson, Double maxSinglePetWeightKg, Boolean leashRequired,
-			Boolean vaccinationProofRequired, Long extraFeeCents, Boolean reservationRequired) {
+	public String getAllowedPetTypes() {
+		return this.allowedPetTypes;
+	}
+
+	public void updatePetPolicies(String allowedPetTypes, Integer maxPetsPerPerson, Double maxSinglePetWeightKg,
+			Double maxSinglePetShoulderHeightCm, Boolean leashRequired, Boolean vaccinationProofRequired,
+			Long extraFeeCents, Boolean reservationRequired) {
+		this.allowedPetTypes = allowedPetTypes;
 		this.maxPetsPerPerson = maxPetsPerPerson;
 		this.maxSinglePetWeightKg = maxSinglePetWeightKg;
+		this.maxSinglePetShoulderHeightCm = maxSinglePetShoulderHeightCm;
 		this.leashRequired = leashRequired;
 		this.vaccinationProofRequired = vaccinationProofRequired;
 		this.extraFeeCents = extraFeeCents;

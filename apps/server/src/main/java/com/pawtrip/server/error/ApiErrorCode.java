@@ -8,6 +8,7 @@ public enum ApiErrorCode {
 	PLACE_NOT_FOUND(HttpStatus.NOT_FOUND, "Place not found"),
 	LOCATION_NOT_FOUND(HttpStatus.NOT_FOUND, "Location not found"),
 	LOCATION_CONFLICT(HttpStatus.CONFLICT, "Location conflict"),
+	PET_NOT_FOUND(HttpStatus.NOT_FOUND, "Pet not found"),
 	CITY_NOT_FOUND(HttpStatus.NOT_FOUND, "City not found"),
 
 	VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Validation failed"),
