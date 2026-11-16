@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import net from "node:net";
 import { tmpdir } from "node:os";
@@ -9,12 +11,32 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const serverRoot = join(repoRoot, "apps", "server");
+const mainDatabasePath = join(serverRoot, "data", "pawtrip.db");
 const backendPort = 18080;
 const frontendPort = 3100;
+const maxWorkers = 8;
+const requestedWorkers = Number(
+  process.env.PAWTRIP_E2E_WORKERS ?? (process.env.CI ? 2 : 4),
+);
+const workerCount = Math.min(
+  Number.isInteger(requestedWorkers) && requestedWorkers > 0
+    ? requestedWorkers
+    : 1,
+  maxWorkers,
+);
 const children = new Set();
 let temporaryDirectory;
 let cleanupPromise;
 let requestedSignal;
+
+function fingerprintFile(path) {
+  try {
+    return createHash("sha256").update(readFileSync(path)).digest("hex");
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
 
 function startProcess(command, args, options = {}) {
   const child = spawn(command, args, {
@@ -68,15 +90,41 @@ function verifySeededUsers(databasePath) {
     ["demo", "USER"],
     ["admin", "ADMIN"],
     ["petowner", "USER"],
+    ...Array.from({ length: workerCount }, (_, index) => [
+      `petowner-w${index}`,
+      "USER",
+    ]),
   ]);
   const database = new DatabaseSync(databasePath);
 
   try {
     const users = database
-      .prepare("SELECT username, role FROM app_user ORDER BY username")
+      .prepare("SELECT username, role FROM app_user")
       .all();
-    if (users.length !== expectedRoles.size || users.some((user) => expectedRoles.get(user.username) !== user.role)) {
-      throw new Error("E2E seed verification failed: account count or roles are incorrect.");
+    for (const [username, role] of expectedRoles) {
+      if (!users.some((user) => user.username === username && user.role === role)) {
+        throw new Error(
+          `E2E seed verification failed: ${username} (${role}) is missing.`,
+        );
+      }
+    }
+
+    const petOwners = database
+      .prepare(
+        `SELECT u.username AS username, COUNT(p.id) AS petCount
+         FROM app_user u
+         LEFT JOIN pet p ON p.user_id = u.id
+         WHERE u.username = 'petowner' OR u.username LIKE 'petowner-w%'
+         GROUP BY u.id`,
+      )
+      .all();
+    if (
+      petOwners.length !== workerCount + 1 ||
+      petOwners.some((owner) => owner.petCount !== 2)
+    ) {
+      throw new Error(
+        "E2E seed verification failed: pet owner accounts must each own 2 pets.",
+      );
     }
   } finally {
     database.close();
@@ -204,6 +252,7 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 
 async function main() {
   let exitCode = 1;
+  const mainDatabaseBefore = fingerprintFile(mainDatabasePath);
 
   try {
     await assertPortAvailable(backendPort);
@@ -211,6 +260,8 @@ async function main() {
 
     temporaryDirectory = await mkdtemp(join(tmpdir(), "pawtrip-e2e-"));
     const databasePath = join(temporaryDirectory, "pawtrip-e2e.db");
+    console.log(`[e2e] 临时数据库: ${databasePath}`);
+    console.log(`[e2e] Playwright workers: ${workerCount}`);
 
     const mavenCommand = process.platform === "win32" ? "mvnw.cmd" : "./mvnw";
     const backend = startProcess(mavenCommand, ["-B", "spring-boot:run"], {
@@ -218,36 +269,12 @@ async function main() {
       env: {
         ...process.env,
         SERVER_PORT: String(backendPort),
-        SPRING_DATASOURCE_URL: `jdbc:sqlite:${databasePath}?foreign_keys=on`,
+        // SQLite 只允许一个写者；E2E 临时库用单连接池串行化访问，避免并发事务的锁升级死锁。
+        SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "1",
+        SPRING_DATASOURCE_URL: `jdbc:sqlite:${databasePath}?foreign_keys=on&busy_timeout=10000`,
       },
       shell: process.platform === "win32",
     });
-
-    await waitForHttp(
-      `http://127.0.0.1:${backendPort}/api/auth/me`,
-      (response) => response.status === 401,
-      backend,
-      "E2E backend",
-    );
-
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      const seedExitCode = await runProcess(
-        process.execPath,
-        ["scripts/seed-users.mjs", databasePath],
-      );
-      if (seedExitCode !== 0) {
-        throw new Error(`E2E user seeding failed on run ${attempt + 1} with exit code ${seedExitCode}.`);
-      }
-    }
-    verifySeededUsers(databasePath);
-
-    const attractionSeedExitCode = await runProcess(
-      process.execPath,
-      ["scripts/seed-e2e-attractions.mjs", databasePath],
-    );
-    if (attractionSeedExitCode !== 0) {
-      throw new Error(`E2E attraction seeding failed with exit code ${attractionSeedExitCode}.`);
-    }
 
     const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
     const frontend = startProcess(
@@ -262,16 +289,45 @@ async function main() {
       },
     );
 
-    await waitForHttp(
-      `http://127.0.0.1:${frontendPort}/login`,
-      (response) => response.ok,
-      frontend,
-      "E2E frontend",
+    await Promise.all([
+      waitForHttp(
+        `http://127.0.0.1:${backendPort}/api/auth/me`,
+        (response) => response.status === 401,
+        backend,
+        "E2E backend",
+      ),
+      waitForHttp(
+        `http://127.0.0.1:${frontendPort}/login`,
+        (response) => response.ok,
+        frontend,
+        "E2E frontend",
+      ),
+    ]);
+
+    const seedExitCode = await runProcess(
+      process.execPath,
+      ["scripts/seed-users.mjs", databasePath],
+      {
+        env: { ...process.env, SEED_E2E_WORKERS: String(workerCount) },
+      },
     );
+    if (seedExitCode !== 0) {
+      throw new Error(`E2E user seeding failed with exit code ${seedExitCode}.`);
+    }
+    verifySeededUsers(databasePath);
+
+    const attractionSeedExitCode = await runProcess(
+      process.execPath,
+      ["scripts/seed-e2e-attractions.mjs", databasePath],
+    );
+    if (attractionSeedExitCode !== 0) {
+      throw new Error(`E2E attraction seeding failed with exit code ${attractionSeedExitCode}.`);
+    }
 
     const playwrightArgs = process.argv.slice(2);
     const playwrightEnv = {
       ...process.env,
+      PAWTRIP_E2E_WORKERS: String(workerCount),
       // 供测试用例直连临时库配置城市政策等无法经 API 维护的数据
       PAWTRIP_E2E_DB_PATH: databasePath,
       ...(playwrightArgs.includes("--headed") ? { PAWTRIP_USE_SYSTEM_CHROME: "true" } : {}),
@@ -286,6 +342,14 @@ async function main() {
     exitCode = 1;
   } finally {
     await cleanup();
+    const mainDatabaseAfter = fingerprintFile(mainDatabasePath);
+    if (mainDatabaseBefore === mainDatabaseAfter) {
+      console.log("[e2e] apps/server/data/pawtrip.db 未被修改。");
+    } else {
+      console.warn(
+        "[e2e] 警告: apps/server/data/pawtrip.db 在本次 E2E 期间发生变化；若同时有本地开发服务在写该库，可忽略此警告。",
+      );
+    }
   }
 
   if (requestedSignal === "SIGINT") return 130;

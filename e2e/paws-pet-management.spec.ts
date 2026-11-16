@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
+import { signIn as signInWithApi } from "./trip-helpers";
 
 const username = "demo";
-const password = "123456";
 
 const onePixelPng = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
@@ -9,15 +9,7 @@ const onePixelPng = Buffer.from(
 );
 
 async function signIn(page: Page) {
-  const authResponse = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/auth/me",
-  );
-  await page.goto("/login");
-  await authResponse;
-  await page.getByLabel("Username").fill(username);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByText("Hello World")).toBeVisible();
+  await signInWithApi(page, username);
 }
 
 async function openPaws(page: Page) {

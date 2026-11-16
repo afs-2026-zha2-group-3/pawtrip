@@ -1,18 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
+import { csrfHeaders, signIn as signInWithApi } from "./trip-helpers";
 
 const username = "admin";
-const password = "123456";
 
 async function signIn(page: Page, user = username) {
-  const authResponse = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/auth/me",
-  );
-  await page.goto("/login");
-  await authResponse;
-  await page.getByLabel("Username").fill(user);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL("/");
+  await signInWithApi(page, user);
 }
 
 function policyUrl(adcode: string) {
@@ -30,19 +22,6 @@ function dogInput(breedId: number) {
     photo: null,
     dogBreedId: breedId,
   };
-}
-
-async function csrfHeaders(page: Page) {
-  let token = (await page.context().cookies()).find(
-    (cookie) => cookie.name === "XSRF-TOKEN",
-  )?.value;
-  if (!token) {
-    await page.request.get("/api/auth/me");
-    token = (await page.context().cookies()).find(
-      (cookie) => cookie.name === "XSRF-TOKEN",
-    )?.value;
-  }
-  return token ? { "X-XSRF-TOKEN": token } : {};
 }
 
 async function clearPets(page: Page) {
@@ -257,6 +236,7 @@ async function removeZhuhaiAllowedBreed(breedId: number | undefined) {
   const { DatabaseSync } = await import("node:sqlite");
   const db = new DatabaseSync(dbPath);
   try {
+    db.exec("PRAGMA busy_timeout = 10000");
     db.prepare(
       "DELETE FROM city_allowed_dog_breed WHERE adcode = ? AND dog_breed_id = ?",
     ).run("440400", breedId);
