@@ -9,9 +9,9 @@
 | 类型 | 路径 / 值 |
 |---|---|
 | 本地验证 | [20261116-124503-local-verify-report.md](../../../docs/ai4se-plugins/20261116-124503-local-verify-report.md)（Overall **Partial**；W4 已于 2026-11-16 闭合） |
-| 流水线 CI | [20261116-143430-pipeline-report.md](../../../docs/ai4se-plugins/20261116-143430-pipeline-report.md)（Overall **Pass**；`push` 触发的 Web CI + E2E CI 全绿，证据等级=人工确认，无 run id） |
+| 流水线 CI | [20261116-143430-pipeline-report.md](../../../docs/ai4se-plugins/20261116-143430-pipeline-report.md)（Overall **Pass**；E1 全绿 = 4 个 job `success`，机器证据；Web CI 30s / E2E CI 1m52s；Server CI 未触发） |
 | 流水线 CD | n/a（纯前端静态展示，不在范围） |
-| PR | **待创建** — 分支已推送 `origin/feat/transport-rules-comparison`；base=`main` |
+| PR | [#45](https://github.com/afs-2026-zha2-group-3/pawtrip/pull/45)（base `main`；PR checks 已绿 = push run） |
 | 分支 | `feat/transport-rules-comparison`（rebase 至 `origin/main` @ `d92ecb9`；分支 tip 随后续文档提交前移，以 `git log` 为准；rebase 前为 `11d82e6`） |
 
 ## Dimension results
@@ -41,7 +41,7 @@
 
 | 条件 | Owner | 时点 |
 |---|---|---|
-| 推送分支并创建 PR 后，回填 `pipeline-report`（E1），CI 全绿方可进 G3 | kitty | 分支已推送 + E1 已回填（2026-11-16，人工确认）；**PR 与 run id 待补** |
+| 推送分支并创建 PR 后，回填 `pipeline-report`（E1），CI 全绿方可进 G3 | kitty | **已闭合**（2026-11-16）：PR #45 + E1 机器证据全绿 |
 | 窄屏 Tab 布局人工目视一次（G1 遗留的 IO 跟踪项） | kitty | 本 G2 之后、合并前 |
 
 ## Waivers / accepted risks
@@ -61,8 +61,8 @@
 ## Next
 
 1. 提交本记录与 REQ-007 的 G2 记录
-2. `/sdd:pr-submit`：分支已推送，建 PR（base=`main`）并回填 PR 号；`gh auth login` 后补 run 链接升级 E1
-3. E1 已回填（2026-11-16，人工确认）
+2. PR #45 已建（base=`main`），checks 全绿；E1 已升级为机器证据
+3. 窄屏 Tab 目视 + G3 签核
 4. G3 + `/sdd:living-merge` → `/sdd:archive-change`
 
 ## Traceability appendix

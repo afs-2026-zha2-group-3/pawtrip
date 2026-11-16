@@ -9,9 +9,9 @@
 | 类型 | 路径 / 值 |
 |---|---|
 | 本地验证 | [20261116-133200-local-verify-report.md](../../../docs/ai4se-plugins/20261116-133200-local-verify-report.md)（Overall **Partial**） |
-| 流水线 CI | [20261116-143430-pipeline-report.md](../../../docs/ai4se-plugins/20261116-143430-pipeline-report.md)（Overall **Pass**；`push` 触发的 Web CI + E2E CI 全绿，证据等级=人工确认，无 run id） |
+| 流水线 CI | [20261116-143430-pipeline-report.md](../../../docs/ai4se-plugins/20261116-143430-pipeline-report.md)（Overall **Pass**；E1 全绿 = 4 个 job `success`，机器证据；REQ-007 对应 Web CI 30s / E2E CI 1m52s；Server CI 未触发） |
 | 流水线 CD | n/a |
-| PR | **待创建** — 分支已推送 `origin/feat/rule-recommendation-and-selection`；base 先取 `feat/transport-rules-comparison` |
+| PR | [#46](https://github.com/afs-2026-zha2-group-3/pawtrip/pull/46)（base `feat/transport-rules-comparison`；合并 #45 后改回 `main`） |
 | 分支 | `feat/rule-recommendation-and-selection`（rebase 至 `feat/transport-rules-comparison`，后者再 rebase 至 `origin/main` @ `d92ecb9`；分支 tip 随后续文档提交前移，以 `git log` 为准；rebase 前为 `d1b6807` / `11d82e6`） |
 | 上游依赖 | REQ-006 的 G2 记录：[../transport-pet-rules-comparison/g2-decision.md](../transport-pet-rules-comparison/g2-decision.md) |
 
@@ -45,7 +45,7 @@
 
 | 条件 | Owner | 时点 |
 |---|---|---|
-| REQ-006 先合并，再提本分支 PR 并回填 `pipeline-report`（E1），CI 全绿方可进 G3 | kitty | 分支已推送 + E1 已回填（2026-11-16，人工确认）；REQ-006 合并与 PR 仍待办 |
+| REQ-006 先合并，再提本分支 PR 并回填 `pipeline-report`（E1），CI 全绿方可进 G3 | kitty | PR #46 已建 + E1 已回填（2026-11-16，机器证据）；**REQ-006 合并与 base 改回 `main` 仍待办** |
 | 补「档案加载失败」E2E（`page.route` 拦截 `/api/pets` 返回 5xx）或将 V3 显式接受为 Partial | kitty | 档案页落地时 / 下一 change |
 | `weightKg`/`shoulderHeightCm` 的空值保护（或后端字段放宽时同步前端） | kitty | 后端字段变更时 |
 
@@ -66,8 +66,8 @@
 ## Next
 
 1. 提交本记录与 REQ-006 的 G2 记录（已随 `docs(REQ-007)` 提交）
-2. 建 PR：base 先取 `feat/transport-rules-comparison`，REQ-006 合并后改为 `main`
-3. `gh auth login` 后补 run 链接，将 E1 升级为机器证据
+2. PR #46 已建（base=`feat/transport-rules-comparison`）；#45 合并后改基到 `main`
+3. E1 已升级为机器证据（4 个 job success），但 PR #46 最新提交仅为文档改动，无独立 check
 4. G3 + `/sdd:living-merge` → `/sdd:archive-change`（**必须先归档 REQ-006**，否则 delta 叠加会丢内容）
 
 ## Traceability appendix
