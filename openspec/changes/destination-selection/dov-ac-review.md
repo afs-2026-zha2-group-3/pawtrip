@@ -3,7 +3,7 @@
 - 日期：2026-11-16（G1 Revision 后复审：宠物档案改外部依赖，paws-page delta 已移除）
 - 评审对象：`specs/destination-selection/spec.md`、`specs/web-app-shell/spec.md`
 - 校验：`openspec validate destination-selection --strict` → valid（Revision 后重跑）
-- 上游：`proposal.md`、REQ-005（`requirement-workspace/requirements/REQ-005-destination-selection.md`）
+- 上游：`proposal.md`、REQ-006（原编号 REQ-005，2026-11-16 合并 main 后改编号；正文历史提及保留原编号）（`requirement-workspace/requirements/REQ-006-destination-selection.md`）
 
 ## Acceptance criteria
 

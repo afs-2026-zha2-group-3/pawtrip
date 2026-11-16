@@ -1,90 +1,103 @@
-# Impact brief — REQ-005 选择目的地
+# REQ-005 Impact Brief — 管理员维护地点宠物政策
 
-- 生成日期：2026-11-16（G1 Revision 同日修订：宠物档案改外部依赖）
-- 上游需求：[requirements/REQ-005-destination-selection.md](../../requirements/REQ-005-destination-selection.md)
-- 意图来源：[intents/REQ-005-issue-15-destination-selection.md](../../intents/REQ-005-issue-15-destination-selection.md)（issue #15，US-47，Must）
+- 生成日期：2026-11-16
+- 上游需求：[REQ-005 管理员维护地点宠物政策](../../requirements/REQ-005-location-pet-policy-editing.md)
+- Deep-dive：[deep-dive.md](deep-dive.md)
 
 ## 1. Requirement set
 
 | id | title | status | path |
 |---|---|---|---|
-| REQ-005 | 选择目的地（搜索、宠物友好筛选与选定生效） | ready-for-split | `requirements/REQ-005-destination-selection.md` |
+| REQ-005 | 管理员维护地点宠物政策 | ready | `requirements/REQ-005-location-pet-policy-editing.md` |
 
-阻塞开放问题：0；DoR BLOCKER：0（WARNING「种子数据内容」已标 deferred）。
-
-已确认决策（2026-11-16，需求方）：
-1. 依赖路径：本 change 携带最小数据地基（禁养名单+政策收录标记+试点种子）；**宠物档案由外部 change（US-01）交付，本 change 只读消费（G1 Revision）**
-2. AC-2 筛选口径：原型口径（政策已收录且档案品种不在禁养名单；无档案退化为仅按收录状态）
-3. AC-3 状态归属：前端 localStorage，后端不感知
-4. 候选城市：珠海、杭州（需求方指定，替代原型 5 城）
-5. 政策详情整页留给 #14；禁养判定逻辑本 change 落地供复用
-6. 顶栏目的地 chip 保留（G1 Revision 确认）
+阻塞开放问题：0；DoR BLOCKER：0；非阻塞未决项：0（4 项均已 resolved）。
 
 ## 2. As-is 资产清单（证据路径）
 
-| 区域 | 路径 | 现状 | 是否受影响 |
-|---|---|---|---|
-| 架构知识 | `docs/knowledge/architecture/README.md` | 技术栈、认证、数据访问、前端约定完整；无目的地/宠物档案模块 | 是（新增模块说明） |
-| Living Spec | `openspec/specs/web-app-shell/spec.md` | Home/Paws 两 Tab；**未含 PR #30 新增的 Cities Tab（spec 滞后于代码）** | 是（顺带补齐 Cities Tab 事实） |
-| Living Spec | `openspec/specs/paws-page/spec.md` | `/paws` 受保护空页 | 否（档案由外部 change 交付，本 change 不改 paws-page） |
-| Living Spec | `openspec/specs/location-management/spec.md` | 管理员地点管理 + V7 携宠政策字段；无禁养名单/收录标记 | 间接（数据模型扩展，管理端行为不变） |
-| Living Spec | `openspec/specs/frontend-data-fetching/`、`frontend-api-request/`、`backend-data-access/`、`backend-error-handling/`、`backend-authentication/`、`ui-foundation/`、`browser-e2e-testing/` | 取数/请求/数据访问/错误/认证/UI/E2E 约定 | 复用约定，契约不变 |
-| 归档资产 | `openspec/changes/archive/2026-11-16-admin-location-management/`、`2026-11-15-add-amap-poi-search/` | 行政区树读取、POI 分层模式可参照 | 参照 |
-| 代码 | `apps/web/src/routes/_authenticated/cities.tsx` | 空占位页（PR #30） | 是（本 REQ 主页面） |
-| 代码 | `apps/web/src/routes/_authenticated/paws.tsx` | 空占位页 | 否（外部 change 实现档案表单） |
-| 代码 | `apps/server/.../db/migration/V4/V5/V7` | 行政区表+全国种子+携宠政策字段 | 是（新增迁移） |
-| 代码 | `apps/server/.../location/AdminLocationService.java` | 省市树仅 `/api/admin/regions` 管理端 | 参照（用户端需新接口） |
-| 外部依赖 | 宠物档案 | main 无 pet 表/实体/API/页面；远端 `feature/add-pet-schema`（未合并）仅 pet 表 schema（V8）+ `allowed_pet_types`（V9），**无 breed、无接口、无页面** | 只读消费（等对方补齐 breed/接口/`/paws`） |
-| 缺口 | 禁养犬种数据 | 无禁养名单、无政策收录标记 | 是（新建） |
+**Knowledge base**
 
-## 3. As-is → proposed delta
+- `docs/knowledge/architecture/README.md`：`com.pawtrip.server.location` 模块、管理 API `/api/admin/**` 与 `ADMIN` 权限约定
+- `docs/knowledge/rules/architecture/java-patterns.md`、`rules/quality/java-coding-style.md`、`rules/security/java-security.md`、`rules/testing/java-testing.md`
+- `docs/knowledge/rules/architecture/react-patterns.md`、`rules/quality/react-coding-style.md`、`rules/testing/react-testing.md`
+- `docs/knowledge/interfaces/README.md`：接口知识占位，无地点政策契约条目
+
+**Living Spec**
+
+- `openspec/specs/location-management/spec.md`：地点管理页面、保存/编辑、游玩时间，以及已新增的“行政区与地点分别保存宠物政策”和“政策字段语义”要求
+- `openspec/specs/frontend-api-request/spec.md`、`backend-error-handling/spec.md`、`backend-authentication/spec.md`、`ui-foundation/spec.md`：本次复用的请求、错误、权限与 UI 基线
+- `openspec/specs/backend-data-access/spec.md`：SQLite/Flyway 数据访问约定
+
+**Post-archive SDD assets**
+
+- `openspec/changes/archive/2026-11-16-admin-location-management/`：管理页、两个弹窗、分页、详情与保存流程基线
+- `openspec/changes/archive/2026-11-16-add-pet-entry-policies/`：V7 列、实体字段、`updatePetPolicies` 与迁移测试基线
+- `openspec/specs/location-management/spec.md` 中两项政策要求即来自后者
+
+**当前实现**
+
+- 数据库：`apps/server/src/main/resources/db/migration/V7__add_pet_entry_policies.sql`
+- 实体：`PawtripLocation.java`（6 字段 + getter + `updatePetPolicies`）、`AdministrativeRegion.java`（同名字段，本次不改）
+- API DTO：`AdminLocationRequests.java`（`SaveLocation`、`UpdateVisitHours`）、`AdminLocationResponses.java`（`SavedLocation`、`LocationDetail`）
+- 服务：`AdminLocationService.java`（创建/更新/详情/校验）、`LocationWriteService.java`（创建与 `updateVisitHours`）、`AdminLocationController.java`
+- 前端：`apps/web/src/routes/_authenticated/admin/-location-editor.tsx`、`apps/web/src/routes/_authenticated/admin/locations.tsx`、`apps/web/src/queries/admin-locations.ts`
+- 测试：`e2e/admin-location-management.spec.ts`、`apps/server/src/test/java/com/pawtrip/server/location/AdminLocationApiTest.java`、`LocationRepositoryTest.java`、`LocationSchemaMigrationTest.java`
+
+## 3. As-is → Proposed delta
 
 | 资产 | As-is | Proposed delta |
 |---|---|---|
-| `web-app-shell` spec | 两 Tab（Home/Paws），Cities Tab 已在代码但未入 spec | MODIFIED：补 Cities Tab 事实；如顶栏展示当前目的地上下文则一并定义 |
-| `paws-page` spec | `/paws` 内容为空 | **不改**（G1 Revision：档案表/breed/接口/页面由外部 change / US-01 交付） |
-| 新能力 `destination-selection` | 不存在 | ADDED：`/cities` 搜索/筛选/选定/提醒；候选=珠海+杭州；筛选原型口径；选定存 localStorage；禁养精确匹配判定 |
-| `location-management` spec | 管理端行为 + V7 字段 | 不改管理端需求；数据模型扩展（禁养名单+收录标记）在新能力 spec 中声明，避免污染 admin 契约 |
-| 数据库 | V1–V7（外部未合并分支另有 V8/V9） | 新增迁移：禁养犬种名单 + 政策收录标记（挂行政区维度，沿用 PR #32 方向）+ 珠海/杭州种子；**不建档案表**（外部 change 交付，注意迁移版本号协调） |
-| 后端 API | `/api/admin/**` 管理端；`/api/auth/**`；`/api/greeting` | 新增用户端只读城市候选接口（含收录状态、禁养名单）；档案读取走外部 change 提供的接口；均走既有认证/错误契约 |
-| 前端状态 | TanStack Query 服务端状态；无全局 store | 新增 cities queries 与档案只读 query（消费外部接口）；新增 localStorage「已选目的地」读写（客户端状态，不进 Query 服务端缓存语义） |
-| E2E | 登录/登出/Tab/404 等 | 新增 `/cities` 搜索→筛选→选定→提醒链路（Playwright Chromium）；档案相关用例依赖外部 change 交付 |
-| 架构 KB | 无目的地/档案模块 | 补充模块、接口、数据与 localStorage 约定说明 |
+| `pawtrip_location` schema | V7 已有 6 个可空列 | 不变，无新迁移 |
+| `PawtripLocation` | 已映射 6 字段，`updatePetPolicies` 无调用方 | 不改实体；在创建与更新路径调用 |
+| `AdministrativeRegion` | 已有同名字段 | 不变；不读取、不写入、不继承 |
+| `AdminLocationRequests.SaveLocation` | `poiId`、`typeGroup`、`min/maxVisitHours` | 增加可选 `petPolicies` 对象（6 个可空字段） |
+| `AdminLocationRequests.UpdateVisitHours` | 仅游玩时间 | 扩展为地点额外信息更新（名称可按设计调整），增加可选 `petPolicies` 对象；缺省不改，出现则整体替换 |
+| `AdminLocationResponses.LocationDetail` | 不含政策 | 增加 `petPolicies` 对象（6 个可空字段），供编辑回填与保存后刷新 |
+| `AdminLocationResponses.SavedLocation` | 列表字段不含政策 | 不变 |
+| `AdminLocationService` | 创建不写政策；更新只写游玩时间；详情不返回政策 | 创建/更新校验并持久化政策；详情映射 6 字段；非法值返回 400 |
+| `LocationWriteService` | 创建写真；更新仅 `updateVisitHours` | 一次事务写入游玩时间与政策；仅在 `petPolicies` 出现时替换政策 |
+| `AdminLocationController` | PATCH 绑定 `UpdateVisitHours` | 绑定扩展后的请求类型 |
+| `apps/web/src/queries/admin-locations.ts` | 类型与入参不含政策 | 详情、创建入参、更新入参增加 `petPolicies` 与 6 个字段 |
+| `AmapCandidateEditor` | 仅游玩时间 | 增加政策编辑区（所有类型），提交创建请求时携带政策 |
+| `SavedLocationEditor` | 表单仅景点渲染，只有游玩时间 | 表单始终渲染；政策所有类型可编辑并回填；游玩时间仍限景点；保留关闭/保存操作 |
+| `e2e/admin-location-management.spec.ts` | 覆盖游玩时间保存与回填 | 更新 mock 响应；增加政策填写、回填、清除、非法值场景 |
+| `AdminLocationApiTest` / `LocationRepositoryTest` | 覆盖地点 CRUD 与政策字段往返 | 增加创建/更新政策、清空为 `NULL`、负数拒绝 |
+| `openspec/specs/location-management/spec.md` | 已有政策持久化与语义要求 | 后续 delta 增加“管理员可编辑地点政策”与 API 契约场景 |
+| `docs/knowledge/architecture/README.md` | 描述地点管理模块 | 可选补充政策编辑路径；不阻塞实现 |
+| `apps/server` 其他模块 / 公共 API | 无地点政策展示接口 | checked, no impact；本需求不新增公共 API |
 
-## 4. Blast radius（应用架构层）
+## 4. Blast radius
 
-- `apps/server`：新增 destination（用户端城市候选）功能模块 + Flyway 迁移；不改认证、错误契约、既有 admin/location 行为；不建 pet 模块（外部 change）
-- `apps/web`：`/cities` 页面实现、queries 新增（含档案只读）、localStorage 选定状态、顶栏目的地 chip（保留，已确认）；不改 `/paws`
-- `e2e/`：新增验收链路
-- 不影响：高德集成、地点管理管理端、登录契约、greeting
+- **直接受影响**：`apps/server` 地点管理模块（DTO、服务、写入服务、控制器）；`apps/web` 管理员地点页面与两个弹窗；地点管理相关测试。
+- **不受影响**：SQLite schema 与迁移链、行政区数据、认证与角色、公共页面、行程、照片与 POI 基础信息。
+- **运行拓扑**：不变；仍为浏览器 → Vite `/api` 代理 → Spring Boot → SQLite。
 
 ## 5. Artifact impact
 
-- specs：ADDED `destination-selection`；MODIFIED `web-app-shell`（paws-page 不改，G1 Revision）
-- tests：后端接口验收测试（城市候选/禁养匹配边界，档案输入按外部契约）+ Playwright E2E
-- docs：`docs/knowledge/architecture/README.md` 增补；registry/handoff 更新
-- 数据：珠海/杭州禁养名单与收录状态需政府公开文件摘录（deferred 数据任务）
+- **Specs**：修改 `location-management` 一个 capability；不新增 capability。
+- **Tests**：后端 API 测试与 Playwright 管理端 e2e 需要扩展；迁移测试不变。
+- **Docs / KB**：可选更新地点管理架构说明；接口知识库当前为空，不强制新增。
+- **OpenSpec**：新建一个 change 包承载 proposal、delta spec、tasks 与 DoV 评审。
 
 ## 6. Dual-track notes
 
-- OpenSpec：单 change 即可承载（见 §8）；delta spec 按能力拆分
-- Agile：issue #15 为 Must story；最小数据地基是本 story 的使能子任务；宠物档案为外部 change（US-01）交付的依赖项，需协调契约（breed 词表）与合并顺序；#14 后续 story 直接复用本 change 落地的判定逻辑
+- **OpenSpec**：一个 change 覆盖 API 契约、两个弹窗与测试，delta 聚焦 `location-management`。
+- **Agile**：可拆为“API 契约与校验”“新建弹窗”“编辑弹窗”三个薄故事，但同属一个垂直切片；建议单 change 交付，避免弹窗与接口契约分离。
 
 ## 7. Risks & blockers
 
-| 级别 | 风险 | 处置 |
+| 级别 | 风险 | 说明 / 缓解 |
 |---|---|---|
-| 非阻塞 | 珠海禁养名单/收录状态未摘录；品种命名需与档案品种枚举精确对齐（精确匹配不支持别名） | 实现期数据任务；品种枚举与名单用同一词表，deep-dive 定字段 |
-| 非阻塞 | localStorage 选定状态换设备即丢，后端不感知 | 需求方已确认接受；后续 story 需要服务端上下文时另行演进 |
-| 非阻塞（规格）/ 阻塞（P4 实现） | 外部档案 change 未交付 breed/接口/`/paws` 页面（现仅 schema）；AC-2 完整口径与 AC-4 的实现/E2E 依赖其就绪 | 需求方确认等对方补齐、本 change 只消费（2026-11-16）；与对方协调 breed 词表、读取接口契约与合并顺序；迁移版本号避免冲突 |
-| 记录 | `web-app-shell` spec 滞后于代码（Cities Tab） | 本 change delta 顺带补齐 |
-
-**Critical blockers：0。**
+| 风险 R1 | 更新接口语义不清 | 已定：PATCH 使用可选 `petPolicies` 对象；缺省不改，出现则整体替换，旧客户端只提交游玩时间不会清空政策 |
+| 风险 R2 | 弹窗高度与滚动 | 增加 6 个字段后“保存地点”弹窗变长；现有 `DialogContent` 已有最大高度与滚动，需确认两列布局可读 |
+| 风险 R3 | 非景点弹窗结构 | 已定：单表单始终渲染，政策所有类型可编辑，游玩时间仅景点显示；需在实现中保持既有游玩时间规则 |
+| 风险 R4 | e2e mock 缺字段 | 现有路由 mock 的详情/创建响应不含政策；需同步更新，避免回填为 `undefined` |
+| 风险 R5 | 费用与体重换算/精度 | 元转分需处理两位小数与浮点误差；体重与费用均最多两位小数，超过直接拒绝；按“精确两位再换算”实现 |
+| 风险 R6 | 流程台账漂移 | `registry.md` 缺 4 个已归档 change 的登记；属流程缺口，不影响本需求实现 |
+| **blocker** | 无 | 无阻塞性未知依赖 |
 
 ## 8. Suggested split boundaries
 
-建议**单 change**：`destination-selection`（或 `add-destination-selection`），内含两块使能+主体（G1 Revision 后）：
-1. 数据地基：禁养名单+收录标记+珠海/杭州种子（迁移）
-2. 目的地选择主体：用户端城市候选 API + `/cities` 页面 + localStorage 选定 + 禁养提醒（档案品种只读消费外部 change）
-
-理由：两块共同构成 issue #15 的可验收闭环；宠物档案由外部 change（US-01）交付，本 change 不重复实现，AC-2/AC-4 的完整验收以外部契约就绪为前提。
+- 建议 **1 个 Change**：`admin-edit-location-pet-policies`。
+- 理由：API 契约、两个弹窗与测试强耦合，拆分会产生“接口已改但 UI 不可用”或“UI 依赖未定契约”的中间态。
+- 依赖 / 阶段：无跨 change 依赖；`add-pet-entry-policies` 已提供 schema 与实体基线。
+- 不推荐拆成“后端 change + 前端 change”：同一验收需要端到端验证政策保存与回填。

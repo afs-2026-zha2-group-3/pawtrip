@@ -5,9 +5,9 @@
 动机见 `proposal.md`（Why/What Changes）；行为契约见 `specs/destination-selection/spec.md` 与 `specs/web-app-shell/spec.md`；验收分层见 `atdd-design.md`。
 
 约束现状：
-- 后端 Spring Boot 4.1 / Java 21，SQLite + Flyway（main 至 V7），JPA `ddl-auto=none`；既有用户端只读接口先例少（`/api/greeting`），管理端 `/api/admin/regions` 提供省市树
+- 后端 Spring Boot 4.1 / Java 21，SQLite + Flyway（main 至 V13），JPA `ddl-auto=none`；既有用户端只读接口先例少（`/api/greeting`），管理端 `/api/admin/regions` 提供省市树
 - 前端 React 19 + TanStack Router/Query，无全局 store；`/cities` 为空占位页，导航 Tab 已含「城市浏览」（PR #30）
-- **外部依赖**：宠物档案由 US-01 change 交付（远端 `feature/add-pet-schema` 仅 pet 表 schema，V8/V9 已被其占用；无 breed、无接口、无 `/paws` 页面）
+- **外部依赖**：宠物档案由 US-01 change 交付——PR #33–#36（V8–V13，`/api/pets` CRUD、`/api/dog-breeds`）与 PR #40（`/paws` 宠物管理页）已合并 main；`PetDetail` 仍无 breed 字段，禁养判定相关展示继续门控
 - 候选范围为全部城市级行政区（2026-11-16 需求方修订：移除 V14 政策种子迁移，政策收录/禁养数据源未定，判断点 TODO）
 
 ## Goals / Non-Goals
@@ -41,14 +41,14 @@
 
 ### D3: 迁移版本号避让外部 V8/V9（本 change 最终无新增迁移）
 
-- **背景**：外部 `feature/add-pet-schema` 已占 V8/V9，未合并
+- **背景**：外部宠物档案系列先后占用 V8/V9（立项时未合并，现已随 PR #33–#36 合并并扩展至 V13）
 - **选择**：本 change 迁移预定 V10 起；同步 main 后重编号为 V14；2026-11-16 需求方决定移除 V14，本 change 不再新增迁移（main 宠物系列占用 V8–V13）
 - **被否方案**：抢占 V8——与外部分支直接冲突，合并顺序不可控
 - **理由**：Flyway 版本单调；政策数据迁移待数据源确定后另行编号
 
 ### D4: 选定状态存 sessionStorage，登出清除（2026-11-16 需求方修订）
 
-- **背景**：需求方确认前端本地存储、登出即清除（REQ-005 决策）；后修订为 sessionStorage
+- **背景**：需求方确认前端本地存储、登出即清除（REQ-006 决策）；后修订为 sessionStorage
 - **选择**：键 `pawtrip.selectedDestination`，值 `{adcode, cityName, province, selectedAt}`；封装读写/清除工具 + 订阅 hook（`useSyncExternalStore`），供 `/cities` 与顶栏 chip 共享；登出成功回调中与 `queryClient.clear()` 一并清除
 - **被否方案**：服务端持久化（需求方已否）；localStorage（原方案，需求方修订为 sessionStorage，选定仅限当前标签页会话）；引入全局状态库（项目约定无全局 store，两城场景过重）
 - **理由**：同标签页刷新保留、重选覆盖、跨页面 chip 同步均由同一存储源驱动；关闭标签页即失效，符合会话级选定口径

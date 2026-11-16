@@ -1,12 +1,12 @@
 ---
-id: REQ-005
+id: REQ-006
 title: 选择目的地（搜索、宠物友好筛选与选定生效）
 status: ready-for-split
 discovery: Go (2026-11-16)
-impact: ../analysis/REQ-005/impact-brief.md
-deep_dive: ../analysis/REQ-005/deep-dive.md
+impact: ../analysis/REQ-006/impact-brief.md
+deep_dive: ../analysis/REQ-006/deep-dive.md
 sources:
-  - ../intents/REQ-005-issue-15-destination-selection.md
+  - ../intents/REQ-006-issue-15-destination-selection.md
   - apps/web/src/routes/_authenticated/cities.tsx
   - apps/web/src/routes/__root.tsx
   - apps/server/src/main/resources/db/migration/V4__create_location_management_tables.sql
@@ -18,7 +18,7 @@ sources:
   - docs/knowledge/architecture/README.md
 ---
 
-# REQ-005: 选择目的地（搜索、宠物友好筛选与选定生效）
+# REQ-006: 选择目的地（搜索、宠物友好筛选与选定生效）
 
 ## Discovery Decision
 
@@ -26,7 +26,7 @@ Go — 候选能力清晰：issue #15（US-47，Must）要求用户搜索并选�
 
 ## 六字段
 
-1. **id**：REQ-005
+1. **id**：REQ-006
 2. **statement**：已登录用户在 `/cities` 目的地选择页按城市名/省份关键字搜索候选城市并选定其一作为行程规划目的地；提供「宠物友好筛选」开关，启用后仅展示符合养犬政策筛选条件的城市（MVP 仅政策维度）；选定后该城市作为后续政策查看与行程生成的规划上下文；当用户宠物档案中的品种命中所选城市禁养犬种名单时，在列表与选定确认处给出高亮提醒（复用 US-04 判定逻辑）。
 3. **actors**：
    - 已登录用户（计划携宠出行）：搜索、筛选、查看政策状态、选定目的地
@@ -42,7 +42,7 @@ Go — 候选能力清晰：issue #15（US-47，Must）要求用户搜索并选�
    - 禁养判定：品种名精确匹配；无档案、政策未收录、品种为空或「其他」不触发判定
    - 未收录政策城市展示「政策未收录」状态，不展示政策详情
 6. **links to evidence**：
-   - 需求全文与原型口径：[intent 捕获](../intents/REQ-005-issue-15-destination-selection.md)
+   - 需求全文与原型口径：[intent 捕获](../intents/REQ-006-issue-15-destination-selection.md)
    - 入口占位页：`apps/web/src/routes/_authenticated/cities.tsx`（PR #30，内容为空）
    - 行政区数据：`V4__create_location_management_tables.sql`（`administrative_region` 表）、`V5__seed_administrative_regions.sql`（全国省市种子）
    - 既有携宠政策字段：`V7__add_pet_entry_policies.sql`（限带数量/单只限重/牵引/疫苗/费用/预约；**无禁养犬种名单、无政策条文、无收录标记**）
@@ -95,7 +95,7 @@ Go — 候选能力清晰：issue #15（US-47，Must）要求用户搜索并选�
 | WARNING | deferred | 种子数据内容 | 珠海禁养名单/收录状态尚未摘录；是否含未收录演示城市未定 | 实现期数据任务，以政府公开文件为准；不阻塞契约设计 |
 | SUGGESTION | resolved | 管理员 actor | 初稿管理员职责含糊 | 已明确管理端维护界面 Out of Scope |
 
-BLOCKER 数：0（①–⑧ 通过；⑨–⑫ 已于 deep-dive 复检通过，见 [deep-dive.md](../analysis/REQ-005/deep-dive.md)）。
+BLOCKER 数：0（①–⑧ 通过；⑨–⑫ 已于 deep-dive 复检通过，见 [deep-dive.md](../analysis/REQ-006/deep-dive.md)）。
 
 ## Evidence / Verification Notes
 
@@ -103,3 +103,11 @@ BLOCKER 数：0（①–⑧ 通过；⑨–⑫ 已于 deep-dive 复检通过，�
 - 携宠政策字段（非禁养名单）：PR #32（`61803e9`）、`V7__add_pet_entry_policies.sql`
 - 宠物档案缺失（main）：`apps/web/src/routes/_authenticated/paws.tsx` 返回 null；`apps/server` 无 pet 模块；外部进展见远端 `feature/add-pet-schema`（V8/V9，仅 schema）
 - 功能分支：`feat/destination-selection`（本地，不推送）
+## 修订记录（2026-11-16，合并 main 后）
+
+- 编号：原 REQ-005；main 已将 REQ-005 用于「管理员维护地点宠物政策」（已归档），本需求改登记为 **REQ-006**，正文历史决策保留原编号与原口径。
+- 存储口径修订：localStorage → **sessionStorage**（键 `pawtrip.selectedDestination`，登出清除），需求方明确「就是用 sessionStorage」。
+- 候选范围修订：试点珠海/杭州两城 → **全部城市级行政区**（`level='city'`）；V14 政策种子迁移整体移除，`policyCovered=false`/空 `bannedBreeds` 占位，政策 Badge/禁养提醒留 TODO（数据源归属未定）。
+- 筛选口径修订：原型政策维度 → **服务端** `GET /api/destinations?keyword=&petFriendly=`；宠物友好=`max_pets_per_person` 为 null 或 >=1（仅 0 排除），复用 V7 既有列。
+- 外部依赖进展：US-01 宠物档案 PR #33–#36（V8–V13，`/api/pets` CRUD、`/api/dog-breeds`）与 PR #40（`/paws` 页面）已合并 main；`PetDetail` 仍无 breed，E4/E6/E10/E11 继续 test.fixme 门控。
+- 分支策略修订：需求方已授权推送 `feat/destination-selection` 并提 PR（原「本地不推送」作废）。

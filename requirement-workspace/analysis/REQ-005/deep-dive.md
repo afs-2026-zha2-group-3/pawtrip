@@ -1,72 +1,143 @@
-# Deep-dive — REQ-005 选择目的地
+# REQ-005 Deep Dive — 地点宠物政策编辑
 
+- 上游需求：[REQ-005 管理员维护地点宠物政策](../../requirements/REQ-005-location-pet-policy-editing.md)
 - 日期：2026-11-16
-- 上游：[impact-brief.md](impact-brief.md)（方向 add，触发 Phase 2.5）
-- 模式：主动 probing；业务决策均已由需求方确认，未知数据值标 `{TBD}`，不臆造
+- 范围：管理端两个现有地点弹窗 + 管理 API；不含行政区、公共展示与新迁移
 
-## ① 数据契约
+## 1. 数据契约
 
-| concept | grain | field list | state transitions | source |
+### 1.1 粒度与归属
+
+- 一条 `pawtrip_location` 记录持有一组政策；不新建政策表。
+- 地点政策与 `administrative_region` 政策相互独立，不继承、不复制、不回退。
+- 创建时未填写的字段一律为 `NULL`；编辑时可把已配置字段清回 `NULL`。
+
+### 1.2 字段
+
+| 业务字段 | API 字段 | 数据库列 | 类型 | 空值语义 | 单位 / 计费口径 | 校验 |
+|---|---|---|---|---|---|---|
+| 每位游客最多携带宠物数 | `maxPetsPerPerson` | `max_pets_per_person` | `Integer` | `NULL` = 未配置 | 只 / 人 | 非负整数 |
+| 单只宠物最大体重 | `maxSinglePetWeightKg` | `max_single_pet_weight_kg` | `Double` | `NULL` = 未配置 | kg，可为小数 | 非负数，最多两位小数 |
+| 牵引绳要求 | `leashRequired` | `leash_required` | `Boolean` | `NULL` = 未配置；`false` = 明确不要求 | — | `true` / `false` / `null` |
+| 疫苗证明要求 | `vaccinationProofRequired` | `vaccination_proof_required` | `Boolean` | 同上 | — | `true` / `false` / `null` |
+| 额外费用 | `extraFeeCents` | `extra_fee_cents` | `Long` | `NULL` = 未配置；`0` = 免费 | 分 / 只 / 次；表单按元输入，最多两位小数 | 非负整数分 |
+| 预约要求 | `reservationRequired` | `reservation_required` | `Boolean` | `NULL` = 未配置；`false` = 明确不要求 | — | `true` / `false` / `null` |
+
+### 1.3 状态流转
+
+| 当前 | 事件 | 结果 |
+|---|---|---|
+| 未配置（`NULL`） | 管理员填写合法值并保存 | 保存为明确值 |
+| 已配置 | 管理员清空数值或把布尔选回“未配置”并保存 | 回到 `NULL` |
+| 已配置 | 管理员修改并保存 | 覆盖为新值 |
+| 任意 | PATCH 未携带 `petPolicies` | 政策全部保持不变 |
+| 任意 | 保存失败 | 保持原值，不产生部分写入 |
+| 任意 | 读取详情 | 返回数据库当前值，不读取行政区政策 |
+
+### 1.4 API 契约
+
+| 端点 | 变更 |
+|---|---|
+| `POST /api/admin/locations` | 请求增加可选 `petPolicies` 对象；缺省或对象内字段为 `null` 均保存为 `NULL` |
+| `PATCH /api/admin/locations/{poiId}` | 请求增加可选 `petPolicies` 对象；缺省表示政策不变，出现则 6 项整体替换，字段 `null` 表示清空 |
+| `GET /api/admin/locations/{poiId}` | 响应增加 `petPolicies` 对象（6 个可空字段），供编辑回填 |
+| `GET /api/admin/locations` | 列表响应不变，不展示政策 |
+| 错误 | 非法数值沿用现有 400 invalid-query；不暴露新的错误码 |
+
+请求示例（POST / PATCH 共用政策对象）：
+
+```json
+{
+  "petPolicies": {
+    "maxPetsPerPerson": 1,
+    "maxSinglePetWeightKg": 8.75,
+    "leashRequired": true,
+    "vaccinationProofRequired": false,
+    "extraFeeCents": 1050,
+    "reservationRequired": null
+  }
+}
+```
+
+## 2. 边界枚举
+
+| 分支 | 归属 | 预期行为 |
+|---|---|---|
+| 数量留空 | In | 保存 `NULL` |
+| 数量填 `0` | In | 保存 `0` |
+| 数量为负数 / 小数 / 非数字 | In（拒绝） | 前端提示错误且不发请求；后端返回 400 |
+| 体重留空 | In | 保存 `NULL` |
+| 体重填 `0` | In | 保存 `0` |
+| 体重为负数 / 非数字 | In（拒绝） | 前端提示错误且不发请求；后端返回 400 |
+| 体重带小数 | In | 接受，如 `8.75` |
+| 体重超过两位小数 | In（拒绝） | 前端提示错误且不发请求；后端返回 400 |
+| 费用留空 | In | 保存 `NULL` |
+| 费用填 `0` | In | 保存 `0`，表示免费 |
+| 费用为负数 / 非数字 | In（拒绝） | 前端提示错误且不发请求；后端返回 400 |
+| 费用超过两位小数 | In（拒绝） | 提示错误，不静默舍入 |
+| 费用 `0.01` 元 | In | 保存 `1` 分 |
+| 费用 `10.5` 元 | In | 保存 `1050` 分 |
+| 布尔选“未配置” | In | 保存 `NULL` |
+| 布尔选“需要” | In | 保存 `true` |
+| 布尔选“不需要” | In | 保存 `false` |
+| 景点地点 | In | 游玩时间 + 政策均可编辑 |
+| 非景点地点 | In | 只编辑政策；游玩时间不显示 |
+| 创建路径 | In | 政策随 `POST` 一次保存；未携带 `petPolicies` 时 6 项均为 `NULL` |
+| 编辑路径 | In | 政策随 `PATCH` 一次保存；未携带 `petPolicies` 时政策不变 |
+| 保存失败 | In | 显示既有失败提示，保留表单值，不部分写入 |
+| 直接调用 API 传非法值 | In（拒绝） | 400，且不写入 |
+| 行政区政策 | Out | 不读取、不写入、不继承 |
+| 列表展示 / 公共展示 | Out | 本需求不展示 |
+
+## 3. 跨 REQ / 既有能力对齐
+
+| 资产 | 关系 | 处理 |
+|---|---|---|
+| REQ-001 问候语 | 无关 | checked, no impact |
+| REQ-002 数据访问/错误处理 | 复用 400 invalid-query 错误路径 | checked, no contract change |
+| REQ-003 登录 | 复用 `ADMIN` 权限 | checked, no change |
+| REQ-004 前端骨架 | 复用 shadcn 表单组件与管理员页面结构 | checked, no change |
+| `openspec/specs/location-management/spec.md` | 政策持久化与空值语义已存在；本次增加管理编辑与 API 契约 | 后续 delta 修改 |
+| `openspec/changes/archive/2026-11-16-admin-location-management/` | 管理页、弹窗、分页与详情基线 | 在其上扩展 |
+| `openspec/changes/archive/2026-11-16-add-pet-entry-policies/` | 6 列、实体字段、`updatePetPolicies` 基线 | 直接复用，无迁移 |
+| GitHub US-17 / US-25 | 未来公共展示消费者 | 本需求只提供数据，Out of scope |
+| `requirement-workspace/registry.md` | 仅登记 REQ-001…004 | 追加 REQ-005；其余 4 个归档 change 的登记缺口另行处理 |
+
+## 4. 通知 / 展示契约
+
+不涉及通知。
+
+| 展示面 | 触发 | 受众 | 内容 / 字段 | 通道 |
 |---|---|---|---|---|
-| 城市政策收录状态 | 城市（`administrative_region.adcode`，level=city 或直辖市省级叶节点） | adcode、policy_covered（布尔）、pilot（是否试点候选） | 未收录 → 已收录（种子/后续维护）；不回退 | PR #32 方向（政策挂行政区）+ 需求方决策 2026-11-16 |
-| 禁养犬种名单条目 | 城市 × 品种 | region_adcode、breed_name（与档案品种同一词表）、source（政府文件名）、updated（摘录年月） | 静态种子，无生命周期 | 原型 CITIES.banned/source/updated 口径；珠海/杭州具体名单 `{TBD}`（实现期政府文件摘录，deferred 数据任务） |
-| 宠物档案（外部依赖，只读消费） | 用户维度（grain 以外部 change 为准） | 本 change 仅消费 breed（品种，可空/「其他」）；**契约要求**：breed 枚举与禁养词表一致、提供当前用户档案读取接口 | 创建/编辑由外部 change 定义，本 change 不关心 | G1 Revision 2026-11-16：US-01 change 交付（现远端 `feature/add-pet-schema` 仅 schema，无 breed/接口/页面） |
-| 已选目的地（客户端状态） | 浏览器（localStorage） | adcode、city_name、selected_at | 未选 → 选定 → 重选覆盖；登出清除 | 需求方决策 2026-11-16（前端本地存储 + 登出即清除） |
+| “保存地点”弹窗 | 管理员点击未保存 POI 的编辑 | 管理员 | POI 基础信息；景点显示游玩时间；所有类型显示 6 项政策 | Web 弹窗 |
+| “pawtrip地点”编辑弹窗 | 管理员点击已保存地点的编辑 | 管理员 | POI / 商业 / 照片；景点显示游玩时间；6 项政策按详情回填 | Web 弹窗 |
+| 表单错误 | 校验失败 | 管理员 | 字段级可读错误，不发起请求 | 弹窗内错误提示 |
+| 保存失败 | API 错误或网络失败 | 管理员 | 既有失败提示，保留输入 | 弹窗内错误提示 |
+| 地点列表 / 公共页面 | — | — | 本需求不展示政策 | — |
 
-品种词表约束（对外部档案 change 的契约要求）：档案品种枚举与禁养名单使用**同一词表**（原型 BREEDS：柯基/金毛寻回犬/拉布拉多/泰迪/柴犬/边境牧羊犬/比熊/比特犬/日本土佐/其他）；若珠海/杭州官方名单出现词表外品种，需与对方协调扩充枚举后再摘录，保证精确匹配可命中。
+政策字段展示标签：
 
-## ② 边界归属
+- 每位游客最多携带宠物数（只）
+- 单只宠物最大体重（kg）
+- 额外费用（元 / 只 / 次）
+- 牵引绳要求（未配置 / 需要 / 不需要）
+- 疫苗证明要求（未配置 / 需要 / 不需要）
+- 预约要求（未配置 / 需要 / 不需要）
 
-| rule | branch | in/out | rationale |
+## 5. DoR 9–12 自检
+
+| # | 检查项 | 结果 | 证据 |
 |---|---|---|---|
-| 禁养判定 | 档案品种精确命中名单 → 命中 | in | AC-4；列表 Badge + 选定确认高亮 |
-| 禁养判定 | 无档案 / 品种空 / 品种=「其他」 | in（不触发判定） | 原型口径；无档案时筛选退化为仅按收录状态 |
-| 禁养判定 | 城市政策未收录 | in（不触发判定） | 原型口径 |
-| 禁养判定 | 别名/混血/模糊匹配 | out | 原型明确不支持 |
-| 宠物友好筛选 | 开启：covered 且未命中 | in | AC-2 原型口径（已确认） |
-| 宠物友好筛选 | 关闭：全部试点候选 | in | 原型 dest-1 |
-| 搜索 | 关键字匹配城市名/省份；无结果 → 空态提示 | in | AC-1 + 原型空态 |
-| 搜索 | 空关键字 → 全部试点候选 | in | 原型默认态 |
-| 档案表单输入完整性 | type/breed 校验与保存行为 | out | G1 Revision：档案表单由外部 change（US-01）交付 |
-| 选定 | 命中禁养仍可选定，提醒持续 | in | 原型 dest-3；不阻断 |
-| 选定 | 候选范围外城市（非试点） | out | 候选=珠海+杭州（已确认） |
-| 登出 | 清除 localStorage 已选目的地 | in | 需求方确认 2026-11-16；与登出清 Query 缓存一致 |
-| 政策条文展示/维护 | 全部 | out | #14 承接 |
-| 完整档案字段（体型/体重/年龄/性格） | 全部 | out | US-01 承接 |
-| 服务端持久化选定目的地 | 全部 | out | 已确认前端存储 |
+| 9 | Data contract decided | Pass | 本文 1.1–1.4 |
+| 10 | Boundary enumerated | Pass | 本文第 2 节覆盖所有分支 |
+| 11 | Cross-REQ aligned | Pass | 本文第 3 节；无未收敛 ✗ |
+| 12 | Notification / display contract | Pass | 本文第 4 节；无通知，两个展示面已列明 |
 
-## ③ 跨 REQ 一致性
+## 6. 已澄清的非阻塞问题
 
-| capability | per-REQ grain+fields | aligned? | anchor |
-|---|---|---|---|
-| 宠物档案 | REQ-005：只读消费 breed；US-01（外部 change，`feature/add-pet-schema` 进行中）：档案表/字段/接口/页面 | ⚠ 待对齐：对方现 schema 无 breed 字段，需其补齐并保证词表一致 | 外部 change 为档案锚点，REQ-005 仅消费（G1 Revision） |
-| 城市养犬政策 | REQ-005：covered 标记+禁养名单；#14（US-04，未立项）：政策条文/来源/复核+详情展示 | ✓（同挂行政区维度，字段不重叠） | REQ-005 落判定逻辑，#14 复用 |
-| 应用外壳 Tab | REQ-004：Home/Paws；PR #30 代码：+Cities（spec 滞后）；REQ-005：Cities 承载目的地选择 | ✓（本 change delta 补齐 spec 事实） | web-app-shell spec |
-| 携宠政策字段 | PR #32：限带/限重/牵引/疫苗/费用/预约（地点+行政区）；REQ-005：禁养名单+收录标记 | ✓（字段互补，不重叠） | V7 迁移 |
-
-## ④ 通知 / 展示契约
-
-| trigger or surface | recipient | content + display fields | channel | cardinality | source |
-|---|---|---|---|---|---|
-| 候选卡片 | 已登录用户 | 城市名、省份、「政策已收录/未收录」Badge、命中时「档案品种禁养」Badge | `/cities` 列表 | 每城一卡（2 城） | 原型 dest-1 |
-| 筛选开关+计数 | 已登录用户 | 开关态、候选数、「筛选口径」说明 | `/cities` 工具栏 | 单例 | 原型 dest-1 |
-| 搜索无结果 | 已登录用户 | 空态标题+建议（关筛选/换关键词） | `/cities` 列表区 | 单例 | 原型 dest-1 |
-| 选定确认 | 已登录用户 | 成功提示 + 规划上下文（目的地、档案摘要、政策状态）；命中时红色禁养 Alert 持续 | `/cities` 选定视图 | 单例 | 原型 dest-3 |
-| 禁养高亮提醒 | 已登录用户（品种命中） | 品种名、城市名、风险与建议文案 | 列表 Badge + 选定 Alert | 每命中城一处 | AC-4 + 原型 |
-| 顶栏目的地上下文 | 已登录用户 | 当前已选城市名（未选时「目的地未选」） | 应用外壳顶栏 | 单例 | 原型 hchip；AC-3 可见性 |
-| 档案必填校验 | 已登录用户 | 「类型必选」等错误提示 | `/paws` 表单（外部 change 交付，本 change 不实现） | 单例 | 原型 type-field |
-
-## Probe log
-
-- 2026-11-16 Q：登出时 localStorage 已选目的地是否清除？→ Confirmed：登出即清除（与 Query 缓存清理一致）。
-- 2026-11-16 G1 Revision：宠物档案由外部 change（US-01）实现，本 change 只消费 → 档案契约行改为外部依赖；核查远端 `feature/add-pet-schema` 发现无 breed/接口/页面，契约缺口与进度风险已记录（阻塞 P4 实现，不阻塞规格）。顶栏 chip 确认保留。
-- 其余契约由已确认决策 + 原型口径 + 既有代码约定推导，无新增阻塞问题；珠海/杭州名单具体值为 deferred 数据任务（非字段缺口）。
-
-## DoR ⑨–⑫ 复检
-
-- ⑨ 数据契约：4 概念均有 grain+fields+transitions；`{TBD}` 仅为种子数据值（deferred 数据任务），非字段缺口 → 通过
-- ⑩ 边界枚举：含禁养判定退化分支与登出分支；档案表单校验已划归外部 change → 通过
-- ③ 跨 REQ：档案对齐项标 ⚠ 待对齐（外部 breed 缺口），属外部依赖风险而非本 REQ 内部矛盾 → 通过（风险已记录）
-- ⑫ 展示契约：7 个 surface 均有 trigger/recipient/content/channel → 通过
-
-BLOCKER 数：0。
+| status | question | resolution |
+|---|---|---|
+| resolved | 更新接口按整体替换还是缺省字段不变？ | 可选 `petPolicies` 对象：缺省不改，出现则 6 项整体替换 |
+| resolved | 体重输入允许几位小数、如何显示？ | 最多两位小数，超过拒绝 |
+| resolved | 非景点地点现有弹窗缺少保存操作，表单结构如何调整？ | 单表单始终渲染，游玩时间仅景点显示 |
+| resolved | 是否在列表展示政策摘要？ | 本需求不做 |

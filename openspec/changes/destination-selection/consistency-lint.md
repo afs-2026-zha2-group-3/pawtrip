@@ -1,6 +1,6 @@
 # Consistency lint — destination-selection
 
-- change-id：destination-selection
+- change-id：destination-selection（需求登记原编号 REQ-005，2026-11-16 合并 main 后改编号 REQ-006；正文历史提及保留原编号）
 - phase：p2（G1 前的开放 change，recipe P2 上下文预设）
 - focus：全量（Shared + p2）
 - 时间：2026-11-16（G1 Revision 后重跑：移除 paws-page delta，档案改外部依赖）

@@ -56,7 +56,7 @@ class AdminLocationController {
 
 	@PatchMapping("/locations/{poiId}")
 	AdminLocationResponses.LocationDetail updateLocation(@PathVariable String poiId,
-			@RequestBody AdminLocationRequests.UpdateVisitHours request) {
+			@RequestBody AdminLocationRequests.UpdateLocation request) {
 		return this.adminLocationService.updateLocation(poiId, request);
 	}
 

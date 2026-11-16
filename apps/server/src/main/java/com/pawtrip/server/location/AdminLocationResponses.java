@@ -61,8 +61,22 @@ public final class AdminLocationResponses {
 		}
 	}
 
+	public record PetPolicies(Integer maxPetsPerPerson, Double maxSinglePetWeightKg, Boolean leashRequired,
+			Boolean vaccinationProofRequired, Long extraFeeCents, Boolean reservationRequired) {
+
+		static PetPolicies from(PawtripLocation location) {
+			return new PetPolicies(
+					location.getMaxPetsPerPerson(),
+					location.getMaxSinglePetWeightKg(),
+					location.getLeashRequired(),
+					location.getVaccinationProofRequired(),
+					location.getExtraFeeCents(),
+					location.getReservationRequired());
+		}
+	}
+
 	public record LocationDetail(String poiId, String typeGroup, Integer minVisitHours, Integer maxVisitHours,
-			JsonNode poi, JsonNode business, List<PhotoDetail> photos) {
+			PetPolicies petPolicies, JsonNode poi, JsonNode business, List<PhotoDetail> photos) {
 
 		public LocationDetail {
 			poi = poi.deepCopy();

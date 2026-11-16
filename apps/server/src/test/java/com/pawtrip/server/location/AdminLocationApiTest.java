@@ -1,6 +1,7 @@
 package com.pawtrip.server.location;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -59,6 +60,9 @@ class AdminLocationApiTest {
 
 	@Autowired
 	PawtripLocationRepository locationRepository;
+
+	@Autowired
+	AdministrativeRegionRepository regionRepository;
 
 	@Autowired
 	LocationPhotoRepository photoRepository;
@@ -186,7 +190,8 @@ class AdminLocationApiTest {
 				.andExpect(jsonPath("$.totalElements").value(2))
 				.andExpect(jsonPath("$.totalPages").value(2))
 				.andExpect(jsonPath("$.hasNext").value(true))
-				.andExpect(jsonPath("$.items[0].poiId").value("poi-hangzhou"));
+				.andExpect(jsonPath("$.items[0].poiId").value("poi-hangzhou"))
+				.andExpect(jsonPath("$.items[0].petPolicies").doesNotExist());
 
 		this.mockMvc.perform(get("/api/admin/locations")
 					.with(user("admin").roles("ADMIN"))
@@ -348,6 +353,202 @@ class AdminLocationApiTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
 		verifyNoInteractions(this.placeSearchPort);
+	}
+
+	@Test
+	void createsLocationWithPetPoliciesAndDetailReturnsThem() throws Exception {
+		given(this.placeSearchPort.getPlaceById("poi-policy-create")).willReturn(JSON_MAPPER.readTree("""
+				{"id":"poi-policy-create","name":"Policy Park","typecode":"110000","address":"Hangzhou","location":"120.1,30.2","adcode":"330106","business":{},"photos":[]}
+				"""));
+
+		this.mockMvc.perform(post("/api/admin/locations")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"poiId":"poi-policy-create","typeGroup":"attraction","petPolicies":{
+							  "maxPetsPerPerson":1,"maxSinglePetWeightKg":8.75,"leashRequired":true,
+							  "vaccinationProofRequired":false,"extraFeeCents":1050,"reservationRequired":null}}
+							"""))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(1))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetWeightKg").value(8.75))
+				.andExpect(jsonPath("$.petPolicies.leashRequired").value(true))
+				.andExpect(jsonPath("$.petPolicies.vaccinationProofRequired").value(false))
+				.andExpect(jsonPath("$.petPolicies.extraFeeCents").value(1050))
+				.andExpect(jsonPath("$.petPolicies.reservationRequired").value(nullValue()));
+
+		this.mockMvc.perform(get("/api/admin/locations/poi-policy-create").with(user("admin").roles("ADMIN")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(1))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetWeightKg").value(8.75))
+				.andExpect(jsonPath("$.petPolicies.extraFeeCents").value(1050));
+	}
+
+	@Test
+	void updatesPetPoliciesOnlyWhenProvidedAndAllowsClearing() throws Exception {
+		var location = location("poi-policy-patch", "330106", "attraction");
+		location.updatePetPolicies("DOG", 2, 10.5, 40.0, true, false, 500L, true);
+		this.locationRepository.saveAndFlush(location);
+
+		this.mockMvc.perform(patch("/api/admin/locations/poi-policy-patch")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"minVisitHours":3,"maxVisitHours":4}
+							"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.minVisitHours").value(3))
+				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(2))
+				.andExpect(jsonPath("$.petPolicies.extraFeeCents").value(500));
+
+		this.mockMvc.perform(patch("/api/admin/locations/poi-policy-patch")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"petPolicies":null}
+							"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.leashRequired").value(true));
+
+		this.mockMvc.perform(patch("/api/admin/locations/poi-policy-patch")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"petPolicies":{"maxPetsPerPerson":0,"maxSinglePetWeightKg":0,"leashRequired":false,
+							  "vaccinationProofRequired":true,"extraFeeCents":0,"reservationRequired":false}}
+							"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(0))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetWeightKg").value(0.0))
+				.andExpect(jsonPath("$.petPolicies.leashRequired").value(false))
+				.andExpect(jsonPath("$.petPolicies.vaccinationProofRequired").value(true))
+				.andExpect(jsonPath("$.petPolicies.extraFeeCents").value(0))
+				.andExpect(jsonPath("$.petPolicies.reservationRequired").value(false));
+
+		this.mockMvc.perform(patch("/api/admin/locations/poi-policy-patch")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"petPolicies":{"maxPetsPerPerson":null,"maxSinglePetWeightKg":null,"leashRequired":null,
+							  "vaccinationProofRequired":null,"extraFeeCents":null,"reservationRequired":null}}
+							"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(nullValue()))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetWeightKg").value(nullValue()))
+				.andExpect(jsonPath("$.petPolicies.leashRequired").value(nullValue()))
+				.andExpect(jsonPath("$.petPolicies.extraFeeCents").value(nullValue()));
+
+		var persisted = this.locationRepository.findByPoiId("poi-policy-patch").orElseThrow();
+		assertThat(persisted.getAllowedPetTypes()).isEqualTo("DOG");
+		assertThat(persisted.getMaxSinglePetShoulderHeightCm()).isEqualTo(40.0);
+	}
+
+	@Test
+	void rejectsInvalidPetPoliciesWithoutWriting() throws Exception {
+		for (String body : List.of(
+				"""
+						{"poiId":"poi-invalid-pets","typeGroup":"attraction","petPolicies":{"maxPetsPerPerson":-1}}
+						""",
+				"""
+						{"poiId":"poi-invalid-pets-fraction","typeGroup":"attraction","petPolicies":{"maxPetsPerPerson":1.5}}
+						""",
+				"""
+						{"poiId":"poi-invalid-weight","typeGroup":"attraction","petPolicies":{"maxSinglePetWeightKg":8.751}}
+						""",
+				"""
+						{"poiId":"poi-invalid-fee","typeGroup":"attraction","petPolicies":{"extraFeeCents":-1}}
+						""",
+				"""
+						{"poiId":"poi-invalid-fee-fraction","typeGroup":"attraction","petPolicies":{"extraFeeCents":10.5}}
+						""")) {
+			this.mockMvc.perform(post("/api/admin/locations")
+						.with(user("admin").roles("ADMIN"))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(body))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+		}
+		verifyNoInteractions(this.placeSearchPort);
+		assertThat(this.locationRepository.count()).isZero();
+
+		var location = location("poi-policy-invalid-update", "330106", "attraction");
+		location.updatePetPolicies("DOG", 1, 8.0, 40.0, true, true, 100L, false);
+		this.locationRepository.saveAndFlush(location);
+
+		this.mockMvc.perform(patch("/api/admin/locations/poi-policy-invalid-update")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"petPolicies":{"maxSinglePetWeightKg":8.751}}
+							"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+		this.mockMvc.perform(patch("/api/admin/locations/poi-policy-invalid-update")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"petPolicies":{"extraFeeCents":-1}}
+							"""))
+				.andExpect(status().isBadRequest());
+
+		this.mockMvc.perform(get("/api/admin/locations/poi-policy-invalid-update")
+					.with(user("admin").roles("ADMIN")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(1))
+				.andExpect(jsonPath("$.petPolicies.leashRequired").value(true));
+	}
+
+	@Test
+	void updatingLocationPoliciesDoesNotChangeRegionPolicies() throws Exception {
+		var regionBefore = this.regionRepository.findById("330000").orElseThrow();
+		assertThat(regionBefore.getMaxPetsPerPerson()).isNull();
+		assertThat(regionBefore.getExtraFeeCents()).isNull();
+
+		this.locationRepository.saveAndFlush(location("poi-region-independent", "330106", "attraction"));
+		this.mockMvc.perform(patch("/api/admin/locations/poi-region-independent")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"petPolicies":{"maxPetsPerPerson":2,"maxSinglePetWeightKg":6.5,"leashRequired":true,
+							  "vaccinationProofRequired":false,"extraFeeCents":300,"reservationRequired":true}}
+							"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(2));
+
+		var regionAfter = this.regionRepository.findById("330000").orElseThrow();
+		assertThat(regionAfter.getMaxPetsPerPerson()).isNull();
+		assertThat(regionAfter.getMaxSinglePetWeightKg()).isNull();
+		assertThat(regionAfter.getLeashRequired()).isNull();
+		assertThat(regionAfter.getVaccinationProofRequired()).isNull();
+		assertThat(regionAfter.getExtraFeeCents()).isNull();
+		assertThat(regionAfter.getReservationRequired()).isNull();
+	}
+
+	@Test
+	void updatesPetPoliciesForNonAttractionLocations() throws Exception {
+		this.locationRepository.saveAndFlush(location("poi-hotel-policy", "330106", "hotel"));
+
+		this.mockMvc.perform(patch("/api/admin/locations/poi-hotel-policy")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"petPolicies":{"maxPetsPerPerson":1,"maxSinglePetWeightKg":5.5,"leashRequired":true,
+							  "vaccinationProofRequired":false,"extraFeeCents":100,"reservationRequired":false}}
+							"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(1))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetWeightKg").value(5.5))
+				.andExpect(jsonPath("$.petPolicies.leashRequired").value(true));
 	}
 
 	private static boolean hasProvinceLeaf(JsonNode regions) {

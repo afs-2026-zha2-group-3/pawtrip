@@ -1,7 +1,7 @@
 # G2 decision — destination-selection
 
 - Gate: G2（Design & decompose 评审，P3 → P4 入口）
-- Change id: `destination-selection`（REQ-005 / issue #15，US-47）
+- Change id: `destination-selection`（REQ-006 / issue #15，US-47； gate 评审时登记编号为 REQ-005，2026-11-16 合并 main 后改编号 REQ-006）
 - Inputs:
   - `atdd-design.md`（A1–A4 / E1–E16 分层，`@profile-dependency` 门控，red 顺序）
   - `design.md`（D1–D7 决策，含被否方案与理由）
