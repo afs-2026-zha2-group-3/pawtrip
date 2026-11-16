@@ -143,6 +143,50 @@ class LocationSchemaMigrationTest {
 	}
 
 	@Test
+	void addsNullableMaxShoulderHeightWithoutChangingExistingRows(@TempDir Path tempDir) throws SQLException {
+		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("max-shoulder-height.db") + "?foreign_keys=on";
+		Flyway.configure().dataSource(jdbcUrl, null, null).target("10").load().migrate();
+
+		long locationId;
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			try (Statement statement = connection.createStatement()) {
+				statement.executeUpdate(
+						"INSERT INTO administrative_region (adcode, name, level) "
+								+ "VALUES ('990005', 'Test region', 'province')");
+			}
+			locationId = insertLocation(connection, "poi-max-shoulder-height", null, null);
+		}
+
+		Flyway.configure().dataSource(jdbcUrl, null, null).load().migrate();
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			assertThat(columns(connection, "administrative_region")).contains("max_single_pet_shoulder_height_cm");
+			assertThat(columns(connection, "pawtrip_location")).contains("max_single_pet_shoulder_height_cm");
+
+			assertThat(selectMaxShoulderHeight(connection, "administrative_region", "adcode", "990005")).isNull();
+			assertThat(selectMaxShoulderHeight(connection, "pawtrip_location", "id", locationId)).isNull();
+
+			updateMaxShoulderHeight(connection, "administrative_region", "adcode", "990005", 62.5);
+			updateMaxShoulderHeight(connection, "pawtrip_location", "id", locationId, 45.0);
+			assertThat(selectMaxShoulderHeight(connection, "administrative_region", "adcode", "990005"))
+				.isEqualTo(62.5);
+			assertThat(selectMaxShoulderHeight(connection, "pawtrip_location", "id", locationId)).isEqualTo(45.0);
+
+			updateMaxShoulderHeight(connection, "administrative_region", "adcode", "990005", null);
+			updateMaxShoulderHeight(connection, "pawtrip_location", "id", locationId, null);
+			assertThat(selectMaxShoulderHeight(connection, "administrative_region", "adcode", "990005")).isNull();
+			assertThat(selectMaxShoulderHeight(connection, "pawtrip_location", "id", locationId)).isNull();
+
+			assertThatThrownBy(
+					() -> updateMaxShoulderHeight(connection, "administrative_region", "adcode", "990005", -0.5))
+				.isInstanceOf(SQLException.class);
+			assertThatThrownBy(
+					() -> updateMaxShoulderHeight(connection, "pawtrip_location", "id", locationId, -0.5))
+				.isInstanceOf(SQLException.class);
+		}
+	}
+
+	@Test
 	void createsLocationTablesAndEnforcesUniquePoiHoursAndPhotoForeignKey(@TempDir Path tempDir)
 			throws SQLException {
 		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("locations.db") + "?foreign_keys=on";
@@ -302,8 +346,35 @@ class LocationSchemaMigrationTest {
 		}
 	}
 
-	private static void assertPetPolicyIsUnconfigured(ResultSet result) throws SQLException {
-		assertThat(result.getObject("max_pets_per_person")).isNull();
+	private static Double selectMaxShoulderHeight(Connection connection, String table, String idColumn, Object id)
+			throws SQLException {
+		try (PreparedStatement query = connection.prepareStatement(
+				"SELECT max_single_pet_shoulder_height_cm FROM " + table + " WHERE " + idColumn + " = ?")) {
+			query.setObject(1, id);
+			try (ResultSet result = query.executeQuery()) {
+				assertThat(result.next()).isTrue();
+				double value = result.getDouble("max_single_pet_shoulder_height_cm");
+				return result.wasNull() ? null : value;
+			}
+		}
+	}
+
+	private static void updateMaxShoulderHeight(Connection connection, String table, String idColumn, Object id,
+			Double value) throws SQLException {
+		try (PreparedStatement update = connection.prepareStatement(
+				"UPDATE " + table + " SET max_single_pet_shoulder_height_cm = ? WHERE " + idColumn + " = ?")) {
+			if (value == null) {
+				update.setNull(1, java.sql.Types.REAL);
+			}
+			else {
+				update.setDouble(1, value);
+			}
+			update.setObject(2, id);
+			update.executeUpdate();
+		}
+	}
+
+	private static void assertPetPolicyIsUnconfigured(ResultSet result) throws SQLException {		assertThat(result.getObject("max_pets_per_person")).isNull();
 		assertThat(result.getObject("max_single_pet_weight_kg")).isNull();
 		assertThat(result.getObject("leash_required")).isNull();
 		assertThat(result.getObject("vaccination_proof_required")).isNull();
