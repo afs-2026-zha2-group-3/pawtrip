@@ -33,18 +33,22 @@ class PetSchemaMigrationTest {
 
 		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
 			assertThat(columns(connection, "pet")).containsExactlyInAnyOrder(
-					"id", "user_id", "pet_type", "weight_kg", "has_leash", "has_vaccination_proof");
+					"id", "user_id", "name", "pet_type", "weight_kg", "shoulder_height_cm", "has_leash",
+					"has_vaccination_proof");
 
-			long catId = insertPet(connection, userId, "CAT", 4.5, 1, 1);
-			insertPet(connection, userId, "DOG", 18.25, 0, 0);
+			long catId = insertPet(connection, userId, "Mimi", "CAT", 4.5, 25.0, 1, 1);
+			insertPet(connection, userId, "Rex", "DOG", 18.25, 60.0, 0, 0);
 
 			try (PreparedStatement query = connection.prepareStatement(
-					"SELECT pet_type, weight_kg, has_leash, has_vaccination_proof FROM pet WHERE id = ?")) {
+					"SELECT name, pet_type, weight_kg, shoulder_height_cm, has_leash, has_vaccination_proof "
+							+ "FROM pet WHERE id = ?")) {
 				query.setLong(1, catId);
 				try (ResultSet result = query.executeQuery()) {
 					assertThat(result.next()).isTrue();
+					assertThat(result.getString("name")).isEqualTo("Mimi");
 					assertThat(result.getString("pet_type")).isEqualTo("CAT");
 					assertThat(result.getDouble("weight_kg")).isEqualTo(4.5);
+					assertThat(result.getDouble("shoulder_height_cm")).isEqualTo(25.0);
 					assertThat(result.getInt("has_leash")).isEqualTo(1);
 					assertThat(result.getInt("has_vaccination_proof")).isEqualTo(1);
 				}
@@ -67,15 +71,21 @@ class PetSchemaMigrationTest {
 		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
 			long userId = insertUser(connection, "pet-owner");
 
-			assertThatThrownBy(() -> insertPet(connection, userId, "FISH", 1.0, 1, 1))
+			assertThatThrownBy(() -> insertPet(connection, userId, "Mimi", "FISH", 1.0, 10.0, 1, 1))
 				.isInstanceOf(SQLException.class);
-			assertThatThrownBy(() -> insertPet(connection, userId, "CAT", 0.0, 1, 1))
+			assertThatThrownBy(() -> insertPet(connection, userId, "Mimi", "CAT", 0.0, 10.0, 1, 1))
 				.isInstanceOf(SQLException.class);
-			assertThatThrownBy(() -> insertPet(connection, userId, "CAT", 1.0, 2, 1))
+			assertThatThrownBy(() -> insertPet(connection, userId, "Mimi", "CAT", 1.0, 0.0, 1, 1))
 				.isInstanceOf(SQLException.class);
-			assertThatThrownBy(() -> insertPet(connection, userId, "DOG", 1.0, 1, -1))
+			assertThatThrownBy(() -> insertPet(connection, userId, "Mimi", "CAT", 1.0, -1.0, 1, 1))
 				.isInstanceOf(SQLException.class);
-			assertThatThrownBy(() -> insertPet(connection, userId + 100, "DOG", 1.0, 1, 1))
+			assertThatThrownBy(() -> insertPet(connection, userId, "  ", "CAT", 1.0, 10.0, 1, 1))
+				.isInstanceOf(SQLException.class);
+			assertThatThrownBy(() -> insertPet(connection, userId, "Mimi", "CAT", 1.0, 10.0, 2, 1))
+				.isInstanceOf(SQLException.class);
+			assertThatThrownBy(() -> insertPet(connection, userId, "Rex", "DOG", 1.0, 10.0, 1, -1))
+				.isInstanceOf(SQLException.class);
+			assertThatThrownBy(() -> insertPet(connection, userId + 100, "Rex", "DOG", 1.0, 10.0, 1, 1))
 				.isInstanceOf(SQLException.class);
 		}
 	}
@@ -87,7 +97,7 @@ class PetSchemaMigrationTest {
 
 		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
 			long userId = insertUser(connection, "pet-owner");
-			insertPet(connection, userId, "CAT", 3.0, 1, 1);
+			insertPet(connection, userId, "Mimi", "CAT", 3.0, 25.0, 1, 1);
 
 			try (PreparedStatement delete = connection.prepareStatement("DELETE FROM app_user WHERE id = ?")) {
 				delete.setLong(1, userId);
@@ -115,17 +125,19 @@ class PetSchemaMigrationTest {
 		}
 	}
 
-	private static long insertPet(Connection connection, long userId, String petType, double weightKg,
-			int hasLeash, int hasVaccinationProof) throws SQLException {
+	private static long insertPet(Connection connection, long userId, String name, String petType, double weightKg,
+			double shoulderHeightCm, int hasLeash, int hasVaccinationProof) throws SQLException {
 		try (PreparedStatement insert = connection.prepareStatement(
-				"INSERT INTO pet (user_id, pet_type, weight_kg, has_leash, has_vaccination_proof) "
-						+ "VALUES (?, ?, ?, ?, ?)",
+				"INSERT INTO pet (user_id, name, pet_type, weight_kg, shoulder_height_cm, has_leash, "
+						+ "has_vaccination_proof) VALUES (?, ?, ?, ?, ?, ?, ?)",
 				Statement.RETURN_GENERATED_KEYS)) {
 			insert.setLong(1, userId);
-			insert.setString(2, petType);
-			insert.setDouble(3, weightKg);
-			insert.setInt(4, hasLeash);
-			insert.setInt(5, hasVaccinationProof);
+			insert.setString(2, name);
+			insert.setString(3, petType);
+			insert.setDouble(4, weightKg);
+			insert.setDouble(5, shoulderHeightCm);
+			insert.setInt(6, hasLeash);
+			insert.setInt(7, hasVaccinationProof);
 			insert.executeUpdate();
 			try (ResultSet keys = insert.getGeneratedKeys()) {
 				assertThat(keys.next()).isTrue();
