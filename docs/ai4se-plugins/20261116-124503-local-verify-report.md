@@ -117,3 +117,15 @@ N/A — no waiver（Overall=Partial 且无人签署豁免；本报告不构成�
 | W2 | 档案入口文案改为中性表述，不再声明未交付的 US-06 能力 | `apps/web/src/routes/_authenticated/transport-rules.tsx`；复验 `npm run build` exit 0、`npm run test:e2e` 28 passed（36.4s，仍伴随 W1 的 EBUSY 清理异常） |
 
 修复后仍未闭合：W1（E2E 退出码，用户决定本次不修）、W4（4 条规则待人工复核，合并门禁）。Overall 维持 Partial。
+
+## 合并主干后复验（`cac27a3`）
+
+`origin/main` 已含宠物档案后端（PR #33/#34：`Pet`/`PetRepository`/`PetType`、迁移 V8–V10、`PetSchemaMigrationTest`）。按用户选择以 merge 方式同步，冲突仅 `routeTree.gen.ts`：先取主干版本保证语法有效，再由 `npm run build` 的插件按合并后路由重新生成（结果 = 主干版本 + `/transport-rules` 两条路由条目），未手改。
+
+| Command | Exit | Summary |
+|---------|------|---------|
+| `npm run build` | 0 | 构建成功（含 `/transport-rules` chunk） |
+| `cd apps/server && ./mvnw test` | 0 | `Tests run: 63, Failures: 0, Errors: 0`，BUILD SUCCESS（新增 4 条 `PetSchemaMigrationTest`） |
+| `npm run test:e2e` | 1 | `28 passed (36.1s)`；退出码 1 仍为 W1 的 EBUSY 清理异常 |
+
+结论：合并后无新增缺陷，W1/W4 状态不变，Overall 维持 Partial。
