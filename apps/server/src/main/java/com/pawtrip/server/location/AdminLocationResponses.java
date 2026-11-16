@@ -61,17 +61,32 @@ public final class AdminLocationResponses {
 		}
 	}
 
-	public record PetPolicies(Integer maxPetsPerPerson, Double maxSinglePetWeightKg, Boolean leashRequired,
-			Boolean vaccinationProofRequired, Long extraFeeCents, Boolean reservationRequired) {
+	public record PetPolicies(String allowedPetTypes, Integer maxPetsPerPerson, Double maxSinglePetWeightKg,
+			Double maxSinglePetShoulderHeightCm, Boolean leashRequired, Boolean vaccinationProofRequired,
+			Long extraFeeCents, Boolean reservationRequired) {
 
 		static PetPolicies from(PawtripLocation location) {
 			return new PetPolicies(
+					location.getAllowedPetTypes(),
 					location.getMaxPetsPerPerson(),
 					location.getMaxSinglePetWeightKg(),
+					location.getMaxSinglePetShoulderHeightCm(),
 					location.getLeashRequired(),
 					location.getVaccinationProofRequired(),
 					location.getExtraFeeCents(),
 					location.getReservationRequired());
+		}
+
+		static PetPolicies from(AdministrativeRegion region) {
+			return new PetPolicies(
+					region.getAllowedPetTypes(),
+					region.getMaxPetsPerPerson(),
+					region.getMaxSinglePetWeightKg(),
+					region.getMaxSinglePetShoulderHeightCm(),
+					region.getLeashRequired(),
+					region.getVaccinationProofRequired(),
+					region.getExtraFeeCents(),
+					region.getReservationRequired());
 		}
 	}
 
