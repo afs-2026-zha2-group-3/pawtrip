@@ -29,8 +29,9 @@ test("defaults to one day and confirms a one-day trip", async ({ page }) => {
   await expect(panel).toContainText("1 天");
 
   await page.getByRole("tab", { name: "景区浏览" }).click();
-  await expect(page.getByRole("tab", { name: "第1天" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "第2天" })).toHaveCount(0);
+  await page.getByRole("combobox", { name: "添加到行程" }).first().click();
+  await expect(page.getByRole("option", { name: "第 1 天" })).toBeVisible();
+  await expect(page.getByRole("option", { name: "第 2 天" })).toHaveCount(0);
 });
 
 test("edits the draft duration and applies it to the trip", async ({ page }) => {
@@ -43,10 +44,11 @@ test("edits the draft duration and applies it to the trip", async ({ page }) => 
   await expect(panel).toContainText("3 天");
 
   await page.getByRole("tab", { name: "景区浏览" }).click();
-  await expect(page.getByRole("tab", { name: "第1天" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "第2天" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "第3天" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "第4天" })).toHaveCount(0);
+  await page.getByRole("combobox", { name: "添加到行程" }).first().click();
+  await expect(page.getByRole("option", { name: "第 1 天" })).toBeVisible();
+  await expect(page.getByRole("option", { name: "第 2 天" })).toBeVisible();
+  await expect(page.getByRole("option", { name: "第 3 天" })).toBeVisible();
+  await expect(page.getByRole("option", { name: "第 4 天" })).toHaveCount(0);
 });
 
 test("rejects invalid durations without overwriting the last legal value", async ({ page }) => {

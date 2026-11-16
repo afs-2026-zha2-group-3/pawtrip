@@ -34,14 +34,14 @@ async function dragHandleTo(page: Page, stopName: string, target: ReturnType<Pag
 }
 
 async function addDayAttraction(page: Page, name: string, day: number) {
-  await page.getByRole("tab", { name: `第${day}天` }).click();
   const put = page.waitForResponse(
     (response) =>
       /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
       response.request().method() === "PUT",
   );
   const card = page.locator('[data-slot="card"]').filter({ hasText: name });
-  await card.getByRole("button", { name: `加入第 ${day} 天` }).click();
+  await card.getByRole("combobox", { name: "添加到行程" }).click();
+  await page.getByRole("option", { name: `第 ${day} 天` }).click();
   await put;
 }
 
@@ -180,7 +180,9 @@ test("blocks attraction browsing before confirmation and offers add actions afte
 
   await page.getByRole("tab", { name: "景区浏览" }).click();
   await expect(page.getByRole("heading", { name: "杭州市景点" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "第1天" })).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "添加到行程" }).first(),
+  ).toBeVisible();
 });
 
 test("adds stops to the selected day and to unscheduled with debounced saving", async ({
@@ -188,7 +190,11 @@ test("adds stops to the selected day and to unscheduled with debounced saving", 
 }) => {
   await createTrip(page, { city: "杭州市", days: 3, pet: "豆豆" });
   await page.getByRole("tab", { name: "景区浏览" }).click();
-  await expect(page.getByRole("tab", { name: "第3天" })).toBeVisible();
+  const westLake = page.locator('[data-slot="card"]').filter({ hasText: "西湖" });
+  await westLake.getByRole("combobox", { name: "添加到行程" }).click();
+  await expect(page.getByRole("option", { name: "第 3 天" })).toBeVisible();
+  await expect(page.getByRole("option", { name: "第 4 天" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
 
   await addDayAttraction(page, "西湖", 2);
   await expect(page.getByTestId("trip-panel")).toContainText("西湖");
@@ -261,7 +267,8 @@ test("keeps local edits when saving fails and retries", async ({ page }) => {
   });
 
   const card = page.locator('[data-slot="card"]').filter({ hasText: "西湖" });
-  await card.getByRole("button", { name: "加入第 1 天" }).click();
+  await card.getByRole("combobox", { name: "添加到行程" }).click();
+  await page.getByRole("option", { name: "第 1 天" }).click();
   await expect(page.getByTestId("save-status")).toContainText("保存失败");
   await expect(page.getByTestId("trip-panel")).toContainText("西湖");
 
