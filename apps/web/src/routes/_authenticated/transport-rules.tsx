@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -86,6 +86,7 @@ function TransportRulesPage() {
   const [carrierCode, setCarrierCode] = useState<string>(
     flightRules[0]?.carrierCode ?? "",
   );
+  const navigate = useNavigate();
   const [selectedMode, setSelectedMode] = useState<TransportMode | null>(null);
   const petsQuery = useQuery(petsQueryOptions());
   const pets = petsQuery.data ?? [];
@@ -372,7 +373,11 @@ function TransportRulesPage() {
           {!petsQuery.isPending && !petsQuery.isError && pets.length === 0 ? (
             <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
               <p className="text-sm">还没有宠物档案，暂时无法给出推荐。</p>
-              <Button variant="outline" className="w-fit" disabled>
+              <Button
+                variant="outline"
+                className="w-fit"
+                onClick={() => void navigate({ to: "/paws" })}
+              >
                 新增宠物档案
               </Button>
             </section>

@@ -227,7 +227,7 @@ test.describe("comparison-table", () => {
 });
 
 test.describe("no-pet-profile", () => {
-  test("hides the recommendation column and disables the profile entry", async ({
+  test("hides the recommendation column and sends the profile entry to /paws", async ({
     page,
   }) => {
     await signIn(page, "admin");
@@ -239,8 +239,11 @@ test.describe("no-pet-profile", () => {
     ).toHaveCount(0);
     const entry = page.getByRole("button", { name: "新增宠物档案" });
     await expect(entry).toBeVisible();
-    await expect(entry).toBeDisabled();
-    await expect(page.getByRole("link", { name: /宠物档案/ })).toHaveCount(0);
+    await expect(entry).toBeEnabled();
+
+    await entry.click();
+    await expect(page).toHaveURL(/\/paws$/);
+    await expect(page.getByRole("table", { name: tableName })).toHaveCount(0);
   });
 });
 
