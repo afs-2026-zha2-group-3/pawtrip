@@ -48,6 +48,24 @@ public class PawtripLocation {
 	@Column(name = "max_visit_hours")
 	private Integer maxVisitHours;
 
+	@Column(name = "max_pets_per_person")
+	private Integer maxPetsPerPerson;
+
+	@Column(name = "max_single_pet_weight_kg")
+	private Double maxSinglePetWeightKg;
+
+	@Column(name = "leash_required")
+	private Boolean leashRequired;
+
+	@Column(name = "vaccination_proof_required")
+	private Boolean vaccinationProofRequired;
+
+	@Column(name = "extra_fee_cents")
+	private Long extraFeeCents;
+
+	@Column(name = "reservation_required")
+	private Boolean reservationRequired;
+
 	protected PawtripLocation() {
 	}
 
@@ -120,9 +138,43 @@ public class PawtripLocation {
 		return this.maxVisitHours;
 	}
 
+	public Integer getMaxPetsPerPerson() {
+		return this.maxPetsPerPerson;
+	}
+
+	public Double getMaxSinglePetWeightKg() {
+		return this.maxSinglePetWeightKg;
+	}
+
+	public Boolean getLeashRequired() {
+		return this.leashRequired;
+	}
+
+	public Boolean getVaccinationProofRequired() {
+		return this.vaccinationProofRequired;
+	}
+
+	public Long getExtraFeeCents() {
+		return this.extraFeeCents;
+	}
+
+	public Boolean getReservationRequired() {
+		return this.reservationRequired;
+	}
+
 	public void updateVisitHours(Integer minVisitHours, Integer maxVisitHours) {
 		this.minVisitHours = minVisitHours;
 		this.maxVisitHours = maxVisitHours;
+	}
+
+	public void updatePetPolicies(Integer maxPetsPerPerson, Double maxSinglePetWeightKg, Boolean leashRequired,
+			Boolean vaccinationProofRequired, Long extraFeeCents, Boolean reservationRequired) {
+		this.maxPetsPerPerson = maxPetsPerPerson;
+		this.maxSinglePetWeightKg = maxSinglePetWeightKg;
+		this.leashRequired = leashRequired;
+		this.vaccinationProofRequired = vaccinationProofRequired;
+		this.extraFeeCents = extraFeeCents;
+		this.reservationRequired = reservationRequired;
 	}
 
 }
