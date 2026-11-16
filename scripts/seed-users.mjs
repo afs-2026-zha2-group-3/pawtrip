@@ -7,10 +7,8 @@ import bcrypt from "bcryptjs";
 
 // Local/test accounts only. Do not reuse these credentials outside development.
 const accounts = [
-	{ username: "demo", password: "pawtrip-demo", enabled: true, role: "USER" },
-	{ username: "tester", password: "pawtrip-test", enabled: true, role: "USER" },
-	{ username: "admin", password: "pawtrip-admin", enabled: true, role: "ADMIN" },
-	{ username: "admin-tester", password: "pawtrip-admin-test", enabled: true, role: "ADMIN" },
+	{ username: "demo", password: "123456", enabled: true, role: "USER" },
+	{ username: "admin", password: "123456", enabled: true, role: "ADMIN" },
 ];
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
