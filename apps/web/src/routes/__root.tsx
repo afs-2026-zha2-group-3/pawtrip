@@ -154,11 +154,13 @@ function AppTabs() {
     ? "paws"
     : pathname === "/cities"
       ? "cities"
-      : pathname === "/admin/locations"
-        ? "locations"
-        : pathname === "/admin/cities"
-          ? "admin-cities"
-          : "home";
+      : pathname === "/transport-rules"
+        ? "transport-rules"
+        : pathname === "/admin/locations"
+          ? "locations"
+          : pathname === "/admin/cities"
+            ? "admin-cities"
+            : "home";
 
   return (
     <Tabs
@@ -168,6 +170,8 @@ function AppTabs() {
           void navigate({ to: "/paws" });
         } else if (value === "cities") {
           void navigate({ to: "/cities" });
+        } else if (value === "transport-rules") {
+          void navigate({ to: "/transport-rules" });
         } else if (value === "locations") {
           void navigate({ to: "/admin/locations" });
         } else if (value === "admin-cities") {
@@ -181,6 +185,7 @@ function AppTabs() {
         <TabsTrigger value="home">Home</TabsTrigger>
         <TabsTrigger value="paws">Paws</TabsTrigger>
         <TabsTrigger value="cities">城市浏览</TabsTrigger>
+        <TabsTrigger value="transport-rules">交通规则</TabsTrigger>
         {auth.data?.role === "ADMIN" ? (
           <>
             <TabsTrigger value="locations">地点管理</TabsTrigger>
