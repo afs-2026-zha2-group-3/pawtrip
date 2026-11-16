@@ -12,7 +12,7 @@
 | 流水线 CI | **n/a** — 分支未推送，无 PR，故无 `ci-report.md`（E1 仅本地证据） |
 | 流水线 CD | n/a（纯前端静态展示，不在范围） |
 | PR | **n/a** — 待本 G2 记录后执行 `/sdd:pr-submit` |
-| 分支 | `feat/transport-rules-comparison` @ `9caedc7`（rebase 后基于 `origin/main` @ `d92ecb9`；rebase 前为 `11d82e6`） |
+| 分支 | `feat/transport-rules-comparison`（rebase 至 `origin/main` @ `d92ecb9`；分支 tip 随后续文档提交前移，以 `git log` 为准；rebase 前为 `11d82e6`） |
 
 ## Dimension results
 

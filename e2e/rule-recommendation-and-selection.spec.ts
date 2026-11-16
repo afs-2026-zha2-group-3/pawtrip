@@ -1,10 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const password = "123456";
+// petowner 由 seed-users.mjs 预置两只档案（豆豆满足、毛毛不满足）；
+// demo 与 admin 保持无档案，供 /paws 的新建流程与「无档案」场景使用。
+const petOwner = "petowner";
 const tableName = "交通携宠规则对比";
 const storageKey = "pawtrip:selected-transport-mode";
 
-async function signIn(page: Page, username = "demo") {
+async function signIn(page: Page, username = petOwner) {
   const authResponse = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/auth/me",
   );
@@ -16,7 +19,7 @@ async function signIn(page: Page, username = "demo") {
   await expect(page.getByRole("tab", { name: "城市浏览" })).toBeVisible();
 }
 
-async function openRules(page: Page, username = "demo") {
+async function openRules(page: Page, username = petOwner) {
   await signIn(page, username);
   await page.getByRole("tab", { name: "交通规则" }).click();
   await expect(page.getByRole("table", { name: tableName })).toBeVisible();

@@ -9,10 +9,12 @@ import bcrypt from "bcryptjs";
 const accounts = [
 	{ username: "demo", password: "123456", enabled: true, role: "USER" },
 	{ username: "admin", password: "123456", enabled: true, role: "ADMIN" },
+	{ username: "petowner", password: "123456", enabled: true, role: "USER" },
 ];
 
-// 验收用宠物档案：demo 两只（一只全部满足、一只超重超高缺证），admin 保持无档案。
-const demoPets = [
+// 验收用宠物档案：petowner 两只（一只全部满足、一只超重超高缺证）。
+// demo 与 admin 保持无档案，避免与已有的「空档案 → 新建」流程相冲突。
+const petOwnerPets = [
 	{
 		name: "豆豆",
 		petType: "CAT",
@@ -82,12 +84,12 @@ try {
 	}
 
 	if (hasPetTable) {
-		const demoUser = findUserId.get("demo");
-		if (demoUser) {
-			deletePets.run(demoUser.id);
-			for (const pet of demoPets) {
+		const petOwner = findUserId.get("petowner");
+		if (petOwner) {
+			deletePets.run(petOwner.id);
+			for (const pet of petOwnerPets) {
 				insertPet.run(
-					demoUser.id,
+					petOwner.id,
 					pet.name,
 					pet.petType,
 					pet.weightKg,
@@ -96,7 +98,7 @@ try {
 					pet.hasVaccinationProof,
 				);
 			}
-			console.log(`Seeded ${demoPets.length} pet(s) for demo`);
+			console.log(`Seeded ${petOwnerPets.length} pet(s) for petowner`);
 		}
 	}
 

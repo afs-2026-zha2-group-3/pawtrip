@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const password = "123456";
+// petowner 由 seed-users.mjs 预置两只档案，用于验证推荐列；admin 无档案，用于验证隐藏列。
+// demo 保持无档案，供 /paws 的空档案流程（#40）使用，这里不占用。
+const petOwner = "petowner";
 const tableName = "交通携宠规则对比";
 const modeLabels = ["飞机", "高铁", "火车", "自驾"] as const;
 
@@ -12,7 +15,7 @@ async function openLogin(page: Page) {
   await authResponse;
 }
 
-async function signIn(page: Page, username = "demo") {
+async function signIn(page: Page, username = petOwner) {
   await openLogin(page);
   const usernameInput = page.getByLabel("Username");
   await usernameInput.fill(username);
@@ -97,7 +100,7 @@ test.describe("tab-and-routing", () => {
 test.describe("comparison-table", () => {
   test.beforeEach(async ({ page }) => {
     await openTransportRules(page);
-    // demo 账号有宠物档案：等待推荐列出现，避免档案请求未完成时列数不稳定
+    // petowner 账号有宠物档案：等待推荐列出现，避免档案请求未完成时列数不稳定
     await expect(
       page.getByRole("columnheader", { name: "是否推荐" }),
     ).toBeVisible();

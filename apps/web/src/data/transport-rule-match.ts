@@ -2,7 +2,7 @@
 // 判定口径见 openspec/changes/add-rule-recommendation-and-selection/design.md（D2）。
 import type { TransportRule } from "./transport-rules";
 
-/** 判定只需要档案中的这几个字段；PetProfile 结构兼容即可传入 */
+/** 判定只需要档案中的这几个字段；queries/pets.ts 的 Pet 结构兼容即可传入 */
 export interface PetSnapshot {
   name: string;
   weightKg: number;

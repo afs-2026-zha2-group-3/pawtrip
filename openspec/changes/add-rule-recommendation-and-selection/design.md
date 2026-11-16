@@ -32,8 +32,8 @@
 新增 `apps/web/src/data/transport-rule-match.ts`，导出 `evaluateRuleForPet(rule, pet)` 返回 `{ recommended, reasons }`。
 
 - 理由：规则常量只在前端有一份，后端判定需要在后端复制体重/肩高/检疫阈值，规则一改要改两处；档案接口只提供原始字段，判定是展示层的轻量派生。
-- 备选（已否决）：后端 `GET /api/pets/recommendations`。会立刻产生两套阈值，且与 REQ-005 D1「规则前端写死、不建规则 API」直接冲突。
-- 偏离说明：REQ-005 design D5 曾记"对比判定后端实现、随 US-06"。本次需求明确按档案表字段直接比对、且规则仍在前端，故改在前端实现；若将来多端需要判定，再把纯函数迁到后端，接口契约不变。
+- 备选（已否决）：后端 `GET /api/pets/recommendations`。会立刻产生两套阈值，且与 REQ-006 D1「规则前端写死、不建规则 API」直接冲突。
+- 偏离说明：REQ-006 design D5 曾记"对比判定后端实现、随 US-06"。本次需求明确按档案表字段直接比对、且规则仍在前端，故改在前端实现；若将来多端需要判定，再把纯函数迁到后端，接口契约不变。
 
 ### D2 判定算法与原因文案
 
@@ -67,7 +67,7 @@
 ### D5 无档案：隐藏列 + 跳转 /paws 的提示按钮
 
 - 档案列表为空 → 不渲染推荐列，表格下方提示区文案改为「还没有宠物档案，暂时无法给出推荐。」，并渲染 `<Button variant="outline" onClick={() => navigate({ to: "/paws" })}>新增宠物档案</Button>`。
-- 跳转目标为 `/paws`（2026-11-16 需求方指定）。该页当前为空壳（`paws-page` 规格明确「暂不承载业务内容」），按钮只负责导航，档案表单由后续 change 在该页落地；`PET_PROFILE_PATH` 常量与旧 `<a href>` 已删，路由用 TanStack Router 的 `navigate`，不手写字符串 `href`。
+- 跳转目标为 `/paws`（2026-11-16 需求方指定）。该页的宠物管理已由主干 `#40 feature/add-paws-pet-management` 实现，按钮点击后可直接维护档案；`PET_PROFILE_PATH` 常量与旧 `<a href>` 已删，路由用 TanStack Router 的 `navigate`，不手写字符串 `href`。
 - 加载中（`isPending`）：不渲染推荐列也不渲染提示，避免列宽抖动与"无档案"误判。
 - 加载失败（`isError`）：不渲染推荐列，提示区显示「宠物档案加载失败，请刷新重试」，不伪装成"没有档案"。
 
@@ -81,26 +81,26 @@
 
 ### D7 档案查询模块
 
-新增 `apps/web/src/queries/pets.ts`：`PetProfile` 类型 + `petsQueryOptions = queryOptions({ queryKey: ["pets"], queryFn: request<PetProfile[]>("/api/pets"), staleTime: 60_000, retry: 1 })`。页面用 `useQuery(petsQueryOptions)`，不额外做缓存层。
+`apps/web/src/queries/pets.ts` 在 `#40`（`feature/add-paws-pet-management`）已存在：`Pet` / `SavePetInput` / `petQueryKeys` / `petsQueryOptions()` / `createPet`・`updatePet`・`deletePet` 及其 mutation options。本 change 不另建档案模块，只在该函数内补 `staleTime: 60_000` 与 `retry: 1`，页面用 `useQuery(petsQueryOptions())`，不额外做缓存层。
 
 ### D8 种子与验收账号分工
 
-`scripts/seed-users.mjs` 在插入账号后为 `demo` 幂等写入两只宠物（先按 `user_id` 删除再插入，避免重复运行叠加）：
+`scripts/seed-users.mjs` 新增验收账号 `petowner`（USER，口令 `123456`），并为它幂等写入两只宠物（先按 `user_id` 删除再插入，避免重复运行叠加）：
 
 | 名称 | 类型 | 体重 | 肩高 | 牵引绳 | 检疫证明 | 用途 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 豆豆 | CAT | 4.5kg | 25cm | 有 | 有 | 全部满足（推荐） |
 | 毛毛 | DOG | 38kg | 55cm | 有 | 无 | 超重、超高、缺证（不推荐，且各行原因不同） |
 
-`admin` 不写档案，用于验证"列隐藏 + 提示按钮"。`run-e2e.mjs` 的 `verifySeededUsers` 只校验账号与角色，不受影响。
+`demo` 与 `admin` 不写档案：`demo` 供 `/paws` 的「空档案 → 新建/编辑/删除」流程（`#40`），`admin` 用于验证本 change 的「无档案隐藏列 + 提示按钮」。预置档案只放在 `petowner` 上，避免与上述两个场景在同一数据库并行执行时互相干扰（Playwright 多 worker 共享一个后端）。`run-e2e.mjs` 的 `verifySeededUsers` 已同步把 `petowner` 纳入账号与角色校验。
 
 ## Risks
 
 - **并行会话**：主干上宠物档案能力由其他会话推进，`PetResponses.PetDetail` 字段可能变动（如新增品种）。判定只读取 `weightKg`/`shoulderHeightCm`/`hasVaccinationProof`，字段缺失时前端类型报错而非静默错判。
-- **REQ-005 未归档**：本 change 的 delta 以叠加方式写在 `transport-rules-comparison-page` 规格上，必须等 REQ-005 合并后再归档本 change，否则规格文件会丢内容。
-- **规则阈值仍需人工复核**（2026-11-16 已关闭）：REQ-005 遗留的 4 条 `verifiedOn: null` 已补齐，8 条规则复核日期均为 `2026-11-16`（复核记录见 `docs/ai4se-plugins/20261116-124503-local-verify-report.md`「规则复核闭合」）；本 change 不再受该门禁阻隔，但推荐结论仍随规则时效性变化。
+- **REQ-006 未归档**：本 change 的 delta 以叠加方式写在 `transport-rules-comparison-page` 规格上，必须等 REQ-006 合并后再归档本 change，否则规格文件会丢内容。
+- **规则阈值仍需人工复核**（2026-11-16 已关闭）：REQ-006 遗留的 4 条 `verifiedOn: null` 已补齐，8 条规则复核日期均为 `2026-11-16`（复核记录见 `docs/ai4se-plugins/20261116-124503-local-verify-report.md`「规则复核闭合」）；本 change 不再受该门禁阻隔，但推荐结论仍随规则时效性变化。
 - **判定口径的局限**：品种、烈性犬、笼具规格、办理时长都不参与判定，用户可能看到"推荐"但实际仍需人工确认；免责声明已覆盖，但文案未突出，属已知取舍。
 
 ## Open Questions
 
-- 无（另：跳转目标 `/paws` 已接上，但该页仍为空壳；档案表单落地时只需填充 `/paws` 页面，不改本页与判定逻辑）。
+- 无（另：跳转目标 `/paws` 已接上，且该页已具备宠物管理（主干 `#40`）；`openspec/specs/paws-page/spec.md` 的「暂不承载业务内容」描述属于该规格自身的待同步项，不影响本 change）。

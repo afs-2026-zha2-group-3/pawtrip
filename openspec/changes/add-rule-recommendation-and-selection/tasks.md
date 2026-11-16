@@ -9,24 +9,24 @@
 
 ## 2. 档案查询模块
 
-- [x] 2.1 新增 `apps/web/src/queries/pets.ts`：`PetProfile` 类型 + `petsQueryOptions`（`queryKey: ["pets"]`、`GET /api/pets`、`staleTime: 60_000`、`retry: 1`）
+- [x] 2.1 `apps/web/src/queries/pets.ts`：提供 `petsQueryOptions()`（`queryKey: ["pets"]`、`GET /api/pets`、`staleTime: 60_000`、`retry: 1`）。rebase 到主干后该文件已存在（`#40` 的 `Pet` 类型 + 宠物 CRUD），故合并为使主结构并在函数内保留 `staleTime`/`retry`，不再单独定义 `PetProfile`
 - 验证：`npm run build` → **exit 0**
 
 ## 3. 页面两列与无档案提示
 
 - [x] 3.1 `apps/web/src/routes/_authenticated/transport-rules.tsx`：表格最前加「选择」列表头与单选单元格，选中值读写 `sessionStorage`（`pawtrip:selected-transport-mode`），进页面回显
-- [x] 3.2 同文件：`useQuery(petsQueryOptions)`，在「方式」列后加「是否推荐」列，逐只宠物渲染结论与原因；`isPending` / `isError` / 空数组三种情况下不渲染该列
-- [x] 3.3 同文件：删除 `PET_PROFILE_PATH` 引用与 `<a href>`，改为无档案时显示提示文案 + `<Button variant="outline" disabled>新增宠物档案</Button>`；加载失败时显示失败提示
+- [x] 3.2 同文件：`useQuery(petsQueryOptions())`，在「方式」列后加「是否推荐」列，逐只宠物渲染结论与原因；`isPending` / `isError` / 空数组三种情况下不渲染该列
+- [x] 3.3 同文件：删除 `PET_PROFILE_PATH` 引用与 `<a href>`，改为无档案时显示提示文案 + `<Button variant="outline" disabled>新增宠物档案</Button>`；加载失败时显示失败提示（优先实现为 `disabled`；2026-11-16 按需求方要求改为点击跳转 `/paws`，定格以 4.2 为准）
 - [x] 3.4 `apps/web/src/data/transport-rules.ts`：删除已无引用的 `PET_PROFILE_PATH` 常量
-- [x] 3.5 `e2e/transport-rules.spec.ts`：把「档案入口是链接可跳转」断言改为「按钮存在且不可点击」，移除对 `/paws/profile` 的 URL 断言
+- [x] 3.5 `e2e/transport-rules.spec.ts`：先改为「按钮存在且不可点击」并移除对 `/paws/profile` 的 URL 断言；后（同 3.3 变更）改为「按钮可用 → 点击后 URL 为 `/paws` 且表格消失」
 - 验证：`npm run build` → **exit 0**
 
 ## 4. 种子数据与 E2E
 
-- [x] 4.1 `scripts/seed-users.mjs`：为 `demo` 幂等写入两只宠物（豆豆 CAT 4.5kg/25cm/有证；毛毛 DOG 38kg/55cm/无证），`admin` 不写
-- [x] 4.2 新增 `e2e/rule-recommendation-and-selection.spec.ts`：demo 视角（推荐列存在、豆豆推荐、毛毛不推荐且各行原因不同、切航司后结论正确）；admin 视角（列隐藏、提示按钮 `disabled`、单选列可用）
+- [x] 4.1 `scripts/seed-users.mjs`：新增账号 `petowner`（USER）并为其幂等写入两只宠物（豆豆 CAT 4.5kg/25cm/有证；毛毛 DOG 38kg/55cm/无证）；`demo` / `admin` 不写档案，并同步 `scripts/run-e2e.mjs` 的 `verifySeededUsers` 账号清单
+- [x] 4.2 新增 `e2e/rule-recommendation-and-selection.spec.ts`：`petowner` 视角（推荐列存在、豆豆推荐、毛毛不推荐且各行原因不同、切航司后结论正确）；admin 视角（列隐藏、提示按钮跳转 `/paws`、单选列可用）
 - [x] 4.3 同 spec：单选互斥、`sessionStorage` 值正确、刷新后回显
-- 验证：`npm run test:e2e` → **32 passed (36.3s)**（原 28 + 新增 4）；退出码仍为 1，属 REQ-005 遗留的 W1（`run-e2e.mjs` 清理临时 SQLite 的 EBUSY），非本次引入。
+- 验证：`npm run test:e2e` → **32 passed (36.3s)**（原 28 + 新增 4）；退出码仍为 1，属 REQ-006 遗留的 W1（`run-e2e.mjs` 清理临时 SQLite 的 EBUSY），非本次引入。
 - 过程记录：首轮 31 passed / 1 failed，失败为 `defaults to the first airline without leaving empty cells` 对「选择」列断言 `not.toBeEmpty()`；该列只含单选控件、本无文本，已改为从「方式」列起检查。
 
 ## 5. 全量验证与文档

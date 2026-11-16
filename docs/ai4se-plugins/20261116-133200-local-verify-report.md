@@ -3,9 +3,9 @@
 | 项 | 值 |
 |---|---|
 | Change | `openspec/changes/add-rule-recommendation-and-selection` |
-| 需求 | REQ-006（2026-11-16 由需求方在 REQ-005 之后追加） |
-| 分支 | `feat/rule-recommendation-and-selection`（基于 `feat/transport-rules-comparison` @ `11d82e6`） |
-| 提交 | `a552b93`（实现）→ `65f3c9e`（规格+知识库）→ `a807bbe`（需求登记）→ `d1b6807`（规则复核闭合 W4） |
+| 需求 | REQ-007（2026-11-16 由需求方在 REQ-006 之后追加） |
+| 分支 | `feat/rule-recommendation-and-selection`（rebase 至 `feat/transport-rules-comparison`，后者再 rebase 至 `origin/main` @ `d92ecb9`；分支 tip 以 `git log` 为准） |
+| 提交 | 依次为：`feat(web): 规则页新增交通方式选择与宠物档案推荐列` → `docs(openspec): 补充推荐与选择能力的规格与知识库` → `docs(REQ-006): 登记需求条目并更新 REQ-005 状态` → `fix(web): 复核携宠规则来源并补齐复核日期` → `feat(web): 无档案提示按钮跳转 /paws` → `docs(sdd): 记录 REQ-005/REQ-006 的 G2 决策与验证报告` → `docs: 同步 rebase 与验收账号调整`；rebase 会重写哈希，故只记提交主题，具体哈希以 `git log` 为准 |
 | 执行时间 | 2026-11-16 13:32 (+08:00) |
 | 阶段 | P4 完成，进入 G2 前 |
 
@@ -16,7 +16,7 @@
 | `apps/web/src/data/transport-rules.ts` | 改：`shoulderLimitCm` 字段 + 8 条取值；删 `PET_PROFILE_PATH`；4 条规则补 `verifiedOn`、2 条换源 |
 | `apps/web/src/data/transport-rule-match.ts` | 新：`evaluateRuleForPet` 判定纯函数 |
 | `apps/web/src/data/transport-rule-match.test.ts` | 新：6 例 UT |
-| `apps/web/src/queries/pets.ts` | 新：`PetProfile` + `petsQueryOptions`（`GET /api/pets`） |
+| `apps/web/src/queries/pets.ts` | 新：`petsQueryOptions()`（`GET /api/pets`）；rebase 后复用主干 #40 的 `Pet` 类型与宠物 CRUD，仅补 `staleTime`/`retry` |
 | `apps/web/src/routes/_authenticated/transport-rules.tsx` | 改：「选择」单选列、「是否推荐」列、无档案/失败提示 |
 | `e2e/transport-rules.spec.ts` | 改：列序、空单元格循环起点、链接断言改为按钮断言 |
 | `e2e/rule-recommendation-and-selection.spec.ts` | 新：4 例（demo 视角 2 + admin 视角 1 + 选择/缓存 1） |
@@ -32,7 +32,7 @@
 | `npm run test -w apps/web` | 0 | 3 files / **17 passed**（新增 `transport-rule-match.test.ts` 6 例） |
 | `npm run build` | 0 | 构建成功（`transport-rules` chunk 生成） |
 | `.\apps\server\mvnw.cmd -f apps\server\pom.xml test` | 0 | **Tests run: 75, Failures: 0, Errors: 0**，BUILD SUCCESS（26.0s） |
-| `npm run test:e2e` | 1 | **32 passed (36.7s)**；退出码 1 为 REQ-005 遗留 W1（`run-e2e.mjs` 清理临时 SQLite 的 `EBUSY`），非本次引入 |
+| `npm run test:e2e` | 1 | **32 passed (36.7s)**；退出码 1 为 REQ-006 遗留 W1（`run-e2e.mjs` 清理临时 SQLite 的 `EBUSY`），非本次引入 |
 
 ## Evidence checklist
 
@@ -75,16 +75,16 @@
 
 | # | Finding | Mark | Location | Suggestion |
 |---|---------|------|----------|------------|
-| W1 | `npm run test:e2e` 测试全绿但退出码 1（`EBUSY` 清理异常），继承自 REQ-005 | [fact] | `scripts/run-e2e.mjs` cleanup | 需求方 2026-11-16 决定不修；为 `rm` 增加 `maxRetries/retryDelay` 可消除误判 |
+| W1 | `npm run test:e2e` 测试全绿但退出码 1（`EBUSY` 清理异常），继承自 REQ-006 | [fact] | `scripts/run-e2e.mjs` cleanup | 需求方 2026-11-16 决定不修；为 `rm` 增加 `maxRetries/retryDelay` 可消除误判 |
 | W2 | 「档案加载失败」分支无自动化覆盖，只能靠代码审查 | [fact] | `transport-rules.tsx` `petsQuery.isError` 段 | 引入请求拦截（`page.route`）或 MSW 后补 1 例 E2E |
-| W3 | `PetProfile.weightKg` / `shoulderHeightCm` 在 TS 中为 `number`，但 API 侧是 `Double`；若返回 `null`，`null > 5` 为 `false`，判定会**静默判为满足** | [inference] | `transport-rule-match.ts` 比较表达式 | DB 迁移 V10 已 NOT NULL，当前不可达；建议后续把类型改为 `number \| null` 并在判定入口做空值保护，避免后端字段放宽后静默误判 |
+| W3 | `Pet.weightKg` / `shoulderHeightCm` 在 TS 中为 `number`，但 API 侧是 `Double`；若返回 `null`，`null > 5` 为 `false`，判定会**静默判为满足** | [inference] | `transport-rule-match.ts` 比较表达式 | DB 迁移 V10 已 NOT NULL，当前不可达；建议后续把类型改为 `number \| null` 并在判定入口做空值保护，避免后端字段放宽后静默误判 |
 
 ### SUGGESTION
 
 | # | Finding | Mark | Location | Suggestion |
 |---|---------|------|----------|------------|
 | S1 | `petsQueryOptions` 的 `staleTime: 60_000`，档案新增/修改后规则页最多陈旧 60 秒，且无手动刷新入口 | [fact] | `apps/web/src/queries/pets.ts` | 档案写入成功处调用 `invalidateQueries(["pets"])`（档案页落地时一并处理） |
-| S2 | E2E 依赖种子固定为「豆豆满足、毛毛不满足」；若日后调整种子数据，断言需同步改 | [fact] | `scripts/seed-users.mjs`、`e2e/rule-recommendation-and-selection.spec.ts` | 断言尽量锚定规则阈值而非宠物名；已在用例注释中说明该耦合 |
+| S2 | E2E 依赖种子固定为「`petowner` 的豆豆满足、毛毛不满足」；若日后调整种子数据，断言需同步改 | [fact] | `scripts/seed-users.mjs`、`e2e/rule-recommendation-and-selection.spec.ts` | 断言尽量锚定规则阈值而非宠物名；已在用例注释中说明该耦合 |
 | S3 | 判定不覆盖品种、烈性犬、笼具规格、办理时长，用户可能看到「推荐」但实际仍需人工确认 | [inference] | `transport-rule-match.ts` | 属 design 已记录的口径取舍；页面免责声明已覆盖 |
 
 ## Residual risks
@@ -96,7 +96,7 @@
 | 3 | 判定口径局限（不含品种/笼具等） | 需求方已选定 3 项硬条件 | accepted（免责声明 + 逐条原因展示） |
 | 4 | 服务端字段若放宽为可空，前端判定会静默误判 | 当前 NOT NULL，不可达 | tracking（W3） |
 | 5 | E2E 命令退出码非 0 | 清理逻辑缺陷，需求方决定不修 | tracking（W1） |
-| 6 | 本 change 的 delta 叠加在未归档的 `transport-rules-comparison-page` 上 | REQ-005 未合并 | 必须先合 REQ-005 再合本分支，否则规格归档会覆盖 |
+| 6 | 本 change 的 delta 叠加在未归档的 `transport-rules-comparison-page` 上 | REQ-006 未合并 | 必须先合 REQ-006 再合本分支，否则规格归档会覆盖 |
 
 ## Waiver
 
@@ -112,8 +112,17 @@ N/A — 无豁免，本报告不构成放行。
 |---|---|---|
 | 1 | 「新增宠物档案」按钮由 `disabled` 改为点击跳转 `/paws`（需求方指定目标路径），使用 `useNavigate` 导航，不手写 `href` | `apps/web/src/routes/_authenticated/transport-rules.tsx` |
 | 2 | E2E `no-pet-profile` 用例由「按钮可见且 disabled」改为「按钮可用 → 点击后 URL 为 `/paws` 且表格消失」 | `e2e/transport-rules.spec.ts` |
-| 3 | delta spec「无宠物档案」scenario、design D5、知识库、REQ-006 需求条目、registry 同步为跳转口径 | 对应文件 |
+| 3 | delta spec「无宠物档案」scenario、design D5、知识库、REQ-007 需求条目、registry 同步为跳转口径 | 对应文件 |
+| 4 | 分支 rebase 到 `origin/main` @ `d92ecb9`：主干已由 #40 实现 `/paws` 宠物管理，因此原「`/paws` 为空壳」的保留意见全部作废 | `git log --oneline feat/transport-rules-comparison` |
+| 5 | 需求编号重排：远端 `REQ-005` 已归属「管理员维护地点宠物政策」（Archived，PR #37/#38），本次两个 change 改为 REQ-006（规则页）/ REQ-007（推荐与选择），全量文档已同步 | `requirement-workspace/registry.md` 登记缺口说明 |
+| 6 | rebase 后回归发现：种子给 `demo` 预置宠物会破坏 `#40` 的 `paws-pet-management.spec.ts`（其首屏断言「还没有宠物」），故预置档案改放到新账号 `petowner`，`demo`/`admin` 保持无档案，`e2e/rule-recommendation-and-selection.spec.ts` 改用 `petowner` 登录 | `scripts/seed-users.mjs`、`scripts/run-e2e.mjs`、`e2e/rule-recommendation-and-selection.spec.ts` |
 
 复验：`npm run test:e2e` → **32 passed (38.5s)**，退出码 1 仍为 W1。
 
-注：`/paws` 当前为空壳页（`paws-page` 规格明确「暂不承载业务内容」），按钮只完成导航；档案表单落地前，点击后页面无内容，属已知过渡状态。
+rebase 复验（`feat/rule-recommendation-and-selection` tip，含上表的种子调整）：
+- `npm run build` → 退出码 0
+- `npm run test -w apps/web` → **28 passed**
+- `npm run test:e2e` → **35 passed**（退出码 1 仍为 W1）
+初次重测出现 1 例失败：`paws-pet-management.spec.ts` 的「creates, views, edits and deletes a pet」首屏断言「还没有宠物」失败（种子为 `demo` 预置了两只宠物）。已按上表 #6 拆出 `petowner` 账号修复，复测全绿。
+
+注：`/paws` 的宠物管理已由主干 #40（`feature/add-paws-pet-management`，`ea7fe4c`）实现，因此按钮点击后可直接落地档案维护；`openspec/specs/paws-page/spec.md` 仍保留「暂不承载业务内容」的旧描述，属该规格自身的待同步项，不影响本 change。
