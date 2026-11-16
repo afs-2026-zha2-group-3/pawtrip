@@ -41,7 +41,7 @@
 | 第一轮（2026-11-16） | 不满足 G1-ready（6 Pass / 3 Partial） | AC-4 标题含实现词；DoV-1 的 404/免责/空名单不在 proposal 范围；DoV-5 上述条目缺少追溯 |
 | 修正 | — | `spec.md:67` 标题改为"仅有行政区记录但未录入政策"；`proposal.md:14-16` 补充 404、来源与免责、名单为空三条 |
 | 第二轮（2026-11-16） | 通过（9 / 9 Pass），无阻塞项 | 上一轮 3 项 Partial 均已关闭 |
-| 合并复核（2026-11-16） | 结论不变 | main 合并后：迁移号 V10 → V14；`POST /api/pets` 反向用例改为 `POST /api/cities/{adcode}/pet-policy` 405；品种词表契约由 issue #1 约束承接 |
+| 合并复核（2026-11-16） | 结论不变 | main 合并后：迁移号 V10 → V15；`POST /api/pets` 反向用例改为 `POST /api/cities/{adcode}/pet-policy` 405；品种词表契约由 issue #1 约束承接 |
 
 ## 5. 结论
 

@@ -15,15 +15,6 @@ import {
 
 const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>();
 
-const emptyPetPolicies: LocationDetail["petPolicies"] = {
-  maxPetsPerPerson: null,
-  maxSinglePetWeightKg: null,
-  leashRequired: null,
-  vaccinationProofRequired: null,
-  extraFeeCents: null,
-  reservationRequired: null,
-};
-
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,

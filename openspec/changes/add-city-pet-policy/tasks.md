@@ -2,8 +2,8 @@
 
 ## 1. 数据层
 
-- [x] 1.1 先写 `CityPetPolicySchemaMigrationTest`：断言 V14 后 `city_pet_policy` 表与约束存在、珠海行存在、禁养名单数量与录入清单一致、未收录城市无行；在迁移编写前运行并确认失败。验证：`cd apps/server && ./mvnw -Dtest=CityPetPolicySchemaMigrationTest test` 先红。
-- [x] 1.2 新增 `V14__create_city_pet_policy.sql`：建表并写入珠海（440400）政策行，按公开通告录入完整禁养名单，记录 `source_title`、`source_note`、`updated_month` 与 `area_scope="严格管理区"`。验证：1.1 的迁移测试转绿。
+- [x] 1.1 先写 `CityPetPolicySchemaMigrationTest`：断言 V15 后 `city_pet_policy` 表与约束存在、珠海行存在、禁养名单数量与录入清单一致、未收录城市无行；在迁移编写前运行并确认失败。验证：`cd apps/server && ./mvnw -Dtest=CityPetPolicySchemaMigrationTest test` 先红。
+- [x] 1.2 新增 `V15__create_city_pet_policy.sql`：建表并写入珠海（440400）政策行，按公开通告录入完整禁养名单，记录 `source_title`、`source_note`、`updated_month` 与 `area_scope="严格管理区"`。验证：1.1 的迁移测试转绿。
 - [x] 1.3 新增 `CityPetPolicy` 实体与 `CityPetPolicyRepository`，映射 JSON 列与可空 `area_scope`。验证：仓库往返测试（写入后读回政策条目、名单、来源与更新月份一致）通过。
 
 ## 2. 后端接口
@@ -29,4 +29,4 @@
 
 - G2 由项目约定的人工签署人确认后进入归档。
 - P5 归档时把 `city-pet-policy` delta 合并进 living spec，并更新知识库（如项目要求）。
-- 宠物档案提供品种字段后移除 `demo-pet-profile.ts`，改为读取宠物档案 query；路由与接口不变。
+- 档案品种词表与本页珠海全称对齐后移除 `demo-pet-profile.ts`，改为读取宠物档案 query；路由与接口不变。
