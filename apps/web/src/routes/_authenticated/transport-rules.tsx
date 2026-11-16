@@ -269,7 +269,7 @@ function TransportRulesPage() {
 
           <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
             <p className="text-sm">
-              还没有宠物档案？录入后可查看按宠物情况整理的提示。
+              宠物档案能力稍后提供：此处为后续按宠物情况比对预留入口。
             </p>
             <a
               href={PET_PROFILE_PATH}
