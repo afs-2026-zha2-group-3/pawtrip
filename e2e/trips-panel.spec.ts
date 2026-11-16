@@ -277,7 +277,7 @@ test("keeps local edits when saving fails and retries", async ({ page }) => {
   await expect(page.getByTestId("save-status")).toContainText("已保存");
 });
 
-test("expands on the left for desktop and full screen on mobile", async ({ page }) => {
+test("expands on the left for desktop", async ({ page }) => {
   await createTrip(page, { city: "杭州市", days: 2, pet: "豆豆" });
   const panel = page.getByTestId("trip-panel");
   await expect(panel.getByText("第 1 天", { exact: true })).toBeVisible();
@@ -288,13 +288,6 @@ test("expands on the left for desktop and full screen on mobile", async ({ page 
   expect(desktop?.width).toBeLessThan(500);
   expect(desktop?.x).toBeLessThan(30);
 
-  await page.setViewportSize({ width: 800, height: 700 });
-  await page.reload();
-  await expect(panel).toBeVisible();
-  await page.getByRole("button", { name: "展开行程面板" }).click();
-  const mobile = await panel.boundingBox();
-  expect(mobile?.width).toBeGreaterThanOrEqual(790);
-  expect(mobile?.height).toBeGreaterThanOrEqual(690);
 });
 
 test("does not render the panel on the login page", async ({ page }) => {

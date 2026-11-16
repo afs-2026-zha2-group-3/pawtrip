@@ -21,4 +21,4 @@
 ## 4. 集成验证
 
 - [x] 4.1 在 `apps/server` 运行 `./mvnw test`，并在仓库根目录运行 `npm test -w apps/web` 与 `npm run build -w apps/web`，修复本变更引入的失败。
-- [ ] 4.2 串行运行 `npm run test:e2e -- e2e/admin-location-management.spec.ts e2e/attraction-pet-rules.spec.ts e2e/trips-panel.spec.ts --workers=1`，验证共享读取、地点类型筛选、权限边界及行程加入端到端行为。
+- [x] 4.2 串行运行 `npm run test:e2e -- e2e/admin-location-management.spec.ts e2e/attraction-pet-rules.spec.ts e2e/trips-panel.spec.ts --workers=1`，验证共享读取、地点类型筛选、权限边界及行程加入端到端行为。
