@@ -39,11 +39,14 @@ public class Pet {
 	@Column(name = "has_vaccination_proof", nullable = false)
 	private boolean hasVaccinationProof;
 
+	@Column(name = "photo")
+	private byte[] photo;
+
 	protected Pet() {
 	}
 
 	public Pet(Long userId, String name, PetType petType, Double weightKg, Double shoulderHeightCm,
-			boolean hasLeash, boolean hasVaccinationProof) {
+			boolean hasLeash, boolean hasVaccinationProof, byte[] photo) {
 		this.userId = userId;
 		this.name = name;
 		this.petType = petType;
@@ -51,16 +54,18 @@ public class Pet {
 		this.shoulderHeightCm = shoulderHeightCm;
 		this.hasLeash = hasLeash;
 		this.hasVaccinationProof = hasVaccinationProof;
+		this.photo = photo;
 	}
 
 	public void update(String name, PetType petType, Double weightKg, Double shoulderHeightCm, boolean hasLeash,
-			boolean hasVaccinationProof) {
+			boolean hasVaccinationProof, byte[] photo) {
 		this.name = name;
 		this.petType = petType;
 		this.weightKg = weightKg;
 		this.shoulderHeightCm = shoulderHeightCm;
 		this.hasLeash = hasLeash;
 		this.hasVaccinationProof = hasVaccinationProof;
+		this.photo = photo;
 	}
 
 	public Long getId() {
@@ -93,6 +98,10 @@ public class Pet {
 
 	public boolean hasVaccinationProof() {
 		return this.hasVaccinationProof;
+	}
+
+	public byte[] getPhoto() {
+		return this.photo == null ? null : this.photo.clone();
 	}
 
 }

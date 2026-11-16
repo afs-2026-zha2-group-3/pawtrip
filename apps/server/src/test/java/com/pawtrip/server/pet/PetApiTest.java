@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,6 +42,10 @@ class PetApiTest {
 	private static final Path DB_PATH = Path.of("target", "pet-api-test.db");
 
 	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
+
+	private static final String PHOTO_BASE64 = Base64.getEncoder().encodeToString(new byte[] {1, 2, 3, 4, 5});
+
+	private static final String UPDATED_PHOTO_BASE64 = Base64.getEncoder().encodeToString(new byte[] {9, 8, 7});
 
 	@DynamicPropertySource
 	static void datasourceProperties(DynamicPropertyRegistry registry) {
@@ -109,7 +114,8 @@ class PetApiTest {
 			.andExpect(jsonPath("$.length()").value(1))
 			.andExpect(jsonPath("$[0].id").value(petId))
 			.andExpect(jsonPath("$[0].name").value("Mimi"))
-			.andExpect(jsonPath("$[0].petType").value("CAT"));
+			.andExpect(jsonPath("$[0].petType").value("CAT"))
+			.andExpect(jsonPath("$[0].photo").value(PHOTO_BASE64));
 
 		this.mockMvc.perform(put("/api/pets/{petId}", petId)
 					.with(user(this.username))
@@ -117,8 +123,8 @@ class PetApiTest {
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
 						{"name":"Mimi Updated","petType":"DOG","weightKg":6.25,"shoulderHeightCm":30.5,
-						 "hasLeash":false,"hasVaccinationProof":true}
-						"""))
+						 "hasLeash":false,"hasVaccinationProof":true,"photo":"%s"}
+						""".formatted(UPDATED_PHOTO_BASE64)))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.id").value(petId))
 			.andExpect(jsonPath("$.name").value("Mimi Updated"))
@@ -126,7 +132,8 @@ class PetApiTest {
 			.andExpect(jsonPath("$.weightKg").value(6.25))
 			.andExpect(jsonPath("$.shoulderHeightCm").value(30.5))
 			.andExpect(jsonPath("$.hasLeash").value(false))
-			.andExpect(jsonPath("$.hasVaccinationProof").value(true));
+			.andExpect(jsonPath("$.hasVaccinationProof").value(true))
+			.andExpect(jsonPath("$.photo").value(UPDATED_PHOTO_BASE64));
 
 		this.mockMvc.perform(delete("/api/pets/{petId}", petId)
 					.with(user(this.username))
@@ -161,6 +168,27 @@ class PetApiTest {
 				{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
 				 "hasVaccinationProof":true}
 				""");
+		assertInvalidPet("""
+				{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
+				 "hasLeash":true,"hasVaccinationProof":true,"photo":"not-base64!"}
+				""");
+	}
+
+	@Test
+	void allowsPetsWithoutPhotos() throws Exception {
+		MvcResult result = this.mockMvc.perform(post("/api/pets")
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"name":"No Photo","petType":"DOG","weightKg":12.0,"shoulderHeightCm":40.0,
+						 "hasLeash":true,"hasVaccinationProof":false}
+						"""))
+			.andExpect(status().isCreated())
+			.andReturn();
+
+		JsonNode body = JSON_MAPPER.readTree(result.getResponse().getContentAsString());
+		assertThat(body.path("photo").isNull()).isTrue();
 	}
 
 	@Test
@@ -208,12 +236,13 @@ class PetApiTest {
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
 						{"name":"%s","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
-						 "hasLeash":true,"hasVaccinationProof":true}
-						""".formatted(name)))
+						 "hasLeash":true,"hasVaccinationProof":true,"photo":"%s"}
+						""".formatted(name, PHOTO_BASE64)))
 			.andExpect(status().isCreated())
 			.andExpect(header().exists("Location"))
 			.andExpect(jsonPath("$.name").value(name))
 			.andExpect(jsonPath("$.petType").value("CAT"))
+			.andExpect(jsonPath("$.photo").value(PHOTO_BASE64))
 			.andReturn();
 		JsonNode body = JSON_MAPPER.readTree(result.getResponse().getContentAsString());
 		long petId = body.path("id").asLong();
@@ -225,7 +254,8 @@ class PetApiTest {
 		this.mockMvc.perform(get("/api/pets/{petId}", petId).with(user(this.username)))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.id").value(petId))
-			.andExpect(jsonPath("$.name").value(name));
+			.andExpect(jsonPath("$.name").value(name))
+			.andExpect(jsonPath("$.photo").value(PHOTO_BASE64));
 	}
 
 	private void assertInvalidPet(String body) throws Exception {

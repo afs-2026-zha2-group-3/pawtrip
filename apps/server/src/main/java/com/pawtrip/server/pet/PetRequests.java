@@ -6,7 +6,7 @@ public final class PetRequests {
 	}
 
 	public record SavePet(String name, String petType, Double weightKg, Double shoulderHeightCm, Boolean hasLeash,
-			Boolean hasVaccinationProof) {
+			Boolean hasVaccinationProof, String photo) {
 	}
 
 }

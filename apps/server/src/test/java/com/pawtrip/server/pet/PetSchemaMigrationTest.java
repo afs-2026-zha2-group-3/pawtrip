@@ -34,13 +34,19 @@ class PetSchemaMigrationTest {
 		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
 			assertThat(columns(connection, "pet")).containsExactlyInAnyOrder(
 					"id", "user_id", "name", "pet_type", "weight_kg", "shoulder_height_cm", "has_leash",
-					"has_vaccination_proof");
+					"has_vaccination_proof", "photo");
 
 			long catId = insertPet(connection, userId, "Mimi", "CAT", 4.5, 25.0, 1, 1);
 			insertPet(connection, userId, "Rex", "DOG", 18.25, 60.0, 0, 0);
+			try (PreparedStatement update = connection.prepareStatement(
+					"UPDATE pet SET photo = ? WHERE id = ?")) {
+				update.setBytes(1, new byte[] {1, 2, 3});
+				update.setLong(2, catId);
+				update.executeUpdate();
+			}
 
 			try (PreparedStatement query = connection.prepareStatement(
-					"SELECT name, pet_type, weight_kg, shoulder_height_cm, has_leash, has_vaccination_proof "
+					"SELECT name, pet_type, weight_kg, shoulder_height_cm, has_leash, has_vaccination_proof, photo "
 							+ "FROM pet WHERE id = ?")) {
 				query.setLong(1, catId);
 				try (ResultSet result = query.executeQuery()) {
@@ -51,6 +57,7 @@ class PetSchemaMigrationTest {
 					assertThat(result.getDouble("shoulder_height_cm")).isEqualTo(25.0);
 					assertThat(result.getInt("has_leash")).isEqualTo(1);
 					assertThat(result.getInt("has_vaccination_proof")).isEqualTo(1);
+					assertThat(result.getBytes("photo")).containsExactly(new byte[] {1, 2, 3});
 				}
 			}
 
@@ -59,6 +66,33 @@ class PetSchemaMigrationTest {
 							"SELECT COUNT(*) FROM pet WHERE user_id = " + userId)) {
 				assertThat(result.next()).isTrue();
 				assertThat(result.getInt(1)).isEqualTo(2);
+			}
+		}
+	}
+
+	@Test
+	void addsNullablePhotoWithoutChangingExistingPets(@TempDir Path tempDir) throws SQLException {
+		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("existing-pets.db") + "?foreign_keys=on";
+		Flyway.configure().dataSource(jdbcUrl, null, null).target("11").load().migrate();
+
+		long petId;
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			long userId = insertUser(connection, "existing-pet-owner");
+			petId = insertPet(connection, userId, "Mimi", "CAT", 4.5, 25.0, 1, 1);
+		}
+
+		Flyway.configure().dataSource(jdbcUrl, null, null).load().migrate();
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			assertThat(columns(connection, "pet")).contains("photo");
+
+			try (PreparedStatement query = connection.prepareStatement(
+					"SELECT photo FROM pet WHERE id = ?")) {
+				query.setLong(1, petId);
+				try (ResultSet result = query.executeQuery()) {
+					assertThat(result.next()).isTrue();
+					assertThat(result.getBytes("photo")).isNull();
+				}
 			}
 		}
 	}

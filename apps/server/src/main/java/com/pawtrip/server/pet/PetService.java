@@ -1,5 +1,6 @@
 package com.pawtrip.server.pet;
 
+import java.util.Base64;
 import java.util.List;
 
 import com.pawtrip.server.auth.AppUserRepository;
@@ -12,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 class PetService {
+
+	private static final int MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
 	private final PetRepository petRepository;
 	private final AppUserRepository appUserRepository;
@@ -43,7 +46,8 @@ class PetService {
 				pet.weightKg(),
 				pet.shoulderHeightCm(),
 				pet.hasLeash(),
-				pet.hasVaccinationProof()));
+				pet.hasVaccinationProof(),
+				pet.photo()));
 		return PetResponses.PetDetail.from(saved);
 	}
 
@@ -57,7 +61,8 @@ class PetService {
 				pet.weightKg(),
 				pet.shoulderHeightCm(),
 				pet.hasLeash(),
-				pet.hasVaccinationProof());
+				pet.hasVaccinationProof(),
+				pet.photo());
 		return PetResponses.PetDetail.from(this.petRepository.save(existing));
 	}
 
@@ -92,7 +97,27 @@ class PetService {
 			throw invalidRequest();
 		}
 		return new ValidatedPet(name, petType, request.weightKg(), request.shoulderHeightCm(),
-				request.hasLeash(), request.hasVaccinationProof());
+				request.hasLeash(), request.hasVaccinationProof(), photo(request.photo()));
+	}
+
+	private static byte[] photo(String value) {
+		if (value == null) {
+			return null;
+		}
+		if (value.isBlank()) {
+			throw invalidRequest();
+		}
+		byte[] photo;
+		try {
+			photo = Base64.getDecoder().decode(value);
+		}
+		catch (IllegalArgumentException exception) {
+			throw invalidRequest();
+		}
+		if (photo.length == 0 || photo.length > MAX_PHOTO_BYTES) {
+			throw invalidRequest();
+		}
+		return photo;
 	}
 
 	private static PetType petType(String value) {
@@ -118,7 +143,7 @@ class PetService {
 	}
 
 	private record ValidatedPet(String name, PetType petType, Double weightKg, Double shoulderHeightCm,
-			boolean hasLeash, boolean hasVaccinationProof) {
+			boolean hasLeash, boolean hasVaccinationProof, byte[] photo) {
 	}
 
 }
