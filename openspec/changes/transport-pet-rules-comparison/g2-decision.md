@@ -9,9 +9,9 @@
 | 类型 | 路径 / 值 |
 |---|---|
 | 本地验证 | [20261116-124503-local-verify-report.md](../../../docs/ai4se-plugins/20261116-124503-local-verify-report.md)（Overall **Partial**；W4 已于 2026-11-16 闭合） |
-| 流水线 CI | [20261116-143430-pipeline-report.md](../../../docs/ai4se-plugins/20261116-143430-pipeline-report.md)（Overall **Pass**；E1 全绿 = 4 个 job `success`，机器证据；Web CI 30s / E2E CI 1m52s；Server CI 未触发） |
+| 流水线 CI | [20261116-143430-pipeline-report.md](../../../docs/ai4se-plugins/20261116-143430-pipeline-report.md)（Overall **Pass**；E1 全绿 = 三轮共 10 个 job `success`，机器证据；本 change 合并 main 后的提交 `18e5138`：Web CI 28s / E2E CI 2m59s / Server CI 39s） |
 | 流水线 CD | n/a（纯前端静态展示，不在范围） |
-| PR | [#45](https://github.com/afs-2026-zha2-group-3/pawtrip/pull/45)（base `main`；PR checks 已绿 = push run） |
+| PR | [#45](https://github.com/afs-2026-zha2-group-3/pawtrip/pull/45)（base `main`；**已合并**，merge commit `e1169b4`；PR checks 已绿 = push run） |
 | 分支 | `feat/transport-rules-comparison`（rebase 至 `origin/main` @ `d92ecb9`；分支 tip 随后续文档提交前移，以 `git log` 为准；rebase 前为 `11d82e6`） |
 
 ## Dimension results
