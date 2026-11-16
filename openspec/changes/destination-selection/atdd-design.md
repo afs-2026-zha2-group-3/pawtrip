@@ -1,6 +1,6 @@
 # ATDD Design — destination-selection
 
-- 日期：2026-11-16（P3，G1 Pass 后）
+- 日期：2026-11-16（P3，G1 Pass 后；同日需求方修订：移除 V14 政策数据，候选=全部城市级行政区，政策判断 TODO）
 - 上游：`specs/destination-selection/spec.md`（7 需求）、`specs/web-app-shell/spec.md`（6 需求）、`dov-ac-review.md`、`consistency-lint.md`（L5 外部依赖）
 - 消费方：`design.md` / `tasks.md`（/sdd:task-plan）
 
@@ -8,28 +8,30 @@
 
 | 层 | 框架与位置 | 说明 |
 |---|---|---|
-| API | `@SpringBootTest` + `@AutoConfigureMockMvc` + 独立 SQLite（`target/*.db`），参照 `AdminLocationApiTest` 模式；新增 `apps/server/.../destination/DestinationApiTest.java` | 单端点契约：候选列表、收录状态、禁养名单、401 |
-| E2E | Playwright，新增 `e2e/destination-selection.spec.ts`；导航/守卫/登出扩展既有 `authentication.spec.ts`、`admin-location-management.spec.ts` 或在新 spec 内覆盖 | 用户可见路径：搜索→筛选→选定→提醒→chip→登出清除 |
-| Defer UT | 前端禁养匹配纯函数、localStorage 选定状态工具 | apply 期 unit-level TDD，本文不展开 UT 套件 |
+| API | `@SpringBootTest` + `@AutoConfigureMockMvc` + 独立 SQLite（`target/*.db`），参照 `AdminLocationApiTest` 模式；新增 `apps/server/.../destination/DestinationApiTest.java` | 单端点契约：城市级候选列表、政策占位字段、401、keyword/petFriendly 服务端筛选 |
+| E2E | Playwright，新增 `e2e/destination-selection.spec.ts`；导航/守卫/登出扩展既有 `authentication.spec.ts`、`admin-location-management.spec.ts` 或在新 spec 内覆盖 | 用户可见路径：搜索→筛选→选定→chip→登出清除（禁养提醒暂缓 TODO） |
+| Defer UT | 前端禁养匹配纯函数、sessionStorage 选定状态工具 | apply 期 unit-level TDD，本文不展开 UT 套件 |
 
-外部依赖门控：凡需要「档案品种」输入的用例标 `@profile-dependency`，先编写、以 `test.fixme` 挂起并注明依赖（US-01 change 交付 breed/读取接口后启用）；无档案分支（退化筛选、未选 chip、登出清除）不受阻塞。
+外部依赖门控：凡需要「档案品种 × 政策数据」输入的用例标 `@profile-dependency`，先编写、以 `test.fixme` 挂起并注明依赖（政策数据源 TODO + US-01 change 交付 breed/读取接口后启用）；无档案分支（退化筛选、未选 chip、登出清除）不受阻塞。
 
 ## 2. 场景分层表
 
 | # | 场景（需求来源） | 层 | 建议附加 | 依据 |
 |---|---|---|---|---|
 | A1 | 未认证请求候选接口 → 401 + `code=UNAUTHENTICATED`（候选列表） | API | Security（advisory，待确认） | 单端点状态码/Problem Details |
-| A2 | 候选响应含珠海/杭州、收录状态与禁养名单（候选列表/数据需求） | API | — | 单端点 body 契约 |
-| A3 | 禁养名单条目含来源政府文件与更新时间（数据需求） | API | — | body 字段断言 |
+| A2 | 候选响应为全部城市级行政区（含珠海/杭州）与省份；政策字段占位 false/空数组（候选列表/政策占位契约，2026-11-16 修订） | API | — | 单端点 body 契约 |
+| A3 | ~~禁养名单条目含来源政府文件与更新时间~~（V14 移除，数据源就绪后恢复） | API | — | 暂缓 TODO |
 | A4 | 反向：不存在选定目的地写入端点（Non-goal 服务端持久化） | API | — | 无 POST/PUT 选定路由 |
-| E1 | 打开 `/cities` 展示两城卡片 + 收录 Badge（候选列表） | E2E | — | UI 可见 |
+| A5 | `keyword` 服务端过滤：城市名/省份命中、trim、无结果空数组（城市搜索，2026-11-16 修订） | API | — | 查询参数契约 |
+| A6 | `petFriendly=true` 按限养数过滤：null/>=1 保留、0 排除；与 keyword 组合（宠物友好筛选，2026-11-16 修订） | API | — | 查询参数契约 |
+| E1 | 打开 `/cities` 展示城市级候选卡片（含两城，无政策 Badge）（候选列表） | E2E | — | UI 可见 |
 | E2 | 搜索「杭州」/「广东」过滤 + 计数；无结果空态（城市搜索） | E2E | — | UI 交互 |
-| E3 | 无档案启用筛选 → 仅政策已收录城市（宠物友好筛选退化） | E2E | — | 不依赖外部档案 |
+| E3 | 启用筛选 → 默认无限养数城市全保留（宠物友好筛选） | E2E | — | 不依赖外部档案 |
 | E4 | 有档案品种命中启用筛选 → 仅未命中城市（宠物友好筛选） | E2E `@profile-dependency` | — | 需外部 breed |
 | E5 | 关闭筛选恢复全部候选（宠物友好筛选） | E2E | — | UI 交互 |
 | E6 | 命中城卡片「档案品种禁养」Badge；「其他」/未收录不触发（禁养犬种匹配） | E2E `@profile-dependency`（未收录分支无档案可测） | — | UI Badge |
 | E7 | 选定杭州 → 确认提示承载规划上下文（选定目的地） | E2E | — | UI 可见 |
-| E8 | 刷新/重进 `/cities` 选定保留（选定目的地） | E2E | — | 浏览器持久化跨会话 |
+| E8 | 刷新/重进 `/cities` 选定保留（选定目的地） | E2E | — | 同标签页会话内刷新保留（sessionStorage） |
 | E9 | 重选珠海覆盖 + 顶栏 chip 同步（选定目的地/顶栏上下文） | E2E | — | 跨页面状态 |
 | E10 | 命中禁养仍可选定 + 高亮提醒持续（选定时禁养提醒） | E2E `@profile-dependency` | — | 需外部 breed |
 | E11 | 未命中不展示禁养提醒（选定时禁养提醒） | E2E `@profile-dependency` | — | 需外部 breed |
@@ -41,8 +43,8 @@
 
 ## 3. 先于生产代码编写（red 顺序）
 
-1. A1–A4 API 验收先红 → 驱动迁移（收录标记+禁养名单+种子）与候选只读接口实现
-2. E1–E3、E5、E7–E9、E12–E14 先红 → 驱动 `/cities` 页面、localStorage 工具、顶栏 chip 与登出清理
+1. A1–A4 API 验收先红 → 驱动候选只读接口实现（政策数据迁移已按需求方移除，占位字段随接口交付）
+2. E1–E3、E5、E7–E9、E12–E14 先红 → 驱动 `/cities` 页面、sessionStorage 工具、顶栏 chip 与登出清理
 3. E4/E6/E10/E11 同步编写但 `test.fixme` 挂起（注明外部契约）；外部 change 合并后转绿验证
 4. E15/E16 反向用例随主体一起红→绿
 
@@ -54,10 +56,10 @@
 
 ## 5. 数据 / fixtures 策略
 
-- API：每测试类独立 SQLite（`target/destination-api-test.db`，`@DynamicPropertySource` 重置）； Flyway 迁移自带珠海/杭州种子；认证用 `SecurityMockMvcRequestPostProcessors.user()`；不 mock 数据访问
+- API：每测试类独立 SQLite（`target/destination-api-test.db`，`@DynamicPropertySource` 重置）；候选来自既有 V5 行政区种子（无政策种子，V14 已移除）；认证用 `SecurityMockMvcRequestPostProcessors.user()`；不 mock 数据访问
 - E2E：独立 E2E SQLite（`scripts/run-e2e.mjs` 现有隔离机制），测试账号走 `seed:users`；MUST NOT 触碰开发库
-- 档案 fixture（依赖就绪后）：向 E2E 库 pet 表直接写入品种行，或经外部 `/paws` UI 创建；词表与禁养种子同一词表（比特犬/柯基等）
-- 清理：E2E 每轮重置专用库；API 每类重置；localStorage 由用例自行清理（登出用例顺带验证清除）
+- 档案 fixture（依赖就绪后）：向 E2E 库 pet 表直接写入品种行，或经外部 `/paws` UI 创建；词表与未来禁养数据同一词表（比特犬/柯基等）；政策数据 fixture 待数据源确定后补充
+- 清理：E2E 每轮重置专用库；API 每类重置；sessionStorage 随新上下文天然清空，登出用例顺带验证清除
 
 ## 6. Non-goals 与反向验证
 
@@ -78,6 +80,6 @@
 
 ## 8. Defer UT 清单（apply 期 TDD）
 
-- 禁养匹配纯函数（精确匹配、空/「其他」/未收录短路）
-- localStorage 选定状态读写/清除工具
-- 筛选谓词（covered ∧ ¬hit；无档案退化）
+- 禁养匹配纯函数（精确匹配、空/「其他」短路；仅 Badge/提醒用途）
+- sessionStorage 选定状态读写/清除工具
+- ~~筛选谓词~~（2026-11-16 修订：搜索/筛选移至服务端，由 A5/A6 API 用例覆盖）

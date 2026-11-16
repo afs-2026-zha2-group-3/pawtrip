@@ -58,19 +58,18 @@ com.pawtrip.server
 
 `com.pawtrip.server.destination` 是目的地候选功能模块（US-47），只读、无写入端点：
 
-- `GET /api/destinations`：需登录（沿用 `/api/**` 认证链，未登录 `401 UNAUTHENTICATED`）；返回试点候选城市数组（按 adcode 升序），每项含 `adcode`、`name`、`province`（父级省名）、`policyCovered`、`bannedBreeds[]`（每条含 `breedName`、`source` 政府文件、`updated` 日期）。
-- 候选范围数据驱动：`administrative_region.policy_covered=1` 的城市即候选（当前珠海 440400、杭州 330100），该列同时标记政策收录状态；由 `V14__add_destination_policy_data.sql` 增加，`NOT NULL DEFAULT 0`。
-- 禁养名单存于 `region_banned_breed`（`region_adcode` FK→`administrative_region`，级联删除；`UNIQUE(region_adcode, breed_name)`），V14 注入杭州 33 条、珠海 38 条政府名录种子；来源与词表归一化记录见 `openspec/changes/destination-selection/seed-data.md`。
-- 禁养匹配（档案品种 × 名单）在前端执行，后端不引用宠物档案模块（档案由外部 US-01 change 交付）；选定目的地不做服务端持久化。
-- 迁移版本号约定：宠物档案系列（PR #33–#36）占用 V8–V13，本模块迁移为 V14；合并前需复核 main 最新版本号。
+- `GET /api/destinations`：需登录（沿用 `/api/**` 认证链，未登录 `401 UNAUTHENTICATED`）；返回全部城市级行政区候选数组（`level='city'`，按名称排序），每项含 `adcode`、`name`、`province`（父级省名）、`policyCovered`、`bannedBreeds[]`。可选查询参数：`keyword`（服务端按城市名/省份 trim 后 contains 过滤）、`petFriendly=true`（服务端按每人限养数筛选：`max_pets_per_person` 为 null 或 >=1 视为宠物友好，限养 0 排除）。
+- 政策数据暂缓（2026-11-16 需求方移除 V14 政策种子迁移）：`policyCovered` 占位恒为 `false`、`bannedBreeds` 占位恒为空数组；收录状态与禁养名单的数据源确定后恢复（判断点在 `DestinationController` 留 TODO）。原摘录稿存档于 `openspec/changes/destination-selection/seed-data.md`。
+- 禁养匹配纯函数 `breedHitsBanList`（档案品种 × 名单，精确匹配）保留于前端 `lib/destination-matching.ts`；Badge/提醒展示暂缓（TODO）。后端不引用宠物档案模块（档案由外部 US-01 change 交付）；选定目的地不做服务端持久化。
+- 迁移版本号约定：宠物档案系列（PR #33–#36）占用 V8–V13；本模块当前无新增迁移，政策数据迁移交付时需复核 main 最新版本号。
 
 前端选定状态约定（`apps/web/src/lib/selected-destination.ts`）：
 
-- 已选目的地仅存浏览器 localStorage，键 `pawtrip.selectedDestination`，值为 JSON `{adcode, cityName, province, selectedAt}`；读取时校验四字段均为字符串，损坏/缺失一律视为未选。
-- 状态经 `createSelectedDestinationStore` + `useSyncExternalStore` 订阅（`useSelectedDestination()`），无全局状态库；重选直接覆盖，刷新/重进页面保留。
+- 已选目的地仅存浏览器 sessionStorage（会话级，关标签页即失效），键 `pawtrip.selectedDestination`，值为 JSON `{adcode, cityName, province, selectedAt}`；读取时校验四字段均为字符串，损坏/缺失一律视为未选。
+- 状态经 `createSelectedDestinationStore` + `useSyncExternalStore` 订阅（`useSelectedDestination()`），无全局状态库；重选直接覆盖，同标签页内刷新/重进页面保留。
 - 确认登出（`__root.tsx` logout mutation `onSuccess`）在 `queryClient.clear()` 之外调用 `selectedDestinationStore.clear()` 清除该键。
 - 顶栏目的地 chip 与 `/cities` 确认提示同源于该 store：已选显示城市名，未选显示「目的地未选」；chip 仅在登录成功后渲染。
-- 档案品种经 `queries/pet-profile.ts` 只读 adapter 消费外部 US-01 接口（临时契约 `GET /api/pets`），任何失败/无档案退化为 null，筛选退化为仅按政策收录状态。
+- 档案品种经 `queries/pet-profile.ts` 只读 adapter 消费外部 US-01 接口（临时契约 `GET /api/pets`），任何失败/无档案退化为 null；宠物友好筛选由服务端按每人限养数承载，不依赖档案 breed。
 
 ## 运行拓扑
 

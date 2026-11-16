@@ -72,9 +72,20 @@ describe("destinations query", () => {
     ];
     fetchMock.mockResolvedValueOnce(jsonResponse(candidates));
 
-    expect(destinationsQueryOptions.queryKey).toEqual(["destinations"]);
-    const queryFn = destinationsQueryOptions.queryFn as (context: { signal?: AbortSignal }) => Promise<unknown>;
+    const options = destinationsQueryOptions();
+    expect(options.queryKey).toEqual(["destinations", "", false]);
+    const queryFn = options.queryFn as (context: { signal?: AbortSignal }) => Promise<unknown>;
     await expect(queryFn({})).resolves.toEqual(candidates);
     expect(fetchMock.mock.calls[0][0]).toBe("/api/destinations");
+  });
+
+  it("passes keyword and petFriendly filters to the API", async () => {
+    fetchMock.mockResolvedValue(jsonResponse([]));
+
+    const options = destinationsQueryOptions({ keyword: " 杭州 ", petFriendly: true });
+    expect(options.queryKey).toEqual(["destinations", "杭州", true]);
+    const queryFn = options.queryFn as (context: { signal?: AbortSignal }) => Promise<unknown>;
+    await queryFn({});
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/destinations?keyword=%E6%9D%AD%E5%B7%9E&petFriendly=true");
   });
 });

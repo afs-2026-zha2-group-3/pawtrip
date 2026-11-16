@@ -54,50 +54,93 @@ class DestinationApiTest {
 	}
 
 	@Test
-	void candidatesContainBothPilotCitiesWithCoverageAndBannedBreeds() throws Exception {
-		MvcResult result = this.mockMvc.perform(get("/api/destinations").with(user("user").roles("USER")))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(2))
-				.andReturn();
-		JsonNode candidates = JSON_MAPPER.readTree(result.getResponse().getContentAsString());
+	void candidatesAreAllCityLevelRegionsWithProvince() throws Exception {
+		JsonNode candidates = fetchCandidates(null);
 
+		assertThat(candidates.size()).isGreaterThan(2);
 		JsonNode hangzhou = findCandidate(candidates, "330100");
 		assertThat(hangzhou.path("name").asString()).isEqualTo("杭州市");
 		assertThat(hangzhou.path("province").asString()).isEqualTo("浙江省");
-		assertThat(hangzhou.path("policyCovered").asBoolean()).isTrue();
-		assertThat(hangzhou.path("bannedBreeds").size()).isEqualTo(33);
-		assertThat(breedNames(hangzhou)).contains("比特犬", "日本土佐", "藏獒", "中华田园犬");
 
 		JsonNode zhuhai = findCandidate(candidates, "440400");
 		assertThat(zhuhai.path("name").asString()).isEqualTo("珠海市");
 		assertThat(zhuhai.path("province").asString()).isEqualTo("广东省");
-		assertThat(zhuhai.path("policyCovered").asBoolean()).isTrue();
-		assertThat(zhuhai.path("bannedBreeds").size()).isEqualTo(38);
-		assertThat(breedNames(zhuhai)).contains("比特犬", "日本土佐", "罗威纳犬", "凯丽蓝梗");
+
+		for (JsonNode candidate : candidates) {
+			assertThat(candidate.path("adcode").asString()).isNotBlank();
+			assertThat(candidate.path("name").asString()).isNotBlank();
+		}
+		assertThat(findCandidateOrNull(candidates, "330000")).isNull();
 	}
 
 	@Test
-	void everyBannedBreedEntryCarriesGovernmentSourceAndUpdateDate() throws Exception {
-		MvcResult result = this.mockMvc.perform(get("/api/destinations").with(user("user").roles("USER")))
-				.andExpect(status().isOk())
-				.andReturn();
-		JsonNode candidates = JSON_MAPPER.readTree(result.getResponse().getContentAsString());
+	void policyFieldsArePlaceholdersUntilDataSourceIsDecided() throws Exception {
+		JsonNode candidates = fetchCandidates(null);
 
 		for (JsonNode candidate : candidates) {
-			for (JsonNode breed : candidate.path("bannedBreeds")) {
-				assertThat(breed.path("breedName").asString()).isNotBlank();
-				assertThat(breed.path("source").asString()).isNotBlank();
-				assertThat(breed.path("updated").asString()).matches("\\d{4}-\\d{2}-\\d{2}");
-			}
+			assertThat(candidate.path("policyCovered").asBoolean()).isFalse();
+			assertThat(candidate.path("bannedBreeds").size()).isZero();
 		}
+	}
 
-		JsonNode hangzhou = findCandidate(candidates, "330100");
-		assertThat(findBreed(hangzhou, "比特犬").path("source").asString()).contains("杭州市限制养犬规定");
-		assertThat(findBreed(hangzhou, "比特犬").path("updated").asString()).isEqualTo("2007-08-13");
+	@Test
+	void keywordFiltersCandidatesByCityNameOrProvince() throws Exception {
+		this.mockMvc.perform(get("/api/destinations").param("keyword", "杭州")
+					.with(user("user").roles("USER")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(1))
+				.andExpect(jsonPath("$[0].adcode").value("330100"));
 
-		JsonNode zhuhai = findCandidate(candidates, "440400");
-		assertThat(findBreed(zhuhai, "比特犬").path("source").asString()).contains("危险犬标准及品种的通告");
-		assertThat(findBreed(zhuhai, "比特犬").path("updated").asString()).isEqualTo("2021-03-01");
+		JsonNode guangdong = fetchCandidates("广东");
+		assertThat(guangdong.size()).isGreaterThan(1);
+		for (JsonNode candidate : guangdong) {
+			assertThat(candidate.path("province").asString()).isEqualTo("广东省");
+		}
+		assertThat(findCandidate(guangdong, "440400").path("name").asString()).isEqualTo("珠海市");
+
+		this.mockMvc.perform(get("/api/destinations").param("keyword", " 杭州 ")
+					.with(user("user").roles("USER")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(1))
+				.andExpect(jsonPath("$[0].adcode").value("330100"));
+
+		this.mockMvc.perform(get("/api/destinations").param("keyword", "不存在的城市")
+					.with(user("user").roles("USER")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(0));
+	}
+
+	@Test
+	void petFriendlyFilterExcludesOnlyRegionsBanningAllPets() throws Exception {
+		int total = fetchCandidates(null).size();
+		try {
+			executeUpdate("UPDATE administrative_region SET max_pets_per_person = 0 WHERE adcode = '330100'");
+			executeUpdate("UPDATE administrative_region SET max_pets_per_person = 1 WHERE adcode = '130100'");
+			executeUpdate("UPDATE administrative_region SET max_pets_per_person = 2 WHERE adcode = '440400'");
+
+			JsonNode friendly = fetchCandidates(null, true);
+			assertThat(friendly.size()).isEqualTo(total - 1);
+			assertThat(findCandidateOrNull(friendly, "330100")).isNull();
+			assertThat(findCandidate(friendly, "130100").path("name").asString()).isEqualTo("石家庄市");
+			assertThat(findCandidate(friendly, "440400").path("name").asString()).isEqualTo("珠海市");
+
+			this.mockMvc.perform(get("/api/destinations").param("petFriendly", "true").param("keyword", "杭州")
+						.with(user("user").roles("USER")))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.length()").value(0));
+
+			this.mockMvc.perform(get("/api/destinations").param("petFriendly", "true").param("keyword", "珠海")
+						.with(user("user").roles("USER")))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.length()").value(1))
+					.andExpect(jsonPath("$[0].adcode").value("440400"));
+
+			assertThat(findCandidateOrNull(fetchCandidates(null), "330100")).isNotNull();
+		}
+		finally {
+			executeUpdate("UPDATE administrative_region SET max_pets_per_person = NULL "
+					+ "WHERE adcode IN ('330100', '130100', '440400')");
+		}
 	}
 
 	@Test
@@ -129,30 +172,47 @@ class DestinationApiTest {
 				.andExpect(status().isNotFound());
 	}
 
+	private JsonNode fetchCandidates(String keyword) throws Exception {
+		return fetchCandidates(keyword, false);
+	}
+
+	private JsonNode fetchCandidates(String keyword, boolean petFriendly) throws Exception {
+		var request = get("/api/destinations").with(user("user").roles("USER"));
+		if (keyword != null) {
+			request = request.param("keyword", keyword);
+		}
+		if (petFriendly) {
+			request = request.param("petFriendly", "true");
+		}
+		MvcResult result = this.mockMvc.perform(request)
+				.andExpect(status().isOk())
+				.andReturn();
+		return JSON_MAPPER.readTree(result.getResponse().getContentAsString());
+	}
+
+	private static void executeUpdate(String sql) throws Exception {
+		try (java.sql.Connection connection = java.sql.DriverManager
+				.getConnection("jdbc:sqlite:" + DB_PATH + "?foreign_keys=on");
+				java.sql.Statement statement = connection.createStatement()) {
+			statement.executeUpdate(sql);
+		}
+	}
+
 	private static JsonNode findCandidate(JsonNode candidates, String adcode) {
+		JsonNode candidate = findCandidateOrNull(candidates, adcode);
+		if (candidate == null) {
+			throw new AssertionError("Candidate not found: " + adcode);
+		}
+		return candidate;
+	}
+
+	private static JsonNode findCandidateOrNull(JsonNode candidates, String adcode) {
 		for (JsonNode candidate : candidates) {
 			if (adcode.equals(candidate.path("adcode").asString())) {
 				return candidate;
 			}
 		}
-		throw new AssertionError("Candidate not found: " + adcode);
-	}
-
-	private static JsonNode findBreed(JsonNode candidate, String breedName) {
-		for (JsonNode breed : candidate.path("bannedBreeds")) {
-			if (breedName.equals(breed.path("breedName").asString())) {
-				return breed;
-			}
-		}
-		throw new AssertionError("Breed not found: " + breedName);
-	}
-
-	private static java.util.List<String> breedNames(JsonNode candidate) {
-		java.util.List<String> names = new java.util.ArrayList<>();
-		for (JsonNode breed : candidate.path("bannedBreeds")) {
-			names.add(breed.path("breedName").asString());
-		}
-		return names;
+		return null;
 	}
 
 }

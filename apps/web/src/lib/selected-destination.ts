@@ -76,7 +76,7 @@ function read(storage: StorageLike): SelectedDestination | null {
 }
 
 const browserStorage: StorageLike | null =
-  typeof window === "undefined" ? null : window.localStorage;
+  typeof window === "undefined" ? null : window.sessionStorage;
 
 const noopStore: SelectedDestinationStore = {
   get: () => null,

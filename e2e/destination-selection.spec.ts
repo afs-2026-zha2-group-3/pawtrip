@@ -10,8 +10,17 @@ async function signIn(page: Page, as: "user" | "admin" = "user") {
   );
   await page.goto("/login");
   await authResponse;
-  await page.getByLabel("Username").fill(as === "admin" ? "admin" : username);
-  await page.getByLabel("Password").fill(password);
+  const usernameInput = page.getByLabel("Username");
+  const passwordInput = page.getByLabel("Password");
+  const name = as === "admin" ? "admin" : username;
+  // 登出后二次登录：waitForResponse 可能命中旧文档在途的 /api/auth/me，
+  // 新文档水合完成前的 fill 会被受控输入重置；重填直至值稳定
+  await expect(async () => {
+    await usernameInput.fill(name);
+    await passwordInput.fill(password);
+    await expect(usernameInput).toHaveValue(name, { timeout: 300 });
+    await expect(passwordInput).toHaveValue(password, { timeout: 300 });
+  }).toPass({ timeout: 5000 });
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL("/");
 }
@@ -29,16 +38,19 @@ function cityCard(page: Page, cityName: string) {
   return page.locator('[data-slot="card"]').filter({ hasText: cityName });
 }
 
-// E1 — 候选列表：两城卡片 + 收录 Badge
-test("E1 shows both pilot city cards with policy coverage badges", async ({ page }) => {
+async function candidateCount(page: Page): Promise<number> {
+  const text = await page.getByText(/共 \d+ 个候选/).textContent();
+  return Number(text?.match(/共 (\d+) 个候选/)?.[1] ?? NaN);
+}
+
+// E1 — 候选列表：城市级行政区卡片（政策收录判断 TODO，暂不展示 Badge）
+test("E1 shows city cards including both pilot cities", async ({ page }) => {
   await signIn(page);
   await openCities(page);
 
   await expect(cityCard(page, "杭州市")).toBeVisible();
   await expect(cityCard(page, "珠海市")).toBeVisible();
-  await expect(cityCard(page, "杭州市").getByText("政策已收录")).toBeVisible();
-  await expect(cityCard(page, "珠海市").getByText("政策已收录")).toBeVisible();
-  await expect(page.getByText("共 2 个候选")).toBeVisible();
+  expect(await candidateCount(page)).toBeGreaterThan(2);
 });
 
 // E2 — 城市搜索：关键词过滤 + 计数 + 空态
@@ -53,8 +65,8 @@ test("E2 searches by city or province keyword and shows empty state", async ({ p
   await expect(cityCard(page, "珠海市")).toHaveCount(0);
 
   await search.fill("广东");
-  await expect(page.getByText("共 1 个候选")).toBeVisible();
   await expect(cityCard(page, "珠海市")).toBeVisible();
+  expect(await candidateCount(page)).toBeGreaterThan(1);
   await expect(cityCard(page, "杭州市")).toHaveCount(0);
 
   await search.fill("不存在的城市");
@@ -62,15 +74,15 @@ test("E2 searches by city or province keyword and shows empty state", async ({ p
   await expect(page.getByText("暂无符合条件的目的地")).toBeVisible();
 });
 
-// E3 — 宠物友好筛选退化：无档案时仅按政策收录过滤
-test("E3 degrades filter to coverage-only without a pet profile", async ({ page }) => {
+// E3 — 宠物友好筛选：默认城市均未设每人限养数（null）→ 全部友好保留
+test("E3 pet-friendly filter keeps all cities without per-person limit", async ({ page }) => {
   await signIn(page);
   await openCities(page);
 
+  const total = await candidateCount(page);
   await page.getByRole("checkbox", { name: "宠物友好筛选" }).click();
   await expect(page.getByRole("checkbox", { name: "宠物友好筛选" })).toBeChecked();
-  // 两城均已收录且无档案不做禁养判定 → 全部保留
-  await expect(page.getByText("共 2 个候选")).toBeVisible();
+  await expect(page.getByText(`共 ${total} 个候选`)).toBeVisible();
   await expect(cityCard(page, "杭州市")).toBeVisible();
   await expect(cityCard(page, "珠海市")).toBeVisible();
 });
@@ -80,6 +92,7 @@ test("E5 turning the filter off restores all candidates", async ({ page }) => {
   await signIn(page);
   await openCities(page);
 
+  const total = await candidateCount(page);
   const filter = page.getByRole("checkbox", { name: "宠物友好筛选" });
   await filter.click();
   await page.getByRole("textbox", { name: "搜索城市" }).fill("杭州");
@@ -88,7 +101,7 @@ test("E5 turning the filter off restores all candidates", async ({ page }) => {
   await filter.click();
   await expect(filter).not.toBeChecked();
   await page.getByRole("textbox", { name: "搜索城市" }).fill("");
-  await expect(page.getByText("共 2 个候选")).toBeVisible();
+  await expect(page.getByText(`共 ${total} 个候选`)).toBeVisible();
 });
 
 // E7 — 选定目的地：确认提示承载规划上下文
@@ -152,7 +165,7 @@ test("E13 confirmed logout clears the persisted destination", async ({ page }) =
   await cityCard(page, "杭州市").getByRole("button", { name: "选定" }).click();
   await expect(page.locator("header").getByText("杭州市")).toBeVisible();
   expect(
-    await page.evaluate((key) => localStorage.getItem(key), SELECTED_KEY),
+    await page.evaluate((key) => sessionStorage.getItem(key), SELECTED_KEY),
   ).not.toBeNull();
 
   await page.getByRole("button", { name: "Log out" }).click();
@@ -161,7 +174,7 @@ test("E13 confirmed logout clears the persisted destination", async ({ page }) =
   await expect(page).toHaveURL(/\/login$/);
 
   expect(
-    await page.evaluate((key) => localStorage.getItem(key), SELECTED_KEY),
+    await page.evaluate((key) => sessionStorage.getItem(key), SELECTED_KEY),
   ).toBeNull();
 
   await signIn(page);
@@ -216,15 +229,14 @@ test("E16 filter is policy-only without facility or rating dimensions", async ({
   await signIn(page);
   await openCities(page);
 
-  await expect(page.getByText("筛选口径（MVP 仅政策维度）")).toBeVisible();
   await expect(page.getByRole("checkbox")).toHaveCount(1);
   await expect(page.getByText("设施", { exact: true })).toHaveCount(0);
   await expect(page.getByText("评价", { exact: true })).toHaveCount(0);
 });
 
-// ---- 外部依赖门控用例（@profile-dependency，US-01 change 交付 breed/读取接口后启用）----
-// fixture 方案见 atdd-design §5：向 E2E 库 pet 表写入品种行，或经外部 /paws UI 创建；
-// 词表与禁养种子同一词表（比特犬/柯基等）。外部契约落地后核对 adapter 并解除 fixme。
+// ---- 门控用例（@profile-dependency）----
+// 政策收录/禁养数据源未定（V14 已移除，判断点 TODO），且外部档案 breed 字段未交付；
+// 数据源与 breed 契约落地后恢复 E4/E6/E10/E11 并核对 adapter。
 
 test.fixme("E4 @profile-dependency filter excludes cities banning the profile breed", async ({ page }) => {
   // 前置：档案品种=比特犬（两城均禁养）

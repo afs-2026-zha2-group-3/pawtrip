@@ -66,9 +66,6 @@ public class AdministrativeRegion {
 	@Column(name = "allowed_pet_types")
 	private String allowedPetTypes;
 
-	@Column(name = "policy_covered", nullable = false)
-	private boolean policyCovered;
-
 	protected AdministrativeRegion() {
 	}
 
@@ -135,10 +132,6 @@ public class AdministrativeRegion {
 
 	public Boolean getReservationRequired() {
 		return this.reservationRequired;
-	}
-
-	public boolean isPolicyCovered() {
-		return this.policyCovered;
 	}
 
 	public String getAllowedPetTypes() {
