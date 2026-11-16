@@ -39,7 +39,7 @@ async function mockAdminLocationLists(page: Page) {
   page.on("request", (request) => {
     const pathname = new URL(request.url()).pathname;
     if (pathname === "/api/admin/locations/amap") listRequests.amap += 1;
-    if (pathname === "/api/admin/locations") listRequests.saved += 1;
+    if (pathname === "/api/locations") listRequests.saved += 1;
   });
 
   await page.route("**/api/admin/regions", async (route) => {
@@ -68,7 +68,7 @@ async function mockAdminLocationLists(page: Page) {
     });
   });
 
-  await page.route("**/api/admin/location-types", async (route) => {
+  await page.route("**/api/locations/types", async (route) => {
     await route.fulfill({
       json: [
         { key: "attraction", label: "景点", typeCodes: ["110000"] },
@@ -88,7 +88,7 @@ async function mockAdminLocationLists(page: Page) {
     await fulfillAmapPage(route);
   });
 
-  await page.route(/\/api\/admin\/locations(?:\?.*)?$/, async (route) => {
+  await page.route(/\/api\/locations(?:\?.*)?$/, async (route) => {
     if (route.request().method() !== "GET") {
       await route.fallback();
       return;
@@ -204,6 +204,8 @@ async function fulfillSavedPage(route: Route) {
           regionCode,
           minVisitHours: 1,
           maxVisitHours: 3,
+          maxPetsPerPerson: defaultSavedPetPolicies.maxPetsPerPerson,
+          petPolicies: defaultSavedPetPolicies,
         },
       ]
     : [
@@ -218,6 +220,8 @@ async function fulfillSavedPage(route: Route) {
           regionCode,
           minVisitHours: null,
           maxVisitHours: null,
+          maxPetsPerPerson: defaultSavedPetPolicies.maxPetsPerPerson,
+          petPolicies: defaultSavedPetPolicies,
         },
       ];
 
@@ -291,7 +295,7 @@ test("ADMIN sees the location tab and can filter and paginate both server tables
 
   const savedFirstPage = page.waitForResponse((response) => {
     const url = new URL(response.url());
-    return url.pathname === "/api/admin/locations"
+    return url.pathname === "/api/locations"
       && url.searchParams.get("page") === "1"
       && url.searchParams.get("regionCode") === "110000";
   });
@@ -302,7 +306,7 @@ test("ADMIN sees the location tab and can filter and paginate both server tables
 
   const savedSecondPage = page.waitForResponse((response) => {
     const url = new URL(response.url());
-    return url.pathname === "/api/admin/locations" && url.searchParams.get("page") === "2";
+    return url.pathname === "/api/locations" && url.searchParams.get("page") === "2";
   });
   await page.getByRole("button", { name: "下一页" }).click();
   expect(new URL((await savedSecondPage).url()).searchParams.get("page")).toBe("2");
@@ -646,7 +650,7 @@ test("non-attraction saved locations still expose pet policy editing", async ({ 
     reservationRequired: false,
   };
   let patchBody: unknown;
-  await page.route(/\/api\/admin\/locations(?:\?.*)?$/, async (route) => {
+  await page.route(/\/api\/locations(?:\?.*)?$/, async (route) => {
     if (route.request().method() !== "GET") {
       await route.fallback();
       return;
@@ -664,6 +668,8 @@ test("non-attraction saved locations still expose pet policy editing", async ({ 
           regionCode: null,
           minVisitHours: null,
           maxVisitHours: null,
+          maxPetsPerPerson: petPolicies.maxPetsPerPerson,
+          petPolicies,
         }],
         page: 1,
         pageSize: 10,

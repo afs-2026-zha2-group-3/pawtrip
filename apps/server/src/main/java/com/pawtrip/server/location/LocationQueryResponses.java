@@ -7,6 +7,13 @@ final class LocationQueryResponses {
 	private LocationQueryResponses() {
 	}
 
+	record LocationTypeOption(String key, String label, List<String> typeCodes) {
+
+		LocationTypeOption {
+			typeCodes = List.copyOf(typeCodes);
+		}
+	}
+
 	record Page<T>(int page, int pageSize, long totalElements, int totalPages, boolean hasNext,
 			boolean hasPrevious, List<T> items) {
 
@@ -15,17 +22,22 @@ final class LocationQueryResponses {
 		}
 	}
 
-	record AttractionSummary(String poiId, String name, String typeCode, String typeGroup, String address,
-			String regionCode, Integer maxPetsPerPerson, PetPolicies petPolicies) {
+	record LocationSummary(String poiId, String name, String typeCode, String typeGroup, String address,
+			Double longitude, Double latitude, String regionCode, Integer minVisitHours, Integer maxVisitHours,
+			Integer maxPetsPerPerson, PetPolicies petPolicies) {
 
-		static AttractionSummary from(PawtripLocation location) {
-			return new AttractionSummary(
+		static LocationSummary from(PawtripLocation location) {
+			return new LocationSummary(
 					location.getPoiId(),
 					location.getName(),
 					location.getTypeCode(),
 					location.getTypeGroup(),
 					location.getAddress(),
+					location.getLongitude(),
+					location.getLatitude(),
 					location.getRegionCode(),
+					location.getMinVisitHours(),
+					location.getMaxVisitHours(),
 					location.getMaxPetsPerPerson(),
 					PetPolicies.from(location));
 		}

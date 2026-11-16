@@ -15,12 +15,6 @@ public final class AdminLocationResponses {
 		}
 	}
 
-	public record LocationTypeOption(String key, String label, List<String> typeCodes) {
-
-		public LocationTypeOption {
-			typeCodes = List.copyOf(typeCodes);
-		}
-	}
 
 	public record Page<T>(int page, int pageSize, long totalElements, int totalPages, boolean hasNext,
 			boolean hasPrevious, List<T> items) {
@@ -43,23 +37,6 @@ public final class AdminLocationResponses {
 		}
 	}
 
-	public record SavedLocation(String poiId, String name, String typeCode, String typeGroup, String address,
-			Double longitude, Double latitude, String regionCode, Integer minVisitHours, Integer maxVisitHours) {
-
-		static SavedLocation from(PawtripLocation location) {
-			return new SavedLocation(
-					location.getPoiId(),
-					location.getName(),
-					location.getTypeCode(),
-					location.getTypeGroup(),
-					location.getAddress(),
-					location.getLongitude(),
-					location.getLatitude(),
-					location.getRegionCode(),
-					location.getMinVisitHours(),
-					location.getMaxVisitHours());
-		}
-	}
 
 	public record PetPolicies(String allowedPetTypes, Integer maxPetsPerPerson, Double maxSinglePetWeightKg,
 			Double maxSinglePetShoulderHeightCm, Boolean leashRequired, Boolean vaccinationProofRequired,

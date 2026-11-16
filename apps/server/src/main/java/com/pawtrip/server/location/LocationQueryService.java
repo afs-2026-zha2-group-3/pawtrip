@@ -22,12 +22,21 @@ class LocationQueryService {
 		this.regionRepository = regionRepository;
 	}
 
-	LocationQueryResponses.Page<LocationQueryResponses.AttractionSummary> attractions(String regionCode,
-			boolean includeWithoutRules, Integer requestedPage, Integer requestedPageSize) {
-		ValidatedRegion region = validateRegion(regionCode);
+	LocationQueryResponses.Page<LocationQueryResponses.LocationSummary> locations(String regionCode, String typeGroup,
+			boolean petFriendlyOnly, Integer requestedPage, Integer requestedPageSize, boolean allowUnrestrictedRegion) {
+		if (regionCode == null && !allowUnrestrictedRegion) {
+			throw invalidQuery();
+		}
+		ValidatedRegion region = validateOptionalRegion(regionCode);
+		if (typeGroup != null && (typeGroup.isBlank() || LocationTypeCatalog.typeCodesForGroup(typeGroup) == null)) {
+			throw invalidQuery();
+		}
 		PageParameters page = validatePage(requestedPage, requestedPageSize);
-		Page<PawtripLocation> result = this.locationRepository.findAttractionPage(
-				region.code(), region.level(), includeWithoutRules ? 1 : 0,
+		Page<PawtripLocation> result = this.locationRepository.findLocationPage(
+				region == null ? null : region.code(),
+				region == null ? null : region.level(),
+				typeGroup,
+				petFriendlyOnly ? 1 : 0,
 				PageRequest.of(page.page() - 1, page.pageSize()));
 		return new LocationQueryResponses.Page<>(
 				page.page(),
@@ -36,8 +45,9 @@ class LocationQueryService {
 				result.getTotalPages(),
 				result.hasNext(),
 				result.hasPrevious(),
-				result.getContent().stream().map(LocationQueryResponses.AttractionSummary::from).toList());
+				result.getContent().stream().map(LocationQueryResponses.LocationSummary::from).toList());
 	}
+
 
 	LocationQueryResponses.LocationDetail detail(String poiId) {
 		return this.locationRepository.findByPoiId(poiId)
@@ -45,8 +55,11 @@ class LocationQueryService {
 				.orElseThrow(() -> new ApiException(ApiErrorCode.LOCATION_NOT_FOUND, "Saved location was not found"));
 	}
 
-	private ValidatedRegion validateRegion(String regionCode) {
-		if (regionCode == null || !regionCode.matches("\\d{6}")) {
+	private ValidatedRegion validateOptionalRegion(String regionCode) {
+		if (regionCode == null) {
+			return null;
+		}
+		if (!regionCode.matches("\\d{6}")) {
 			throw invalidQuery();
 		}
 		AdministrativeRegion region = this.regionRepository.findById(regionCode)

@@ -185,7 +185,7 @@ function AppTabs() {
         <TabsTrigger value="home">Home</TabsTrigger>
         <TabsTrigger value="paws">Paws</TabsTrigger>
         <TabsTrigger value="cities">城市浏览</TabsTrigger>
-        <TabsTrigger value="attractions">景区浏览</TabsTrigger>
+        <TabsTrigger value="attractions">地点浏览</TabsTrigger>
         <TabsTrigger value="transport-rules">交通规则</TabsTrigger>
         <TabsTrigger value="trips">Trips</TabsTrigger>
         {auth.data?.role === "ADMIN" ? (

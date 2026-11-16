@@ -6,6 +6,7 @@ import {
   createLocation,
   createLocationMutationOptions,
   locationDetailQueryOptions,
+  locationTypesQueryOptions,
   savedLocationsQueryOptions,
   updateLocation,
   updateLocationMutationOptions,
@@ -57,10 +58,15 @@ describe("admin location queries", () => {
       { regionCode: "310000", typeGroup: "attraction", page: 3, pageSize: 25 },
     ]);
     expect(savedLocationsQueryOptions(savedParams).queryKey).toEqual([
-      "admin",
       "locations",
-      "saved",
-      { regionCode: "310100", typeGroup: "attraction", page: 2, pageSize: 10 },
+      "list",
+      {
+        regionCode: "310100",
+        typeGroup: "attraction",
+        petFriendlyOnly: false,
+        page: 2,
+        pageSize: 10,
+      },
     ]);
   });
 
@@ -116,7 +122,18 @@ describe("admin location queries", () => {
     );
   });
 
-  it("reads saved-location data from the database list endpoint", async () => {
+  it("reads shared location types from the authenticated type endpoint", async () => {
+    fetchMock.mockResolvedValue(jsonResponse([]));
+
+    await new QueryClient().fetchQuery(locationTypesQueryOptions());
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/locations/types",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("reads saved-location data from the shared database list endpoint", async () => {
     fetchMock.mockResolvedValue(jsonResponse({
       page: 1,
       pageSize: 10,
@@ -128,11 +145,16 @@ describe("admin location queries", () => {
     }));
 
     await new QueryClient().fetchQuery(
-      savedLocationsQueryOptions({ page: 1, pageSize: 10 }),
+      savedLocationsQueryOptions({
+        regionCode: "330100",
+        typeGroup: "hotel",
+        page: 2,
+        pageSize: 10,
+      }),
     );
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/admin/locations?page=1&pageSize=10",
+      "/api/locations?regionCode=330100&typeGroup=hotel&petFriendlyOnly=false&page=2&pageSize=10",
       expect.objectContaining({ method: "GET" }),
     );
   });

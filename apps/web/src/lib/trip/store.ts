@@ -1,5 +1,5 @@
 import { createStore } from "@tanstack/store";
-import type { AttractionDetail } from "@/queries/attractions";
+import type { LocationBrowseDetail } from "@/queries/locations";
 import type { Pet } from "@/queries/pets";
 import {
   removeLegacyKeys,
@@ -190,7 +190,7 @@ export const tripActions = {
     }
     update((state) => ({ ...state, cache: { ...state.cache, pets: record } }));
   },
-  cacheLocation(location: AttractionDetail): void {
+  cacheLocation(location: LocationBrowseDetail): void {
     update((state) => ({
       ...state,
       cache: {

@@ -28,7 +28,7 @@ test("defaults to one day and confirms a one-day trip", async ({ page }) => {
   await confirmDraft(page);
   await expect(panel).toContainText("1 天");
 
-  await page.getByRole("tab", { name: "景区浏览" }).click();
+  await page.getByRole("tab", { name: "地点浏览" }).click();
   await page.getByRole("combobox", { name: "添加到行程" }).first().click();
   await expect(page.getByRole("option", { name: "第 1 天" })).toBeVisible();
   await expect(page.getByRole("option", { name: "第 2 天" })).toHaveCount(0);
@@ -43,7 +43,7 @@ test("edits the draft duration and applies it to the trip", async ({ page }) => 
   await confirmDraft(page);
   await expect(panel).toContainText("3 天");
 
-  await page.getByRole("tab", { name: "景区浏览" }).click();
+  await page.getByRole("tab", { name: "地点浏览" }).click();
   await page.getByRole("combobox", { name: "添加到行程" }).first().click();
   await expect(page.getByRole("option", { name: "第 1 天" })).toBeVisible();
   await expect(page.getByRole("option", { name: "第 2 天" })).toBeVisible();

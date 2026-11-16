@@ -4,7 +4,7 @@ import type { DestinationCandidate } from "@/lib/destination-matching";
 import type { CityPetPolicy } from "@/queries/city-pet-policy";
 import type { Pet } from "@/queries/pets";
 import {
-  matchAttractionPolicy,
+  matchLocationPolicy,
   matchCityCandidate,
   matchCityPolicy,
 } from "./policy-match";
@@ -119,42 +119,42 @@ describe("city policy page matching", () => {
   });
 });
 
-describe("attraction policy matching", () => {
+describe("location policy matching", () => {
   it("is unconfigured when every dimension is null", () => {
-    expect(matchAttractionPolicy(emptyPolicies, dog).status).toBe("unconfigured");
+    expect(matchLocationPolicy(emptyPolicies, dog).status).toBe("unconfigured");
   });
 
   it("is unfriendly when the pet type is not allowed", () => {
     expect(
-      matchAttractionPolicy({ ...emptyPolicies, allowedPetTypes: "CAT" }, dog).status,
+      matchLocationPolicy({ ...emptyPolicies, allowedPetTypes: "CAT" }, dog).status,
     ).toBe("unfriendly");
   });
 
   it("is unfriendly when the per-person limit is zero", () => {
     expect(
-      matchAttractionPolicy({ ...emptyPolicies, maxPetsPerPerson: 0 }, dog).status,
+      matchLocationPolicy({ ...emptyPolicies, maxPetsPerPerson: 0 }, dog).status,
     ).toBe("unfriendly");
   });
 
   it("is unfriendly when weight or shoulder height exceeds the cap", () => {
     expect(
-      matchAttractionPolicy({ ...emptyPolicies, maxSinglePetWeightKg: 6 }, dog).status,
+      matchLocationPolicy({ ...emptyPolicies, maxSinglePetWeightKg: 6 }, dog).status,
     ).toBe("unfriendly");
     expect(
-      matchAttractionPolicy({ ...emptyPolicies, maxSinglePetShoulderHeightCm: 30 }, dog)
+      matchLocationPolicy({ ...emptyPolicies, maxSinglePetShoulderHeightCm: 30 }, dog)
         .status,
     ).toBe("unfriendly");
   });
 
   it("is unfriendly when leash or vaccination requirements are unmet", () => {
     expect(
-      matchAttractionPolicy(
+      matchLocationPolicy(
         { ...emptyPolicies, leashRequired: true },
         { ...dog, hasLeash: false },
       ).status,
     ).toBe("unfriendly");
     expect(
-      matchAttractionPolicy(
+      matchLocationPolicy(
         { ...emptyPolicies, vaccinationProofRequired: true },
         { ...dog, hasVaccinationProof: false },
       ).status,
@@ -162,7 +162,7 @@ describe("attraction policy matching", () => {
   });
 
   it("skips null dimensions instead of reporting unfriendly", () => {
-    const verdict = matchAttractionPolicy(
+    const verdict = matchLocationPolicy(
       { ...emptyPolicies, maxPetsPerPerson: 1, maxSinglePetWeightKg: null },
       dog,
     );
@@ -171,7 +171,7 @@ describe("attraction policy matching", () => {
 
   it("ignores fee and reservation fields in the verdict", () => {
     expect(
-      matchAttractionPolicy(
+      matchLocationPolicy(
         { ...emptyPolicies, extraFeeCents: 1000, reservationRequired: true },
         dog,
       ).status,

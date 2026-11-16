@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { attractionDetailQueryOptions } from "@/queries/attractions";
+import { locationBrowseDetailQueryOptions } from "@/queries/locations";
 import { petsQueryOptions } from "@/queries/pets";
 import { createTrip, tripQueryKeys } from "@/queries/trips";
 import { createEmptyPlan, stopKey, type StopContainer } from "@/lib/trip/plan";
@@ -159,7 +159,7 @@ function TripPanelContent() {
       if (requested.current.has(poiId)) continue;
       requested.current.add(poiId);
       queryClient
-        .fetchQuery(attractionDetailQueryOptions(poiId))
+        .fetchQuery(locationBrowseDetailQueryOptions(poiId))
         .then((detail) => tripActions.cacheLocation(detail))
         .catch(() => {
           requested.current.delete(poiId);
