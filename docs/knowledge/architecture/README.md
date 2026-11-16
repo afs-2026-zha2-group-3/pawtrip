@@ -112,13 +112,15 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 ### 前端 UI 基础
 
 - UI 组件统一来自 `apps/web/src/components/ui/`，使用 shadcn/ui 的 Base UI 版本；不引入 Radix 版本或其他 UI 组件库。
+- 宠物卡片使用 React Bits Tilted Card 的 TS + Tailwind 变体，以源码形式纳入 `apps/web/src/components/ui/tilted-card.tsx`，不新增运行时依赖，也不引入自定义 CSS 类。
 - 页面结构与交互只通过组件库组合和 Tailwind 布局工具类表达；`apps/web/src/styles.css` 仅保留 Tailwind、`shadcn/tailwind.css` 与主题令牌，不新增自定义类。
-- 应用外壳位于 `apps/web/src/routes/__root.tsx`：顶部居中的 `Home` / `Paws` 两个 Tab 与真实路由 `/`、`/paws` 同步；`/` 展示问候语，`/paws` 内容为空。
+- 应用外壳位于 `apps/web/src/routes/__root.tsx`：顶部居中的 `Home` / `Paws` 两个 Tab 与真实路由 `/`、`/paws` 同步；`/` 展示问候语，`/paws` 展示当前用户的宠物画廊并支持查看、编辑、新增与删除。
 
 ### 前端服务端状态
 
 - 服务端数据统一使用 TanStack Query 获取与缓存；`QueryClient` 在 `getRouter` 内按请求创建，并通过 `setupRouterSsrQueryIntegration` 接入 router context。
 - query key 与 query function 集中定义在 `apps/web/src/queries/`；页面组件使用 `useQuery`，不使用 `useEffect` + `fetch` 自行管理请求状态。
+- 宠物照片以 base64 存储并由 `GET /api/pets` 返回，没有 content type；前端在 `apps/web/src/lib/pet-photo.ts` 按 JPEG/PNG/GIF/WebP 魔数推断 MIME 后生成 data URL，无照片或无法识别时展示占位。
 - 依赖 Vite `/api` 代理的相对 URL 接口保持客户端取数，不在 SSR loader 中直接请求。
 
 ### 前端请求与错误呈现
