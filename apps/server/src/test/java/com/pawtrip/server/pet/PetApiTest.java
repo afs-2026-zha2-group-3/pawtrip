@@ -117,14 +117,16 @@ class PetApiTest {
 			.andExpect(jsonPath("$[0].petType").value("CAT"))
 			.andExpect(jsonPath("$[0].photo").value(PHOTO_BASE64));
 
+		DogBreed breed = this.dogBreedRepository.save(new DogBreed("柯基犬", false));
+
 		this.mockMvc.perform(put("/api/pets/{petId}", petId)
 					.with(user(this.username))
 					.with(csrf())
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
 						{"name":"Mimi Updated","petType":"DOG","weightKg":6.25,"shoulderHeightCm":30.5,
-						 "hasLeash":false,"hasVaccinationProof":true,"photo":"%s"}
-						""".formatted(UPDATED_PHOTO_BASE64)))
+						 "hasLeash":false,"hasVaccinationProof":true,"photo":"%s","dogBreedId":%d}
+						""".formatted(UPDATED_PHOTO_BASE64, breed.getId())))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.id").value(petId))
 			.andExpect(jsonPath("$.name").value("Mimi Updated"))
@@ -133,7 +135,30 @@ class PetApiTest {
 			.andExpect(jsonPath("$.shoulderHeightCm").value(30.5))
 			.andExpect(jsonPath("$.hasLeash").value(false))
 			.andExpect(jsonPath("$.hasVaccinationProof").value(true))
-			.andExpect(jsonPath("$.photo").value(UPDATED_PHOTO_BASE64));
+			.andExpect(jsonPath("$.photo").value(UPDATED_PHOTO_BASE64))
+			.andExpect(jsonPath("$.dogBreed.id").value(breed.getId()))
+			.andExpect(jsonPath("$.dogBreed.name").value("柯基犬"))
+			.andExpect(jsonPath("$.dogBreed.officialAggressive").value(false));
+
+		this.mockMvc.perform(get("/api/pets").with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].petType").value("DOG"))
+			.andExpect(jsonPath("$[0].dogBreed.name").value("柯基犬"));
+
+		this.mockMvc.perform(put("/api/pets/{petId}", petId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"name":"Mimi Updated","petType":"DOG","weightKg":6.25,"shoulderHeightCm":30.5,
+						 "hasLeash":false,"hasVaccinationProof":true}
+						"""))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+		this.mockMvc.perform(get("/api/pets/{petId}", petId).with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.dogBreed.name").value("柯基犬"));
 
 		this.mockMvc.perform(delete("/api/pets/{petId}", petId)
 					.with(user(this.username))
@@ -172,19 +197,33 @@ class PetApiTest {
 				{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
 				 "hasLeash":true,"hasVaccinationProof":true,"photo":"not-base64!"}
 				""");
+		assertInvalidPet("""
+				{"name":"Rex","petType":"DOG","weightKg":10.0,"shoulderHeightCm":40.0,
+				 "hasLeash":true,"hasVaccinationProof":true}
+				""");
+		assertInvalidPet("""
+				{"name":"Rex","petType":"DOG","weightKg":10.0,"shoulderHeightCm":40.0,
+				 "hasLeash":true,"hasVaccinationProof":true,"dogBreedId":999999}
+				""");
+		assertInvalidPet("""
+				{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
+				 "hasLeash":true,"hasVaccinationProof":true,"dogBreedId":1}
+				""");
 	}
 
 	@Test
 	void allowsPetsWithoutPhotos() throws Exception {
+		DogBreed breed = this.dogBreedRepository.save(new DogBreed("柴犬", false));
 		MvcResult result = this.mockMvc.perform(post("/api/pets")
 					.with(user(this.username))
 					.with(csrf())
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
 						{"name":"No Photo","petType":"DOG","weightKg":12.0,"shoulderHeightCm":40.0,
-						 "hasLeash":true,"hasVaccinationProof":false}
-						"""))
+						 "hasLeash":true,"hasVaccinationProof":false,"dogBreedId":%d}
+						""".formatted(breed.getId())))
 			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.dogBreed.name").value("柴犬"))
 			.andReturn();
 
 		JsonNode body = JSON_MAPPER.readTree(result.getResponse().getContentAsString());
@@ -203,7 +242,7 @@ class PetApiTest {
 					.with(csrf())
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
-						{"name":"Hijacked","petType":"DOG","weightKg":5,"shoulderHeightCm":30,
+						{"name":"Hijacked","petType":"CAT","weightKg":5,"shoulderHeightCm":30,
 						 "hasLeash":false,"hasVaccinationProof":false}
 						"""))
 			.andExpect(status().isNotFound())

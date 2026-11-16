@@ -3,6 +3,12 @@ import { request } from "../lib/http/request";
 
 export type PetType = "CAT" | "DOG";
 
+export interface DogBreed {
+  id: number;
+  name: string;
+  officialAggressive: boolean;
+}
+
 export interface Pet {
   id: number;
   name: string;
@@ -12,6 +18,7 @@ export interface Pet {
   hasLeash: boolean;
   hasVaccinationProof: boolean;
   photo: string | null;
+  dogBreed: DogBreed | null;
 }
 
 export interface SavePetInput {
@@ -22,16 +29,25 @@ export interface SavePetInput {
   hasLeash: boolean;
   hasVaccinationProof: boolean;
   photo: string | null;
+  dogBreedId: number | null;
 }
 
 export const petQueryKeys = {
   all: ["pets"] as const,
+  dogBreeds: ["dog-breeds"] as const,
 };
 
 export function petsQueryOptions() {
   return queryOptions({
     queryKey: petQueryKeys.all,
     queryFn: ({ signal }) => request<Pet[]>("/api/pets", { signal }),
+  });
+}
+
+export function dogBreedsQueryOptions() {
+  return queryOptions({
+    queryKey: petQueryKeys.dogBreeds,
+    queryFn: ({ signal }) => request<DogBreed[]>("/api/dog-breeds", { signal }),
   });
 }
 

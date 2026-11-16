@@ -21,11 +21,13 @@ export function PetCard({
 }) {
   const photo = photoDataUrl(pet.photo);
   const typeLabel = petTypeLabels[pet.petType];
+  const badgeLabel =
+    pet.petType === "DOG" && pet.dogBreed ? pet.dogBreed.name : typeLabel;
 
   return (
     <TiltedCard
       imageSrc={photo ?? undefined}
-      altText={`${pet.name}（${typeLabel}）`}
+      altText={`${pet.name}（${badgeLabel}）`}
       containerWidth="100%"
       containerHeight={320}
       imageWidth="100%"
@@ -49,7 +51,7 @@ export function PetCard({
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 text-white">
           <span className="truncate text-lg font-semibold">{pet.name}</span>
           <span className="shrink-0 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium backdrop-blur">
-            {typeLabel}
+            {badgeLabel}
           </span>
         </div>
       </TiltedCardLayer>

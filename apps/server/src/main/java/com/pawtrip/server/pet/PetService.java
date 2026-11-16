@@ -2,6 +2,11 @@ package com.pawtrip.server.pet;
 
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.pawtrip.server.auth.AppUserRepository;
 import com.pawtrip.server.error.ApiErrorCode;
@@ -17,23 +22,28 @@ class PetService {
 	private static final int MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
 	private final PetRepository petRepository;
+	private final DogBreedRepository dogBreedRepository;
 	private final AppUserRepository appUserRepository;
 
-	PetService(PetRepository petRepository, AppUserRepository appUserRepository) {
+	PetService(PetRepository petRepository, DogBreedRepository dogBreedRepository,
+			AppUserRepository appUserRepository) {
 		this.petRepository = petRepository;
+		this.dogBreedRepository = dogBreedRepository;
 		this.appUserRepository = appUserRepository;
 	}
 
 	List<PetResponses.PetDetail> pets(String username) {
 		Long userId = userId(username);
-		return this.petRepository.findAllByUserIdOrderByIdAsc(userId)
-				.stream()
-				.map(PetResponses.PetDetail::from)
+		List<Pet> pets = this.petRepository.findAllByUserIdOrderByIdAsc(userId);
+		Map<Long, DogBreed> breeds = breedsById(pets);
+		return pets.stream()
+				.map(pet -> PetResponses.PetDetail.from(pet, breeds.get(pet.getDogBreedId())))
 				.toList();
 	}
 
 	PetResponses.PetDetail pet(String username, long petId) {
-		return PetResponses.PetDetail.from(findOwnedPet(userId(username), petId));
+		Pet pet = findOwnedPet(userId(username), petId);
+		return PetResponses.PetDetail.from(pet, breedOf(pet));
 	}
 
 	@Transactional
@@ -47,8 +57,9 @@ class PetService {
 				pet.shoulderHeightCm(),
 				pet.hasLeash(),
 				pet.hasVaccinationProof(),
-				pet.photo()));
-		return PetResponses.PetDetail.from(saved);
+				pet.photo(),
+				dogBreedId(pet.dogBreed())));
+		return PetResponses.PetDetail.from(saved, pet.dogBreed());
 	}
 
 	@Transactional
@@ -62,8 +73,9 @@ class PetService {
 				pet.shoulderHeightCm(),
 				pet.hasLeash(),
 				pet.hasVaccinationProof(),
-				pet.photo());
-		return PetResponses.PetDetail.from(this.petRepository.save(existing));
+				pet.photo(),
+				dogBreedId(pet.dogBreed()));
+		return PetResponses.PetDetail.from(this.petRepository.save(existing), pet.dogBreed());
 	}
 
 	@Transactional
@@ -82,7 +94,22 @@ class PetService {
 				.getId();
 	}
 
-	private static ValidatedPet validate(PetRequests.SavePet request) {
+	private Map<Long, DogBreed> breedsById(List<Pet> pets) {
+		Set<Long> breedIds = pets.stream()
+				.map(Pet::getDogBreedId)
+				.filter(Objects::nonNull)
+				.collect(Collectors.toSet());
+		return this.dogBreedRepository.findAllById(breedIds)
+				.stream()
+				.collect(Collectors.toMap(DogBreed::getId, Function.identity()));
+	}
+
+	private DogBreed breedOf(Pet pet) {
+		return pet.getDogBreedId() == null ? null
+				: this.dogBreedRepository.findById(pet.getDogBreedId()).orElse(null);
+	}
+
+	private ValidatedPet validate(PetRequests.SavePet request) {
 		if (request == null) {
 			throw invalidRequest();
 		}
@@ -97,7 +124,26 @@ class PetService {
 			throw invalidRequest();
 		}
 		return new ValidatedPet(name, petType, request.weightKg(), request.shoulderHeightCm(),
-				request.hasLeash(), request.hasVaccinationProof(), photo(request.photo()));
+				request.hasLeash(), request.hasVaccinationProof(), photo(request.photo()),
+				resolveBreed(petType, request.dogBreedId()));
+	}
+
+	private DogBreed resolveBreed(PetType petType, Long dogBreedId) {
+		if (petType == PetType.DOG) {
+			if (dogBreedId == null) {
+				throw invalidRequest();
+			}
+			return this.dogBreedRepository.findById(dogBreedId)
+					.orElseThrow(PetService::invalidRequest);
+		}
+		if (dogBreedId != null) {
+			throw invalidRequest();
+		}
+		return null;
+	}
+
+	private static Long dogBreedId(DogBreed dogBreed) {
+		return dogBreed == null ? null : dogBreed.getId();
 	}
 
 	private static byte[] photo(String value) {
@@ -143,7 +189,7 @@ class PetService {
 	}
 
 	private record ValidatedPet(String name, PetType petType, Double weightKg, Double shoulderHeightCm,
-			boolean hasLeash, boolean hasVaccinationProof, byte[] photo) {
+			boolean hasLeash, boolean hasVaccinationProof, byte[] photo, DogBreed dogBreed) {
 	}
 
 }
