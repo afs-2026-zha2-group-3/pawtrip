@@ -19,6 +19,86 @@ import org.junit.jupiter.api.io.TempDir;
 
 class LocationSchemaMigrationTest {
 
+	private static final String[] PET_POLICY_COLUMNS = {
+		"max_pets_per_person",
+		"max_single_pet_weight_kg",
+		"leash_required",
+		"vaccination_proof_required",
+		"extra_fee_cents",
+		"reservation_required"
+	};
+
+	@Test
+	void addsNullablePetPolicyColumnsWithoutChangingExistingRows(@TempDir Path tempDir) throws SQLException {
+		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("existing-pet-policies.db") + "?foreign_keys=on";
+		Flyway.configure().dataSource(jdbcUrl, null, null).target("6").load().migrate();
+
+		long locationId;
+		try (Connection connection = DriverManager.getConnection(jdbcUrl);
+				Statement statement = connection.createStatement()) {
+			statement.executeUpdate(
+					"INSERT INTO administrative_region (adcode, name, level) "
+							+ "VALUES ('990001', 'Test city', 'province')");
+			locationId = insertLocation(connection, "poi-existing-policy", null, null);
+		}
+
+		Flyway.configure().dataSource(jdbcUrl, null, null).load().migrate();
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			assertThat(columns(connection, "administrative_region")).contains(PET_POLICY_COLUMNS);
+			assertThat(columns(connection, "pawtrip_location")).contains(PET_POLICY_COLUMNS);
+
+			try (PreparedStatement query = connection.prepareStatement(
+					"SELECT name, max_pets_per_person, max_single_pet_weight_kg, leash_required, "
+							+ "vaccination_proof_required, extra_fee_cents, reservation_required "
+							+ "FROM administrative_region WHERE adcode = ?")) {
+				query.setString(1, "990001");
+				try (ResultSet result = query.executeQuery()) {
+					assertThat(result.next()).isTrue();
+					assertThat(result.getString("name")).isEqualTo("Test city");
+					assertPetPolicyIsUnconfigured(result);
+				}
+			}
+
+			try (PreparedStatement query = connection.prepareStatement(
+					"SELECT name, max_pets_per_person, max_single_pet_weight_kg, leash_required, "
+							+ "vaccination_proof_required, extra_fee_cents, reservation_required "
+							+ "FROM pawtrip_location WHERE id = ?")) {
+				query.setLong(1, locationId);
+				try (ResultSet result = query.executeQuery()) {
+					assertThat(result.next()).isTrue();
+					assertThat(result.getString("name")).isEqualTo("Test location");
+					assertPetPolicyIsUnconfigured(result);
+				}
+			}
+		}
+	}
+
+	@Test
+	void storesIndependentPetPoliciesAndRejectsOutOfRangeValues(@TempDir Path tempDir) throws SQLException {
+		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("pet-policy-constraints.db") + "?foreign_keys=on";
+		Flyway.configure().dataSource(jdbcUrl, null, null).load().migrate();
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			insertRegionWithPetPolicies(connection, "990002", 2, 18.5, 1, 0, 250L, 1);
+			insertLocationWithPetPolicies(connection, "poi-pet-policy", 1, 8.75, 0, 1, 50L, 0);
+
+			assertPetPolicy(connection,
+					"SELECT max_pets_per_person, max_single_pet_weight_kg, leash_required, "
+							+ "vaccination_proof_required, extra_fee_cents, reservation_required "
+							+ "FROM administrative_region WHERE adcode = ?",
+					"990002", 2, 18.5, 1, 0, 250L, 1);
+			assertPetPolicy(connection,
+					"SELECT max_pets_per_person, max_single_pet_weight_kg, leash_required, "
+							+ "vaccination_proof_required, extra_fee_cents, reservation_required "
+							+ "FROM pawtrip_location WHERE poi_id = ?",
+					"poi-pet-policy", 1, 8.75, 0, 1, 50L, 0);
+
+			assertPetPolicyValuesRejected(connection, "administrative_region", "adcode", "990002");
+			assertPetPolicyValuesRejected(connection, "pawtrip_location", "poi_id", "poi-pet-policy");
+		}
+	}
+
 	@Test
 	void createsLocationTablesAndEnforcesUniquePoiHoursAndPhotoForeignKey(@TempDir Path tempDir)
 			throws SQLException {
@@ -143,6 +223,101 @@ class LocationSchemaMigrationTest {
 				assertThat(keys.next()).isTrue();
 				return keys.getLong(1);
 			}
+		}
+	}
+
+	private static Set<String> columns(Connection connection, String table) throws SQLException {
+		Set<String> columns = new HashSet<>();
+		try (Statement statement = connection.createStatement();
+				ResultSet result = statement.executeQuery("PRAGMA table_info(" + table + ")")) {
+			while (result.next()) {
+				columns.add(result.getString("name"));
+			}
+		}
+		return columns;
+	}
+
+	private static void assertPetPolicyIsUnconfigured(ResultSet result) throws SQLException {
+		assertThat(result.getObject("max_pets_per_person")).isNull();
+		assertThat(result.getObject("max_single_pet_weight_kg")).isNull();
+		assertThat(result.getObject("leash_required")).isNull();
+		assertThat(result.getObject("vaccination_proof_required")).isNull();
+		assertThat(result.getObject("extra_fee_cents")).isNull();
+		assertThat(result.getObject("reservation_required")).isNull();
+	}
+
+	private static void insertRegionWithPetPolicies(Connection connection, String adcode, int maxPets,
+			double maxWeightKg, int leashRequired, int vaccinationProofRequired, long extraFeeCents,
+			int reservationRequired) throws SQLException {
+		try (PreparedStatement insert = connection.prepareStatement(
+				"INSERT INTO administrative_region (adcode, name, level, max_pets_per_person, "
+						+ "max_single_pet_weight_kg, leash_required, vaccination_proof_required, "
+						+ "extra_fee_cents, reservation_required) VALUES (?, ?, 'province', ?, ?, ?, ?, ?, ?)")) {
+			insert.setString(1, adcode);
+			insert.setString(2, "Test region");
+			insert.setInt(3, maxPets);
+			insert.setDouble(4, maxWeightKg);
+			insert.setInt(5, leashRequired);
+			insert.setInt(6, vaccinationProofRequired);
+			insert.setLong(7, extraFeeCents);
+			insert.setInt(8, reservationRequired);
+			insert.executeUpdate();
+		}
+	}
+
+	private static void insertLocationWithPetPolicies(Connection connection, String poiId, int maxPets,
+			double maxWeightKg, int leashRequired, int vaccinationProofRequired, long extraFeeCents,
+			int reservationRequired) throws SQLException {
+		try (PreparedStatement insert = connection.prepareStatement(
+				"INSERT INTO pawtrip_location (poi_id, name, type_code, type_group, poi_json, business_json, "
+						+ "max_pets_per_person, max_single_pet_weight_kg, leash_required, "
+						+ "vaccination_proof_required, extra_fee_cents, reservation_required) "
+						+ "VALUES (?, 'Test location', '110000', 'attraction', '{}', '{}', ?, ?, ?, ?, ?, ?)")) {
+			insert.setString(1, poiId);
+			insert.setInt(2, maxPets);
+			insert.setDouble(3, maxWeightKg);
+			insert.setInt(4, leashRequired);
+			insert.setInt(5, vaccinationProofRequired);
+			insert.setLong(6, extraFeeCents);
+			insert.setInt(7, reservationRequired);
+			insert.executeUpdate();
+		}
+	}
+
+	private static void assertPetPolicy(Connection connection, String query, String id, int maxPets,
+			double maxWeightKg, int leashRequired, int vaccinationProofRequired, long extraFeeCents,
+			int reservationRequired) throws SQLException {
+		try (PreparedStatement statement = connection.prepareStatement(query)) {
+			statement.setString(1, id);
+			try (ResultSet result = statement.executeQuery()) {
+				assertThat(result.next()).isTrue();
+				assertThat(result.getInt("max_pets_per_person")).isEqualTo(maxPets);
+				assertThat(result.getDouble("max_single_pet_weight_kg")).isEqualTo(maxWeightKg);
+				assertThat(result.getInt("leash_required")).isEqualTo(leashRequired);
+				assertThat(result.getInt("vaccination_proof_required")).isEqualTo(vaccinationProofRequired);
+				assertThat(result.getLong("extra_fee_cents")).isEqualTo(extraFeeCents);
+				assertThat(result.getInt("reservation_required")).isEqualTo(reservationRequired);
+			}
+		}
+	}
+
+	private static void assertPetPolicyValuesRejected(Connection connection, String table, String idColumn, String id)
+			throws SQLException {
+		assertRejectedValue(connection, table, idColumn, id, "max_pets_per_person", -1);
+		assertRejectedValue(connection, table, idColumn, id, "max_single_pet_weight_kg", -0.5);
+		assertRejectedValue(connection, table, idColumn, id, "leash_required", 2);
+		assertRejectedValue(connection, table, idColumn, id, "vaccination_proof_required", -1);
+		assertRejectedValue(connection, table, idColumn, id, "extra_fee_cents", -1);
+		assertRejectedValue(connection, table, idColumn, id, "reservation_required", 3);
+	}
+
+	private static void assertRejectedValue(Connection connection, String table, String idColumn, String id,
+			String policyColumn, Number invalidValue) throws SQLException {
+		String query = "UPDATE " + table + " SET " + policyColumn + " = ? WHERE " + idColumn + " = ?";
+		try (PreparedStatement update = connection.prepareStatement(query)) {
+			update.setObject(1, invalidValue);
+			update.setString(2, id);
+			assertThatThrownBy(update::executeUpdate).isInstanceOf(SQLException.class);
 		}
 	}
 

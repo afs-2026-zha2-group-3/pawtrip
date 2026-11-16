@@ -10,6 +10,8 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
 
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,10 +46,19 @@ class LocationRepositoryTest {
 	@Autowired
 	LocationPhotoRepository photoRepository;
 
+	@Autowired
+	EntityManager entityManager;
+
 	@BeforeEach
 	void clearRepositories() {
 		this.photoRepository.deleteAll();
 		this.locationRepository.deleteAll();
+		this.regionRepository.deleteById("990003");
+	}
+
+	@AfterEach
+	void removeTestRegion() {
+		this.regionRepository.deleteById("990003");
 	}
 
 	@Test
@@ -59,6 +70,33 @@ class LocationRepositoryTest {
 		assertThat(province.getParentAdcode()).isNull();
 		assertThat(city.getLevel()).isEqualTo("city");
 		assertThat(city.getParentAdcode()).isEqualTo(province.getAdcode());
+	}
+
+	@Test
+	void persistsIndependentPetPoliciesForRegionsAndLocations() {
+		var region = new AdministrativeRegion("990003", "Test region", null, "province", null);
+		var location = location("poi-pet-policy-jpa", "990003", "attraction");
+		region.updatePetPolicies(3, 18.5, true, false, 1250L, null);
+		location.updatePetPolicies(1, 8.75, false, true, 75L, false);
+
+		this.regionRepository.saveAndFlush(region);
+		this.locationRepository.saveAndFlush(location);
+		this.entityManager.clear();
+
+		var persistedRegion = this.regionRepository.findById("990003").orElseThrow();
+		var persistedLocation = this.locationRepository.findByPoiId("poi-pet-policy-jpa").orElseThrow();
+		assertThat(persistedRegion.getMaxPetsPerPerson()).isEqualTo(3);
+		assertThat(persistedRegion.getMaxSinglePetWeightKg()).isEqualTo(18.5);
+		assertThat(persistedRegion.getLeashRequired()).isTrue();
+		assertThat(persistedRegion.getVaccinationProofRequired()).isFalse();
+		assertThat(persistedRegion.getExtraFeeCents()).isEqualTo(1250L);
+		assertThat(persistedRegion.getReservationRequired()).isNull();
+		assertThat(persistedLocation.getMaxPetsPerPerson()).isEqualTo(1);
+		assertThat(persistedLocation.getMaxSinglePetWeightKg()).isEqualTo(8.75);
+		assertThat(persistedLocation.getLeashRequired()).isFalse();
+		assertThat(persistedLocation.getVaccinationProofRequired()).isTrue();
+		assertThat(persistedLocation.getExtraFeeCents()).isEqualTo(75L);
+		assertThat(persistedLocation.getReservationRequired()).isFalse();
 	}
 
 	@Test
