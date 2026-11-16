@@ -29,6 +29,14 @@ import {
   type Page,
   type SavedLocation,
 } from "../../../queries/admin-locations";
+import {
+  emptyPetPolicyDraft,
+  petPoliciesFromDraft,
+  petPolicyDraftFrom,
+  type PetPolicyDraft,
+  type PetPolicyField,
+} from "../../../lib/pet-policy";
+import { PetPolicyFields } from "./-pet-policy-fields";
 
 const savedListsQueryKey = ["admin", "locations", "saved"] as const;
 
@@ -46,6 +54,8 @@ export function AmapCandidateEditor({
   const queryClient = useQueryClient();
   const [minVisitHours, setMinVisitHours] = useState("");
   const [maxVisitHours, setMaxVisitHours] = useState("");
+  const [petPolicyDraft, setPetPolicyDraft] = useState<PetPolicyDraft>(emptyPetPolicyDraft);
+  const [invalidPolicyField, setInvalidPolicyField] = useState<PetPolicyField>();
   const [validationError, setValidationError] = useState<string>();
   const createMutation = useMutation({
     ...createLocationMutationOptions(),
@@ -69,6 +79,8 @@ export function AmapCandidateEditor({
   useEffect(() => {
     setMinVisitHours("");
     setMaxVisitHours("");
+    setPetPolicyDraft(emptyPetPolicyDraft);
+    setInvalidPolicyField(undefined);
     setValidationError(undefined);
     createMutation.reset();
   }, [candidate, createMutation.reset]);
@@ -76,6 +88,7 @@ export function AmapCandidateEditor({
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setValidationError(undefined);
+    setInvalidPolicyField(undefined);
 
     const min = parseVisitHours(minVisitHours);
     const max = parseVisitHours(maxVisitHours);
@@ -87,6 +100,12 @@ export function AmapCandidateEditor({
       setValidationError("最少游玩时间不能大于最多游玩时间。");
       return;
     }
+    const policyResult = petPoliciesFromDraft(petPolicyDraft);
+    if ("error" in policyResult) {
+      setValidationError(policyResult.error.message);
+      setInvalidPolicyField(policyResult.error.field);
+      return;
+    }
 
     createMutation.mutate({
       poiId: candidate.poiId,
@@ -95,19 +114,20 @@ export function AmapCandidateEditor({
         minVisitHours: min.value,
         maxVisitHours: max.value,
       } : {}),
+      petPolicies: policyResult.policies,
     });
   }
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent aria-describedby="candidate-editor-description">
+      <DialogContent className="max-w-2xl" aria-describedby="candidate-editor-description">
         <DialogHeader>
           <DialogTitle>保存地点</DialogTitle>
           <DialogDescription id="candidate-editor-description">
             确认高德地点基础信息，并补充 Pawtrip 的额外信息。
           </DialogDescription>
         </DialogHeader>
-        <form className="flex flex-col gap-5" onSubmit={submit}>
+        <form className="flex flex-col gap-5" noValidate onSubmit={submit}>
           <dl className="grid gap-3 text-sm sm:grid-cols-[8rem_1fr]">
             <dt className="font-medium">地点名称</dt>
             <dd>{candidate.name || "—"}</dd>
@@ -143,6 +163,19 @@ export function AmapCandidateEditor({
             </FieldGroup>
           ) : null}
 
+          <section aria-labelledby="candidate-pet-policy-heading" className="flex flex-col gap-3">
+            <h3 id="candidate-pet-policy-heading" className="text-sm font-semibold">携宠政策</h3>
+            <PetPolicyFields
+              idPrefix="candidate"
+              draft={petPolicyDraft}
+              invalidField={invalidPolicyField}
+              onChange={(next) => {
+                setPetPolicyDraft(next);
+                setInvalidPolicyField(undefined);
+              }}
+            />
+          </section>
+
           {validationError ? <FieldError>{validationError}</FieldError> : null}
           {createMutation.isError ? (
             <FieldError>保存失败，请检查网络或稍后重试。</FieldError>
@@ -175,6 +208,8 @@ export function SavedLocationEditor({
   });
   const [minVisitHours, setMinVisitHours] = useState("");
   const [maxVisitHours, setMaxVisitHours] = useState("");
+  const [petPolicyDraft, setPetPolicyDraft] = useState<PetPolicyDraft>(emptyPetPolicyDraft);
+  const [invalidPolicyField, setInvalidPolicyField] = useState<PetPolicyField>();
   const [validationError, setValidationError] = useState<string>();
   const updateMutation = useMutation({
     ...updateLocationMutationOptions(location.poiId),
@@ -203,27 +238,43 @@ export function SavedLocationEditor({
     if (!detail) return;
     setMinVisitHours(detail.minVisitHours === null ? "" : String(detail.minVisitHours));
     setMaxVisitHours(detail.maxVisitHours === null ? "" : String(detail.maxVisitHours));
+    setPetPolicyDraft(petPolicyDraftFrom(detail.petPolicies));
+    setInvalidPolicyField(undefined);
     setValidationError(undefined);
   }, [detail]);
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setValidationError(undefined);
+    setInvalidPolicyField(undefined);
 
-    const min = parseVisitHours(minVisitHours);
-    const max = parseVisitHours(maxVisitHours);
-    if (isAttraction && (min.error || max.error)) {
-      setValidationError(min.error ?? max.error);
-      return;
-    }
-    if (isAttraction && min.value !== null && max.value !== null && min.value > max.value) {
-      setValidationError("最少游玩时间不能大于最多游玩时间。");
+    const policyResult = petPoliciesFromDraft(petPolicyDraft);
+    if ("error" in policyResult) {
+      setValidationError(policyResult.error.message);
+      setInvalidPolicyField(policyResult.error.field);
       return;
     }
 
-    updateMutation.mutate(isAttraction
-      ? { minVisitHours: min.value, maxVisitHours: max.value }
-      : {});
+    if (isAttraction) {
+      const min = parseVisitHours(minVisitHours);
+      const max = parseVisitHours(maxVisitHours);
+      if (min.error || max.error) {
+        setValidationError(min.error ?? max.error);
+        return;
+      }
+      if (min.value !== null && max.value !== null && min.value > max.value) {
+        setValidationError("最少游玩时间不能大于最多游玩时间。");
+        return;
+      }
+      updateMutation.mutate({
+        minVisitHours: min.value,
+        maxVisitHours: max.value,
+        petPolicies: policyResult.policies,
+      });
+      return;
+    }
+
+    updateMutation.mutate({ petPolicies: policyResult.policies });
   }
 
   return (
@@ -266,8 +317,8 @@ export function SavedLocationEditor({
 
             </section>
 
-            {isAttraction ? (
-              <form className="flex flex-col gap-4 border-t pt-4" onSubmit={submit}>
+            <form className="flex flex-col gap-4 border-t pt-4" noValidate onSubmit={submit}>
+              {isAttraction ? (
                 <FieldGroup>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <VisitHoursField
@@ -287,21 +338,33 @@ export function SavedLocationEditor({
                   </div>
                   <FieldDescription>可留空；填写时须为不小于 0 的整数小时。</FieldDescription>
                 </FieldGroup>
-                {validationError ? <FieldError>{validationError}</FieldError> : null}
-                {updateMutation.isError ? <FieldError>更新失败，请检查网络或稍后重试。</FieldError> : null}
-                {updateMutation.isSuccess ? (
-                  <p role="status" className="text-sm text-muted-foreground">地点信息已更新。</p>
-                ) : null}
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={onClose}>
-                    关闭
-                  </Button>
-                  <Button type="submit" disabled={updateMutation.isPending || detailQuery.isPending}>
-                    {updateMutation.isPending ? "保存中…" : "保存修改"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            ) : null}
+              ) : null}
+              <section aria-labelledby="saved-pet-policy-heading" className="flex flex-col gap-3">
+                <h3 id="saved-pet-policy-heading" className="text-sm font-semibold">携宠政策</h3>
+                <PetPolicyFields
+                  idPrefix="saved"
+                  draft={petPolicyDraft}
+                  invalidField={invalidPolicyField}
+                  onChange={(next) => {
+                    setPetPolicyDraft(next);
+                    setInvalidPolicyField(undefined);
+                  }}
+                />
+              </section>
+              {validationError ? <FieldError>{validationError}</FieldError> : null}
+              {updateMutation.isError ? <FieldError>更新失败，请检查网络或稍后重试。</FieldError> : null}
+              {updateMutation.isSuccess ? (
+                <p role="status" className="text-sm text-muted-foreground">地点信息已更新。</p>
+              ) : null}
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={onClose}>
+                  关闭
+                </Button>
+                <Button type="submit" disabled={updateMutation.isPending || detailQuery.isPending}>
+                  {updateMutation.isPending ? "保存中…" : "保存修改"}
+                </Button>
+              </DialogFooter>
+            </form>
           </div>
         ) : null}
       </DialogContent>

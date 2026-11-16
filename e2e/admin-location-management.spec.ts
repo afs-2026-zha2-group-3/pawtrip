@@ -1,4 +1,13 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { expect, test, type Locator, type Page, type Route } from "@playwright/test";
+
+const defaultSavedPetPolicies = {
+  maxPetsPerPerson: 1,
+  maxSinglePetWeightKg: 8.75,
+  leashRequired: true,
+  vaccinationProofRequired: false,
+  extraFeeCents: 1050,
+  reservationRequired: null,
+};
 
 async function mockUser(page: Page, role: "USER" | "ADMIN" | null) {
   await page.route("**/api/auth/me", async (route) => {
@@ -146,6 +155,16 @@ async function selectNanjingCity(page: Page) {
   await jiangsuProvince.click();
   await expect(page.getByRole("button", { name: "南京市", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "南京市", exact: true }).click();
+}
+
+async function selectPolicyTriState(
+  page: Page,
+  dialog: Locator,
+  label: string,
+  option: "未配置" | "需要" | "不需要",
+) {
+  await dialog.getByRole("combobox", { name: label }).click();
+  await page.getByRole("option", { name: option, exact: true }).click();
 }
 
 async function fulfillSavedPage(route: Route) {
@@ -338,6 +357,14 @@ test("saving an Amap candidate validates visit hours and updates the current row
         typeGroup: "attraction",
         minVisitHours: 2,
         maxVisitHours: 4,
+        petPolicies: {
+          maxPetsPerPerson: 1,
+          maxSinglePetWeightKg: 8.75,
+          leashRequired: true,
+          vaccinationProofRequired: false,
+          extraFeeCents: 1050,
+          reservationRequired: null,
+        },
         poi: { id: "candidate-new", name: "南京市未保存景点", address: "南京市中山路 2 号" },
         business: { tel: "025-12345678", detail: { source: "database" } },
         photos: [],
@@ -370,15 +397,50 @@ test("saving an Amap candidate validates visit hours and updates the current row
   await expect(dialog.getByRole("alert")).toHaveText("最少游玩时间不能大于最多游玩时间。");
   expect(createCalls).toBe(0);
 
-  await dialog.getByLabel("最多游玩时间（小时）").fill("4");
-  await dialog.getByRole("button", { name: "保存地点" }).click();
-  await expect(dialog).toHaveCount(0);
+  await dialog.getByRole("button", { name: "取消" }).click();
+  await page.getByRole("button", { name: "编辑 南京市未保存景点" }).click();
+  const policyDialog = page.getByRole("dialog", { name: "保存地点" });
+  await expect(policyDialog).toBeVisible();
+  await policyDialog.getByLabel("最少游玩时间（小时）").fill("3");
+  await policyDialog.getByLabel("最多游玩时间（小时）").fill("4");
+
+  await policyDialog.getByLabel("每位游客最多携带宠物数（只）").fill("1.5");
+  await policyDialog.getByRole("button", { name: "保存地点" }).click();
+  await expect(policyDialog.getByRole("alert")).toHaveText("每位游客最多携带宠物数必须为不小于 0 的整数。");
+  expect(createCalls).toBe(0);
+  await policyDialog.getByLabel("每位游客最多携带宠物数（只）").fill("1");
+
+  await policyDialog.getByLabel("单只宠物最大体重（kg）").fill("8.751");
+  await policyDialog.getByRole("button", { name: "保存地点" }).click();
+  await expect(policyDialog.getByRole("alert")).toHaveText("单只宠物最大体重必须为不小于 0 且最多两位小数的数字。");
+  expect(createCalls).toBe(0);
+  await policyDialog.getByLabel("单只宠物最大体重（kg）").fill("8.75");
+
+  await policyDialog.getByLabel("额外费用（元 / 只 / 次）").fill("10.001");
+  await policyDialog.getByRole("button", { name: "保存地点" }).click();
+  await expect(policyDialog.getByRole("alert")).toHaveText("额外费用必须为不小于 0 且最多两位小数的金额。");
+  expect(createCalls).toBe(0);
+  await policyDialog.getByLabel("额外费用（元 / 只 / 次）").fill("10.5");
+
+  await selectPolicyTriState(page, policyDialog, "牵引绳要求", "需要");
+  await selectPolicyTriState(page, policyDialog, "疫苗证明要求", "不需要");
+
+  await policyDialog.getByRole("button", { name: "保存地点" }).click();
+  await expect(policyDialog).toHaveCount(0);
   expect(createCalls).toBe(1);
   expect(createBody).toMatchObject({
     poiId: "candidate-new",
     typeGroup: "attraction",
     minVisitHours: 3,
     maxVisitHours: 4,
+    petPolicies: {
+      maxPetsPerPerson: 1,
+      maxSinglePetWeightKg: 8.75,
+      leashRequired: true,
+      vaccinationProofRequired: false,
+      extraFeeCents: 1050,
+      reservationRequired: null,
+    },
   });
   await expect(page.getByRole("row", { name: /南京市未保存景点/ }).getByText("已添加到 Pawtrip")).toBeVisible();
   await expect(page.getByRole("button", { name: "编辑 南京市未保存景点" })).toBeDisabled();
@@ -392,10 +454,21 @@ test("saved location details use direct photo URLs and preserve the current list
   await mockUser(page, "ADMIN");
   const listRequests = await mockAdminLocationLists(page);
   let detailReads = 0;
-  let patchCalls = 0;
   let photoApiCalls = 0;
   let directImageRequests = 0;
-  const updatedDetail = savedDetail(4, 6);
+  const updatedPetPolicies = {
+    maxPetsPerPerson: 2,
+    maxSinglePetWeightKg: 12.5,
+    leashRequired: false,
+    vaccinationProofRequired: true,
+    extraFeeCents: 2000,
+    reservationRequired: true,
+  };
+  const clearedPetPolicies = { ...updatedPetPolicies, extraFeeCents: null };
+  const updatedDetail = savedDetail(4, 6, updatedPetPolicies);
+  const clearedDetail = savedDetail(4, 6, clearedPetPolicies);
+  const patchBodies: unknown[] = [];
+  let currentDetail = savedDetail(null, null);
   page.on("request", (request) => {
     const pathname = new URL(request.url()).pathname;
     if (pathname.startsWith("/api/admin/locations/saved-two/photos/")) photoApiCalls += 1;
@@ -414,21 +487,16 @@ test("saved location details use direct photo URLs and preserve the current list
   await page.route("https://images.example.test/missing.jpg", async (route) => {
     await route.abort();
   });
-  let patchHasSucceeded = false;
-
   await page.route("**/api/admin/locations/saved-two", async (route) => {
     if (route.request().method() === "GET") {
       detailReads += 1;
-      await route.fulfill({
-        json: patchHasSucceeded ? updatedDetail : savedDetail(null, null),
-      });
+      await route.fulfill({ json: currentDetail });
       return;
     }
     if (route.request().method() === "PATCH") {
-      patchCalls += 1;
-      expect(route.request().postDataJSON()).toEqual({ minVisitHours: 4, maxVisitHours: 6 });
-      patchHasSucceeded = true;
-      await route.fulfill({ json: updatedDetail });
+      patchBodies.push(route.request().postDataJSON());
+      currentDetail = patchBodies.length === 1 ? updatedDetail : clearedDetail;
+      await route.fulfill({ json: currentDetail });
       return;
     }
     await route.fallback();
@@ -456,13 +524,34 @@ test("saved location details use direct photo URLs and preserve the current list
   expect(detailReads).toBeGreaterThan(0);
   await expect(page.getByText("共 11 条 · 第 2 / 2 页")).toBeVisible();
 
+  await expect(dialog.getByLabel("每位游客最多携带宠物数（只）")).toHaveValue("1");
+  await expect(dialog.getByLabel("单只宠物最大体重（kg）")).toHaveValue("8.75");
+  await expect(dialog.getByLabel("额外费用（元 / 只 / 次）")).toHaveValue("10.5");
+  await expect(dialog.getByRole("combobox", { name: "牵引绳要求" })).toContainText("需要");
+  await expect(dialog.getByRole("combobox", { name: "疫苗证明要求" })).toContainText("不需要");
+  await expect(dialog.getByRole("combobox", { name: "预约要求" })).toContainText("未配置");
+
+  await dialog.getByLabel("每位游客最多携带宠物数（只）").fill("2");
+  await dialog.getByLabel("单只宠物最大体重（kg）").fill("12.5");
+  await dialog.getByLabel("额外费用（元 / 只 / 次）").fill("20");
+  await selectPolicyTriState(page, dialog, "牵引绳要求", "不需要");
+  await selectPolicyTriState(page, dialog, "疫苗证明要求", "需要");
+  await selectPolicyTriState(page, dialog, "预约要求", "需要");
+
   await dialog.getByLabel("最少游玩时间（小时）").fill("4");
   await dialog.getByLabel("最多游玩时间（小时）").fill("6");
   await dialog.getByRole("button", { name: "保存修改" }).click();
   await expect(dialog.getByText("地点信息已更新。", { exact: true })).toBeVisible();
   await expect(dialog.getByLabel("最少游玩时间（小时）")).toHaveValue("4");
   await expect(dialog.getByLabel("最多游玩时间（小时）")).toHaveValue("6");
-  expect(patchCalls).toBe(1);
+  await expect(dialog.getByLabel("每位游客最多携带宠物数（只）")).toHaveValue("2");
+  await expect(dialog.getByLabel("额外费用（元 / 只 / 次）")).toHaveValue("20");
+  await expect(dialog.getByRole("combobox", { name: "预约要求" })).toContainText("需要");
+  expect(patchBodies).toEqual([{
+    minVisitHours: 4,
+    maxVisitHours: 6,
+    petPolicies: updatedPetPolicies,
+  }]);
   await dialog.getByRole("button", { name: "关闭", exact: true }).click();
   const savedRow = page.getByRole("row", { name: /全部地区Pawtrip地点二/ });
   await expect(savedRow).toContainText("4");
@@ -472,15 +561,112 @@ test("saved location details use direct photo URLs and preserve the current list
   await page.getByRole("button", { name: "编辑 全部地区Pawtrip地点二" }).click();
   const reopenedDialog = page.getByRole("dialog", { name: "数据库景点详情" });
   await expect(reopenedDialog.getByLabel("最少游玩时间（小时）")).toHaveValue("4");
+  await expect(reopenedDialog.getByLabel("每位游客最多携带宠物数（只）")).toHaveValue("2");
+  await expect(reopenedDialog.getByLabel("额外费用（元 / 只 / 次）")).toHaveValue("20");
+  await expect(reopenedDialog.getByRole("combobox", { name: "预约要求" })).toContainText("需要");
   await expect(reopenedDialog.getByRole("img", { name: "主照片" })).toHaveAttribute(
     "src",
     "https://images.example.test/photo.jpg",
   );
   await expect(reopenedDialog.getByRole("button", { name: /获取图片|重试/ })).toHaveCount(0);
+
+  await reopenedDialog.getByLabel("额外费用（元 / 只 / 次）").fill("");
+  await reopenedDialog.getByRole("button", { name: "保存修改" }).click();
+  await expect(reopenedDialog.getByText("地点信息已更新。", { exact: true })).toBeVisible();
+  await expect(reopenedDialog.getByLabel("额外费用（元 / 只 / 次）")).toHaveValue("");
+  expect(patchBodies).toEqual([
+    { minVisitHours: 4, maxVisitHours: 6, petPolicies: updatedPetPolicies },
+    { minVisitHours: 4, maxVisitHours: 6, petPolicies: clearedPetPolicies },
+  ]);
+
   expect(directImageRequests).toBeGreaterThan(0);
   expect(photoApiCalls).toBe(0);
   await expect.poll(() => listRequests.saved).toBe(savedListReads);
   await expect.poll(() => listRequests.amap).toBe(amapListReads);
+});
+
+test("non-attraction saved locations still expose pet policy editing", async ({ page }) => {
+  await mockUser(page, "ADMIN");
+  await mockAdminLocationLists(page);
+  const petPolicies = {
+    maxPetsPerPerson: 2,
+    maxSinglePetWeightKg: 6.5,
+    leashRequired: false,
+    vaccinationProofRequired: true,
+    extraFeeCents: 300,
+    reservationRequired: false,
+  };
+  let patchBody: unknown;
+  await page.route(/\/api\/admin\/locations(?:\?.*)?$/, async (route) => {
+    if (route.request().method() !== "GET") {
+      await route.fallback();
+      return;
+    }
+    await route.fulfill({
+      json: {
+        items: [{
+          poiId: "saved-non-attraction",
+          name: "全部地区非景点",
+          typeCode: "050000",
+          typeGroup: "hotel",
+          address: "南京市中山路 9 号",
+          longitude: 118.78,
+          latitude: 32.04,
+          regionCode: null,
+          minVisitHours: null,
+          maxVisitHours: null,
+        }],
+        page: 1,
+        pageSize: 10,
+        totalElements: 1,
+        totalPages: 1,
+        hasNext: false,
+        hasPrevious: false,
+      },
+    });
+  });
+  await page.route("**/api/admin/locations/saved-non-attraction", async (route) => {
+    const detail = {
+      poiId: "saved-non-attraction",
+      typeGroup: "hotel",
+      minVisitHours: null,
+      maxVisitHours: null,
+      petPolicies,
+      poi: { id: "saved-non-attraction", name: "非景点详情" },
+      business: {},
+      photos: [],
+    };
+    if (route.request().method() === "GET") {
+      await route.fulfill({ json: detail });
+      return;
+    }
+    if (route.request().method() === "PATCH") {
+      patchBody = route.request().postDataJSON();
+      await route.fulfill({
+        json: { ...detail, petPolicies: { ...petPolicies, extraFeeCents: 350 } },
+      });
+      return;
+    }
+    await route.fallback();
+  });
+
+  await page.goto("/admin/locations");
+  await page.getByRole("tab", { name: "pawtrip地点" }).click();
+  await expect(page.getByRole("cell", { name: "全部地区非景点", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "编辑 全部地区非景点" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "非景点详情" });
+  await expect(dialog.getByText("携宠政策")).toBeVisible();
+  await expect(dialog.getByLabel("最少游玩时间（小时）")).toHaveCount(0);
+  await expect(dialog.getByLabel("每位游客最多携带宠物数（只）")).toHaveValue("2");
+  await expect(dialog.getByRole("button", { name: "保存修改" })).toBeVisible();
+
+  await dialog.getByLabel("额外费用（元 / 只 / 次）").fill("3.5");
+  await dialog.getByRole("button", { name: "保存修改" }).click();
+  await expect(dialog.getByText("地点信息已更新。", { exact: true })).toBeVisible();
+  expect(patchBody).toEqual({
+    petPolicies: { ...petPolicies, extraFeeCents: 350 },
+  });
 });
 
 test("USER is redirected away from the admin location route", async ({ page }) => {
@@ -492,12 +678,17 @@ test("USER is redirected away from the admin location route", async ({ page }) =
   await expect(page.getByRole("tab", { name: "地点管理" })).toHaveCount(0);
 });
 
-function savedDetail(minVisitHours: number | null, maxVisitHours: number | null) {
+function savedDetail(
+  minVisitHours: number | null,
+  maxVisitHours: number | null,
+  petPolicies = defaultSavedPetPolicies,
+) {
   return {
     poiId: "saved-two",
     typeGroup: "attraction",
     minVisitHours,
     maxVisitHours,
+    petPolicies,
     poi: {
       id: "saved-two",
       name: "数据库景点详情",

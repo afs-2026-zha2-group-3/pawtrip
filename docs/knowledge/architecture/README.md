@@ -52,7 +52,7 @@ com.pawtrip.server
 
 ### 地点管理功能模块
 
-`com.pawtrip.server.location` 是地点管理功能模块，包含管理员 API、应用服务、地点/行政区/照片持久化实体及 Spring Data 仓库。`AdminLocationController` 只依赖地点管理应用服务；应用服务依赖仓库和 `application.port.maps.PlaceSearchPort`，不得直接依赖 `infrastructure.amap` 实现。管理 API 位于 `/api/admin/**`，由 Spring Security 在服务端要求 `ADMIN`。高德候选查询调用地图端口；已保存地点查询只访问数据库。
+`com.pawtrip.server.location` 是地点管理功能模块，包含管理员 API、应用服务、地点/行政区/照片持久化实体及 Spring Data 仓库。`AdminLocationController` 只依赖地点管理应用服务；应用服务依赖仓库和 `application.port.maps.PlaceSearchPort`，不得直接依赖 `infrastructure.amap` 实现。管理 API 位于 `/api/admin/**`，由 Spring Security 在服务端要求 `ADMIN`。高德候选查询调用地图端口；已保存地点查询只访问数据库。地点详情与创建/更新请求通过可选 `petPolicies` 对象维护 6 项宠物政策；管理端“保存地点”和“pawtrip地点”两个现有弹窗提供编辑入口，地点列表响应不包含政策。
 
 ## 运行拓扑
 
