@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ export const Route = createFileRoute("/_authenticated/cities")({
 
 function CitiesPage() {
   const isClient = typeof window !== "undefined";
+  const navigate = useNavigate();
   const [keywordInput, setKeywordInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [friendlyOnly, setFriendlyOnly] = useState(false);
@@ -83,6 +84,7 @@ function CitiesPage() {
       cityName: candidate.name,
       province: candidate.province,
     });
+    void navigate({ to: "/attractions" });
   };
 
   return (

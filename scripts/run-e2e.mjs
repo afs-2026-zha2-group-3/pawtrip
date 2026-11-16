@@ -241,6 +241,14 @@ async function main() {
     }
     verifySeededUsers(databasePath);
 
+    const attractionSeedExitCode = await runProcess(
+      process.execPath,
+      ["scripts/seed-e2e-attractions.mjs", databasePath],
+    );
+    if (attractionSeedExitCode !== 0) {
+      throw new Error(`E2E attraction seeding failed with exit code ${attractionSeedExitCode}.`);
+    }
+
     const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
     const frontend = startProcess(
       npmCommand,

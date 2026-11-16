@@ -40,4 +40,24 @@ public interface PawtripLocationRepository extends JpaRepository<PawtripLocation
 			@Param("typeGroup") String typeGroup,
 			Pageable pageable);
 
+	@Query(value = """
+			SELECT * FROM pawtrip_location
+			WHERE type_group = 'attraction'
+				AND ((:regionLevel = 'province' AND substr(region_code, 1, 2) = substr(:regionCode, 1, 2))
+					OR (:regionLevel = 'city' AND substr(region_code, 1, 4) = substr(:regionCode, 1, 4)))
+				AND (:includeWithoutRules = 1 OR max_pets_per_person >= 1)
+			ORDER BY id ASC
+			""", countQuery = """
+			SELECT COUNT(*) FROM pawtrip_location
+			WHERE type_group = 'attraction'
+				AND ((:regionLevel = 'province' AND substr(region_code, 1, 2) = substr(:regionCode, 1, 2))
+					OR (:regionLevel = 'city' AND substr(region_code, 1, 4) = substr(:regionCode, 1, 4)))
+				AND (:includeWithoutRules = 1 OR max_pets_per_person >= 1)
+			""", nativeQuery = true)
+	Page<PawtripLocation> findAttractionPage(
+			@Param("regionCode") String regionCode,
+			@Param("regionLevel") String regionLevel,
+			@Param("includeWithoutRules") int includeWithoutRules,
+			Pageable pageable);
+
 }

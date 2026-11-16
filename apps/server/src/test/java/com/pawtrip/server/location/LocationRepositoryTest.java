@@ -166,6 +166,33 @@ class LocationRepositoryTest {
 		assertThat(secondPage.getContent()).extracting(PawtripLocation::getPoiId).containsExactly("poi-3");
 	}
 
+	@Test
+	void filtersAttractionPagesByFriendlyPolicyAndRegion() {
+		var friendly = location("poi-friendly", "330106", "attraction");
+		friendly.updatePetPolicies("DOG", 1, 8.5, 40.0, true, false, 0L, null);
+		var forbidden = location("poi-forbidden", "330106", "attraction");
+		forbidden.updatePetPolicies("DOG", 0, null, null, null, null, null, null);
+		var unconfigured = location("poi-unconfigured", "330106", "attraction");
+		unconfigured.updatePetPolicies(null, null, null, null, true, null, null, null);
+		var hotel = location("poi-hotel-friendly", "330106", "hotel");
+		hotel.updatePetPolicies("DOG", 1, null, null, null, null, null, null);
+		this.locationRepository.saveAllAndFlush(List.of(friendly, forbidden, unconfigured, hotel));
+
+		var defaultPage = this.locationRepository.findAttractionPage(
+				"330100", "city", 0, PageRequest.of(0, 10));
+		var allPage = this.locationRepository.findAttractionPage(
+				"330100", "city", 1, PageRequest.of(0, 10));
+		var provincePage = this.locationRepository.findAttractionPage(
+				"330000", "province", 0, PageRequest.of(0, 10));
+
+		assertThat(defaultPage.getContent()).extracting(PawtripLocation::getPoiId)
+			.containsExactly("poi-friendly");
+		assertThat(allPage.getContent()).extracting(PawtripLocation::getPoiId)
+			.containsExactly("poi-friendly", "poi-forbidden", "poi-unconfigured");
+		assertThat(provincePage.getContent()).extracting(PawtripLocation::getPoiId)
+			.containsExactly("poi-friendly");
+	}
+
 	private static PawtripLocation location(String poiId, String regionCode, String typeGroup) {
 		return new PawtripLocation(
 				poiId,
