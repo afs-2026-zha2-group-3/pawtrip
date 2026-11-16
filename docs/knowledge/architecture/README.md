@@ -85,6 +85,16 @@ com.pawtrip.server
 - `createTripDurationStore` 的 `set` 在写入前统一校验整数范围，合法值覆盖同一会话中的旧值；空值、越界、小数、非数字和被篡改的存储值均按未填写处理，非法写入不会覆盖最近一次合法值。
 - `/cities` 页面在目的地卡片前显示该输入，未保存会话值时默认显示 1；目的地「选定」按钮仅在输入为合法整数时可用。页面通过 `useTripDuration()` 在客户端挂载后恢复值。US-09 下游应读取 `tripDurationStore.get()`，得到 `null` 时阻止生成并回到 `/cities` 的“旅游总天数”输入处，得到合法整数后按该值生成天数。
 
+### 服务端行程规划（trip-planning）
+
+- `com.pawtrip.server.trip` 新增 `Trip` 实体、`TripRepository`、`TripService`、`TripController`；Flyway **V17** 创建 `trip` 表：`user_id`、`name`、`city_adcode`、`pet_id`、`total_days`、`plan_json`、`created_at`、`updated_at`，索引 `(user_id, id)`。
+- 城市与宠物在创建后不可变：`city_adcode` 必须为城市级 `administrative_region`，`pet_id` 必须属于当前用户；更新接口只接收 `name`、`totalDays`、`plan`。
+- `plan_json` v1：`{"version":1,"days":[{"day":1,"stops":[{"poiId":"...","toNext":"walk"}]}],"unscheduled":[{"poiId":"..."}]}`。`toNext` 仅 `walk` / `drive` / `transit`，全部可选且不做下一天引用校验；`days`、`stops`、`unscheduled` 均可为空，空计划合法并作为新建默认值。`unscheduled` 按 `poiId` 去重，已排期地点从池中移除；同一 `poiId` 可在 `days` 重复。
+- `poiId` 只校验存在于 `pawtrip_location`（不校验城市归属）；`day` 唯一且在 `1..totalDays`；`totalDays` 调小到低于计划最大 `day` 返回 `400 VALIDATION_ERROR`。
+- API：`GET/POST /api/trips`、`GET/PUT/DELETE /api/trips/{id}`；均需登录且只能访问本人 trip，列表返回摘要不含 `plan`，详情/创建/更新返回完整计划；未找到返回 `404 TRIP_NOT_FOUND`。
+- 宠物删除：`trip.pet_id` 外键为 `ON DELETE RESTRICT`；删除被 trip 引用的宠物返回 `409 PET_IN_USE`，未被引用的宠物保持 `204`。
+- 本次不接入前端 `sessionStorage` 的 `pawtrip.tripDuration`、`pawtrip.selectedDestination` 与 `pawtrip:selected-transport-mode`；后续行程页负责把会话状态映射到 trip 请求。
+
 ## 运行拓扑
 
 ```text

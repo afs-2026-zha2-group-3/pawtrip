@@ -1,0 +1,56 @@
+package com.pawtrip.server.trip;
+
+import java.net.URI;
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/trips")
+class TripController {
+
+	private final TripService tripService;
+
+	TripController(TripService tripService) {
+		this.tripService = tripService;
+	}
+
+	@GetMapping
+	List<TripResponses.TripSummary> trips(Authentication authentication) {
+		return this.tripService.trips(authentication.getName());
+	}
+
+	@GetMapping("/{tripId}")
+	TripResponses.TripDetail trip(@PathVariable Long tripId, Authentication authentication) {
+		return this.tripService.trip(authentication.getName(), tripId);
+	}
+
+	@PostMapping
+	ResponseEntity<TripResponses.TripDetail> create(@RequestBody TripRequests.SaveTrip request,
+			Authentication authentication) {
+		TripResponses.TripDetail trip = this.tripService.create(authentication.getName(), request);
+		return ResponseEntity.created(URI.create("/api/trips/" + trip.id())).body(trip);
+	}
+
+	@PutMapping("/{tripId}")
+	TripResponses.TripDetail update(@PathVariable Long tripId, @RequestBody TripRequests.SaveTrip request,
+			Authentication authentication) {
+		return this.tripService.update(authentication.getName(), tripId, request);
+	}
+
+	@DeleteMapping("/{tripId}")
+	ResponseEntity<Void> delete(@PathVariable Long tripId, Authentication authentication) {
+		this.tripService.delete(authentication.getName(), tripId);
+		return ResponseEntity.noContent().build();
+	}
+
+}
