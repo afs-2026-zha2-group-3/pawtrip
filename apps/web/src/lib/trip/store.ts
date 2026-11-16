@@ -21,6 +21,7 @@ import type {
   TripCity,
   TripPlan,
   TripState,
+  TransportMode,
 } from "./types";
 
 const initialCache: TripCache = { city: null, pets: {}, locations: {} };
@@ -142,6 +143,16 @@ export const tripActions = {
       return {
         ...state,
         active: { ...state.active, plan: removed.plan },
+        ...bumpRevision(state),
+      };
+    });
+  },
+  setTransportMode(transportMode: TransportMode): void {
+    update((state) => {
+      if (!state.active || state.active.transportMode === transportMode) return state;
+      return {
+        ...state,
+        active: { ...state.active, transportMode },
         ...bumpRevision(state),
       };
     });

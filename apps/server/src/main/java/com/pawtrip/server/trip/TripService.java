@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 class TripService {
 
+	private static final Set<String> TRANSPORT_MODES = Set.of("flight", "high_speed_rail", "train", "drive");
+
 	private final TripRepository tripRepository;
 
 	private final AppUserRepository appUserRepository;
@@ -60,7 +62,7 @@ class TripService {
 		Long userId = userId(username);
 		ValidatedTrip validated = validate(userId, request, true);
 		Trip saved = this.tripRepository.save(new Trip(userId, validated.name(), validated.cityAdcode(),
-				validated.petId(), validated.totalDays(), validated.planJson()));
+				validated.petId(), validated.totalDays(), validated.transportMode(), validated.planJson()));
 		return TripResponses.TripDetail.from(saved, this.planValidator);
 	}
 
@@ -69,7 +71,7 @@ class TripService {
 		Long userId = userId(username);
 		Trip existing = findOwnedTrip(userId, tripId);
 		ValidatedTrip validated = validate(userId, request, false);
-		existing.update(validated.name(), validated.totalDays(), validated.planJson());
+		existing.update(validated.name(), validated.totalDays(), validated.planJson(), validated.transportMode());
 		return TripResponses.TripDetail.from(this.tripRepository.save(existing), this.planValidator);
 	}
 
@@ -86,13 +88,18 @@ class TripService {
 		if (name.isEmpty()) {
 			throw invalid();
 		}
+		String transportMode = request.transportMode();
+		if (transportMode != null && !TRANSPORT_MODES.contains(transportMode)) {
+			throw invalid();
+		}
 		if (!requireBinding && (request.plan() == null || request.plan().isNull())) {
 			throw invalid();
 		}
 		TripPlan plan = this.planValidator.validate(request.plan(), request.totalDays());
 		validatePoiIds(plan);
 		if (!requireBinding) {
-			return new ValidatedTrip(name, null, null, request.totalDays(), this.planValidator.serialize(plan));
+			return new ValidatedTrip(name, null, null, request.totalDays(), this.planValidator.serialize(plan),
+					transportMode);
 		}
 		String cityAdcode = request.cityAdcode();
 		if (cityAdcode == null || cityAdcode.isBlank() || !isCity(cityAdcode)) {
@@ -102,7 +109,8 @@ class TripService {
 		if (petId == null || this.petRepository.findByIdAndUserId(petId, userId).isEmpty()) {
 			throw invalid();
 		}
-		return new ValidatedTrip(name, cityAdcode, petId, request.totalDays(), this.planValidator.serialize(plan));
+		return new ValidatedTrip(name, cityAdcode, petId, request.totalDays(), this.planValidator.serialize(plan),
+				transportMode);
 	}
 
 	private boolean isCity(String adcode) {
@@ -148,7 +156,8 @@ class TripService {
 		return new ApiException(ApiErrorCode.VALIDATION_ERROR, "Invalid trip request");
 	}
 
-	private record ValidatedTrip(String name, String cityAdcode, Long petId, int totalDays, String planJson) {
+	private record ValidatedTrip(String name, String cityAdcode, Long petId, int totalDays, String planJson,
+			String transportMode) {
 	}
 
 }

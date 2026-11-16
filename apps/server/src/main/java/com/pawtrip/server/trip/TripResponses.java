@@ -24,7 +24,7 @@ public final class TripResponses {
 	}
 
 	public record TripDetail(Long id, String name, String cityAdcode, Long petId, int totalDays,
-			String createdAt, String updatedAt, JsonNode plan) {
+			String transportMode, String createdAt, String updatedAt, JsonNode plan) {
 
 		static TripDetail from(Trip trip, TripPlanValidator planValidator) {
 			return new TripDetail(
@@ -33,6 +33,7 @@ public final class TripResponses {
 					trip.getCityAdcode(),
 					trip.getPetId(),
 					trip.getTotalDays(),
+					trip.getTransportMode(),
 					trip.getCreatedAt(),
 					trip.getUpdatedAt(),
 					planValidator.read(trip.getPlanJson()));

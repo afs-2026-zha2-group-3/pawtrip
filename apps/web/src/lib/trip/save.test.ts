@@ -15,6 +15,7 @@ const trip: Trip = {
   cityAdcode: "330100",
   petId: 1,
   totalDays: 2,
+  transportMode: null,
   plan: {
     version: 1,
     days: [
@@ -35,9 +36,11 @@ describe("trip auto save", () => {
     tripActions.addStop(1, "poi-a");
   });
 
-  it("saves the normalized plan and marks it saved", async () => {
+  it("saves the normalized plan and transport mode and marks it saved", async () => {
+    tripActions.setTransportMode("drive");
     vi.mocked(updateTrip).mockResolvedValue({
       ...trip,
+      transportMode: "drive",
       plan: {
         version: 1,
         days: [{ day: 1, stops: [{ poiId: "poi-a" }] }, { day: 2, stops: [] }],
@@ -53,6 +56,7 @@ describe("trip auto save", () => {
         name: trip.name,
         totalDays: 2,
         plan: expect.objectContaining({ version: 1 }),
+        transportMode: "drive",
       }),
     );
     expect(tripStore.state.save.status).toBe("saved");
@@ -69,6 +73,7 @@ describe("trip auto save", () => {
   });
 
   it("restores server data after a 400 validation error", async () => {
+    tripActions.setTransportMode("flight");
     vi.mocked(updateTrip).mockRejectedValue(new ApiError({ status: 400, code: "VALIDATION_ERROR" }));
     vi.mocked(request).mockResolvedValue({
       ...trip,

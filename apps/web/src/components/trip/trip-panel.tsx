@@ -45,6 +45,7 @@ import {
 } from "@/lib/trip/selectors";
 import { tripActions, tripStore } from "@/lib/trip/store";
 import { MAX_TRIP_DAYS, MIN_TRIP_DAYS } from "@/lib/trip/types";
+import { transportModeLabels } from "@/data/transport-rules";
 import { runViewTransition } from "@/lib/view-transition";
 import { cn } from "@/lib/utils";
 
@@ -275,6 +276,11 @@ function TripPanelContent() {
               <span className={TAG_CLASS}>{cityName}</span>
               <span className={TAG_CLASS}>{active.totalDays} 天</span>
               <span className={TAG_CLASS}>{activePet?.name ?? `宠物 #${active.petId}`}</span>
+              {active.transportMode ? (
+                <span className={TAG_CLASS} data-testid="transport-mode-tag">
+                  大交通 · {transportModeLabels[active.transportMode]}
+                </span>
+              ) : null}
               <span className={TAG_CLASS} data-testid="save-status" data-status={save.status}>
                 {save.status === "saving"
                   ? "保存中…"
