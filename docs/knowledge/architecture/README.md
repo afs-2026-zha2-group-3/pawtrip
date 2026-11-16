@@ -59,10 +59,10 @@ com.pawtrip.server
 `com.pawtrip.server.destination` 是目的地候选功能模块（US-47），只读、无写入端点：
 
 - `GET /api/destinations`：需登录（沿用 `/api/**` 认证链，未登录 `401 UNAUTHENTICATED`）；返回试点候选城市数组（按 adcode 升序），每项含 `adcode`、`name`、`province`（父级省名）、`policyCovered`、`bannedBreeds[]`（每条含 `breedName`、`source` 政府文件、`updated` 日期）。
-- 候选范围数据驱动：`administrative_region.policy_covered=1` 的城市即候选（当前珠海 440400、杭州 330100），该列同时标记政策收录状态；由 `V10__add_destination_policy_data.sql` 增加，`NOT NULL DEFAULT 0`。
-- 禁养名单存于 `region_banned_breed`（`region_adcode` FK→`administrative_region`，级联删除；`UNIQUE(region_adcode, breed_name)`），V10 注入杭州 33 条、珠海 38 条政府名录种子；来源与词表归一化记录见 `openspec/changes/destination-selection/seed-data.md`。
+- 候选范围数据驱动：`administrative_region.policy_covered=1` 的城市即候选（当前珠海 440400、杭州 330100），该列同时标记政策收录状态；由 `V14__add_destination_policy_data.sql` 增加，`NOT NULL DEFAULT 0`。
+- 禁养名单存于 `region_banned_breed`（`region_adcode` FK→`administrative_region`，级联删除；`UNIQUE(region_adcode, breed_name)`），V14 注入杭州 33 条、珠海 38 条政府名录种子；来源与词表归一化记录见 `openspec/changes/destination-selection/seed-data.md`。
 - 禁养匹配（档案品种 × 名单）在前端执行，后端不引用宠物档案模块（档案由外部 US-01 change 交付）；选定目的地不做服务端持久化。
-- 迁移版本号约定：外部 `feature/add-pet-schema` 占用 V8/V9，本模块从 V10 起；合并前需复核 main 最新版本号。
+- 迁移版本号约定：宠物档案系列（PR #33–#36）占用 V8–V13，本模块迁移为 V14；合并前需复核 main 最新版本号。
 
 前端选定状态约定（`apps/web/src/lib/selected-destination.ts`）：
 

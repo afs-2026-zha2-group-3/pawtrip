@@ -10,6 +10,9 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
 
+import com.pawtrip.server.pet.DogBreed;
+import com.pawtrip.server.pet.DogBreedRepository;
+
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 class LocationRepositoryTest {
@@ -45,6 +49,9 @@ class LocationRepositoryTest {
 
 	@Autowired
 	LocationPhotoRepository photoRepository;
+
+	@Autowired
+	DogBreedRepository dogBreedRepository;
 
 	@Autowired
 	EntityManager entityManager;
@@ -76,8 +83,8 @@ class LocationRepositoryTest {
 	void persistsIndependentPetPoliciesForRegionsAndLocations() {
 		var region = new AdministrativeRegion("990003", "Test region", null, "province", null);
 		var location = location("poi-pet-policy-jpa", "990003", "attraction");
-		region.updatePetPolicies(3, 18.5, true, false, 1250L, null);
-		location.updatePetPolicies(1, 8.75, false, true, 75L, false);
+		region.updatePetPolicies("CAT,DOG", 3, 18.5, 55.0, true, false, 1250L, null);
+		location.updatePetPolicies("DOG", 1, 8.75, 40.0, false, true, 75L, false);
 
 		this.regionRepository.saveAndFlush(region);
 		this.locationRepository.saveAndFlush(location);
@@ -87,16 +94,38 @@ class LocationRepositoryTest {
 		var persistedLocation = this.locationRepository.findByPoiId("poi-pet-policy-jpa").orElseThrow();
 		assertThat(persistedRegion.getMaxPetsPerPerson()).isEqualTo(3);
 		assertThat(persistedRegion.getMaxSinglePetWeightKg()).isEqualTo(18.5);
+		assertThat(persistedRegion.getMaxSinglePetShoulderHeightCm()).isEqualTo(55.0);
 		assertThat(persistedRegion.getLeashRequired()).isTrue();
 		assertThat(persistedRegion.getVaccinationProofRequired()).isFalse();
 		assertThat(persistedRegion.getExtraFeeCents()).isEqualTo(1250L);
 		assertThat(persistedRegion.getReservationRequired()).isNull();
+		assertThat(persistedRegion.getAllowedPetTypes()).isEqualTo("CAT,DOG");
 		assertThat(persistedLocation.getMaxPetsPerPerson()).isEqualTo(1);
 		assertThat(persistedLocation.getMaxSinglePetWeightKg()).isEqualTo(8.75);
+		assertThat(persistedLocation.getMaxSinglePetShoulderHeightCm()).isEqualTo(40.0);
 		assertThat(persistedLocation.getLeashRequired()).isFalse();
 		assertThat(persistedLocation.getVaccinationProofRequired()).isTrue();
 		assertThat(persistedLocation.getExtraFeeCents()).isEqualTo(75L);
 		assertThat(persistedLocation.getReservationRequired()).isFalse();
+		assertThat(persistedLocation.getAllowedPetTypes()).isEqualTo("DOG");
+	}
+
+	@Test
+	@Transactional
+	void persistsAllowedDogBreedsForCities() {
+		var pastoralDog = this.dogBreedRepository.save(new DogBreed("测试田园犬", false));
+		var tibetanMastiff = this.dogBreedRepository.save(new DogBreed("测试獒犬", true));
+		var city = new AdministrativeRegion("990003", "Test city", null, "city", "330000");
+		city.updateAllowedDogBreeds(List.of(pastoralDog, tibetanMastiff));
+
+		this.regionRepository.saveAndFlush(city);
+		this.entityManager.clear();
+
+		var persistedCity = this.regionRepository.findById("990003").orElseThrow();
+		assertThat(persistedCity.getAllowedDogBreeds()).extracting(DogBreed::getName)
+			.containsExactly("测试田园犬", "测试獒犬");
+		assertThat(persistedCity.getAllowedDogBreeds()).extracting(DogBreed::isOfficialAggressive)
+			.containsExactly(false, true);
 	}
 
 	@Test
