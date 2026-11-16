@@ -15,6 +15,15 @@ import {
 
 const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>();
 
+const emptyPetPolicies: LocationDetail["petPolicies"] = {
+  maxPetsPerPerson: null,
+  maxSinglePetWeightKg: null,
+  leashRequired: null,
+  vaccinationProofRequired: null,
+  extraFeeCents: null,
+  reservationRequired: null,
+};
+
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
@@ -132,6 +141,7 @@ describe("admin location queries", () => {
       typeGroup: "attraction",
       minVisitHours: null,
       maxVisitHours: null,
+      petPolicies: emptyPetPolicies,
       poi: { name: "Park" },
       business: {},
       photos: [{
@@ -163,6 +173,7 @@ describe("admin location queries", () => {
       typeGroup: "attraction",
       minVisitHours: 2,
       maxVisitHours: 5,
+      petPolicies: emptyPetPolicies,
       poi: { name: "地点" },
       business: {},
       photos: [],
