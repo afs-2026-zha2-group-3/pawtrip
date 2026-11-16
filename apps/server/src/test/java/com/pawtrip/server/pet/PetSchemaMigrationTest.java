@@ -34,7 +34,7 @@ class PetSchemaMigrationTest {
 		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
 			assertThat(columns(connection, "pet")).containsExactlyInAnyOrder(
 					"id", "user_id", "name", "pet_type", "weight_kg", "shoulder_height_cm", "has_leash",
-					"has_vaccination_proof", "photo");
+					"has_vaccination_proof", "photo", "dog_breed_id");
 
 			long catId = insertPet(connection, userId, "Mimi", "CAT", 4.5, 25.0, 1, 1);
 			insertPet(connection, userId, "Rex", "DOG", 18.25, 60.0, 0, 0);
@@ -93,6 +93,62 @@ class PetSchemaMigrationTest {
 					assertThat(result.next()).isTrue();
 					assertThat(result.getBytes("photo")).isNull();
 				}
+			}
+		}
+	}
+
+	@Test
+	void addsNullableDogBreedWithoutChangingExistingPets(@TempDir Path tempDir) throws SQLException {
+		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("existing-dogs.db") + "?foreign_keys=on";
+		Flyway.configure().dataSource(jdbcUrl, null, null).target("13").load().migrate();
+
+		long petId;
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			long userId = insertUser(connection, "dog-owner");
+			petId = insertPet(connection, userId, "Rex", "DOG", 18.0, 60.0, 1, 1);
+		}
+
+		Flyway.configure().dataSource(jdbcUrl, null, null).load().migrate();
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			assertThat(columns(connection, "pet")).contains("dog_breed_id");
+			assertThat(dogBreedId(connection, petId)).isNull();
+
+			long breedId;
+			try (PreparedStatement insert = connection.prepareStatement(
+					"INSERT INTO dog_breed (name, official_aggressive) VALUES ('测试犬种', 0)",
+					Statement.RETURN_GENERATED_KEYS)) {
+				insert.executeUpdate();
+				try (ResultSet keys = insert.getGeneratedKeys()) {
+					assertThat(keys.next()).isTrue();
+					breedId = keys.getLong(1);
+				}
+			}
+
+			try (PreparedStatement update = connection.prepareStatement(
+					"UPDATE pet SET dog_breed_id = ? WHERE id = ?")) {
+				update.setLong(1, breedId);
+				update.setLong(2, petId);
+				update.executeUpdate();
+			}
+			assertThat(dogBreedId(connection, petId)).isEqualTo(breedId);
+
+			try (PreparedStatement delete = connection.prepareStatement("DELETE FROM dog_breed WHERE id = ?")) {
+				delete.setLong(1, breedId);
+				delete.executeUpdate();
+			}
+			assertThat(dogBreedId(connection, petId)).isNull();
+		}
+	}
+
+	private static Long dogBreedId(Connection connection, long petId) throws SQLException {
+		try (PreparedStatement query = connection.prepareStatement(
+				"SELECT dog_breed_id FROM pet WHERE id = ?")) {
+			query.setLong(1, petId);
+			try (ResultSet result = query.executeQuery()) {
+				assertThat(result.next()).isTrue();
+				long value = result.getLong("dog_breed_id");
+				return result.wasNull() ? null : value;
 			}
 		}
 	}

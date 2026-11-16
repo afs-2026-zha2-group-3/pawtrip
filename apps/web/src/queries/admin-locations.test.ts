@@ -31,6 +31,15 @@ function jsonResponse(data: unknown, status = 200): Response {
   });
 }
 
+const emptyPetPolicies = {
+  maxPetsPerPerson: null,
+  maxSinglePetWeightKg: null,
+  leashRequired: null,
+  vaccinationProofRequired: null,
+  extraFeeCents: null,
+  reservationRequired: null,
+};
+
 describe("admin location queries", () => {
   beforeEach(() => {
     fetchMock.mockReset();
