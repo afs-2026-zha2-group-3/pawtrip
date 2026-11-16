@@ -10,6 +10,7 @@ function activeTrip(totalDays = 3): Trip {
     cityAdcode: "330100",
     petId: 1,
     totalDays,
+    transportMode: null,
     plan: { version: 1, days: [], unscheduled: [] },
     createdAt: "2026-11-16T00:00:00Z",
     updatedAt: "2026-11-16T00:00:00Z",
@@ -31,6 +32,18 @@ describe("trip store", () => {
 
     tripActions.discardDraft();
     expect(tripStore.state.draft).toBeNull();
+  });
+
+  it("updates transport mode and increments the save revision only when it changes", () => {
+    tripActions.setActive(activeTrip());
+    const revision = tripStore.state.saveRevision;
+
+    tripActions.setTransportMode("flight");
+    expect(tripStore.state.active?.transportMode).toBe("flight");
+    expect(tripStore.state.saveRevision).toBe(revision + 1);
+
+    tripActions.setTransportMode("flight");
+    expect(tripStore.state.saveRevision).toBe(revision + 1);
   });
 
   it("adds stops to a day and clears the same poi from unscheduled", () => {

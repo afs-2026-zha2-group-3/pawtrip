@@ -27,7 +27,7 @@ class TripSchemaMigrationTest {
 		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
 			assertThat(columns(connection, "trip")).containsExactlyInAnyOrder(
 					"id", "user_id", "name", "city_adcode", "pet_id", "total_days", "plan_json", "created_at",
-					"updated_at");
+					"updated_at", "transport_mode");
 			assertThat(indexNames(connection, "trip")).contains("idx_trip_user_id");
 
 			long userId = insertUser(connection, "trip-owner");
@@ -35,14 +35,24 @@ class TripSchemaMigrationTest {
 			long tripId = insertTrip(connection, userId, petId, "杭州周末", 3);
 
 			try (PreparedStatement query = connection.prepareStatement(
-					"SELECT plan_json FROM trip WHERE id = ?")) {
+					"SELECT plan_json, transport_mode FROM trip WHERE id = ?")) {
 				query.setLong(1, tripId);
 				try (ResultSet result = query.executeQuery()) {
 					assertThat(result.next()).isTrue();
 					assertThat(result.getString("plan_json"))
 						.isEqualTo("{\"version\":1,\"days\":[],\"unscheduled\":[]}");
+					assertThat(result.getString("transport_mode")).isNull();
 				}
 			}
+
+			assertThatThrownBy(() -> {
+				try (PreparedStatement update = connection.prepareStatement(
+						"UPDATE trip SET transport_mode = ? WHERE id = ?")) {
+					update.setString(1, "spaceship");
+					update.setLong(2, tripId);
+					update.executeUpdate();
+				}
+			}).isInstanceOf(SQLException.class);
 
 			assertThatThrownBy(() -> insertTrip(connection, userId, petId, "Zero days", 0))
 				.isInstanceOf(SQLException.class);
@@ -61,6 +71,31 @@ class TripSchemaMigrationTest {
 					ResultSet result = statement.executeQuery("SELECT COUNT(*) FROM trip")) {
 				assertThat(result.next()).isTrue();
 				assertThat(result.getInt(1)).isZero();
+			}
+		}
+	}
+
+	@Test
+	void keepsExistingTripTransportModeNullWhenAddingColumn(@TempDir Path tempDir) throws SQLException {
+		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("existing-trip.db") + "?foreign_keys=on";
+		Flyway.configure().dataSource(jdbcUrl, null, null).target("17").load().migrate();
+
+		long tripId;
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			long userId = insertUser(connection, "existing-trip-owner");
+			long petId = insertPet(connection, userId);
+			tripId = insertTrip(connection, userId, petId, "历史行程", 2);
+		}
+
+		Flyway.configure().dataSource(jdbcUrl, null, null).load().migrate();
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl);
+				PreparedStatement query = connection.prepareStatement(
+						"SELECT transport_mode FROM trip WHERE id = ?")) {
+			query.setLong(1, tripId);
+			try (ResultSet result = query.executeQuery()) {
+				assertThat(result.next()).isTrue();
+				assertThat(result.getString("transport_mode")).isNull();
 			}
 		}
 	}

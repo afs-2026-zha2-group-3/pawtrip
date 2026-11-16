@@ -1,3 +1,4 @@
+import type { TransportMode } from "@/data/transport-rules";
 import type { AttractionDetail } from "@/queries/attractions";
 import type { Pet } from "@/queries/pets";
 
@@ -30,6 +31,7 @@ export interface Trip {
   cityAdcode: string;
   petId: number;
   totalDays: number;
+  transportMode: TransportMode | null;
   plan: TripPlan;
   createdAt: string;
   updatedAt: string;
@@ -78,5 +80,6 @@ export interface SaveTripInput {
   cityAdcode?: string;
   petId?: number;
   totalDays: number;
+  transportMode: TransportMode | null;
   plan: TripPlan;
 }

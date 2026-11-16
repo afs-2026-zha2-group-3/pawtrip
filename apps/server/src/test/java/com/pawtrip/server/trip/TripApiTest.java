@@ -141,7 +141,48 @@ class TripApiTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.plan.version").value(1))
 			.andExpect(jsonPath("$.plan.days.length()").value(0))
-			.andExpect(jsonPath("$.plan.unscheduled.length()").value(0));
+			.andExpect(jsonPath("$.plan.unscheduled.length()").value(0))
+			.andExpect(jsonPath("$.transportMode").value(nullValue()));
+	}
+
+	@Test
+	void createsAndUpdatesTransportModeAndRejectsUnsupportedMode() throws Exception {
+		MvcResult createResult = this.mockMvc.perform(post("/api/trips")
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"杭州行程","cityAdcode":"%s","petId":%d,"totalDays":1,
+							 "transportMode":"flight"}
+							""".formatted(CITY_ADCODE, this.petId)))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.transportMode").value("flight"))
+			.andReturn();
+		long tripId = JSON_MAPPER.readTree(createResult.getResponse().getContentAsString()).path("id").asLong();
+
+		this.mockMvc.perform(put("/api/trips/{tripId}", tripId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"杭州行程","totalDays":1,"plan":%s,"transportMode":"high_speed_rail"}
+							""".formatted(EMPTY_PLAN)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.transportMode").value("high_speed_rail"));
+
+		this.mockMvc.perform(put("/api/trips/{tripId}", tripId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"杭州行程","totalDays":1,"plan":%s,"transportMode":"spaceship"}
+							""".formatted(EMPTY_PLAN)))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+		this.mockMvc.perform(get("/api/trips/{tripId}", tripId).with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.transportMode").value("high_speed_rail"));
 	}
 
 	@Test

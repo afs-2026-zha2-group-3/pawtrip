@@ -34,6 +34,7 @@ const trip: Trip = {
   cityAdcode: "330100",
   petId: 1,
   totalDays: 2,
+  transportMode: null,
   plan: { version: 1, days: [], unscheduled: [] },
   createdAt: "2026-11-16T00:00:00Z",
   updatedAt: "2026-11-16T00:00:00Z",

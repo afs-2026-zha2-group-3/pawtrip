@@ -57,6 +57,7 @@ export function updateTrip(id: number, input: SaveTripInput): Promise<Trip> {
       name: input.name,
       totalDays: input.totalDays,
       plan: input.plan,
+      transportMode: input.transportMode,
     },
   });
 }

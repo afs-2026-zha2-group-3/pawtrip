@@ -49,6 +49,7 @@ export async function flushTripSave(): Promise<void> {
       name: active.name,
       totalDays: active.totalDays,
       plan,
+      transportMode: active.transportMode,
     });
     if (version !== requestVersion) {
       return;

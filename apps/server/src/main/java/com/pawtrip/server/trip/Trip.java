@@ -32,6 +32,9 @@ public class Trip {
 	@Column(name = "total_days", nullable = false)
 	private int totalDays;
 
+	@Column(name = "transport_mode")
+	private String transportMode;
+
 	@Column(name = "plan_json", nullable = false)
 	private String planJson;
 
@@ -44,22 +47,25 @@ public class Trip {
 	protected Trip() {
 	}
 
-	public Trip(Long userId, String name, String cityAdcode, Long petId, int totalDays, String planJson) {
+	public Trip(Long userId, String name, String cityAdcode, Long petId, int totalDays, String transportMode,
+			String planJson) {
 		this.userId = userId;
 		this.name = name;
 		this.cityAdcode = cityAdcode;
 		this.petId = petId;
 		this.totalDays = totalDays;
+		this.transportMode = transportMode;
 		this.planJson = planJson;
 		String now = Instant.now().toString();
 		this.createdAt = now;
 		this.updatedAt = now;
 	}
 
-	public void update(String name, int totalDays, String planJson) {
+	public void update(String name, int totalDays, String planJson, String transportMode) {
 		this.name = name;
 		this.totalDays = totalDays;
 		this.planJson = planJson;
+		this.transportMode = transportMode;
 		this.updatedAt = Instant.now().toString();
 	}
 
@@ -89,6 +95,10 @@ public class Trip {
 
 	public String getPlanJson() {
 		return this.planJson;
+	}
+
+	public String getTransportMode() {
+		return this.transportMode;
 	}
 
 	public String getCreatedAt() {
