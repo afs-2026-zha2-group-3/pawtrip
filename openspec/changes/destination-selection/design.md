@@ -76,7 +76,7 @@
 
 ### D8: 叠加匹配由前端传参承载，服务端不引用档案模块（2026-11-16 增强）
 
-- **背景**：筛选需叠加城市允许类型（`allowed_pet_types`，V9：NULL=未配置，'CAT'/'DOG'/'CAT,DOG'）与允许狗品种（`city_allowed_dog_breed`，V11，当前无数据无维护入口）；档案归外部 pet 模块
+- **背景**：筛选需叠加城市允许类型（`allowed_pet_types`，V9：NULL=未配置，'CAT'/'DOG'/'CAT,DOG'）与允许狗品种（`city_allowed_dog_breed`，V11；V16 全城市种子注入，PR #47 起 /api/admin/cities 可维护）；档案归外部 pet 模块
 - **选择**：候选接口增可选参数 `petType`/`breedId`/`shoulderHeightCm`（前端从 adapter 读取后传参）与响应字段 `allowedPetTypes`/`allowedDogBreedIds`/`maxSinglePetShoulderHeightCm`；`petFriendly=true` 时限养数 AND 类型 AND 品种 AND 肩高四层过滤；**空值语义（2026-11-16 需求方修订）**：`allowed_pet_types=null` **不允许**；允许品种列表空=未配置放行；肩高上限 null=不限制；DOG 档案无品种时品种层放行、档案无肩高时肩高层放行；`petType` 用 `PetType` 枚举绑定（非法值 Spring 自动 400）；仓库新增 `@EntityGraph(attributePaths="allowedDogBreeds")` 派生查询（`open-in-view=false`，避免懒加载异常与逐城 N+1）
 - **被否方案**：destination 服务直接读 pet 仓库（破坏模块边界与 G1 Revision「后端不引用档案模块」）；前端本地过滤（违反 D5 服务端筛选口径）
 - **理由**：保持服务端筛选与模块边界；品种按 `dog_breed` id 精确匹配，与档案同词表
@@ -93,7 +93,7 @@
 - [外部档案 change 进度阻塞 AC-2 完整口径/AC-4 验收] → 已解除 breed 阻塞（PR #41 交付 dogBreed）；禁养展示仍待政策数据源
 - [政策数据源未定导致收录/禁养口径悬置] → D2 修订：占位字段 + TODO 判断点，数据源确定后恢复；候选浏览与选定闭环不受阻
 - [breed 词表不一致导致精确匹配漏判] → 已消除：档案与城市允许品种同用 dog_breed 参考表，按 id 匹配（D8）
-- [city_allowed_dog_breed 无数据无维护入口] → 空列表=未配置放行（D8），政策数据交付后自动收紧；不阻塞本次增强
+- [城市政策配置被管理端修改] → V16 种子提供基线，PR #47 管理 API 可调整；空列表=未配置放行（D8）语义不变
 - [sessionStorage 关标签页即丢、换设备不跟随] → 需求方已接受会话级口径；后续 story 需服务端上下文时另行演进
 - [前端匹配逻辑与 #14 复用] → 匹配纯函数独立模块，#14 可直接引用；若将来需服务端判定再迁移（不在本 change）
 

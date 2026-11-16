@@ -49,8 +49,8 @@
 - [x] 7.2 前端：pet-profile adapter 消费 `dogBreed`（取第一只，失败退化 null）；`matchesCityPetPolicy` 纯函数；destinations query 扩参——验证：adapter/纯函数/params 单测绿
 - [x] 7.3 前端：卡片右上角匹配 Badge（绿/红，无档案不显示）；已选定按钮再点取消选定——验证：tsc 绿、E2E E17/E18 绿
 - [x] 7.4 E2E：run-e2e.mjs 暴露临时库路径；E17 标签+叠加筛选（node:sqlite 配置城市政策、API 建档案）、E18 取消选定；既有用例回归——验证：E2E 全量绿
-- [ ] 7.5 集成验证与本地报告——验证：后端全量/vitest/tsc/openspec strict/E2E 全绿；local-verify-report 更新；不提 PR（需求方指示）
-- [ ] 7.6 V16 全城市种子迁移（2026-11-16 需求方指定，V15 空缺（PR #43 由 #47 取代））：全部城市级行政区 `allowed_pet_types='CAT,DOG'` + 7 个非烈性允许品种（含哈士奇）；API/E2E 测试适配种子（清理恢复种子口径）——验证：种子断言用例绿、全量回归绿
+- [x] 7.5 集成验证与本地报告——验证：后端全量/vitest/tsc/openspec strict/E2E 全绿；local-verify-report 更新；需求方已授权提 PR
+- [x] 7.6 V16 全城市种子迁移（2026-11-16 需求方指定，V15 空缺（PR #43 由 #47 取代））：全部城市级行政区 `allowed_pet_types='CAT,DOG'` + 7 个非烈性允许品种（含哈士奇）；API/E2E 测试适配种子（清理恢复种子口径）；队友 DogBreedSchemaMigrationTest 计数断言改为种子基线相对值（V16 为其测试城市注入 7 品种）——验证：种子断言用例绿、全量回归绿
 
 ## Workflow follow-up
 
