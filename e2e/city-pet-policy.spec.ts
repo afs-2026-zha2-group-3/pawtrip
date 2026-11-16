@@ -45,9 +45,9 @@ async function csrfHeaders(page: Page) {
   return token ? { "X-XSRF-TOKEN": token } : {};
 }
 
-async function resetPets(page: Page, breedId?: number | null) {
+async function clearPets(page: Page) {
   const existing = await page.request.get("/api/pets");
-  expect(existing.ok()).toBeTruthy();
+  if (!existing.ok()) return;
   const headers = await csrfHeaders(page);
   for (const pet of (await existing.json()) as { id: number }[]) {
     const deleted = await page.request.delete(`/api/pets/${pet.id}`, {
@@ -55,10 +55,15 @@ async function resetPets(page: Page, breedId?: number | null) {
     });
     expect(deleted.ok()).toBeTruthy();
   }
+}
+
+async function resetPets(page: Page, breedId?: number | null) {
+  await clearPets(page);
 
   if (breedId === undefined) {
     return;
   }
+  const headers = await csrfHeaders(page);
   const created = await page.request.post("/api/pets", {
     headers,
     data:
@@ -80,6 +85,11 @@ async function resetPets(page: Page, breedId?: number | null) {
 
 test.beforeEach(async ({ page }) => {
   await signIn(page);
+});
+
+// admin 的「无宠物档案」是其他用例的前置条件，本文件创建的宠物必须清理
+test.afterEach(async ({ page }) => {
+  await clearPets(page);
 });
 
 test("warns when the pet breed is on the banned list", async ({ page }) => {
@@ -243,25 +253,48 @@ async function editZhuhaiAllowedBreeds(page: Page, breedName: string, checked: b
   }
   await dialog.getByRole("button", { name: "保存修改" }).click();
   await expect(dialog.getByText("城市政策已更新。")).toBeVisible();
-  await dialog.getByRole("button", { name: "关闭" }).click();
+}
+
+async function removeZhuhaiAllowedBreed(breedId: number | undefined) {
+  const dbPath = process.env.PAWTRIP_E2E_DB_PATH;
+  if (!dbPath || breedId === undefined) return;
+  const { DatabaseSync } = await import("node:sqlite");
+  const db = new DatabaseSync(dbPath);
+  try {
+    db.prepare(
+      "DELETE FROM city_allowed_dog_breed WHERE adcode = ? AND dog_breed_id = ?",
+    ).run("440400", breedId);
+  } finally {
+    db.close();
+  }
 }
 
 test("admin configures allowed breeds and the policy page reflects it", async ({
   page,
 }) => {
-  await editZhuhaiAllowedBreeds(page, "萨摩耶犬", true);
+  const breeds = (await (
+    await page.request.get("/api/dog-breeds")
+  ).json()) as { id: number; name: string }[];
+  const samoyed = breeds.find((breed) => breed.name === "萨摩耶犬");
+  if (!samoyed) throw new Error("Dog breed fixture missing: 萨摩耶犬");
 
-  await resetPets(page, 12);
-  await page.goto(policyUrl("440400"));
-  await expect(
-    page.getByRole("heading", { name: "未命中禁养名单" }),
-  ).toBeVisible();
-  await expect(page.getByText(/萨摩耶犬/).first()).toBeVisible();
+  try {
+    await editZhuhaiAllowedBreeds(page, samoyed.name, true);
 
-  await editZhuhaiAllowedBreeds(page, "萨摩耶犬", false);
+    await resetPets(page, samoyed.id);
+    await page.goto(policyUrl("440400"));
+    await expect(
+      page.getByRole("heading", { name: "未命中禁养名单" }),
+    ).toBeVisible();
+    await expect(page.getByText(/萨摩耶犬/).first()).toBeVisible();
 
-  await page.goto(policyUrl("440400"));
-  await expect(
-    page.getByRole("heading", { name: "暂时无法判断" }),
-  ).toBeVisible();
+    await editZhuhaiAllowedBreeds(page, samoyed.name, false);
+
+    await page.goto(policyUrl("440400"));
+    await expect(
+      page.getByRole("heading", { name: "暂时无法判断" }),
+    ).toBeVisible();
+  } finally {
+    await removeZhuhaiAllowedBreed(samoyed.id);
+  }
 });
