@@ -54,7 +54,7 @@ GET /api/cities/{adcode}/pet-policy[?breed=...]
 | 用例 | 驱动方式 | 断言 |
 |---|---|---|
 | 命中 | `?breed=比特斗牛梗犬` | 红色提醒含品种名与后果；名单含该品种 |
-| 未命中 | `?breed=柯基` | 明确提示未命中，不是"可携带"承诺 |
+| 未命中 | `?breed=柯基犬` | 明确提示未命中，不是"可携带"承诺 |
 | 无品种 | 不带 `breed` 参数 | 不判定提示 + 通用政策 |
 | 其他 | `?breed=其他` | 不判定 + 说明精确匹配 |
 | 未收录 | adcode=440300 | "暂无当地政策数据"空态 |
@@ -73,8 +73,8 @@ GET /api/cities/{adcode}/pet-policy[?breed=...]
 ## 4. 数据与夹具策略
 
 - **API 夹具**：测试专用 SQLite（`target/policy-api-test.db`），Flyway 迁移后由仓库写入：珠海（已收录，含代表品种）、另一城市（未收录）、一个"已收录但名单为空"的测试行；不存在的 adcode 直接请求。认证用 `user("demo")` 后置处理器。
-- **E2E 夹具**：`scripts/run-e2e.mjs` 每次创建临时 DB 并执行全部迁移，V10 生产的珠海种子天然可用；未收录用 440300（深圳，有行政区、无政策）；登录沿用 `demo / 123456`。
-- **品种驱动**：前端演示模块从 URL 读取 `breed`，缺省即"没有档案"；E2E 不需要 mock 档案接口；US-01 落地后只替换该模块。
+- **E2E 夹具**：`scripts/run-e2e.mjs` 每次创建临时 DB 并执行全部迁移，V14 生产的珠海种子天然可用；未收录用 440300（深圳，有行政区、无政策）；登录沿用 `demo / 123456`。
+- **品种驱动**：前端演示模块从 URL 读取 `breed`，缺省即"没有档案"；E2E 不需要 mock 档案接口；宠物档案提供品种字段后只替换该模块。
 - **确定性**：接口按 adcode 精确查询；多宠物兜底按 id 升序取第一条（当前不适用，留给 US-01 联调）。
 
 ## 5. Non-goals 与反向验证
@@ -82,8 +82,8 @@ GET /api/cities/{adcode}/pet-policy[?breed=...]
 | Non-goal | 反向用例 |
 |---|---|
 | 城市列表 / 筛选 / 选定（US-47） | E2E：政策页不出现城市列表与筛选控件，不请求列表接口 |
-| 宠物档案维护（US-01） | E2E：页面无档案表单；API：`POST /api/pets` 返回 404 |
-| 政策维护后台 | API：`GET /api/admin/pet-policies` 返回 404 |
+| 宠物档案表单（US-01） | E2E：政策页无档案表单与保存按钮 |
+| 政策维护后台 | API：`GET /api/admin/pet-policies` 返回 404；`POST /api/cities/{adcode}/pet-policy` 返回 405 |
 | 站内订票 | E2E：政策页无订票入口或跳转 |
 
 本 skill 不产出 Playwright/POM/Excel 生成器，也不新建 CI 产品。

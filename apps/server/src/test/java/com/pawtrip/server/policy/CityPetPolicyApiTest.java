@@ -155,9 +155,9 @@ class CityPetPolicyApiTest {
 	}
 
 	@Test
-	void doesNotExposePetProfileOrAdminPolicyEndpoints() throws Exception {
-		this.mockMvc.perform(post("/api/pets").with(csrf()).with(user("demo")))
-			.andExpect(status().isNotFound());
+	void doesNotExposeWriteOrAdminPolicyEndpoints() throws Exception {
+		this.mockMvc.perform(post("/api/cities/440400/pet-policy").with(csrf()).with(user("demo")))
+			.andExpect(status().isMethodNotAllowed());
 
 		this.mockMvc.perform(get("/api/admin/pet-policies").with(user("admin").roles("ADMIN")))
 			.andExpect(status().isNotFound());

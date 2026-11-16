@@ -89,7 +89,7 @@ class CityPetPolicySchemaMigrationTest {
 	@Test
 	void addsPolicyTableOnUpgradeWithoutChangingExistingRegions(@TempDir Path tempDir) throws SQLException {
 		String jdbcUrl = jdbcUrl(tempDir.resolve("existing-city-pet-policy.db"));
-		Flyway.configure().dataSource(jdbcUrl, null, null).target("7").load().migrate();
+		Flyway.configure().dataSource(jdbcUrl, null, null).target("13").load().migrate();
 
 		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
 			assertThat(columns(connection, "city_pet_policy")).isEmpty();
