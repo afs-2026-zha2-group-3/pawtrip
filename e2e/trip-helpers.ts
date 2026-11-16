@@ -1,29 +1,37 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 export const PASSWORD = "123456";
 
-export async function signIn(page: Page, username = "petowner") {
-  const authResponse = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/auth/me",
-  );
-  await page.goto("/login");
-  await authResponse;
-  const usernameInput = page.getByLabel("Username");
-  const passwordInput = page.getByLabel("Password");
-  await expect(async () => {
-    await usernameInput.fill(username);
-    await passwordInput.fill(PASSWORD);
-    await expect(usernameInput).toHaveValue(username, { timeout: 300 });
-    await expect(passwordInput).toHaveValue(PASSWORD, { timeout: 300 });
-  }).toPass({ timeout: 5000 });
-  await page.getByRole("button", { name: "Sign in" }).click();
+export function workerUsername() {
+  // parallelIndex 是并发槽位（0..workers-1）；workerIndex 是进程全局编号，可能超过 worker 数。
+  return `petowner-w${test.info().parallelIndex}`;
+}
+
+export async function signIn(page: Page, username = workerUsername()) {
+  await page.request.get("/api/auth/me");
+  const headers = await csrfHeaders(page);
+  const response = await page.request.post("/api/auth/login", {
+    headers,
+    form: { username, password: PASSWORD },
+  });
+  expect(response.ok()).toBeTruthy();
+
+  await page.goto("/");
+  // SSR 已输出导航标签，需等客户端脚本完成注水，后续点击才会触发路由。
+  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("tab", { name: "城市浏览" })).toBeVisible();
 }
 
 export async function csrfHeaders(page: Page): Promise<Record<string, string>> {
-  const token = (await page.context().cookies()).find(
-    (cookie) => cookie.name === "XSRF-TOKEN",
-  )?.value;
+  const readToken = async () =>
+    (await page.context().cookies()).find(
+      (cookie) => cookie.name === "XSRF-TOKEN",
+    )?.value;
+  let token = await readToken();
+  if (!token) {
+    await page.request.get("/api/auth/me");
+    token = await readToken();
+  }
   return token ? { "X-XSRF-TOKEN": token } : {};
 }
 

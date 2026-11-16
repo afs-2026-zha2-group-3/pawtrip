@@ -74,6 +74,7 @@ Before editing files for a substantial task:
 
 - `scripts/seed-users.mjs` 使用 Node 24 内置 `node:sqlite`（`DatabaseSync`）访问开发库，并用根目录 devDependency `bcryptjs` 生成 cost 10 的 BCrypt 哈希后写入 `app_user`。
 - 脚本通过 `ON CONFLICT(username)` 幂等 upsert；默认数据库为 `apps/server/data/pawtrip.db`，可用位置参数或 `SEED_DB` 指定其他路径。
+- E2E 运行器通过 `SEED_E2E_WORKERS` 为每个 Playwright worker 额外生成 `petowner-wN` 账号（各两只宠物档案），使行程、宠物等用户级数据按 worker 隔离；该模式下脚本拒绝写入默认开发库。
 - 文档：
   - bcryptjs:https://github.com/dcodeIO/bcrypt.js
   - Node `node:sqlite`:https://nodejs.org/api/sqlite.html

@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { fileURLToPath } from "node:url";
 
 // E2E-only fixtures. Never run this against apps/server/data/pawtrip.db.
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const fixtures = [
 	{
 		poiId: "e2e-zhu-a",
@@ -154,6 +156,11 @@ const fixtures = [
 const databasePath = process.argv[2] ? resolve(process.argv[2]) : null;
 if (!databasePath) {
 	console.error("Usage: node scripts/seed-e2e-attractions.mjs <e2e-db-path>");
+	process.exit(1);
+}
+const defaultDatabasePath = join(repoRoot, "apps", "server", "data", "pawtrip.db");
+if (databasePath === defaultDatabasePath) {
+	console.error("Refusing to seed E2E fixtures into the development database.");
 	process.exit(1);
 }
 if (!existsSync(databasePath)) {
