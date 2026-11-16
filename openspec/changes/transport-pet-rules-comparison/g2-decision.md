@@ -9,10 +9,10 @@
 | 类型 | 路径 / 值 |
 |---|---|
 | 本地验证 | [20261116-124503-local-verify-report.md](../../../docs/ai4se-plugins/20261116-124503-local-verify-report.md)（Overall **Partial**；W4 已于 2026-11-16 闭合） |
-| 流水线 CI | **n/a** — 分支未推送，无 PR，故无 `ci-report.md`（E1 仅本地证据） |
+| 流水线 CI | [20261116-143430-pipeline-report.md](../../../docs/ai4se-plugins/20261116-143430-pipeline-report.md)（Overall **Pass**；E1 全绿 = 三轮共 10 个 job `success`，机器证据；本 change 合并 main 后的提交 `18e5138`：Web CI 28s / E2E CI 2m59s / Server CI 39s） |
 | 流水线 CD | n/a（纯前端静态展示，不在范围） |
-| PR | **n/a** — 待本 G2 记录后执行 `/sdd:pr-submit` |
-| 分支 | `feat/transport-rules-comparison` @ `9caedc7`（rebase 后基于 `origin/main` @ `d92ecb9`；rebase 前为 `11d82e6`） |
+| PR | [#45](https://github.com/afs-2026-zha2-group-3/pawtrip/pull/45)（base `main`；**已合并**，merge commit `e1169b4`；PR checks 已绿 = push run） |
+| 分支 | `feat/transport-rules-comparison`（rebase 至 `origin/main` @ `d92ecb9`；分支 tip 随后续文档提交前移，以 `git log` 为准；rebase 前为 `11d82e6`） |
 
 ## Dimension results
 
@@ -22,7 +22,7 @@
 | Static scan | Pass | 无新增接口、无凭据、无表结构变更；规则为前端常量，人工摘录 |
 | Code review | Pass | CRITICAL 0；W2 已修复；W1 需求方决定不修 |
 | Evidence（OpenSpec） | Pass | `tasks.md` 22/22 完成；12 Requirements / 27 Scenarios；V3 的「不可状态」无对应数据，记为数据缺省 |
-| CI | n/a | 未推送、无远端流水线运行 |
+| CI | Pass | `push` 触发 Web CI + E2E CI 全绿（人工确认，无 run id）；Server CI 未触发（无 `apps/server/**` 变更） |
 | CD | n/a | 无部署动作 |
 
 ## Defect grades
@@ -35,13 +35,13 @@
 
 **Conditional Pass**（本地 G2 通过，附带 1 项流水线条件）
 
-理由：V1–V8 中 V1/V2/V4–V8 Pass，V3 的 Partial 属「无数据」而非缺实现；W4 合并门禁已闭合（8 条规则 `verifiedOn` 均为 2026-11-16）；无 CRITICAL。E1 缺远端 CI 证据，因此不能记无条件 Pass。
+理由：V1–V8 中 V1/V2/V4–V8 Pass，V3 的 Partial 属「无数据」而非缺实现；W4 合并门禁已闭合（8 条规则 `verifiedOn` 均为 2026-11-16）；无 CRITICAL。E1 已有 `push` 触发的 CI 全绿证据（人工确认），但缺 run id 与 PR 版（`pull_request` 事件）运行，因此仍不能记无条件 Pass。
 
 ## Conditions + owners
 
 | 条件 | Owner | 时点 |
 |---|---|---|
-| 推送分支并创建 PR 后，回填 `pipeline-report`（E1），CI 全绿方可进 G3 | kitty | `/sdd:pr-submit` 之后、G3 之前 |
+| 推送分支并创建 PR 后，回填 `pipeline-report`（E1），CI 全绿方可进 G3 | kitty | **已闭合**（2026-11-16）：PR #45 + E1 机器证据全绿 |
 | 窄屏 Tab 布局人工目视一次（G1 遗留的 IO 跟踪项） | kitty | 本 G2 之后、合并前 |
 
 ## Waivers / accepted risks
@@ -60,9 +60,9 @@
 
 ## Next
 
-1. 提交本记录与 REQ-008 的 G2 记录
-2. `/sdd:pr-submit`：先提本分支（REQ-007），再提 `feat/rule-recommendation-and-selection`
-3. `/sdd:pipeline-report` 回填 E1
+1. 本记录与下游 REQ-008 的 G2 记录均已提交
+2. PR #45 已合并入 `main`（merge commit `e1169b4`）；E1 已升级为机器证据（Web/E2E/Server 三个 job 全 success）
+3. 窄屏 Tab 目视（残留条件）+ G3 签核
 4. G3 + `/sdd:living-merge` → `/sdd:archive-change`
 
 ## Traceability appendix

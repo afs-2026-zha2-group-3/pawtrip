@@ -7,7 +7,7 @@
 - [x] 1.1 新建 `apps/web/src/data/transport-rules.ts`：导出 `TransportRule` 类型（字段按 design.md D2）与 8 条规则常量；verification: `npm run build -w apps/web` 通过（已通过）
 - [x] 1.2 录入飞机四家航司（国航/东航/南航/海航，海航含托运与客舱两条）规则，覆盖四个维度；verification: `mode === "flight"` 共 5 条，覆盖 `CA`/`MU`/`CZ`/`HU`
 - [x] 1.3 录入高铁、火车、自驾三条通用规则（自驾 `weightLimitKg` 为 null 且说明无统一限制）；verification: 三条记录均含四个维度文本且 `allowanceStatus` 有值
-- [ ] 1.4 补齐每条规则的 `sourceUrl`/`sourceTitle`/`verifiedOn`，并按 deep-dive 的 D1–D8 来源人工复核火车、海航、自驾条目；verification: 遍历 `transportRules` 无空 `verifiedOn`（合并前置，缺一不得合并）——当前 4 条待复核（火车/海航托运/海航客舱/自驾），页面已显示「待复核」标记
+- [x] 1.4 补齐每条规则的 `sourceUrl`/`sourceTitle`/`verifiedOn`，并按 deep-dive 的 D1–D8 来源人工复核火车、海航、自驾条目；verification: `transportRules` 8 条 `verifiedOn` 均为 `2026-11-16`（2026-11-16 经需求方授权由 Agent 复核：海航托运 32kg 上限、海航客舱 5kg/35×28×24 与承运方官方页面口径一致；火车行包 20kg 改引国铁集团公开口径（北青报转述、含 95572 答复）；自驾改引《道路交通安全法实施条例》第六十二条；海航客舱无法核实的 1430 元固定费用与「每旅客 2 只」改为按航司公布标准）
 - [x] 1.5 添加按方式/航司取数的纯函数（`getRulesByMode`、`getFlightRules`、`getRuleForMode`、`getRuleById`）；verification: 页面仅通过函数取数，常量 `transportRules` 不外泄
 
 ## 2. 规则对比页（T2）

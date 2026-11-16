@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { buttonVariants } from "@/components/ui/button";
+import { useEffect, useState, type ReactNode } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -25,8 +26,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { evaluateRuleForPet } from "../../data/transport-rule-match";
+import { petsQueryOptions } from "../../queries/pets";
 import {
-  PET_PROFILE_PATH,
   allowanceStatusLabels,
   getFlightRules,
   getRulesByMode,
@@ -55,11 +57,46 @@ const allowanceStatusClasses: Record<AllowanceStatus, string> = {
   not_allowed: "bg-muted text-muted-foreground",
 };
 
+/** 临时缓存键：选中的交通方式，供后续生成行程单读取 */
+const SELECTED_MODE_STORAGE_KEY = "pawtrip:selected-transport-mode";
+
+function readSelectedMode(): TransportMode | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const stored = window.sessionStorage.getItem(SELECTED_MODE_STORAGE_KEY);
+    return transportRuleRowModes.find((mode) => mode === stored) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function persistSelectedMode(mode: TransportMode) {
+  try {
+    window.sessionStorage.setItem(SELECTED_MODE_STORAGE_KEY, mode);
+  } catch {
+    // 缓存不可用（如隐私模式）时静默降级：页面仍可单选，只是不持久
+  }
+}
+
 function TransportRulesPage() {
   const flightRules = getFlightRules();
   const [carrierCode, setCarrierCode] = useState<string>(
     flightRules[0]?.carrierCode ?? "",
   );
+  const navigate = useNavigate();
+  const [selectedMode, setSelectedMode] = useState<TransportMode | null>(null);
+  const petsQuery = useQuery(petsQueryOptions());
+  const pets = petsQuery.data ?? [];
+  const showRecommendation =
+    !petsQuery.isPending && !petsQuery.isError && pets.length > 0;
+
+  // 在挂载后读取缓存，避免服务端渲染与客户端首帧不一致
+  useEffect(() => {
+    setSelectedMode(readSelectedMode());
+  }, []);
 
   const selectedFlightRule =
     flightRules.find((rule) => rule.carrierCode === carrierCode) ?? null;
@@ -88,6 +125,26 @@ function TransportRulesPage() {
 
   // 列配置：基础列固定在前，扩展列按需追加（取值来自规则 extra），表格结构无需改动。
   const transportRuleColumns: TransportRuleColumn[] = [
+    {
+      key: "selection",
+      label: "选择",
+      className: "w-12",
+      render: (rule) => (
+        <label className="flex cursor-pointer items-center">
+          <input
+            type="radio"
+            name="transport-mode"
+            className="size-4 accent-primary"
+            aria-label={`选择${transportModeLabels[rule.mode]}`}
+            checked={selectedMode === rule.mode}
+            onChange={() => {
+              setSelectedMode(rule.mode);
+              persistSelectedMode(rule.mode);
+            }}
+          />
+        </label>
+      ),
+    },
     {
       key: "mode",
       label: "方式",
@@ -140,6 +197,42 @@ function TransportRulesPage() {
         </div>
       ),
     },
+    ...(showRecommendation
+      ? [
+          {
+            key: "recommendation",
+            label: "是否推荐",
+            className: "min-w-48",
+            render: (rule: TransportRule) => (
+              <ul
+                aria-label={`${transportModeLabels[rule.mode]}是否推荐`}
+                className="flex flex-col gap-1"
+              >
+                {pets.map((pet) => {
+                  const verdict = evaluateRuleForPet(rule, pet);
+                  return (
+                    <li key={pet.id} className="flex flex-col gap-0.5">
+                      <span
+                        className={cn(
+                          "text-sm font-medium",
+                          !verdict.recommended && "text-destructive",
+                        )}
+                      >
+                        {pet.name} · {verdict.recommended ? "推荐" : "不推荐"}
+                      </span>
+                      {verdict.reasons.length > 0 ? (
+                        <span className="text-xs text-muted-foreground">
+                          {verdict.reasons.join("；")}
+                        </span>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            ),
+          } satisfies TransportRuleColumn,
+        ]
+      : []),
     {
       key: "allowance",
       label: "能否携带",
@@ -257,8 +350,10 @@ function TransportRulesPage() {
               ))}
             </p>
             <p>
-              人工复核：共 {allRules.length} 条规则，已复核 {reviewedCount} 条，
-              待复核 {allRules.length - reviewedCount} 条；待复核条目不得发布，合并前须补齐复核日期。
+              人工复核：共 {allRules.length} 条规则，
+              {reviewedCount === allRules.length
+                ? "已全部复核。"
+                : `已复核 ${reviewedCount} 条，待复核 ${allRules.length - reviewedCount} 条；待复核条目不得发布，合并前须补齐复核日期。`}
             </p>
             <p>
               免责声明：规则可能随政策调整而滞后，请以承运方最新规则为准（飞机以航司最新规则为准，
@@ -267,17 +362,26 @@ function TransportRulesPage() {
             <p>PawTrip 不提供站内订票，请通过官方或第三方渠道预订。</p>
           </section>
 
-          <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
-            <p className="text-sm">
-              宠物档案能力稍后提供：此处为后续按宠物情况比对预留入口。
-            </p>
-            <a
-              href={PET_PROFILE_PATH}
-              className={cn(buttonVariants({ variant: "outline" }), "w-fit")}
-            >
-              录入宠物档案
-            </a>
-          </section>
+          {petsQuery.isError ? (
+            <section className="rounded-lg border border-border p-3">
+              <p className="text-sm text-destructive">
+                宠物档案加载失败，请刷新重试。
+              </p>
+            </section>
+          ) : null}
+
+          {!petsQuery.isPending && !petsQuery.isError && pets.length === 0 ? (
+            <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
+              <p className="text-sm">还没有宠物档案，暂时无法给出推荐。</p>
+              <Button
+                variant="outline"
+                className="w-fit"
+                onClick={() => void navigate({ to: "/paws" })}
+              >
+                新增宠物档案
+              </Button>
+            </section>
+          ) : null}
         </CardContent>
       </Card>
     </main>
