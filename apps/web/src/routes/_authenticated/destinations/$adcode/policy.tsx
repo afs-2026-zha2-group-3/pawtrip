@@ -8,29 +8,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { demoBreedFromSearch, type DemoPetSearch } from "@/lib/demo-pet-profile";
 import {
   cityPetPolicyQueryOptions,
   type CityPetPolicy,
 } from "@/queries/city-pet-policy";
+import { petsQueryOptions, type Pet } from "@/queries/pets";
 
 export const Route = createFileRoute(
   "/_authenticated/destinations/$adcode/policy",
 )({
-  validateSearch: (search: Record<string, unknown>): DemoPetSearch => ({
-    breed: typeof search.breed === "string" ? search.breed : undefined,
-  }),
   component: CityPetPolicyPage,
 });
 
 function CityPetPolicyPage() {
   const { adcode } = Route.useParams();
-  const breed = demoBreedFromSearch(Route.useSearch());
+  const petsQuery = useQuery(petsQueryOptions());
+  const pet = petsQuery.data?.find((candidate) => candidate.dogBreed) ?? null;
   const { data: policy, isPending } = useQuery(
-    cityPetPolicyQueryOptions(adcode, breed),
+    cityPetPolicyQueryOptions(adcode, pet?.dogBreed?.id ?? null),
   );
 
-  if (isPending || !policy) {
+  if (petsQuery.isPending || isPending || !policy) {
     return (
       <PageFrame>
         <Card>
@@ -76,7 +74,11 @@ function CityPetPolicyPage() {
         ) : null}
       </header>
 
-      <MatchNotice policy={policy} breed={breed} />
+      <MatchNotice
+        policy={policy}
+        pets={petsQuery.data}
+        petsFailed={petsQuery.isError}
+      />
 
       <Card>
         <CardHeader>
@@ -88,42 +90,19 @@ function CityPetPolicyPage() {
               <li key={item}>{item}</li>
             ))}
           </ul>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>禁养犬种名单</CardTitle>
-          <CardDescription>
-            共 {policy.bannedBreeds.length} 种
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {policy.bannedBreeds.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              当地暂未录入禁养犬种名单。
-            </p>
-          ) : (
-            <ul className="flex flex-wrap gap-2">
-              {policy.bannedBreeds.map((name) => {
-                const matched =
-                  policy.match?.matched === true &&
-                  policy.match.breed === name;
-                return (
-                  <li
-                    key={name}
-                    className={
-                      matched
-                        ? "rounded-full border border-destructive/50 bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive"
-                        : "rounded-full border px-3 py-1 text-xs"
-                    }
-                  >
-                    {name}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <BreedExamples
+            title="禁养犬种名单"
+            scope={policy.areaScope}
+            breeds={policy.bannedBreeds}
+            emptyText="暂未收录禁养犬种名单"
+            note="仅列出部分示例，完整名单请查阅当地政府通告。"
+          />
+          <BreedExamples
+            title="可携带犬种"
+            breeds={policy.allowedBreeds}
+            emptyText="暂未收录可携带犬种"
+            note="仅列出部分可选品种；仍需遵守数量、牵引、疫苗等其他规定。"
+          />
         </CardContent>
       </Card>
 
@@ -151,11 +130,15 @@ function CityPetPolicyPage() {
 
 function MatchNotice({
   policy,
-  breed,
+  pets,
+  petsFailed,
 }: {
   policy: CityPetPolicy;
-  breed: string | null;
+  pets: Pet[] | undefined;
+  petsFailed: boolean;
 }) {
+  const pet = pets?.find((candidate) => candidate.dogBreed) ?? null;
+
   if (policy.match?.matched) {
     return (
       <section
@@ -164,56 +147,121 @@ function MatchNotice({
       >
         <h2 className="font-semibold text-destructive">禁养犬种提醒</h2>
         <p className="mt-1">
-          您填写的宠物品种“{policy.match.breed}”出现在{policy.name}
-          的禁养犬种名单中。
+          您的宠物“{pet?.name}”属于{policy.match.breedName}，在{policy.name}
+          的禁养名单中。
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          携犬进入该城市可能面临劝返、罚款或收容等后果，建议提前更换目的地或向当地主管部门确认。
+          该城市的政策不支持您带这只宠物来旅游，建议更换目的地或提前确认当地最新规定。
         </p>
       </section>
     );
   }
 
-  if (policy.match) {
+  if (policy.match?.allowed) {
     return (
       <section className="rounded-xl border border-emerald-600/40 bg-emerald-50 p-4">
         <h2 className="font-semibold text-emerald-800">未命中禁养名单</h2>
         <p className="mt-1">
-          您填写的宠物品种“{policy.match.breed}”未出现在{policy.name}
-          的禁养犬种名单中；这不代表允许携宠进入。
+          您的宠物“{pet?.name}”属于{policy.match.breedName}，在{policy.name}
+          的可携带犬种名单中，未出现在禁养犬种名单内。
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          仍需遵守当地关于数量、牵引、疫苗等其他规定。
         </p>
       </section>
     );
   }
 
-  if (!breed) {
+  if (petsFailed) {
     return (
-      <section className="rounded-xl border bg-muted/40 p-4">
-        <h2 className="font-semibold">尚未填写宠物档案</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          补充宠物品种后，这里会显示该品种是否命中当地禁养名单。
-        </p>
-      </section>
+      <Notice
+        title="暂时无法读取宠物档案"
+        description="请稍后重试，或先在「Paws」中确认宠物档案信息。"
+      />
     );
   }
 
-  if (breed === "其他") {
+  if (!pets?.length) {
     return (
-      <section className="rounded-xl border bg-muted/40 p-4">
-        <h2 className="font-semibold">暂不判定禁养</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          您填写的宠物品种为「其他」，无法判定是否命中禁养名单。禁养匹配按品种名称精确比较。
-        </p>
-      </section>
+      <Notice
+        title="尚未填写宠物档案"
+        description="请先在「Paws」中添加宠物并选择品种，这里会显示是否命中当地禁养名单。"
+      />
+    );
+  }
+
+  if (!pet) {
+    return (
+      <Notice
+        title="暂无犬种信息"
+        description="本页展示的是当地养犬政策；当前宠物没有填写犬种，暂时无法判断是否属于禁养范围。"
+      />
     );
   }
 
   return (
+    <Notice
+      title="暂时无法判断"
+      description="该品种暂未列入当地的可携带犬种名单，或城市暂未配置可携带犬种。请以当地政府最新规定为准，出行前可向当地主管部门确认。"
+    />
+  );
+}
+
+function BreedExamples({
+  title,
+  scope,
+  breeds,
+  emptyText,
+  note,
+}: {
+  title: string;
+  scope?: string | null;
+  breeds: string[];
+  emptyText: string;
+  note: string;
+}) {
+  const examples = breeds.slice(0, 6);
+  return (
+    <div className="mt-4 space-y-2">
+      <h3 className="text-sm font-medium">
+        {title}
+        {scope ? `（${scope}）` : ""}
+      </h3>
+      {examples.length ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {examples.map((breed) => (
+            <span
+              key={breed}
+              className="rounded-full bg-muted px-3 py-1 text-sm"
+            >
+              {breed}
+            </span>
+          ))}
+          {breeds.length > examples.length ? (
+            <span className="text-sm text-muted-foreground">
+              等 {breeds.length} 种
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">{emptyText}</p>
+      )}
+      <p className="text-xs text-muted-foreground">{note}</p>
+    </div>
+  );
+}
+
+function Notice({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
     <section className="rounded-xl border bg-muted/40 p-4">
-      <h2 className="font-semibold">暂不判定禁养</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        该城市暂未录入禁养犬种名单，无法判定是否命中。
-      </p>
+      <h2 className="font-semibold">{title}</h2>
+      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
     </section>
   );
 }
