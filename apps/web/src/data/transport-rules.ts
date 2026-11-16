@@ -22,6 +22,8 @@ export interface TransportRule {
   /** 空值语义：无统一体重上限（如自驾） */
   weightLimitKg: number | null;
   weightLimitNote: string;
+  /** 空值语义：无统一肩高上限（仅高铁为 40cm） */
+  shoulderLimitCm: number | null;
   containerRequirement: string;
   procedureSummary: string;
   /** 扩展列取值；是否展示由页面列配置决定，不影响基础四列 */
@@ -61,9 +63,6 @@ export const transportRuleRowModes: readonly TransportMode[] = [
   "drive",
 ];
 
-/** 宠物档案录入路由：US-06 定名后只改此处常量 */
-export const PET_PROFILE_PATH = "/paws/profile";
-
 const transportRules: readonly TransportRule[] = [
   {
     id: "flight-ca-checked",
@@ -76,6 +75,7 @@ const transportRules: readonly TransportRule[] = [
     allowedSummary: "仅限家庭驯养猫、犬，货舱供氧托运",
     weightLimitKg: 32,
     weightLimitNote: "每只含容器、水与食物 ≤32kg；每旅客限 1 只",
+    shoulderLimitCm: null,
     containerRequirement:
       "航空专用旅行容器：玻璃纤维、金属、硬质塑料、焊网或硬木板；三面通风 ≥16%，开口覆金属网，实底防渗漏并铺吸湿垫料，固定水具食具，满足站立、转身与趴卧",
     procedureSummary:
@@ -99,6 +99,7 @@ const transportRules: readonly TransportRule[] = [
     allowedSummary: "仅限家庭饲养猫、犬，货舱供氧托运",
     weightLimitKg: 32,
     weightLimitNote: "每个独立包装（含食物与水）≤32kg；国内每旅客最多 2 只",
+    shoulderLimitCm: null,
     containerRequirement:
       "专用航空箱，分大、中、小号（中号 ≥81×55×58cm 且 <91×60×66cm，小号 <81×55×58cm）",
     procedureSummary:
@@ -123,6 +124,7 @@ const transportRules: readonly TransportRule[] = [
     allowedSummary: "家庭饲养狗、猫、鸟等玩赏宠物可托运，须供氧货舱",
     weightLimitKg: 32,
     weightLimitNote: "笼体包装 ≤40×60×100cm；总重 ≤32kg；每旅客 1 只（或一对鸟）",
+    shoulderLimitCm: null,
     containerRequirement:
       "坚固金属、硬塑或木制航空箱：顶部固定、至少三面通风、金属门带锁、底部防滑并加吸水衬垫，外加防护网与井字打包带",
     procedureSummary:
@@ -147,6 +149,7 @@ const transportRules: readonly TransportRule[] = [
     allowedSummary: "猫、犬可货舱托运，须供氧货舱",
     weightLimitKg: 32,
     weightLimitNote: "每个独立包装（宠物、箱体、食物与水）≤32kg",
+    shoulderLimitCm: null,
     containerRequirement:
       "专用航空箱：站立时耳不触顶；长 = 宠物长 + 0.5 × 宽，宽 = 宠物宽 × 2，高 = 站立高度；按超限行李收费，不计免费行李额",
     procedureSummary:
@@ -156,7 +159,7 @@ const transportRules: readonly TransportRule[] = [
     },
     sourceUrl: "https://www.hnair.com/lvxingxinxi/tsgh/tyxdw/",
     sourceTitle: "海南航空：宠物托运",
-    verifiedOn: null,
+    verifiedOn: "2026-11-16",
     sortOrder: 40,
   },
   {
@@ -170,15 +173,16 @@ const transportRules: readonly TransportRule[] = [
     allowedSummary: "部分航线允许宠物进入客舱，仅限猫、犬",
     weightLimitKg: 5,
     weightLimitNote: "含笼 ≤5kg；箱体 ≤35×28×24cm，置于前排座椅下",
+    shoulderLimitCm: null,
     containerRequirement: "软质或专用宠物箱，长 × 宽 × 高 ≤35×28×24cm，置于前排座椅下",
     procedureSummary:
-      "提前申请并占用座位；客舱基础费 1430 元/航段/只（额外占座按经济舱票价叠加，每旅客最多 2 只占座）；乘机当日携宠物、宠物箱、协议书与证明文件，起飞前 2.5–3 小时到值机柜台办理",
+      "提前申请并占用座位；客舱基础费以航司公布标准为准，额外占座按经济舱票价叠加；乘机当日携宠物、宠物箱、协议书与证明文件，起飞前 2.5–3 小时到值机柜台办理",
     extra: {
       quarantineRequirement: "需《动物检疫合格证明》与客舱运输协议书",
     },
     sourceUrl: "https://www.hnair.com/adnews/cwkcgafu/",
     sourceTitle: "海南航空：客舱运输宠物规定",
-    verifiedOn: null,
+    verifiedOn: "2026-11-16",
     sortOrder: 50,
   },
   {
@@ -192,6 +196,7 @@ const transportRules: readonly TransportRule[] = [
     allowedSummary: "可同车隔离托运或单独托运，宠物不可进客舱",
     weightLimitKg: 15,
     weightLimitNote: "单只 ≤15kg，且肩高 ≤40cm、身长 ≤52cm",
+    shoulderLimitCm: 40,
     containerRequirement:
       "全程置于中铁快运专用宠物运输箱（供氧、温湿度监测），存放于高铁快运柜，人宠分开、全程不开箱",
     procedureSummary:
@@ -216,16 +221,16 @@ const transportRules: readonly TransportRule[] = [
     allowedSummary: "可经行李车行包托运，需确认到发城市间开办行包运输",
     weightLimitKg: 20,
     weightLimitNote: "猫、犬 ≤20kg，以 12306 或 95572 现行口径为准",
+    shoulderLimitCm: null,
     containerRequirement: "自备坚固、防逃逸、防排泄物外溢的装运容器",
     procedureSummary:
       "先致电 12306 或中铁快运 95572 确认行包服务与容器要求；办理《动物检疫合格证明》；乘车前到车站行包房托运；到站提取",
     extra: {
       quarantineRequirement: "需《动物检疫合格证明》，具体以到站要求为准",
     },
-    sourceUrl:
-      "https://mobile.12306.cn/otsmobile/h5/otsbussiness/info/prohibitedGoods.html",
-    sourceTitle: "铁路旅客禁止、限制携带和托运物品目录",
-    verifiedOn: null,
+    sourceUrl: "http://railway.china.com.cn/2025-04/09/content_117813396.shtml",
+    sourceTitle: "铁路普速列车宠物托运口径（北青报转述国铁集团/95572）",
+    verifiedOn: "2026-11-16",
     sortOrder: 110,
   },
   {
@@ -239,6 +244,7 @@ const transportRules: readonly TransportRule[] = [
     allowedSummary: "允许携宠乘车，不得妨碍安全驾驶",
     weightLimitKg: null,
     weightLimitNote: "无统一限制，以车辆空间与安全固定为准",
+    shoulderLimitCm: null,
     containerRequirement:
       "建议航空箱或宠物车载安全带固定于后排；禁止副驾抱宠，禁止宠物干扰驾驶",
     procedureSummary:
@@ -246,9 +252,9 @@ const transportRules: readonly TransportRule[] = [
     extra: {
       quarantineRequirement: "无统一要求，跨省建议备《动物检疫合格证明》",
     },
-    sourceUrl: "https://m.pcauto.com.cn/wenda/4656385.html",
-    sourceTitle: "自驾携宠出行注意事项（通用汇编）",
-    verifiedOn: null,
+    sourceUrl: "https://jtgl.beijing.gov.cn/jgj/jgxx/flfg/xzfg/119781/index.html",
+    sourceTitle: "道路交通安全法实施条例（第六十二条：不得有妨碍安全驾驶的行为）",
+    verifiedOn: "2026-11-16",
     sortOrder: 120,
   },
 ];

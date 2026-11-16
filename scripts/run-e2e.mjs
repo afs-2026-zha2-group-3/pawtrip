@@ -67,6 +67,7 @@ function verifySeededUsers(databasePath) {
   const expectedRoles = new Map([
     ["demo", "USER"],
     ["admin", "ADMIN"],
+    ["petowner", "USER"],
   ]);
   const database = new DatabaseSync(databasePath);
 

@@ -468,12 +468,15 @@ class AdminLocationApiTest {
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
 							{"poiId":"poi-policy-create","typeGroup":"attraction","petPolicies":{
-							  "maxPetsPerPerson":1,"maxSinglePetWeightKg":8.75,"leashRequired":true,
+							  "allowedPetTypes":"CAT,DOG","maxPetsPerPerson":1,"maxSinglePetWeightKg":8.75,
+							  "maxSinglePetShoulderHeightCm":35.5,"leashRequired":true,
 							  "vaccinationProofRequired":false,"extraFeeCents":1050,"reservationRequired":null}}
 							"""))
 				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.petPolicies.allowedPetTypes").value("CAT,DOG"))
 				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(1))
 				.andExpect(jsonPath("$.petPolicies.maxSinglePetWeightKg").value(8.75))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetShoulderHeightCm").value(35.5))
 				.andExpect(jsonPath("$.petPolicies.leashRequired").value(true))
 				.andExpect(jsonPath("$.petPolicies.vaccinationProofRequired").value(false))
 				.andExpect(jsonPath("$.petPolicies.extraFeeCents").value(1050))
@@ -481,8 +484,10 @@ class AdminLocationApiTest {
 
 		this.mockMvc.perform(get("/api/admin/locations/poi-policy-create").with(user("admin").roles("ADMIN")))
 				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.allowedPetTypes").value("CAT,DOG"))
 				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(1))
 				.andExpect(jsonPath("$.petPolicies.maxSinglePetWeightKg").value(8.75))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetShoulderHeightCm").value(35.5))
 				.andExpect(jsonPath("$.petPolicies.extraFeeCents").value(1050));
 	}
 
@@ -501,7 +506,9 @@ class AdminLocationApiTest {
 							"""))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.minVisitHours").value(3))
+				.andExpect(jsonPath("$.petPolicies.allowedPetTypes").value("DOG"))
 				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(2))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetShoulderHeightCm").value(40.0))
 				.andExpect(jsonPath("$.petPolicies.extraFeeCents").value(500));
 
 		this.mockMvc.perform(patch("/api/admin/locations/poi-policy-patch")
@@ -512,6 +519,7 @@ class AdminLocationApiTest {
 							{"petPolicies":null}
 							"""))
 				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.allowedPetTypes").value("DOG"))
 				.andExpect(jsonPath("$.petPolicies.leashRequired").value(true));
 
 		this.mockMvc.perform(patch("/api/admin/locations/poi-policy-patch")
@@ -523,8 +531,10 @@ class AdminLocationApiTest {
 							  "vaccinationProofRequired":true,"extraFeeCents":0,"reservationRequired":false}}
 							"""))
 				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.allowedPetTypes").value(nullValue()))
 				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(0))
 				.andExpect(jsonPath("$.petPolicies.maxSinglePetWeightKg").value(0.0))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetShoulderHeightCm").value(nullValue()))
 				.andExpect(jsonPath("$.petPolicies.leashRequired").value(false))
 				.andExpect(jsonPath("$.petPolicies.vaccinationProofRequired").value(true))
 				.andExpect(jsonPath("$.petPolicies.extraFeeCents").value(0))
@@ -535,18 +545,38 @@ class AdminLocationApiTest {
 					.with(csrf())
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
-							{"petPolicies":{"maxPetsPerPerson":null,"maxSinglePetWeightKg":null,"leashRequired":null,
+							{"petPolicies":{"allowedPetTypes":"CAT","maxPetsPerPerson":null,
+							  "maxSinglePetWeightKg":null,"maxSinglePetShoulderHeightCm":22.25,"leashRequired":null,
 							  "vaccinationProofRequired":null,"extraFeeCents":null,"reservationRequired":null}}
 							"""))
 				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.allowedPetTypes").value("CAT"))
 				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(nullValue()))
 				.andExpect(jsonPath("$.petPolicies.maxSinglePetWeightKg").value(nullValue()))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetShoulderHeightCm").value(22.25))
+				.andExpect(jsonPath("$.petPolicies.leashRequired").value(nullValue()))
+				.andExpect(jsonPath("$.petPolicies.extraFeeCents").value(nullValue()));
+
+		this.mockMvc.perform(patch("/api/admin/locations/poi-policy-patch")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"petPolicies":{"allowedPetTypes":null,"maxPetsPerPerson":null,"maxSinglePetWeightKg":null,
+							  "maxSinglePetShoulderHeightCm":null,"leashRequired":null,
+							  "vaccinationProofRequired":null,"extraFeeCents":null,"reservationRequired":null}}
+							"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.allowedPetTypes").value(nullValue()))
+				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(nullValue()))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetWeightKg").value(nullValue()))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetShoulderHeightCm").value(nullValue()))
 				.andExpect(jsonPath("$.petPolicies.leashRequired").value(nullValue()))
 				.andExpect(jsonPath("$.petPolicies.extraFeeCents").value(nullValue()));
 
 		var persisted = this.locationRepository.findByPoiId("poi-policy-patch").orElseThrow();
-		assertThat(persisted.getAllowedPetTypes()).isEqualTo("DOG");
-		assertThat(persisted.getMaxSinglePetShoulderHeightCm()).isEqualTo(40.0);
+		assertThat(persisted.getAllowedPetTypes()).isNull();
+		assertThat(persisted.getMaxSinglePetShoulderHeightCm()).isNull();
 	}
 
 	@Test
@@ -566,6 +596,18 @@ class AdminLocationApiTest {
 						""",
 				"""
 						{"poiId":"poi-invalid-fee-fraction","typeGroup":"attraction","petPolicies":{"extraFeeCents":10.5}}
+						""",
+				"""
+						{"poiId":"poi-invalid-pet-types","typeGroup":"attraction","petPolicies":{"allowedPetTypes":"CAT,DOG,HORSE"}}
+						""",
+				"""
+						{"poiId":"poi-invalid-pet-types-blank","typeGroup":"attraction","petPolicies":{"allowedPetTypes":""}}
+						""",
+				"""
+						{"poiId":"poi-invalid-shoulder","typeGroup":"attraction","petPolicies":{"maxSinglePetShoulderHeightCm":-1}}
+						""",
+				"""
+						{"poiId":"poi-invalid-shoulder-fraction","typeGroup":"attraction","petPolicies":{"maxSinglePetShoulderHeightCm":8.751}}
 						""")) {
 			this.mockMvc.perform(post("/api/admin/locations")
 						.with(user("admin").roles("ADMIN"))
@@ -599,12 +641,60 @@ class AdminLocationApiTest {
 							{"petPolicies":{"extraFeeCents":-1}}
 							"""))
 				.andExpect(status().isBadRequest());
+		this.mockMvc.perform(patch("/api/admin/locations/poi-policy-invalid-update")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"petPolicies":{"allowedPetTypes":"BIRD"}}
+							"""))
+				.andExpect(status().isBadRequest());
+		this.mockMvc.perform(patch("/api/admin/locations/poi-policy-invalid-update")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"petPolicies":{"maxSinglePetShoulderHeightCm":8.751}}
+							"""))
+				.andExpect(status().isBadRequest());
 
 		this.mockMvc.perform(get("/api/admin/locations/poi-policy-invalid-update")
 					.with(user("admin").roles("ADMIN")))
 				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.allowedPetTypes").value("DOG"))
 				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(1))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetShoulderHeightCm").value(40.0))
 				.andExpect(jsonPath("$.petPolicies.leashRequired").value(true));
+	}
+
+	@Test
+	void supportsAllAllowedPetTypeStates() throws Exception {
+		this.locationRepository.saveAndFlush(location("poi-pet-types", "330106", "attraction"));
+
+		for (String value : List.of("DOG", "CAT", "CAT,DOG")) {
+			this.mockMvc.perform(patch("/api/admin/locations/poi-pet-types")
+						.with(user("admin").roles("ADMIN"))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"petPolicies":{"allowedPetTypes":"%s"}}
+								""".formatted(value)))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.petPolicies.allowedPetTypes").value(value));
+		}
+
+		this.mockMvc.perform(patch("/api/admin/locations/poi-pet-types")
+					.with(user("admin").roles("ADMIN"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"petPolicies":{"allowedPetTypes":null}}
+							"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.allowedPetTypes").value(nullValue()));
+
+		assertThat(this.locationRepository.findByPoiId("poi-pet-types").orElseThrow().getAllowedPetTypes())
+				.isNull();
 	}
 
 	@Test
@@ -619,15 +709,20 @@ class AdminLocationApiTest {
 					.with(csrf())
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
-							{"petPolicies":{"maxPetsPerPerson":2,"maxSinglePetWeightKg":6.5,"leashRequired":true,
+							{"petPolicies":{"allowedPetTypes":"CAT,DOG","maxPetsPerPerson":2,
+							  "maxSinglePetWeightKg":6.5,"maxSinglePetShoulderHeightCm":30.0,"leashRequired":true,
 							  "vaccinationProofRequired":false,"extraFeeCents":300,"reservationRequired":true}}
 							"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(2));
+				.andExpect(jsonPath("$.petPolicies.allowedPetTypes").value("CAT,DOG"))
+				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(2))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetShoulderHeightCm").value(30.0));
 
 		var regionAfter = this.regionRepository.findById("330000").orElseThrow();
+		assertThat(regionAfter.getAllowedPetTypes()).isNull();
 		assertThat(regionAfter.getMaxPetsPerPerson()).isNull();
 		assertThat(regionAfter.getMaxSinglePetWeightKg()).isNull();
+		assertThat(regionAfter.getMaxSinglePetShoulderHeightCm()).isNull();
 		assertThat(regionAfter.getLeashRequired()).isNull();
 		assertThat(regionAfter.getVaccinationProofRequired()).isNull();
 		assertThat(regionAfter.getExtraFeeCents()).isNull();
@@ -643,12 +738,15 @@ class AdminLocationApiTest {
 					.with(csrf())
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
-							{"petPolicies":{"maxPetsPerPerson":1,"maxSinglePetWeightKg":5.5,"leashRequired":true,
+							{"petPolicies":{"allowedPetTypes":"CAT","maxPetsPerPerson":1,
+							  "maxSinglePetWeightKg":5.5,"maxSinglePetShoulderHeightCm":28.5,"leashRequired":true,
 							  "vaccinationProofRequired":false,"extraFeeCents":100,"reservationRequired":false}}
 							"""))
 				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.petPolicies.allowedPetTypes").value("CAT"))
 				.andExpect(jsonPath("$.petPolicies.maxPetsPerPerson").value(1))
 				.andExpect(jsonPath("$.petPolicies.maxSinglePetWeightKg").value(5.5))
+				.andExpect(jsonPath("$.petPolicies.maxSinglePetShoulderHeightCm").value(28.5))
 				.andExpect(jsonPath("$.petPolicies.leashRequired").value(true));
 	}
 

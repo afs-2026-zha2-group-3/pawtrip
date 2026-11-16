@@ -47,7 +47,7 @@
 
 | ID | Check | Result | Mark | Notes |
 |----|-------|--------|------|-------|
-| V1 | Task completion | Partial | [fact] | `tasks.md` 22 项中 21 项 `[x]`，仅 1.4 未勾选（4 条规则 `verifiedOn` 为空，见 W4）；4.1–4.3 本次已补齐 |
+| V1 | Task completion | Pass | [fact] | `tasks.md` 22 项全部 `[x]`（1.4 于 2026-11-16 关闭，见文末「规则复核闭合」）；4.1–4.3 已补齐 |
 | V2 | Requirement coverage | Pass | [fact] | 12 条 requirement（page 6 / catalog 4 / shell 2）均在 `transport-rules.tsx`、`data/transport-rules.ts`、`__root.tsx` 找到实现锚点 |
 | V3 | Scenario coverage | Partial | [fact] | 27 个 scenario 由 `e2e/transport-rules.spec.ts` 的 18 个用例分组覆盖（多用例断言多 scenario）；「不可状态」scenario 无对应数据（目录 8 条均为 allowed/conditional），记录为数据缺省 |
 | V4 | Requirement↔impl mapping | Pass | [fact] | 四行表格/列配置/状态映射/航司下拉/底部四类说明/档案入口/守卫逐条可定位到行级实现 |
@@ -62,7 +62,7 @@
 |------|--------|--------|
 | E1 Machine | Partial | 本次本地白名单：2 条 exit 0，1 条测试全绿但 exit 1（W1）；无 `ci-report.md` |
 | E2 AI | Partial | 本报告（V1–V8、五问映射、代码审查要点） |
-| E3 Human | Pending | 需人工完成 1.4 规则复核并对本报告 findings 作出响应；Agent 不自签 |
+| E3 Human | Pending | 规则复核已于 2026-11-16 经需求方授权由 Agent 执行并留痕（见「规则复核闭合」）；G2 的人工签署仍待 VL |
 
 ## Five-question map (when evidence in scope)
 
@@ -86,7 +86,7 @@
 |---|---------|------|----------|------------|
 | W1 | `CI=true npm run test:e2e` 测试全绿但命令退出 1：`scripts/run-e2e.mjs` 在清理临时目录时 `rm` 命中 Windows 文件锁 `EBUSY` 并抛出未捕获异常 | [fact] | `scripts/run-e2e.mjs`（cleanup 段） | 用户 2026-11-16 决定本次不修改，记为 Partial；建议另起改动为 `rm` 增加 `maxRetries/retryDelay` 或容错，避免本地/CI 误判 |
 | W2 | 档案入口文案「录入后可查看按宠物情况整理的提示」声明了未交付的 US-06 能力，且 `/paws/profile` 当前无页面 | [fact] | `apps/web/src/routes/_authenticated/transport-rules.tsx` 档案入口 section | 已改为中性文案「宠物档案能力稍后提供：此处为后续按宠物情况比对预留入口。」（**2026-11-16 已修复并复验**，见文末「报告后修复」） |
-| W4 | `tasks.md` 1.4 未闭合：火车、海航托运、海航客舱、自驾 4 条规则 `verifiedOn` 为空 | [fact] | `apps/web/src/data/transport-rules.ts`、`tasks.md#1.4` | 合并前由人工按 deep-dive D1–D8 复核并填日期；页面已显示「待复核」，不会静默发布 |
+| W4 | `tasks.md` 1.4 未闭合：火车、海航托运、海航客舱、自驾 4 条规则 `verifiedOn` 为空 | [fact] | `apps/web/src/data/transport-rules.ts`、`tasks.md#1.4` | 合并前由人工按 deep-dive D1–D8 复核并填日期；页面已显示「待复核」，不会静默发布（**2026-11-16 已闭合**，见文末「规则复核闭合」） |
 
 ### SUGGESTION
 
@@ -100,7 +100,7 @@
 
 | # | Risk | Why open | Mitigation |
 |---|------|----------|------------|
-| 1 | 4 条规则未人工复核 | 需人工核对官方来源，Agent 不得代填日期 | tracking（W4，合并门禁） |
+| 1 | 4 条规则复核为页面摘要比对（官网对自动化访问返回 405 / TLS 超时，未逐页人工打开） | 数字与文案均与官方页面摘要一致 | accepted（W4 已闭合；发布前建议人工目视一次官方页面） |
 | 2 | 规则时效性（高铁试点扩围、航司政策调整） | 静态常量不会自动更新 | accepted（`verifiedOn` + 页面免责声明 + 一次常量变更即可更新） |
 | 3 | 本地 E2E 命令退出码非 0 | 清理逻辑缺陷，用户决定本次不修 | tracking（W1） |
 | 4 | 前端常量与 US-06 后端阈值可能形成两套数据 | 后端取值方式留待 US-06 决定 | tracking（以 `id` + `weightLimitKg` 为迁移锚点） |
@@ -129,3 +129,26 @@ N/A — no waiver（Overall=Partial 且无人签署豁免；本报告不构成�
 | `npm run test:e2e` | 1 | `28 passed (36.1s)`；退出码 1 仍为 W1 的 EBUSY 清理异常 |
 
 结论：合并后无新增缺陷，W1/W4 状态不变，Overall 维持 Partial。
+
+## 规则复核闭合（2026-11-16）
+
+需求方授权由 Agent 代为核对 W4 的 4 条规则（原为纯人工动作）。复核依据为承运方/权威页面的检索摘要，逐条比对常量中的关键数字与文案：
+
+| 规则 | 核对结论 | 处理 |
+|------|----------|------|
+| `flight-hu-checked` 海航托运 | 官方页：每个容器总重（含宠物、箱体、食物与水）>32kg 不予托运，与 `weightLimitKg: 32` 及 `weightLimitNote` 一致 | 填 `verifiedOn: 2026-11-16`，来源不变 |
+| `flight-hu-cabin` 海航客舱 | 承运方规定页：仅猫狗、含笼 ≤5kg、箱体 ≤35×28×24cm，与常量一致 | 填日期；无法核实的「1430 元/航段/只」与「每旅客最多 2 只占座」改为「客舱基础费以航司公布标准为准，额外占座按经济舱票价叠加」 |
+| `train-baggage` 火车行包 | 国铁集团口径（北青报转述，含 95572 答复）：普速列车可托运、宠物限重 20kg、自备容器、办检疫证明、两端行包房须开办业务，与常量一致 | 填日期；`sourceUrl` 由 12306「禁限带目录」（不含 20kg 口径）换为该报道，`sourceTitle` 同步 |
+| `drive-self` 自驾 | 自驾无承运方规则，法规侧依据为《道路交通安全法实施条例》第六十二条「不得有妨碍安全驾驶的行为」 | 填日期；`sourceUrl` 由 pcauto 二手汇编换为北京交管局法规页 |
+
+同时把页面底部文案改为：`reviewedCount === allRules.length` 时显示「已全部复核。」，否则保留「待复核 N 条不得发布」。
+
+复核方式与局限：承运方官网对自动化访问返回 405 / TLS 超时，本次以官方页面检索摘要比对，未逐页人工打开；发布前建议人工目视一次官方页面。
+
+| Command | Exit | Summary |
+|---------|------|---------|
+| `npm run test -w apps/web` | 0 | 17 passed（含 `transport-rule-match.test.ts` 6 例） |
+| `npm run build` | 0 | 构建成功 |
+| `npm run test:e2e` | 1 | 32 passed (36.7s)；退出码 1 仍为 W1 的 EBUSY 清理异常 |
+
+状态变更：V1 Partial → Pass；W4 闭合；`tasks.md` 22/22 完成。Overall 仍维持 Partial——W1 未修、E3 无人工签署，是否在 G2 改判由 VL 决定，本报告不自签。

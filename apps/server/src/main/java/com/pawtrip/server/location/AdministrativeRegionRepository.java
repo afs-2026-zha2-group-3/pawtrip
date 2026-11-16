@@ -13,4 +13,8 @@ public interface AdministrativeRegionRepository extends JpaRepository<Administra
 	@EntityGraph(attributePaths = "allowedDogBreeds")
 	List<AdministrativeRegion> findByLevelOrderByNameAsc(String level);
 
+	List<AdministrativeRegion> findAllByOrderByNameAsc();
+
+	boolean existsByParentAdcode(String parentAdcode);
+
 }

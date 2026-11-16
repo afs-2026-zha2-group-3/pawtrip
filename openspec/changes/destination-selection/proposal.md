@@ -38,7 +38,7 @@ issue #15（US-47，Must）：目的地是行前规划链（政策查看 → 交
 
 ## Impact
 
-- 自身（self）：后端 `apps/server` 新增 destination（用户端城市候选）功能模块，新增 **V16 全城市种子迁移**（全部城市级行政区允许类型 CAT,DOG + 7 个非烈性允许品种含哈士奇，需求方 2026-11-16 指定，避让在途 PR #43 的 V15；原政策种子 V14 已移除）；前端 `apps/web` 实现 `/cities` 页面、新增 cities queries 与档案只读 query、sessionStorage 选定状态工具、顶栏目的地 chip 与登出清理；不改动 `/paws` 页面
+- 自身（self）：后端 `apps/server` 新增 destination（用户端城市候选）功能模块，新增 **V16 全城市种子迁移**（全部城市级行政区允许类型 CAT,DOG + 7 个非烈性允许品种含哈士奇，需求方 2026-11-16 指定，V15 空缺（PR #43 由 #47 取代）；原政策种子 V14 已移除）；前端 `apps/web` 实现 `/cities` 页面、新增 cities queries 与档案只读 query、sessionStorage 选定状态工具、顶栏目的地 chip 与登出清理；不改动 `/paws` 页面
 - 上游（upstream）：依赖 REQ-006 已确认决策与原型口径；**外部依赖：宠物档案 change（US-01）——PR #33–#36（V8–V13，`/api/pets` CRUD、`/api/dog-breeds`）与 PR #40（`/paws` 宠物管理页）已合并 main，但 `PetDetail` 仍无 breed 字段**，契约要求：breed 枚举与禁养名单同一词表、档案读取接口返回 breed；政策收录/禁养数据源未定（原政府文件摘录稿存档于 change 内 `seed-data.md`）；复用既有认证/错误/数据访问契约，不修改其提供方
 - 下游（downstream）：#14（政策详情）复用本 change 的禁养判定与收录数据；#16/#17/#18 读取前端选定目的地上下文；`web-app-shell` spec 滞后事实顺带修正
 - 测试：后端接口验收测试（候选/搜索/限养数筛选/占位字段/401）+ Playwright E2E 主链路（搜索→筛选→选定→登出清除；禁养提醒相关用例以 test.fixme 门控，待政策数据源与外部 breed 字段就绪）
