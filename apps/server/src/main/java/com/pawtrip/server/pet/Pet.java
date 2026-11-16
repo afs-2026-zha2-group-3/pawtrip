@@ -20,12 +20,18 @@ public class Pet {
 	@Column(name = "user_id", nullable = false)
 	private Long userId;
 
+	@Column(name = "name", nullable = false)
+	private String name;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "pet_type", nullable = false)
 	private PetType petType;
 
 	@Column(name = "weight_kg", nullable = false)
 	private Double weightKg;
+
+	@Column(name = "shoulder_height_cm", nullable = false)
+	private Double shoulderHeightCm;
 
 	@Column(name = "has_leash", nullable = false)
 	private boolean hasLeash;
@@ -36,10 +42,13 @@ public class Pet {
 	protected Pet() {
 	}
 
-	public Pet(Long userId, PetType petType, Double weightKg, boolean hasLeash, boolean hasVaccinationProof) {
+	public Pet(Long userId, String name, PetType petType, Double weightKg, Double shoulderHeightCm,
+			boolean hasLeash, boolean hasVaccinationProof) {
 		this.userId = userId;
+		this.name = name;
 		this.petType = petType;
 		this.weightKg = weightKg;
+		this.shoulderHeightCm = shoulderHeightCm;
 		this.hasLeash = hasLeash;
 		this.hasVaccinationProof = hasVaccinationProof;
 	}
@@ -52,12 +61,20 @@ public class Pet {
 		return this.userId;
 	}
 
+	public String getName() {
+		return this.name;
+	}
+
 	public PetType getPetType() {
 		return this.petType;
 	}
 
 	public Double getWeightKg() {
 		return this.weightKg;
+	}
+
+	public Double getShoulderHeightCm() {
+		return this.shoulderHeightCm;
 	}
 
 	public boolean hasLeash() {
