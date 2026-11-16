@@ -50,9 +50,21 @@ com.pawtrip.server
 
 依赖方向为应用功能依赖 `application.port.maps`，`infrastructure.amap.api` 实现该端口并依赖共享传输和配置；应用模型不依赖 Controller、HTTP 响应类型或高德传输。POI 搜索仅是内部能力，本次不增加 Controller、`/api/pois/*` 路由或单独的 `poi` 包。高德凭据只从服务端配置读取，缺失时应用仍可启动，实际调用再以类型化错误失败。
 
-### 地点管理功能模块
+### 地点查询与管理
 
-`com.pawtrip.server.location` 是地点管理功能模块，包含管理员 API、应用服务、地点/行政区/照片持久化实体及 Spring Data 仓库。`AdminLocationController` 只依赖地点管理应用服务；应用服务依赖仓库和 `application.port.maps.PlaceSearchPort`，不得直接依赖 `infrastructure.amap` 实现。管理 API 位于 `/api/admin/**`，由 Spring Security 在服务端要求 `ADMIN`。高德候选查询调用地图端口；已保存地点查询只访问数据库。地点详情与创建/更新请求通过可选 `petPolicies` 对象维护 6 项宠物政策；管理端“保存地点”和“pawtrip地点”两个现有弹窗提供编辑入口，地点列表响应不包含政策。
+`com.pawtrip.server.location` 是地点查询与管理功能模块，包含共享只读查询、管理员 API、应用服务、地点/行政区/照片持久化实体及 Spring Data 仓库。管理 API 位于 `/api/admin/**`，由 Spring Security 在服务端要求 `ADMIN`；高德候选查询调用 `application.port.maps.PlaceSearchPort`，不得直接依赖 `infrastructure.amap` 实现。
+
+- `GET /api/locations/types`：所有登录用户可读，返回共享地点类型目录及高德 typecode 映射；管理端 AMap 搜索与用户/管理端筛选复用同一目录。
+- `GET /api/locations`：所有登录用户可读，按数据库分页查询已保存地点，不调用高德。支持可选 `regionCode`、`typeGroup`、`petFriendlyOnly`、`page`、`pageSize`；普通用户必须传区域，管理员可省略区域查询全部。区域支持省或城市级行政区并匹配其下级地区；`petFriendlyOnly=true` 时只返回 `max_pets_per_person >= 1` 的地点。分页默认第 1 页、每页 20 条，按地点 ID 升序。
+- 共用列表项包含 `poiId`、名称、类型、地址、经纬度、区域、游玩时间、`maxPetsPerPerson` 与完整 `petPolicies`。列表不得返回原始 POI、`business` 或照片详情。
+- `GET /api/locations/{poiId}`：登录用户可读的地点浏览详情，返回基础信息与 8 项政策字段，不返回照片、`business` 或原始 POI JSON；不存在返回 `404 LOCATION_NOT_FOUND`。
+- 管理员专属操作仍位于 `/api/admin/**`：`GET /api/admin/regions` 读取区域树；`GET /api/admin/locations/amap` 搜索高德候选；`GET /api/admin/locations/{poiId}` 读取管理编辑详情；`POST /api/admin/locations` 与 `PATCH /api/admin/locations/{poiId}` 创建或更新地点。地点详情与创建/更新请求通过可选 `petPolicies` 对象维护政策。
+
+### 用户端地点浏览与行程规划（REQ-009）
+
+用户端 `/attractions` 页面展示为“地点浏览”，保留既有路由。存在激活行程时，页面固定以 `active.cityAdcode` 查询共享 `GET /api/locations`，默认类型为“景点”；不提供城市选择。无激活行程（含仅有草稿）时展示“先创建或激活行程”空态且不请求地点列表。地点类型切换重置为第一页；默认宠物友好筛选传 `petFriendlyOnly=true`，开启“显示全部地点”传 `false`。所有类型地点详情均可展示逐宠物政策，并提供“添加到行程”和“暂不排期”操作。页面不展示天数 Tabs；添加选择器由 `active.totalDays` 生成“第 1 天”至“第 N 天”。详情在列表页内打开，关闭后保留筛选与分页；不提供 `/attractions/$poiId` 独立路由。
+
+地点浏览不新增数据库迁移；E2E 夹具由 `scripts/seed-e2e-attractions.mjs` 写入临时 E2E 库，不触碰 `apps/server/data/pawtrip.db`。
 
 ### 目的地候选功能模块
 
@@ -63,13 +75,6 @@ com.pawtrip.server
 - 禁养匹配纯函数 `breedHitsBanList`（档案品种 × 名单，精确匹配）保留于前端 `lib/destination-matching.ts`；Badge/提醒展示暂缓（TODO）。后端不引用宠物档案模块（档案由外部 US-01 change 交付）；选定城市只创建前端草稿，确认后由 trip-context 调用 `POST /api/trips` 持久化。
 - 迁移版本号约定：宠物档案系列占用 V8–V14（PR #33–#36、#41）；V15 空缺（原在途 PR #43 由 PR #47 取代，#47 复用既有列无迁移）；本模块全城市种子为 **V16**（2026-11-16 需求方确认）；PR #47 新增城市政策管理 API（/api/admin/cities）可维护类型/品种/肩高 ；后续政策数据迁移交付时需复核 main 最新版本号。
 
-### 用户端景点查询与展示（REQ-009）
-
-- `com.pawtrip.server.location` 新增用户端只读查询：`LocationQueryController` 暴露 `GET /api/locations/attractions` 与 `GET /api/locations/{poiId}`；两者仅要求登录（不要求 `ADMIN`），只读取数据库，不调用高德。
-- `GET /api/locations/attractions`：按激活行程的 `active.cityAdcode` 过滤 `type_group='attraction'`；默认只返回 `max_pets_per_person >= 1` 的景点，`includeWithoutRules=true` 返回该城市全部已保存景点。列表项在既有 `poiId`、`name`、`typeCode`、`typeGroup`、`address`、`regionCode`、`maxPetsPerPerson` 之外**新增 `petPolicies`**（与详情一致的 8 字段），为纯增量契约，既有筛选参数与分页字段不变。
-- `GET /api/locations/{poiId}`：返回已保存地点基础信息与 8 个政策字段 `petPolicies`；不返回照片、business 或原始 POI JSON；不存在返回 `404 LOCATION_NOT_FOUND`。
-- 前端 `/attractions` 读取激活行程城市；无激活行程（含仅有草稿）时展示“先创建或激活行程”空态且不请求列表；页面不展示天数 Tabs。列表卡片与详情弹窗提供「添加到行程」选择器与「暂不排期」：选择器选项由 `active.totalDays` 生成（第 1 天…第 N 天），选中即写入对应天。景点详情以居中弹窗在列表页内打开（对齐 paws 弹窗模式），关闭后列表筛选与分页保持；不再提供 `/attractions/$poiId` 独立路由。
-- 本能力不新增数据库迁移；E2E 夹具由 `scripts/seed-e2e-attractions.mjs` 写入临时 E2E 库，不触碰 `apps/server/data/pawtrip.db`。
 
 ### 前端行程上下文（trip-context）
 
@@ -161,7 +166,7 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 - UI 组件统一来自 `apps/web/src/components/ui/`，使用 shadcn/ui 的 Base UI 版本；不引入 Radix 版本或其他 UI 组件库。
 - 宠物卡片使用 React Bits Tilted Card 的 TS + Tailwind 变体，以源码形式纳入 `apps/web/src/components/ui/tilted-card.tsx`，不新增运行时依赖，也不引入自定义 CSS 类。
 - 页面结构与交互只通过组件库组合和 Tailwind 布局工具类表达；`apps/web/src/styles.css` 仅保留 Tailwind、`shadcn/tailwind.css` 与主题令牌，不新增自定义类。
-- 应用外壳位于 `apps/web/src/routes/__root.tsx`：顶部居中的 `Home` / `Paws` / `城市浏览` / `景区浏览` / `交通规则` / `Trips` 六个 Tab 与真实路由 `/`、`/paws`、`/cities`、`/attractions`、`/transport-rules`、`/trips` 同步；`/attractions` 与 `/attractions/$poiId` 归入“景区浏览”Tab 选中态；`/` 展示问候语，`/paws` 展示当前用户的宠物画廊并支持查看、编辑、新增与删除；狗类型在表单中必须从 `GET /api/dog-breeds` 选择品种，卡片右下角优先显示狗品种，无品种时回退显示猫/狗类型。`_authenticated` 布局负责行程 hydrate、自动保存与全局行程面板，`/login` 不渲染面板。
+- 应用外壳位于 `apps/web/src/routes/__root.tsx`：顶部居中的 `Home` / `Paws` / `城市浏览` / `地点浏览` / `交通规则` / `Trips` 六个 Tab 与真实路由 `/`、`/paws`、`/cities`、`/attractions`、`/transport-rules`、`/trips` 同步；`/attractions` 与 `/attractions/$poiId` 归入“景区浏览”Tab 选中态；`/` 展示问候语，`/paws` 展示当前用户的宠物画廊并支持查看、编辑、新增与删除；狗类型在表单中必须从 `GET /api/dog-breeds` 选择品种，卡片右下角优先显示狗品种，无品种时回退显示猫/狗类型。`_authenticated` 布局负责行程 hydrate、自动保存与全局行程面板，`/login` 不渲染面板。
 
 ### 前端服务端状态
 

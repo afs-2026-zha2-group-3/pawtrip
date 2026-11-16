@@ -77,7 +77,7 @@ class AdminLocationApiTest {
 	}
 
 	@Test
-	void returnsAdministrativeTreeAndTypeGroups() throws Exception {
+	void returnsAdministrativeTree() throws Exception {
 		MvcResult regionsResult = this.mockMvc.perform(get("/api/admin/regions").with(user("admin").roles("ADMIN")))
 				.andExpect(status().isOk())
 				.andReturn();
@@ -86,24 +86,58 @@ class AdminLocationApiTest {
 		assertThat(zhejiang.path("name").asString()).isEqualTo("浙江省");
 		assertThat(findRegion(zhejiang.path("children"), "330100").path("level").asString()).isEqualTo("city");
 		assertThat(hasProvinceLeaf(regions)).isTrue();
+	}
 
+	@Test
+	void nonAdministratorsCannotUseLocationManagementEndpoints() throws Exception {
+		this.mockMvc.perform(get("/api/admin/locations/amap")
+					.with(user("user").roles("USER"))
+					.param("typeGroup", "hotel"))
+				.andExpect(status().isForbidden());
+		this.mockMvc.perform(get("/api/admin/locations/poi-private").with(user("user").roles("USER")))
+				.andExpect(status().isForbidden());
+		this.mockMvc.perform(post("/api/admin/locations")
+					.with(user("user").roles("USER"))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"poiId":"poi-private","typeGroup":"hotel"}
+						"""))
+				.andExpect(status().isForbidden());
 		this.mockMvc.perform(get("/api/admin/location-types").with(user("admin").roles("ADMIN")))
+				.andExpect(status().isNotFound());
+		this.mockMvc.perform(get("/api/admin/locations").with(user("admin").roles("ADMIN")))
+				.andExpect(status().isMethodNotAllowed());
+		verifyNoInteractions(this.placeSearchPort);
+	}
+
+	@Test
+	void sharedLocationTypesAreAvailableToUsersAndAdmins() throws Exception {
+		this.mockMvc.perform(get("/api/locations/types").with(user("user")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].key").value("attraction"))
 				.andExpect(jsonPath("$[0].label").value("景点"))
 				.andExpect(jsonPath("$[0].typeCodes[0]").value("110000"))
 				.andExpect(jsonPath("$[1].key").value("hotel"))
-				.andExpect(jsonPath("$[1].label").value("住宿"))
 				.andExpect(jsonPath("$[1].typeCodes[0]").value("100000"))
 				.andExpect(jsonPath("$[2].key").value("pet-hospital"))
-				.andExpect(jsonPath("$[2].label").value("宠物医院"))
 				.andExpect(jsonPath("$[2].typeCodes[0]").value("090700"))
 				.andExpect(jsonPath("$[3].key").value("pet-supplies"))
-				.andExpect(jsonPath("$[3].label").value("宠物用品店"))
 				.andExpect(jsonPath("$[3].typeCodes[0]").value("061211"))
 				.andExpect(jsonPath("$[4].key").value("restaurant"))
-				.andExpect(jsonPath("$[4].label").value("餐厅"))
-				.andExpect(jsonPath("$[4].typeCodes[0]").value("050000"));
+				.andExpect(jsonPath("$[4].typeCodes[0]").value("050000"))
+				.andExpect(jsonPath("$[5]").doesNotExist());
+
+		this.mockMvc.perform(get("/api/locations/types").with(user("admin").roles("ADMIN")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[4].key").value("restaurant"));
+	}
+
+	@Test
+	void sharedLocationTypesRequireAuthentication() throws Exception {
+		this.mockMvc.perform(get("/api/locations/types"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
 	}
 
 	@Test
@@ -279,7 +313,7 @@ class AdminLocationApiTest {
 				location("poi-hefei", "340105", "attraction"),
 				location("poi-hotel", "330106", "hotel")));
 
-		this.mockMvc.perform(get("/api/admin/locations")
+		this.mockMvc.perform(get("/api/locations")
 					.with(user("admin").roles("ADMIN"))
 					.param("regionCode", "330000")
 					.param("typeGroup", "attraction")
@@ -292,9 +326,11 @@ class AdminLocationApiTest {
 				.andExpect(jsonPath("$.totalPages").value(2))
 				.andExpect(jsonPath("$.hasNext").value(true))
 				.andExpect(jsonPath("$.items[0].poiId").value("poi-hangzhou"))
-				.andExpect(jsonPath("$.items[0].petPolicies").doesNotExist());
+				.andExpect(jsonPath("$.items[0].petPolicies.maxPetsPerPerson").value(nullValue()))
+				.andExpect(jsonPath("$.items[0].longitude").value(nullValue()))
+				.andExpect(jsonPath("$.items[0].minVisitHours").value(nullValue()));
 
-		this.mockMvc.perform(get("/api/admin/locations")
+		this.mockMvc.perform(get("/api/locations")
 					.with(user("admin").roles("ADMIN"))
 					.param("regionCode", "330100")
 					.param("typeGroup", "attraction")
@@ -411,7 +447,7 @@ class AdminLocationApiTest {
 				location("poi-order-2", null, "attraction"),
 				location("poi-order-3", null, "attraction")));
 
-		this.mockMvc.perform(get("/api/admin/locations")
+		this.mockMvc.perform(get("/api/locations")
 					.with(user("admin").roles("ADMIN"))
 					.param("typeGroup", "attraction")
 					.param("page", "2")
@@ -431,7 +467,7 @@ class AdminLocationApiTest {
 				.andExpect(jsonPath("$.minVisitHours").value(3))
 				.andExpect(jsonPath("$.maxVisitHours").value(4));
 
-		this.mockMvc.perform(get("/api/admin/locations")
+		this.mockMvc.perform(get("/api/locations")
 					.with(user("admin").roles("ADMIN"))
 					.param("typeGroup", "attraction")
 					.param("page", "2")

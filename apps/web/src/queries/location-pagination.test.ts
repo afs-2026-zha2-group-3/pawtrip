@@ -69,7 +69,7 @@ describe("admin location pagination adapter", () => {
       "/api/admin/locations/amap?regionCode=310000&typeGroup=attraction&page=3&pageSize=25",
     );
     expect(fetchMock.mock.calls[1]?.[0]).toBe(
-      "/api/admin/locations?regionCode=310100&typeGroup=attraction&page=4&pageSize=10",
+      "/api/locations?regionCode=310100&typeGroup=attraction&petFriendlyOnly=false&page=4&pageSize=10",
     );
   });
 

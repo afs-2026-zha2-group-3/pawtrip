@@ -31,7 +31,7 @@ import {
 } from "@/lib/trip/selectors";
 import { tripActions } from "@/lib/trip/store";
 import { runViewTransition } from "@/lib/view-transition";
-import { attractionsQueryOptions } from "@/queries/attractions";
+import { locationsQueryOptions } from "@/queries/locations";
 import { cityPetPolicyQueryOptions } from "@/queries/city-pet-policy";
 import { destinationsQueryOptions } from "@/queries/destinations";
 import { petProfileQueryOptions } from "@/queries/pet-profile";
@@ -177,9 +177,10 @@ function CityDetailView({ adcode, mode }: { adcode: string; mode: "active" | "dr
   const destinations = useQuery(destinationsQueryOptions({}));
   const policy = useQuery(cityPetPolicyQueryOptions(adcode, null));
   const attractions = useQuery(
-    attractionsQueryOptions({
+    locationsQueryOptions({
       regionCode: adcode,
-      includeWithoutRules: true,
+      typeGroup: "attraction",
+      petFriendlyOnly: false,
       page: 1,
       pageSize: 1,
     }),

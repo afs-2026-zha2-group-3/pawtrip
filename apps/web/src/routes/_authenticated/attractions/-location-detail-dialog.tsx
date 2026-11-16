@@ -9,25 +9,27 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PolicySubjectNotice, PolicyTags } from "@/components/trip/policy-tags";
-import { matchAttractionPolicy } from "@/lib/trip/policy-match";
+import { matchLocationPolicy } from "@/lib/trip/policy-match";
 import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
 import { tripActions } from "@/lib/trip/store";
-import { attractionDetailQueryOptions } from "../../../queries/attractions";
+import { locationBrowseDetailQueryOptions } from "../../../queries/locations";
 import { DaySelect } from "./-day-select";
 import { PetFriendlyBadge } from "./-pet-friendly-badge";
 import { PetPolicyFields } from "./-pet-policy-fields";
 
-export function AttractionDetailDialog({
+export function LocationDetailDialog({
   poiId,
+  typeLabel,
   onClose,
 }: {
   poiId: string;
+  typeLabel: string;
   onClose: () => void;
 }) {
   const active = useActiveTrip();
   const subjects = usePolicySubjects();
   const detail = useQuery({
-    ...attractionDetailQueryOptions(poiId),
+    ...locationBrowseDetailQueryOptions(poiId),
     throwOnError: true,
   });
 
@@ -37,7 +39,7 @@ export function AttractionDetailDialog({
     }
   }, [detail.data]);
 
-  const attraction = detail.data;
+  const location = detail.data;
 
   return (
     <Dialog
@@ -50,34 +52,34 @@ export function AttractionDetailDialog({
     >
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{attraction?.name ?? "景点详情"}</DialogTitle>
+          <DialogTitle>{location?.name ?? "地点详情"}</DialogTitle>
           <DialogDescription>
-            {attraction
-              ? `景点 · ${attraction.address ?? "地址未收录"}`
-              : "正在加载景点详情…"}
+            {location
+              ? `${typeLabel} · ${location.address ?? "地址未收录"}`
+              : "正在加载地点详情…"}
           </DialogDescription>
         </DialogHeader>
 
-        {attraction ? (
+        {location ? (
           <div className="flex flex-col gap-4">
-            <PetFriendlyBadge maxPetsPerPerson={attraction.petPolicies.maxPetsPerPerson} />
+            <PetFriendlyBadge maxPetsPerPerson={location.petPolicies.maxPetsPerPerson} />
             <PolicySubjectNotice subjects={subjects} />
             <PolicyTags
               subjects={subjects}
-              match={(pet) => matchAttractionPolicy(attraction.petPolicies, pet)}
+              match={(pet) => matchLocationPolicy(location.petPolicies, pet)}
             />
-            <PetPolicyFields policies={attraction.petPolicies} />
+            <PetPolicyFields policies={location.petPolicies} />
             {active ? (
               <div className="flex flex-wrap gap-2 border-t pt-3">
                 <DaySelect
                   label="添加到行程"
                   totalDays={active.totalDays}
-                  onSelectDay={(day) => tripActions.addStop(day, attraction.poiId)}
+                  onSelectDay={(day) => tripActions.addStop(day, location.poiId)}
                 />
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => tripActions.addStop("unscheduled", attraction.poiId)}
+                  onClick={() => tripActions.addStop("unscheduled", location.poiId)}
                 >
                   暂不排期
                 </Button>

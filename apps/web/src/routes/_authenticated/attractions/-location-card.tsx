@@ -9,20 +9,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PolicyTags } from "@/components/trip/policy-tags";
-import { matchAttractionPolicy } from "@/lib/trip/policy-match";
+import { matchLocationPolicy } from "@/lib/trip/policy-match";
 import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
-import type { AttractionSummary } from "../../../queries/attractions";
+import type { LocationSummary } from "../../../queries/locations";
 import { DaySelect } from "./-day-select";
 import { PetFriendlyBadge } from "./-pet-friendly-badge";
 
-export function AttractionCard({
-  attraction,
+export function LocationCard({
+  location,
+  typeLabel,
   totalDays,
   onOpen,
   onAddStop,
   onAddUnscheduled,
 }: {
-  attraction: AttractionSummary;
+  location: LocationSummary;
+  typeLabel: string;
   totalDays: number;
   onOpen: () => void;
   onAddStop: (day: number) => void;
@@ -32,22 +34,23 @@ export function AttractionCard({
   const active = useActiveTrip();
   const addedDays = active
     ? active.plan.days
-        .filter((entry) => entry.stops.some((stop) => stop.poiId === attraction.poiId))
+        .filter((entry) => entry.stops.some((stop) => stop.poiId === location.poiId))
         .map((entry) => entry.day)
     : [];
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{attraction.name}</CardTitle>
-        <CardDescription>{attraction.address ?? "地址未收录"}</CardDescription>
+        <CardTitle>{location.name}</CardTitle>
+        <CardDescription>{location.address ?? "地址未收录"}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-2">
-            <PetFriendlyBadge maxPetsPerPerson={attraction.petPolicies.maxPetsPerPerson} />
+            <Badge variant="outline">{typeLabel}</Badge>
+                        <PetFriendlyBadge maxPetsPerPerson={location.petPolicies.maxPetsPerPerson} />
             <PolicyTags
               subjects={subjects}
-              match={(pet) => matchAttractionPolicy(attraction.petPolicies, pet)}
+              match={(pet) => matchLocationPolicy(location.petPolicies, pet)}
             />
           </div>
           {addedDays.length > 0 ? (

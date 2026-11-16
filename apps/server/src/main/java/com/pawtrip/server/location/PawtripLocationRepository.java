@@ -25,6 +25,7 @@ public interface PawtripLocationRepository extends JpaRepository<PawtripLocation
 				OR (:regionLevel = 'province' AND substr(region_code, 1, 2) = substr(:regionCode, 1, 2))
 				OR (:regionLevel = 'city' AND substr(region_code, 1, 4) = substr(:regionCode, 1, 4)))
 				AND (:typeGroup IS NULL OR type_group = :typeGroup)
+				AND (:petFriendlyOnly = 0 OR max_pets_per_person >= 1)
 			ORDER BY id ASC
 			""", countQuery = """
 			SELECT COUNT(*) FROM pawtrip_location
@@ -33,31 +34,13 @@ public interface PawtripLocationRepository extends JpaRepository<PawtripLocation
 				OR (:regionLevel = 'province' AND substr(region_code, 1, 2) = substr(:regionCode, 1, 2))
 				OR (:regionLevel = 'city' AND substr(region_code, 1, 4) = substr(:regionCode, 1, 4)))
 				AND (:typeGroup IS NULL OR type_group = :typeGroup)
+				AND (:petFriendlyOnly = 0 OR max_pets_per_person >= 1)
 			""", nativeQuery = true)
-	Page<PawtripLocation> findAdminPage(
+	Page<PawtripLocation> findLocationPage(
 			@Param("regionCode") String regionCode,
 			@Param("regionLevel") String regionLevel,
 			@Param("typeGroup") String typeGroup,
-			Pageable pageable);
-
-	@Query(value = """
-			SELECT * FROM pawtrip_location
-			WHERE type_group = 'attraction'
-				AND ((:regionLevel = 'province' AND substr(region_code, 1, 2) = substr(:regionCode, 1, 2))
-					OR (:regionLevel = 'city' AND substr(region_code, 1, 4) = substr(:regionCode, 1, 4)))
-				AND (:includeWithoutRules = 1 OR max_pets_per_person >= 1)
-			ORDER BY id ASC
-			""", countQuery = """
-			SELECT COUNT(*) FROM pawtrip_location
-			WHERE type_group = 'attraction'
-				AND ((:regionLevel = 'province' AND substr(region_code, 1, 2) = substr(:regionCode, 1, 2))
-					OR (:regionLevel = 'city' AND substr(region_code, 1, 4) = substr(:regionCode, 1, 4)))
-				AND (:includeWithoutRules = 1 OR max_pets_per_person >= 1)
-			""", nativeQuery = true)
-	Page<PawtripLocation> findAttractionPage(
-			@Param("regionCode") String regionCode,
-			@Param("regionLevel") String regionLevel,
-			@Param("includeWithoutRules") int includeWithoutRules,
+			@Param("petFriendlyOnly") int petFriendlyOnly,
 			Pageable pageable);
 
 }

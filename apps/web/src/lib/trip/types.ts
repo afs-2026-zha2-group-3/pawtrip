@@ -1,5 +1,5 @@
 import type { TransportMode } from "@/data/transport-rules";
-import type { AttractionDetail } from "@/queries/attractions";
+import type { LocationBrowseDetail } from "@/queries/locations";
 import type { Pet } from "@/queries/pets";
 
 export const MIN_TRIP_DAYS = 1;
@@ -52,7 +52,7 @@ export interface TripCity {
 export interface TripCache {
   city: TripCity | null;
   pets: Record<number, Pet>;
-  locations: Record<string, AttractionDetail>;
+  locations: Record<string, LocationBrowseDetail>;
 }
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";

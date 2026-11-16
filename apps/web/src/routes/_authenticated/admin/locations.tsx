@@ -50,12 +50,11 @@ import { authQueryOptions } from "../../../queries/auth";
 import {
   administrativeRegionsQueryOptions,
   amapLocationsQueryOptions,
-  locationTypesQueryOptions,
-  savedLocationsQueryOptions,
   type AmapCandidate,
   type AdministrativeRegion,
   type SavedLocation,
 } from "../../../queries/admin-locations";
+import { locationTypesQueryOptions, locationsQueryOptions } from "../../../queries/locations";
 import {
   amapParamsFromPagination,
   amapTablePageMetadata,
@@ -169,7 +168,7 @@ function LocationManagementPage() {
     savedPagination,
   );
   const savedQuery = useQuery({
-    ...savedLocationsQueryOptions(savedParams),
+    ...locationsQueryOptions({ ...savedParams, petFriendlyOnly: false }),
     enabled: activeTab === pawtripLocationsTab && typesQuery.isSuccess,
   });
 

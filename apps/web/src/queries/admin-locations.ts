@@ -1,6 +1,25 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { isAmapPageReachable } from "./location-pagination";
 import { request } from "../lib/http/request";
+import {
+  locationQueryKeys,
+  locationTypesQueryOptions as sharedLocationTypesQueryOptions,
+  locationsQueryOptions as sharedLocationsQueryOptions,
+  type LocationListParams,
+  type LocationSummary,
+  type Page,
+  type PetPolicies,
+  type PaginationParams,
+} from "./locations";
+
+export type {
+  LocationListParams,
+  LocationSummary,
+  LocationTypeOption,
+  Page,
+  PetPolicies,
+  PaginationParams,
+} from "./locations";
 
 export type JsonValue =
   | null
@@ -17,26 +36,6 @@ export interface AdministrativeRegion {
   children: AdministrativeRegion[];
 }
 
-export interface LocationTypeOption {
-  key: string;
-  label: string;
-  typeCodes: string[];
-}
-
-export interface Page<T> {
-  page: number;
-  pageSize: number;
-  totalElements: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
-  items: T[];
-}
-
-export interface PaginationParams {
-  page: number;
-  pageSize: number;
-}
 
 export interface AmapLocationParams extends PaginationParams {
   regionCode?: string;
@@ -59,18 +58,7 @@ export interface AmapCandidate {
   poi: JsonValue;
 }
 
-export interface SavedLocation {
-  poiId: string;
-  name: string;
-  typeCode: string;
-  typeGroup: string;
-  address: string | null;
-  longitude: number | null;
-  latitude: number | null;
-  regionCode: string | null;
-  minVisitHours: number | null;
-  maxVisitHours: number | null;
-}
+export type SavedLocation = LocationSummary;
 
 export interface LocationPhoto {
   photoId: number;
@@ -80,16 +68,6 @@ export interface LocationPhoto {
   metadata: JsonValue;
 }
 
-export interface PetPolicies {
-  allowedPetTypes: string | null;
-  maxPetsPerPerson: number | null;
-  maxSinglePetWeightKg: number | null;
-  maxSinglePetShoulderHeightCm: number | null;
-  leashRequired: boolean | null;
-  vaccinationProofRequired: boolean | null;
-  extraFeeCents: number | null;
-  reservationRequired: boolean | null;
-}
 
 export interface LocationDetail {
   poiId: string;
@@ -127,23 +105,19 @@ function queryString(params: Record<string, string | number | undefined>): strin
   return search.toString();
 }
 
-function locationListKeyParams(params: SavedLocationParams) {
-  return {
-    regionCode: params.regionCode ?? null,
-    typeGroup: params.typeGroup ?? null,
-    page: params.page,
-    pageSize: params.pageSize,
-  };
-}
-
 export const adminLocationQueryKeys = {
   all: ["admin", "locations"] as const,
   regions: ["admin", "regions"] as const,
-  types: ["admin", "location-types"] as const,
+  types: locationQueryKeys.types,
   amapList: (params: AmapLocationParams) =>
-    ["admin", "locations", "amap", locationListKeyParams(params)] as const,
+    ["admin", "locations", "amap", {
+      regionCode: params.regionCode ?? null,
+      typeGroup: params.typeGroup,
+      page: params.page,
+      pageSize: params.pageSize,
+    }] as const,
   savedList: (params: SavedLocationParams) =>
-    ["admin", "locations", "saved", locationListKeyParams(params)] as const,
+    locationQueryKeys.list({ ...params, petFriendlyOnly: false }),
   detail: (poiId: string) => ["admin", "locations", "detail", poiId] as const,
 };
 
@@ -155,10 +129,7 @@ export function administrativeRegionsQueryOptions() {
 }
 
 export function locationTypesQueryOptions() {
-  return queryOptions({
-    queryKey: adminLocationQueryKeys.types,
-    queryFn: ({ signal }) => request<LocationTypeOption[]>("/api/admin/location-types", { signal }),
-  });
+  return sharedLocationTypesQueryOptions();
 }
 
 export function amapLocationsQueryOptions(params: AmapLocationParams) {
@@ -182,19 +153,8 @@ export function amapLocationsQueryOptions(params: AmapLocationParams) {
 }
 
 export function savedLocationsQueryOptions(params: SavedLocationParams) {
-  return queryOptions({
-    queryKey: adminLocationQueryKeys.savedList(params),
-    queryFn: ({ signal }) =>
-      request<Page<SavedLocation>>(
-        `/api/admin/locations?${queryString({
-          regionCode: params.regionCode,
-          typeGroup: params.typeGroup,
-          page: params.page,
-          pageSize: params.pageSize,
-        })}`,
-        { signal },
-      ),
-  });
+  const sharedParams: LocationListParams = { ...params, petFriendlyOnly: false };
+  return sharedLocationsQueryOptions(sharedParams);
 }
 
 export function locationDetailQueryOptions(poiId: string) {

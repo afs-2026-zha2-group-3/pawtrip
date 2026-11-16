@@ -29,6 +29,7 @@ import {
   type Page,
   type SavedLocation,
 } from "../../../queries/admin-locations";
+import { locationQueryKeys } from "../../../queries/locations";
 import {
   emptyPetPolicyDraft,
   petPoliciesFromDraft,
@@ -38,7 +39,7 @@ import {
 } from "../../../lib/pet-policy";
 import { PetPolicyFields } from "./-pet-policy-fields";
 
-const savedListsQueryKey = ["admin", "locations", "saved"] as const;
+const savedListsQueryKey = locationQueryKeys.listRoot;
 
 export function AmapCandidateEditor({
   candidate,
@@ -224,6 +225,8 @@ export function SavedLocationEditor({
                 ...item,
                 minVisitHours: updated.minVisitHours,
                 maxVisitHours: updated.maxVisitHours,
+                maxPetsPerPerson: updated.petPolicies.maxPetsPerPerson,
+                petPolicies: updated.petPolicies,
               }
             : item),
         }),

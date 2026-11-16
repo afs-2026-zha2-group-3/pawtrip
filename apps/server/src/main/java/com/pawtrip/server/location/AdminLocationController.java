@@ -28,10 +28,6 @@ class AdminLocationController {
 		return this.adminLocationService.regions();
 	}
 
-	@GetMapping("/location-types")
-	List<AdminLocationResponses.LocationTypeOption> locationTypes() {
-		return this.adminLocationService.locationTypes();
-	}
 
 	@GetMapping("/locations/amap")
 	AdminLocationResponses.Page<AdminLocationResponses.AmapCandidate> amapLocations(
@@ -60,13 +56,4 @@ class AdminLocationController {
 		return this.adminLocationService.updateLocation(poiId, request);
 	}
 
-
-	@GetMapping("/locations")
-	AdminLocationResponses.Page<AdminLocationResponses.SavedLocation> savedLocations(
-			@RequestParam(required = false) String regionCode,
-			@RequestParam(required = false) String typeGroup,
-			@RequestParam(defaultValue = "1") Integer page,
-			@RequestParam(defaultValue = "10") Integer pageSize) {
-		return this.adminLocationService.savedLocations(regionCode, typeGroup, page, pageSize);
-	}
 }

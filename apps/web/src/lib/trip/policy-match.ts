@@ -74,7 +74,7 @@ export function matchCityPolicy(policy: CityPetPolicy, pet: Pet): PolicyVerdict 
   return verdict("unjudgeable", [`${breedName}未列入当地可携带犬种名单`]);
 }
 
-export function matchAttractionPolicy(
+export function matchLocationPolicy(
   policies: AttractionPetPolicies,
   pet: Pet,
 ): PolicyVerdict {
@@ -86,22 +86,22 @@ export function matchAttractionPolicy(
     policies.leashRequired != null ||
     policies.vaccinationProofRequired != null;
   if (!configured) {
-    return verdict("unconfigured", ["该景点暂未配置携宠政策"]);
+    return verdict("unconfigured", ["该地点暂未配置携宠政策"]);
   }
 
   const reasons: string[] = [];
   if (policies.allowedPetTypes != null && !policies.allowedPetTypes.includes(pet.petType)) {
-    reasons.push(`该景点不允许携带${PET_TYPE_LABELS[pet.petType]}`);
+    reasons.push(`该地点不允许携带${PET_TYPE_LABELS[pet.petType]}`);
   }
   if (policies.maxPetsPerPerson === 0) {
-    reasons.push("该景点不允许携带宠物");
+    reasons.push("该地点不允许携带宠物");
   }
   if (
     policies.maxSinglePetWeightKg != null &&
     pet.weightKg > policies.maxSinglePetWeightKg
   ) {
     reasons.push(
-      `体重 ${pet.weightKg}kg 超过景点上限 ${policies.maxSinglePetWeightKg}kg`,
+      `体重 ${pet.weightKg}kg 超过地点上限 ${policies.maxSinglePetWeightKg}kg`,
     );
   }
   if (
@@ -109,14 +109,14 @@ export function matchAttractionPolicy(
     pet.shoulderHeightCm > policies.maxSinglePetShoulderHeightCm
   ) {
     reasons.push(
-      `肩高 ${pet.shoulderHeightCm}cm 超过景点上限 ${policies.maxSinglePetShoulderHeightCm}cm`,
+      `肩高 ${pet.shoulderHeightCm}cm 超过地点上限 ${policies.maxSinglePetShoulderHeightCm}cm`,
     );
   }
   if (policies.leashRequired === true && !pet.hasLeash) {
-    reasons.push("该景点要求牵引绳，宠物档案未记录牵引");
+    reasons.push("该地点要求牵引绳，宠物档案未记录牵引");
   }
   if (policies.vaccinationProofRequired === true && !pet.hasVaccinationProof) {
-    reasons.push("该景点要求疫苗证明，宠物档案未记录疫苗证明");
+    reasons.push("该地点要求疫苗证明，宠物档案未记录疫苗证明");
   }
   return reasons.length > 0 ? verdict("unfriendly", reasons) : verdict("friendly");
 }
