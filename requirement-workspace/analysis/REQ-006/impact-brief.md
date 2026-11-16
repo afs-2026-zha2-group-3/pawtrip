@@ -1,14 +1,14 @@
-# Impact brief — REQ-005 对比高铁/航班/自驾/火车携宠规则
+# Impact brief — REQ-006 对比高铁/航班/自驾/火车携宠规则
 
 - 生成日期：2026-11-16
-- 上游需求：[../requirements/REQ-005-transport-pet-rules-comparison.md](../requirements/REQ-005-transport-pet-rules-comparison.md)
+- 上游需求：[../requirements/REQ-006-transport-pet-rules-comparison.md](../requirements/REQ-006-transport-pet-rules-comparison.md)
 - Deep-dive：[deep-dive.md](deep-dive.md)
 
 ## 1. Requirement set
 
 | id | title | status | path |
 |---|---|---|---|
-| REQ-005 | 对比高铁/航班/自驾/火车携宠规则 | ready-for-split | `requirements/REQ-005-transport-pet-rules-comparison.md` |
+| REQ-006 | 对比高铁/航班/自驾/火车携宠规则 | ready-for-split | `requirements/REQ-006-transport-pet-rules-comparison.md` |
 
 阻塞开放问题：0（3 项 blocking 均 resolved）；DoR BLOCKER：0；deep-dive ⑨–⑫ Pass。终版决策（2026-11-16）：**规则全部前端写死（不建规则表/API），本需求为纯前端变更**；对比在后端、档案表随 US-06 建；航司（国航/东航/南航/海航）、入口（**顶部导航新增 Tab「交通规则」**）、预留档案路由均已 resolved；车型细分与复核频率 deferred。
 

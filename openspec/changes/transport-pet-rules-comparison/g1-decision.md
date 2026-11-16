@@ -1,6 +1,6 @@
 # G1 decision — transport-pet-rules-comparison
 
-- **Change id**: `transport-pet-rules-comparison`（REQ-005 / US-05）
+- **Change id**: `transport-pet-rules-comparison`（REQ-006 / US-05）
 - **Gate**: G1（Align）
 - **Timestamp**: 2026-11-16 11:50 (+0800)
 
