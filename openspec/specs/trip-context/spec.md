@@ -8,14 +8,14 @@ TBD - created by syncing the add-frontend-trip-context change. This capability o
 
 ### Requirement: 激活行程上下文与持久化
 
-系统 SHALL 使用 TanStack Store 保存当前激活行程，`active` 对象 MUST 与后端 trip 的 DB 字段同构（`id`、`name`、`cityAdcode`、`petId`、`totalDays`、`plan`、`createdAt`、`updatedAt`），MAY 额外保存城市、宠物与地点详情缓存。浏览器端 MUST 只持久化 `activeTripId`；行程内容与缓存 MUST NOT 写入持久化存储。登录成功后系统 SHALL 按 `activeTripId` 拉取详情并写入 store；详情返回 `404` 或 `401` 时 MUST 清除 `activeTripId` 与本地行程状态；登出 MUST 清除 `activeTripId` 与行程相关缓存。
+系统 SHALL 使用 TanStack Store 保存当前激活行程，`active` 对象 MUST 与后端 trip 的 DB 字段同构（`id`、`name`、`cityAdcode`、`petId`、`totalDays`、`plan`、`transportMode`、`createdAt`、`updatedAt`），MAY 额外保存城市、宠物与地点详情缓存。浏览器端 MUST 只持久化 `activeTripId`；行程内容与缓存 MUST NOT 写入持久化存储。登录成功后系统 SHALL 按 `activeTripId` 拉取详情并写入 store；详情返回 `404` 或 `401` 时 MUST 清除 `activeTripId` 与本地行程状态；登出 MUST 清除 `activeTripId` 与行程相关缓存。
 
 #### Scenario: 刷新后恢复激活行程
 
 - **GIVEN** 用户有一个激活行程且 localStorage 保存了 `activeTripId`
 - **WHEN** 用户刷新页面并完成登录态恢复
 - **THEN** 系统请求 `GET /api/trips/{id}`
-- **AND** 成功后 store 的 `active` 包含该行程的完整字段与 `plan`
+- **AND** 成功后 store 的 `active` 包含该行程的完整字段、`plan` 与 `transportMode`
 
 #### Scenario: 激活行程已不存在
 
@@ -23,7 +23,7 @@ TBD - created by syncing the add-frontend-trip-context change. This capability o
 - **WHEN** 系统在登录后拉取详情
 - **THEN** 接口返回 `404`
 - **AND** 系统清除 `activeTripId` 与本地行程状态
-- **AND** 页面回到"无激活行程"状态
+- **AND** 页面回到“无激活行程”状态
 
 #### Scenario: 登出清理
 
@@ -191,7 +191,7 @@ TBD - created by syncing the add-frontend-trip-context change. This capability o
 
 ### Requirement: 计划编辑与自动保存
 
-激活行程的地点变更 SHALL 先乐观更新 store，再以防抖方式（约 600ms）合并为一次 `PUT /api/trips/{id}`，请求体 MUST 为 `{ name, totalDays, plan }`。面板 SHALL 展示 `保存中`、`已保存` 或 `保存失败` 状态。保存失败时 MUST 保留本地改动并提供重试；服务端返回 `400 VALIDATION_ERROR` 时 MUST 重新拉取详情并以服务端数据为准。系统 MUST NOT 引入乐观锁，整量更新为后写覆盖。
+激活行程的计划或大交通方式变更 SHALL 先乐观更新 store，再以约 600ms 防抖合并为一次 `PUT /api/trips/{id}`，请求体 MUST 包含 `{ name, totalDays, plan, transportMode }`。面板 SHALL 展示 `保存中`、`已保存` 或 `保存失败` 状态。保存失败时 MUST 保留本地改动并提供重试；服务端返回 `400 VALIDATION_ERROR` 时 MUST 重新拉取详情并以服务端数据为准。系统 MUST NOT 引入乐观锁，整量更新为后写覆盖。
 
 #### Scenario: 乐观更新
 
@@ -205,7 +205,14 @@ TBD - created by syncing the add-frontend-trip-context change. This capability o
 - **GIVEN** 用户在 600ms 内连续进行多次拖拽
 - **WHEN** 防抖窗口结束
 - **THEN** 系统只发送一次 `PUT`
-- **AND** 请求体包含最终 `plan`
+- **AND** 请求体包含最终 `plan` 与当前 `transportMode`
+
+#### Scenario: 选择大交通方式后自动保存
+
+- **GIVEN** 用户激活了一个行程
+- **WHEN** 用户在交通规则页选择一种大交通方式
+- **THEN** active trip 在 store 中立即反映该选择
+- **AND** 系统防抖保存该行程，`PUT` 请求体包含所选 `transportMode`
 
 #### Scenario: 保存失败可重试
 
@@ -261,3 +268,19 @@ TBD - created by syncing the add-frontend-trip-context change. This capability o
 - **WHEN** 页面展示城市禁养犬种匹配
 - **THEN** 该宠物 tag 显示"无法判定"
 - **AND** 不显示"友好"或"不友好"
+
+### Requirement: 大交通方式面板标签
+
+行程面板顶部 SHALL 在 active trip 已选择大交通方式时展示对应的“大交通” tag，并使用该方式的中文名称；未选择时 MUST NOT 展示该 tag。
+
+#### Scenario: 已选择大交通方式
+
+- **GIVEN** active trip 的 `transportMode` 为 `flight`
+- **WHEN** 行程面板渲染
+- **THEN** 面板顶部展示包含“大交通”和“飞机”的 tag
+
+#### Scenario: 尚未选择大交通方式
+
+- **GIVEN** active trip 的 `transportMode` 为空
+- **WHEN** 行程面板渲染
+- **THEN** 面板顶部不展示大交通 tag
