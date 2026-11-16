@@ -3,7 +3,9 @@
 ## Purpose
 
 定义 PawTrip 登录后的应用外壳：顶部居中 `Home` / `Paws` 路由 Tab、独立登录页、受保护路由跳转与登出二次确认，确保导航、页面内容与路由状态一致。
+
 ## Requirements
+
 ### Requirement: 顶部居中横向两 Tab 导航
 
 应用 SHALL 在登录后的页面顶部居中展示横向导航，包含 `Home` 与 `Paws` 两个 Tab，并在 `/` 与 `/paws` 保持一致；已登录时 SHALL 同时显示 `Log out` 入口。
@@ -137,3 +139,39 @@
 - **THEN** 用户被引导到 `/login`
 - **AND** 管理页面内容不显示
 
+### Requirement: 交通规则导航 Tab
+
+应用 SHALL 为所有已登录用户在顶部导航提供「交通规则」Tab，位置在「城市浏览」之后、管理员专属 Tab 之前，并与 `/transport-rules` 路由同步；该 Tab MUST 对所有已登录用户可见，MUST NOT 仅限管理员。
+
+#### Scenario: 已登录用户看到交通规则 Tab
+
+- **WHEN** 已登录用户查看顶部导航
+- **THEN** 导航显示「交通规则」Tab
+- **AND** 该 Tab 位于「城市浏览」之后
+
+#### Scenario: 选择交通规则 Tab
+
+- **WHEN** 用户点击「交通规则」Tab
+- **THEN** 浏览器地址变为 `/transport-rules`
+- **AND** 「交通规则」Tab 处于选中状态
+
+#### Scenario: 直接访问交通规则路由
+
+- **WHEN** 已登录用户直接访问 `/transport-rules`
+- **THEN** 「交通规则」Tab 处于选中状态
+- **AND** 其他 Tab 不处于选中状态
+
+#### Scenario: 普通用户同样可见
+
+- **WHEN** 当前用户角色为 `USER`
+- **THEN** 顶部导航仍显示「交通规则」Tab
+
+### Requirement: 交通规则页面路由守卫
+
+`/transport-rules` SHALL 仅允许已认证用户访问；前端路由守卫 MUST 在未登录时跳转 `/login`，且 MUST NOT 展示规则页面内容。
+
+#### Scenario: 未登录用户访问交通规则路由
+
+- **WHEN** 浏览器没有有效登录会话且访问 `/transport-rules`
+- **THEN** 用户被引导到 `/login`
+- **AND** 规则页面内容不显示

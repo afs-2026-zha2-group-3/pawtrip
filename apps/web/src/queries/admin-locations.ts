@@ -81,8 +81,10 @@ export interface LocationPhoto {
 }
 
 export interface PetPolicies {
+  allowedPetTypes: string | null;
   maxPetsPerPerson: number | null;
   maxSinglePetWeightKg: number | null;
+  maxSinglePetShoulderHeightCm: number | null;
   leashRequired: boolean | null;
   vaccinationProofRequired: boolean | null;
   extraFeeCents: number | null;

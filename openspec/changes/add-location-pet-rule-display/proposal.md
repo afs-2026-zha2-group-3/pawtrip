@@ -4,7 +4,7 @@
 
 US-25（issue #17，Must）要求用户在到访前看到景点和公共设施的携宠规则。`pawtrip_location` 已保存 6 项宠物政策（V7）以及允许宠物类型、单只肩高（V9/V11），管理员可在现有地点弹窗维护其中 6 项；但用户端没有任何公共读取路径，也没有景点列表/详情页面。REQ-006（US-47）已提供已选目的地城市，缺口现在收敛为：在已选城市下展示数据库中的景点及现有携宠政策。
 
-上游需求：`requirement-workspace/requirements/REQ-008-location-pet-rule-display.md`（REQ-008，Revision 2，ready-for-split）；影响简报：`requirement-workspace/analysis/REQ-008/impact-brief.md`；数据/边界/展示契约：`requirement-workspace/analysis/REQ-008/deep-dive.md`。
+上游需求：`requirement-workspace/requirements/REQ-009-location-pet-rule-display.md`（REQ-009，Revision 2，ready-for-split）；影响简报：`requirement-workspace/analysis/REQ-009/impact-brief.md`；数据/边界/展示契约：`requirement-workspace/analysis/REQ-009/deep-dive.md`。
 
 ## What Changes
 

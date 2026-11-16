@@ -12,7 +12,7 @@
   - Delta Spec: `openspec/changes/add-location-pet-rule-display/specs/attraction-pet-rules/spec.md`、`specs/web-app-shell/spec.md`
   - AC / DoV review: `openspec/changes/add-location-pet-rule-display/dov-ac-review.md`
   - Proposal: `openspec/changes/add-location-pet-rule-display/proposal.md`
-  - Upstream: `requirement-workspace/requirements/REQ-008-location-pet-rule-display.md`（Revision 3）、`analysis/REQ-008/`
+  - Upstream: `requirement-workspace/requirements/REQ-009-location-pet-rule-display.md`（Revision 3）、`analysis/REQ-009/`
   - OpenSpec validation: `openspec validate add-location-pet-rule-display --strict`
 - Findings:
   - Scope: Revision 3 新增顶层“景区浏览”Tab；`/cities` 选定城市后自动进入 `/attractions`；移除城市浏览页入口/列表；`web-app-shell` delta 从“归入城市浏览 Tab”改为“新增景区浏览 Tab”。无后端/数据变更。
@@ -34,7 +34,7 @@
   - Delta Spec: `openspec/changes/add-location-pet-rule-display/specs/attraction-pet-rules/spec.md`、`specs/web-app-shell/spec.md`
   - AC / DoV review: `openspec/changes/add-location-pet-rule-display/dov-ac-review.md`（Revision 2）
   - Proposal: `openspec/changes/add-location-pet-rule-display/proposal.md`（Revision 2）
-  - Upstream requirements: `requirement-workspace/requirements/REQ-008-location-pet-rule-display.md`（Revision 2）、`analysis/REQ-008/deep-dive.md`、`analysis/REQ-008/impact-brief.md`
+  - Upstream requirements: `requirement-workspace/requirements/REQ-009-location-pet-rule-display.md`（Revision 2）、`analysis/REQ-009/deep-dive.md`、`analysis/REQ-009/impact-brief.md`
   - OpenSpec validation: `openspec validate add-location-pet-rule-display --strict`
 - Findings:
   - Scope: Revision 2 收缩范围——移除 `entry_policy` / `entry_note` 与新增迁移；默认列表按现有 `maxPetsPerPerson >= 1`；详情展示现有 8 个非空政策字段。Delta 为 `attraction-pet-rules` 6 个 Requirement + `web-app-shell` 1 个 Requirement；与 proposal 一致，无静默扩围。
@@ -56,12 +56,12 @@
   - Delta Spec: `openspec/changes/add-location-pet-rule-display/specs/attraction-pet-rules/spec.md`、`openspec/changes/add-location-pet-rule-display/specs/web-app-shell/spec.md`
   - AC / DoV review: `openspec/changes/add-location-pet-rule-display/dov-ac-review.md`
   - Proposal: `openspec/changes/add-location-pet-rule-display/proposal.md`
-  - Upstream requirements: `requirement-workspace/requirements/REQ-008-location-pet-rule-display.md`、`requirement-workspace/analysis/REQ-008/deep-dive.md`、`requirement-workspace/analysis/REQ-008/impact-brief.md`
+  - Upstream requirements: `requirement-workspace/requirements/REQ-009-location-pet-rule-display.md`、`requirement-workspace/analysis/REQ-009/deep-dive.md`、`requirement-workspace/analysis/REQ-009/impact-brief.md`
   - P1 DoV: `docs/ai4se-plugins/20261116-150926-quality-checklist-report.md`
   - OpenSpec validation: `openspec validate add-location-pet-rule-display --strict` Pass
 - Findings:
   - Scope: Delta 包含 `attraction-pet-rules` 7 个 Requirement / 31 个 Scenario，以及 `web-app-shell` 1 个 Requirement / 3 个 Scenario；与 proposal 的 What Changes 一致，未发现静默扩范围。AC-2（行程内展示）明确 Out of Scope。
-  - Ambiguity: REQ-008 的 6 个 blocking 开放问题均已 resolved；3 个非阻塞展示细节（说明超长、分页形态、省级叶节点实现）已记录为 deferred，不构成 spec 歧义。
+  - Ambiguity: REQ-009 的 6 个 blocking 开放问题均已 resolved；3 个非阻塞展示细节（说明超长、分页形态、省级叶节点实现）已记录为 deferred，不构成 spec 歧义。
   - Conflict: `web-app-shell` 采用 ADDED Requirement，避免与 `destination-selection` 的 MODIFIED/RENAMED 需求重复；无内容冲突。
   - Residual concerns（不构成 G1 条件）: ① 本 change 应在 `destination-selection` 归档之后再归档，避免 `web-app-shell` 引用尚未落入 Living Spec 的“城市浏览”Tab；② 迁移暂记 V16，需与 US-04 分支已暂用的 V15 协调；③ 无管理 UI，三档/说明依赖迁移/种子人工录入；④ AC-2 依赖 US-48。
 - Decision: Pass

@@ -1,6 +1,6 @@
-# REQ-008 Deep Dive — 宠物友好景点携宠规则展示
+# REQ-009 Deep Dive — 宠物友好景点携宠规则展示
 
-- 上游需求：[REQ-008 宠物友好景点携宠规则展示](../../requirements/REQ-008-location-pet-rule-display.md)
+- 上游需求：[REQ-009 宠物友好景点携宠规则展示](../../requirements/REQ-009-location-pet-rule-display.md)
 - 日期：2026-11-16（Revision 3）
 - 范围：已选目的地城市下的景点列表 + 景点详情；只读现有 8 个政策字段；不含管理 UI、行程内展示、非景点类型与行政区政策
 - 修订说明：Revision 2 移除 `entry_policy` / `entry_note` 三档与补充说明，默认列表按 `max_pets_per_person >= 1`；Revision 3 新增顶层“景区浏览”Tab，`/cities` 选定城市后自动进入，城市浏览页不内嵌景点列表或入口按钮。

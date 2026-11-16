@@ -1,10 +1,10 @@
 ---
-id: REQ-008
+id: REQ-009
 title: 宠物友好景点携宠规则展示
 status: in-change
 discovery: Go (2026-11-16, Revision 2)
-impact: ../analysis/REQ-008/impact-brief.md
-deep_dive: ../analysis/REQ-008/deep-dive.md
+impact: ../analysis/REQ-009/impact-brief.md
+deep_dive: ../analysis/REQ-009/deep-dive.md
 sources:
   - requirement-workspace/requirements/REQ-006-destination-selection.md
   - requirement-workspace/analysis/REQ-006/deep-dive.md
@@ -29,7 +29,7 @@ sources:
   - https://github.com/afs-2026-zha2-group-3/pawtrip/issues/17
 ---
 
-# REQ-008: 宠物友好景点携宠规则展示
+# REQ-009: 宠物友好景点携宠规则展示
 
 ## Revision 记录
 
@@ -49,7 +49,7 @@ Go（2026-11-16）。`pawtrip_location` 已保存 6 项宠物政策（V7）以�
 
 ## 六字段
 
-1. **id**：REQ-008
+1. **id**：REQ-009
 2. **statement**：登录用户可通过顶部“景区浏览”Tab 查看景点，也可在 `/cities` 选定目的地后自动进入 `/attractions` 查看该城市已保存的景点；列表默认只显示 `maxPetsPerPerson >= 1` 的宠物友好景点，可切换显示该城市全部已保存景点。列表按 `maxPetsPerPerson` 显示三种状态：`>= 1` → “宠物友好”，`0` → “禁止携带”，`NULL` → “未配置”。点击景点进入详情，展示景点基础信息与现有 8 个非空政策字段（允许宠物类型、每位游客最多携带数、单只最大体重、单只最大肩高、牵引绳、疫苗证明、额外费用、预约要求）。本需求不提供编辑、城市选择、地点类型筛选、行程内展示或非景点类型；不新增数据库字段或迁移。
 3. **actors**：
    - 登录用户（任意角色）：浏览已选目的地城市的景点及携宠政策
@@ -282,7 +282,7 @@ Go（2026-11-16）。`pawtrip_location` 已保存 6 项宠物政策（V7）以�
 | 6 | Results verifiable | Pass | 列表门槛、三态 badge、字段值、空态、401/404 |
 | 7 | Dependencies / app-arch touchpoints | Pass | REQ-006 已选目的地、现有政策字段、前端路由 |
 | 8 | Open-questions gate | Pass | blocking = 0；非阻塞项已 resolved 或 deferred |
-| 9 | Data contract decided | Pass | [deep-dive](../analysis/REQ-008/deep-dive.md) 数据契约表 |
+| 9 | Data contract decided | Pass | [deep-dive](../analysis/REQ-009/deep-dive.md) 数据契约表 |
 | 10 | Boundary enumerated | Pass | deep-dive 边界表覆盖 0/NULL/>=1、切换、无城市、无数据、错误 |
 | 11 | Cross-REQ aligned | Pass | deep-dive 跨 REQ 表 |
 | 12 | Notification / display contract | Pass | 无通知；列表与详情展示契约已列明 |
@@ -291,4 +291,4 @@ DoR 结论：BLOCKER = 0。WARNING：默认门槛依赖 `max_pets_per_person` �
 
 ## Impact
 
-见 [REQ-008 Impact Brief](../analysis/REQ-008/impact-brief.md)。
+见 [REQ-009 Impact Brief](../analysis/REQ-009/impact-brief.md)。

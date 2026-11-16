@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedCitiesRouteImport } from './routes/_authenticated/cities'
 import { Route as AuthenticatedPawsRouteImport } from './routes/_authenticated/paws'
+import { Route as AuthenticatedTransportRulesRouteImport } from './routes/_authenticated/transport-rules'
 import { Route as AuthenticatedAdminCitiesRouteImport } from './routes/_authenticated/admin/cities'
 import { Route as AuthenticatedAdminLocationsRouteImport } from './routes/_authenticated/admin/locations'
 import { Route as AuthenticatedAttractionsIndexRouteImport } from './routes/_authenticated/attractions/index'
@@ -43,6 +44,12 @@ const AuthenticatedPawsRoute = AuthenticatedPawsRouteImport.update({
   path: '/paws',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedTransportRulesRoute =
+  AuthenticatedTransportRulesRouteImport.update({
+    id: '/transport-rules',
+    path: '/transport-rules',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAdminCitiesRoute =
   AuthenticatedAdminCitiesRouteImport.update({
     id: '/admin/cities',
@@ -73,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/cities': typeof AuthenticatedCitiesRoute
   '/paws': typeof AuthenticatedPawsRoute
+  '/transport-rules': typeof AuthenticatedTransportRulesRoute
   '/admin/cities': typeof AuthenticatedAdminCitiesRoute
   '/admin/locations': typeof AuthenticatedAdminLocationsRoute
   '/attractions/$poiId': typeof AuthenticatedAttractionsPoiIdRoute
@@ -82,6 +90,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/cities': typeof AuthenticatedCitiesRoute
   '/paws': typeof AuthenticatedPawsRoute
+  '/transport-rules': typeof AuthenticatedTransportRulesRoute
   '/': typeof AuthenticatedIndexRoute
   '/admin/cities': typeof AuthenticatedAdminCitiesRoute
   '/admin/locations': typeof AuthenticatedAdminLocationsRoute
@@ -94,6 +103,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/cities': typeof AuthenticatedCitiesRoute
   '/_authenticated/paws': typeof AuthenticatedPawsRoute
+  '/_authenticated/transport-rules': typeof AuthenticatedTransportRulesRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admin/cities': typeof AuthenticatedAdminCitiesRoute
   '/_authenticated/admin/locations': typeof AuthenticatedAdminLocationsRoute
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/cities'
     | '/paws'
+    | '/transport-rules'
     | '/admin/cities'
     | '/admin/locations'
     | '/attractions/$poiId'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/cities'
     | '/paws'
+    | '/transport-rules'
     | '/'
     | '/admin/cities'
     | '/admin/locations'
@@ -127,6 +139,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/cities'
     | '/_authenticated/paws'
+    | '/_authenticated/transport-rules'
     | '/_authenticated/'
     | '/_authenticated/admin/cities'
     | '/_authenticated/admin/locations'
@@ -176,6 +189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPawsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/transport-rules': {
+      id: '/_authenticated/transport-rules'
+      path: '/transport-rules'
+      fullPath: '/transport-rules'
+      preLoaderRoute: typeof AuthenticatedTransportRulesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin/cities': {
       id: '/_authenticated/admin/cities'
       path: '/admin/cities'
@@ -210,6 +230,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedCitiesRoute: typeof AuthenticatedCitiesRoute
   AuthenticatedPawsRoute: typeof AuthenticatedPawsRoute
+  AuthenticatedTransportRulesRoute: typeof AuthenticatedTransportRulesRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAdminCitiesRoute: typeof AuthenticatedAdminCitiesRoute
   AuthenticatedAdminLocationsRoute: typeof AuthenticatedAdminLocationsRoute
@@ -220,6 +241,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCitiesRoute: AuthenticatedCitiesRoute,
   AuthenticatedPawsRoute: AuthenticatedPawsRoute,
+  AuthenticatedTransportRulesRoute: AuthenticatedTransportRulesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAdminCitiesRoute: AuthenticatedAdminCitiesRoute,
   AuthenticatedAdminLocationsRoute: AuthenticatedAdminLocationsRoute,

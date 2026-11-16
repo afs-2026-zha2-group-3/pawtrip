@@ -48,7 +48,7 @@
 | V5 | Spec drift | Pass | [fact] | 未发现三档/迁移残留；`entryPolicy`/`entryNote` 仅出现在反向审计/历史记录 |
 | V6 | Design follow-through | Pass | [fact] | D1–D12 均落实；D9 改为独立景区 Tab + 自动跳转 |
 | V7 | Code pattern fit | Pass | [fact] | 复用既有 record/service/controller、Spring Data、TanStack Query、shadcn 组件与 Playwright 模式 |
-| V8 | Upstream basis | Pass | [fact] | 全部变更可追溯到 REQ-008/proposal/tasks；PR 文件清单无无关文件 |
+| V8 | Upstream basis | Pass | [fact] | 全部变更可追溯到 REQ-009/proposal/tasks；PR 文件清单无无关文件 |
 
 ## Evidence slots (E1 / E2 / E3)
 

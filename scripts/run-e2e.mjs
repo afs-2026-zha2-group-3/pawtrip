@@ -67,6 +67,7 @@ function verifySeededUsers(databasePath) {
   const expectedRoles = new Map([
     ["demo", "USER"],
     ["admin", "ADMIN"],
+    ["petowner", "USER"],
   ]);
   const database = new DatabaseSync(databasePath);
 
@@ -269,9 +270,12 @@ async function main() {
     );
 
     const playwrightArgs = process.argv.slice(2);
-    const playwrightEnv = playwrightArgs.includes("--headed")
-      ? { ...process.env, PAWTRIP_USE_SYSTEM_CHROME: "true" }
-      : process.env;
+    const playwrightEnv = {
+      ...process.env,
+      // 供测试用例直连临时库配置城市政策等无法经 API 维护的数据
+      PAWTRIP_E2E_DB_PATH: databasePath,
+      ...(playwrightArgs.includes("--headed") ? { PAWTRIP_USE_SYSTEM_CHROME: "true" } : {}),
+    };
     exitCode = await runProcess(
       npmCommand,
       ["run", "test:e2e:playwright", "--", ...playwrightArgs],

@@ -2,6 +2,8 @@ package com.pawtrip.server.destination;
 
 import com.pawtrip.server.location.AdministrativeRegion;
 import com.pawtrip.server.location.AdministrativeRegionRepository;
+import com.pawtrip.server.pet.DogBreed;
+import com.pawtrip.server.pet.PetType;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,19 +21,52 @@ class DestinationController {
 
 	@GetMapping("/api/destinations")
 	List<DestinationResponse> destinations(@RequestParam(required = false) String keyword,
-			@RequestParam(defaultValue = "false") boolean petFriendly) {
+			@RequestParam(defaultValue = "false") boolean petFriendly,
+			@RequestParam(required = false) PetType petType,
+			@RequestParam(required = false) Long breedId,
+			@RequestParam(required = false) Double shoulderHeightCm) {
 		String trimmedKeyword = keyword == null ? "" : keyword.trim();
-		return this.regionRepository.findAllByLevelOrderByNameAsc("city").stream()
-				.filter(region -> !petFriendly || isPetFriendly(region))
+		return this.regionRepository.findByLevelOrderByNameAsc("city").stream()
+				.filter(region -> !petFriendly || isPetFriendly(region, petType, breedId, shoulderHeightCm))
 				.map(this::toResponse)
 				.filter(candidate -> matchesKeyword(candidate, trimmedKeyword))
 				.toList();
 	}
 
-	// 宠物友好：未设每人限养数（null）或允许至少 1 只；限养 0 只视为不友好
-	private static boolean isPetFriendly(AdministrativeRegion region) {
+	// 宠物友好：限养数（null 或 >=1）且类型允许且品种允许且肩高允许；
+	// 类型 null=不允许（需求方 2026-11-16 修订）；品种空列表/肩高 null=未配置放行
+	private static boolean isPetFriendly(AdministrativeRegion region, PetType petType, Long breedId,
+			Double shoulderHeightCm) {
 		Integer maxPetsPerPerson = region.getMaxPetsPerPerson();
-		return maxPetsPerPerson == null || maxPetsPerPerson >= 1;
+		if (maxPetsPerPerson != null && maxPetsPerPerson < 1) {
+			return false;
+		}
+		if (petType != null && !allowsPetType(region, petType)) {
+			return false;
+		}
+		if (petType == PetType.DOG && breedId != null && !allowsDogBreed(region, breedId)) {
+			return false;
+		}
+		if (shoulderHeightCm != null && !allowsShoulderHeight(region, shoulderHeightCm)) {
+			return false;
+		}
+		return true;
+	}
+
+	private static boolean allowsPetType(AdministrativeRegion region, PetType petType) {
+		String allowedPetTypes = region.getAllowedPetTypes();
+		return allowedPetTypes != null && allowedPetTypes.contains(petType.name());
+	}
+
+	private static boolean allowsDogBreed(AdministrativeRegion region, Long breedId) {
+		List<DogBreed> allowedDogBreeds = region.getAllowedDogBreeds();
+		return allowedDogBreeds.isEmpty()
+				|| allowedDogBreeds.stream().anyMatch(breed -> breedId.equals(breed.getId()));
+	}
+
+	private static boolean allowsShoulderHeight(AdministrativeRegion region, double shoulderHeightCm) {
+		Double maxShoulderHeight = region.getMaxSinglePetShoulderHeightCm();
+		return maxShoulderHeight == null || shoulderHeightCm <= maxShoulderHeight;
 	}
 
 	private static boolean matchesKeyword(DestinationResponse candidate, String trimmedKeyword) {
@@ -46,12 +81,17 @@ class DestinationController {
 		String province = this.regionRepository.findById(region.getParentAdcode())
 				.map(AdministrativeRegion::getName)
 				.orElse(null);
+		List<Long> allowedDogBreedIds = region.getAllowedDogBreeds().stream()
+				.map(DogBreed::getId)
+				.toList();
 		// TODO: 政策收录状态与禁养犬种列表——数据来源确定后补充，当前占位为未收录/空列表
-		return new DestinationResponse(region.getAdcode(), region.getName(), province, false, List.of());
+		return new DestinationResponse(region.getAdcode(), region.getName(), province, false, List.of(),
+				region.getAllowedPetTypes(), allowedDogBreedIds, region.getMaxSinglePetShoulderHeightCm());
 	}
 
 	record DestinationResponse(String adcode, String name, String province, boolean policyCovered,
-			List<BannedBreedResponse> bannedBreeds) {
+			List<BannedBreedResponse> bannedBreeds, String allowedPetTypes, List<Long> allowedDogBreedIds,
+			Double maxSinglePetShoulderHeightCm) {
 	}
 
 	record BannedBreedResponse(String breedName, String source, String updated) {

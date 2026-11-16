@@ -1,7 +1,7 @@
-# REQ-008 Impact Brief — 宠物友好景点携宠规则展示
+# REQ-009 Impact Brief — 宠物友好景点携宠规则展示
 
 - 生成日期：2026-11-16（Revision 3）
-- 上游需求：[REQ-008 宠物友好景点携宠规则展示](../../requirements/REQ-008-location-pet-rule-display.md)
+- 上游需求：[REQ-009 宠物友好景点携宠规则展示](../../requirements/REQ-009-location-pet-rule-display.md)
 - Deep-dive：[deep-dive.md](deep-dive.md)
 - 修订说明：Revision 2 移除 `entry_policy` / `entry_note` 与新增迁移；默认列表按现有 `maxPetsPerPerson >= 1`；公开页只读数据库。Revision 3 新增顶层“景区浏览”Tab，选择城市后自动进入，城市浏览页不内嵌景点列表或入口按钮。
 
@@ -9,7 +9,7 @@
 
 | id | title | status | path |
 |---|---|---|---|
-| REQ-008 | 宠物友好景点携宠规则展示 | ready-for-split（Revision 2） | `requirements/REQ-008-location-pet-rule-display.md` |
+| REQ-009 | 宠物友好景点携宠规则展示 | ready-for-split（Revision 2） | `requirements/REQ-009-location-pet-rule-display.md` |
 
 阻塞开放问题：0；DoR BLOCKER：0；非阻塞未决项：2（分页形态、省级叶节点实现细节，均已 deferred）。
 

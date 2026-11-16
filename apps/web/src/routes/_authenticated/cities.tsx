@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,11 +20,13 @@ import {
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import type { DestinationCandidate } from "../../lib/destination-matching";
+import { matchesCityPetPolicy } from "../../lib/destination-matching";
 import {
   selectedDestinationStore,
   useSelectedDestination,
 } from "../../lib/selected-destination";
 import { destinationsQueryOptions } from "../../queries/destinations";
+import { petProfileQueryOptions } from "../../queries/pet-profile";
 
 export const Route = createFileRoute("/_authenticated/cities")({
   component: CitiesPage,
@@ -42,8 +45,16 @@ function CitiesPage() {
     return () => clearTimeout(timer);
   }, [keywordInput]);
 
+  const profile = useQuery({ ...petProfileQueryOptions, enabled: isClient });
+
   const destinations = useQuery({
-    ...destinationsQueryOptions({ keyword, petFriendly: friendlyOnly }),
+    ...destinationsQueryOptions({
+      keyword,
+      petFriendly: friendlyOnly,
+      petType: profile.data?.petType,
+      breedId: profile.data?.breedId,
+      shoulderHeightCm: profile.data?.shoulderHeightCm,
+    }),
     enabled: isClient,
     throwOnError: true,
     placeholderData: keepPreviousData,
@@ -64,6 +75,10 @@ function CitiesPage() {
   const candidates = destinations.data;
 
   const handleSelect = (candidate: DestinationCandidate) => {
+    if (selected?.adcode === candidate.adcode) {
+      selectedDestinationStore.clear();
+      return;
+    }
     selectedDestinationStore.select({
       adcode: candidate.adcode,
       cityName: candidate.name,
@@ -116,8 +131,23 @@ function CitiesPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {candidates.map((candidate) => {
             const isSelected = selected?.adcode === candidate.adcode;
+            const isMatch = profile.data
+              ? matchesCityPetPolicy(candidate, profile.data)
+              : null;
             return (
-              <Card key={candidate.adcode}>
+              <Card key={candidate.adcode} className="relative">
+                {isMatch != null ? (
+                  <Badge
+                    variant={isMatch ? "outline" : "destructive"}
+                    className={
+                      isMatch
+                        ? "absolute right-3 top-3 border-transparent bg-green-600 text-white"
+                        : "absolute right-3 top-3"
+                    }
+                  >
+                    {isMatch ? "匹配" : "不匹配"}
+                  </Badge>
+                ) : null}
                 <CardHeader>
                   <CardTitle>{candidate.name}</CardTitle>
                   <CardDescription>{candidate.province}</CardDescription>
@@ -126,7 +156,7 @@ function CitiesPage() {
                 <CardFooter>
                   <Button
                     size="sm"
-                    disabled={isSelected}
+                    title={isSelected ? "点击取消选定" : undefined}
                     onClick={() => handleSelect(candidate)}
                   >
                     {isSelected ? "已选定" : "选定"}

@@ -11,9 +11,9 @@
 
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
-| P1-1 | yes | Pass | `requirement-workspace/`、`requirement-workspace/analysis/REQ-008/`、`requirement-workspace/requirements/REQ-008-location-pet-rule-display.md` |
-| P1-2 | yes | Pass | `REQ-008` 六个 blocking OQ 均为 resolved；DoR BLOCKER = 0；DoR 12 项见需求文档 |
-| P1-3 | yes | Pass | `requirement-workspace/analysis/REQ-008/impact-brief.md`（含 as-is 资产、as-is→delta、blast radius、风险、拆分边界） |
+| P1-1 | yes | Pass | `requirement-workspace/`、`requirement-workspace/analysis/REQ-009/`、`requirement-workspace/requirements/REQ-009-location-pet-rule-display.md` |
+| P1-2 | yes | Pass | `REQ-009` 六个 blocking OQ 均为 resolved；DoR BLOCKER = 0；DoR 12 项见需求文档 |
+| P1-3 | yes | Pass | `requirement-workspace/analysis/REQ-009/impact-brief.md`（含 as-is 资产、as-is→delta、blast radius、风险、拆分边界） |
 | P1-4 | yes | Pass | `openspec/changes/add-location-pet-rule-display/proposal.md`（OpenSpec proposal 已生成） |
 | P1-5 | no | Skipped | explore kit 未运行；本次为定向代码/规格核对，无 `/sdd:explore` 证据，按可选未运行处理 |
 | P1-6 | no | Skipped | agent evalset 未运行；非 Agent 产品 |
