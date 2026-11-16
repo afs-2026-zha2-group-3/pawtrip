@@ -98,7 +98,7 @@
 
 - **并行会话**：主干上宠物档案能力由其他会话推进，`PetResponses.PetDetail` 字段可能变动（如新增品种）。判定只读取 `weightKg`/`shoulderHeightCm`/`hasVaccinationProof`，字段缺失时前端类型报错而非静默错判。
 - **REQ-005 未归档**：本 change 的 delta 以叠加方式写在 `transport-rules-comparison-page` 规格上，必须等 REQ-005 合并后再归档本 change，否则规格文件会丢内容。
-- **规则阈值仍需人工复核**：本 change 不解决 REQ-005 遗留的 4 条 `verifiedOn: null`；推荐结论建立在待复核规则上时，页面的"待复核"提示仍是唯一防线。
+- **规则阈值仍需人工复核**（2026-11-16 已关闭）：REQ-005 遗留的 4 条 `verifiedOn: null` 已补齐，8 条规则复核日期均为 `2026-11-16`（复核记录见 `docs/ai4se-plugins/20261116-124503-local-verify-report.md`「规则复核闭合」）；本 change 不再受该门禁阻隔，但推荐结论仍随规则时效性变化。
 - **判定口径的局限**：品种、烈性犬、笼具规格、办理时长都不参与判定，用户可能看到"推荐"但实际仍需人工确认；免责声明已覆盖，但文案未突出，属已知取舍。
 
 ## Open Questions

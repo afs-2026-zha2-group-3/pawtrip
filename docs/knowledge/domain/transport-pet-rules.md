@@ -36,11 +36,11 @@ area: domain
 | `flight-ca-checked` | 飞机 | 中国国际航空 / 托运 | ≤32 kg | conditional | 2026-11-16 |
 | `flight-mu-checked` | 飞机 | 中国东方航空 / 托运 | ≤32 kg | conditional | 2026-11-16 |
 | `flight-cz-checked` | 飞机 | 中国南方航空 / 托运 | ≤32 kg | conditional | 2026-11-16 |
-| `flight-hu-checked` | 飞机 | 海南航空 / 托运 | ≤32 kg | conditional | 待复核 |
-| `flight-hu-cabin` | 飞机 | 海南航空 / 客舱 | ≤5 kg | conditional | 待复核 |
+| `flight-hu-checked` | 飞机 | 海南航空 / 托运 | ≤32 kg | conditional | 2026-11-16 |
+| `flight-hu-cabin` | 飞机 | 海南航空 / 客舱 | ≤5 kg | conditional | 2026-11-16 |
 | `high-speed-rail-isolated` | 高铁 | 国铁「爱宠行」/ 隔离托运 | ≤15 kg（肩高 ≤40 cm、身长 ≤52 cm） | conditional | 2026-11-16 |
-| `train-baggage` | 火车 | 铁路行包托运 | ≤20 kg | conditional | 待复核 |
-| `drive-self` | 自驾 | 自行携带 | 无统一限制 | allowed | 待复核 |
+| `train-baggage` | 火车 | 铁路行包托运 | ≤20 kg | conditional | 2026-11-16 |
+| `drive-self` | 自驾 | 自行携带 | 无统一限制 | allowed | 2026-11-16 |
 
 来源清单（与常量 `sourceUrl` / `sourceTitle` 一致）：
 
@@ -50,8 +50,8 @@ area: domain
 4. 海南航空：宠物托运 — `https://www.hnair.com/lvxingxinxi/tsgh/tyxdw/`
 5. 海南航空：客舱运输宠物规定 — `https://www.hnair.com/adnews/cwkcgafu/`
 6. 国铁集团：高铁宠物托运「爱宠行」服务 — `http://wap.china-railway.com.cn/xwzx/zhxw/202604/t20260409_155381.html`
-7. 铁路旅客禁止、限制携带和托运物品目录（12306）— `https://mobile.12306.cn/otsmobile/h5/otsbussiness/info/prohibitedGoods.html`
-8. 自驾携宠出行注意事项（通用汇编）— `https://m.pcauto.com.cn/wenda/4656385.html`
+7. 铁路普速列车宠物托运口径（北青报转述国铁集团/95572）— `http://railway.china.com.cn/2025-04/09/content_117813396.shtml`
+8. 《道路交通安全法实施条例》第六十二条（不得有妨碍安全驾驶的行为）— `https://jtgl.beijing.gov.cn/jgj/jgxx/flfg/xzfg/119781/index.html`
 
 ## 档案判定与交通方式缓存
 
@@ -82,6 +82,8 @@ area: domain
 ## 维护约定
 
 - 规则为**人工摘录**自官方渠道，发布前须逐条复核来源；`verifiedOn` 为空表示未复核，页面显示「待复核」标记，且合并前必须补齐（缺一不得合并）。
+- 当前 8 条规则复核日期均为 `2026-11-16`（经需求方授权由 Agent 按官方页面摘要比对，记录见 `docs/ai4se-plugins/20261116-124503-local-verify-report.md`「规则复核闭合」）。其中火车行包引国铁集团公开口径（媒体转述），自驾引《道路交通安全法实施条例》第六十二条（自驾无承运方规则）；其余为承运方官方页面。
+- 海航客舱的基础费不写具体金额：承运方未在可核页面公布固定值，只写「以航司公布标准为准」，避免数字过期误导。
 - 更新规则 = 修改常量文件 + 更新 `verifiedOn`，无需改页面；新增列 = 在 `extra` 加键 + 在列配置加一项。
 - 页面与知识库均以承运方最新规则为准，不提供站内订票。
 - 规则目录本身不保存用户选择；「选择」列的选中值只写入浏览器 `sessionStorage`（见上节）。

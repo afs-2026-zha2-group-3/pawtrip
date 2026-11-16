@@ -349,8 +349,10 @@ function TransportRulesPage() {
               ))}
             </p>
             <p>
-              人工复核：共 {allRules.length} 条规则，已复核 {reviewedCount} 条，
-              待复核 {allRules.length - reviewedCount} 条；待复核条目不得发布，合并前须补齐复核日期。
+              人工复核：共 {allRules.length} 条规则，
+              {reviewedCount === allRules.length
+                ? "已全部复核。"
+                : `已复核 ${reviewedCount} 条，待复核 ${allRules.length - reviewedCount} 条；待复核条目不得发布，合并前须补齐复核日期。`}
             </p>
             <p>
               免责声明：规则可能随政策调整而滞后，请以承运方最新规则为准（飞机以航司最新规则为准，

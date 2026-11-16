@@ -159,7 +159,7 @@ const transportRules: readonly TransportRule[] = [
     },
     sourceUrl: "https://www.hnair.com/lvxingxinxi/tsgh/tyxdw/",
     sourceTitle: "海南航空：宠物托运",
-    verifiedOn: null,
+    verifiedOn: "2026-11-16",
     sortOrder: 40,
   },
   {
@@ -176,13 +176,13 @@ const transportRules: readonly TransportRule[] = [
     shoulderLimitCm: null,
     containerRequirement: "软质或专用宠物箱，长 × 宽 × 高 ≤35×28×24cm，置于前排座椅下",
     procedureSummary:
-      "提前申请并占用座位；客舱基础费 1430 元/航段/只（额外占座按经济舱票价叠加，每旅客最多 2 只占座）；乘机当日携宠物、宠物箱、协议书与证明文件，起飞前 2.5–3 小时到值机柜台办理",
+      "提前申请并占用座位；客舱基础费以航司公布标准为准，额外占座按经济舱票价叠加；乘机当日携宠物、宠物箱、协议书与证明文件，起飞前 2.5–3 小时到值机柜台办理",
     extra: {
       quarantineRequirement: "需《动物检疫合格证明》与客舱运输协议书",
     },
     sourceUrl: "https://www.hnair.com/adnews/cwkcgafu/",
     sourceTitle: "海南航空：客舱运输宠物规定",
-    verifiedOn: null,
+    verifiedOn: "2026-11-16",
     sortOrder: 50,
   },
   {
@@ -228,10 +228,9 @@ const transportRules: readonly TransportRule[] = [
     extra: {
       quarantineRequirement: "需《动物检疫合格证明》，具体以到站要求为准",
     },
-    sourceUrl:
-      "https://mobile.12306.cn/otsmobile/h5/otsbussiness/info/prohibitedGoods.html",
-    sourceTitle: "铁路旅客禁止、限制携带和托运物品目录",
-    verifiedOn: null,
+    sourceUrl: "http://railway.china.com.cn/2025-04/09/content_117813396.shtml",
+    sourceTitle: "铁路普速列车宠物托运口径（北青报转述国铁集团/95572）",
+    verifiedOn: "2026-11-16",
     sortOrder: 110,
   },
   {
@@ -253,9 +252,9 @@ const transportRules: readonly TransportRule[] = [
     extra: {
       quarantineRequirement: "无统一要求，跨省建议备《动物检疫合格证明》",
     },
-    sourceUrl: "https://m.pcauto.com.cn/wenda/4656385.html",
-    sourceTitle: "自驾携宠出行注意事项（通用汇编）",
-    verifiedOn: null,
+    sourceUrl: "https://jtgl.beijing.gov.cn/jgj/jgxx/flfg/xzfg/119781/index.html",
+    sourceTitle: "道路交通安全法实施条例（第六十二条：不得有妨碍安全驾驶的行为）",
+    verifiedOn: "2026-11-16",
     sortOrder: 120,
   },
 ];
