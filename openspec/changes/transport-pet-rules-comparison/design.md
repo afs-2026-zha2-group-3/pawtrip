@@ -7,7 +7,7 @@
 - 前端已具备 shadcn/ui（Base UI）组件：`components/ui/table.tsx`、`select.tsx`、`card.tsx`、`button.tsx`，无需新增依赖。
 - E2E 使用 Playwright（`e2e/*.spec.ts`），登录辅助函数在 `e2e/authentication.spec.ts` 内本地定义，账号 `demo / 123456`。
 - 规则内容与来源已在 `requirement-workspace/analysis/REQ-005/deep-dive.md`（D1–D8）人工摘录，其中火车、海航、自驾标记为待复核。
-- 规格见 `specs/transport-rules-catalog/spec.md`、`specs/transport-rules-comparison-page/spec.md`、`specs/web-app-shell/spec.md`；动机见 `proposal.md`。
+- 规格见 `specs/transport-rules-catalog/spec.md`、`specs/transport-rules-comparison-page/spec.md`、`specs/web-app-shell/spec.md`；动机见 `proposal.md`；验收层划分见 [atdd-design.md](./atdd-design.md)（仅 E2E，不写 UT），AC/DoV 复核见 [dov-ac-review.md](./dov-ac-review.md)。
 
 ## Goals / Non-Goals
 

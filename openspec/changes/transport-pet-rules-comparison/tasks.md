@@ -1,5 +1,7 @@
 # Tasks
 
+设计依据：[design.md](./design.md)、[atdd-design.md](./atdd-design.md)（验收层=E2E，不写 UT）、[dov-ac-review.md](./dov-ac-review.md)。
+
 ## 1. 规则常量（T1）
 
 - [ ] 1.1 新建 `apps/web/src/data/transport-rules.ts`：导出 `TransportRule` 类型（字段按 design.md D2）与 `transportRules` 常量；verification: `npm run build -w apps/web` 通过且 `tsc` 无类型错误
@@ -16,14 +18,15 @@
 - [ ] 2.4 实现表格底部区：来源说明、复核状态、以承运方/航司最新规则为准的免责声明、无站内订票提示；verification: 页面底部四类文案均可见
 - [ ] 2.5 添加无档案入口按钮（跳转预留档案路由，路径集中一处常量）；verification: 点击按钮导航到预留路径且不阻断规则浏览
 - [ ] 2.6 验证列可扩展：在 `transportRuleColumns` 临时追加一列并在规则 `extra` 填值（如体型限制），确认表格新增表头且基础四列不变；verification: 追加/移除列配置不需要改表格结构代码
-- [ ] 2.7 新增 `e2e/transport-rules.spec.ts`：登录 → 打开 `/transport-rules` → 断言四行、基础列表头、底部提示、航司下拉切换后飞机行文本变化；若保留扩展列（如体型限制）一并断言其表头；verification: `npm run test:e2e` 全绿
+- [ ] 2.7 新增 `e2e/transport-rules.spec.ts`（red-first，先跑应因路由不存在而失败），按 atdd-design.md 第 3 节分 4 组：`anonymous`（未登录 → `/login`）、`tab-and-routing`（Tab 存在/顺序/选中/直达）、`comparison-table`（四行、基础列表头、三态标识、航司切换前后对比、自驾无统一上限、底部四类文案、无档案按钮）、`no-backend-coupling`（无 `/api/transport-rules` 类请求、切换航司不产生请求）；verification: `npm run test:e2e` 全绿
 
 ## 3. 顶部导航接入（T3）
 
 - [ ] 3.1 修改 `apps/web/src/routes/__root.tsx` 的 `AppTabs`：`activeTab` 增加 `/transport-rules` 分支，`onValueChange` 增加导航，`TabsTrigger value="transport-rules"` 插在「城市浏览」之后、管理员分支之前；verification: 顶部导航出现「交通规则」Tab，点击后 URL 为 `/transport-rules` 且该 Tab 选中
 - [ ] 3.2 校对 Tab 可见性：普通用户（`USER`）可见「交通规则」，管理员 Tab 仍仅管理员可见；verification: 用 `demo` 与管理员账号分别登录截图/断言 Tab 集合
 - [ ] 3.3 在 `e2e/transport-rules.spec.ts` 增加守卫与导航断言：未登录访问 `/transport-rules` 跳 `/login`；登录后从顶部 Tab 进入且选中态正确；verification: `npm run test:e2e` 全绿
-- [ ] 3.4 确认 `routeTree.gen.ts` 由插件重新生成且无手改；verification: `git diff apps/web/src/routeTree.gen.ts` 仅含新增 `transport-rules` 路由条目
+- [ ] 3.4 补反向验收断言（atdd-design.md 第 6 节）：页面无订票入口、无“不推荐/符合”判定文案、`/cities` 仍正常且无交通规则入口；verification: 三个反向用例均通过且不引入新依赖
+- [ ] 3.5 确认 `routeTree.gen.ts` 由插件重新生成且无手改；verification: `git diff apps/web/src/routeTree.gen.ts` 仅含新增 `transport-rules` 路由条目
 
 ## 4. 文档与知识库
 
