@@ -1,0 +1,46 @@
+# Proposal
+
+## Why
+
+issue #15（US-47，Must）：目的地是行前规划链（政策查看 → 交通规则 → 景点选择 → 途内交通）的第一个决策点，当前 `/cities` 仅为空占位页，用户无法搜索、筛选并选定目的地，后续 story（#14/#16/#17/#18）缺少规划上下文。同时 AC-2/AC-4 所需的禁养犬种数据在系统中完全缺失，需要落地最小数据地基；宠物档案（含品种）由外部 change（US-01）交付，本 change 只读消费。
+
+上游需求：`requirement-workspace/requirements/REQ-005-destination-selection.md`（REQ-005，ready-for-split）；影响简报：`requirement-workspace/analysis/REQ-005/impact-brief.md`；数据/边界/展示契约：`requirement-workspace/analysis/REQ-005/deep-dive.md`。
+
+## What Changes
+
+- `/cities` 目的地选择页：城市名/省份关键字搜索、候选卡片（政策收录状态 Badge、命中禁养 Badge）、「宠物友好筛选」开关与候选计数、无结果空态
+- 候选范围为试点城市**珠海、杭州**（需求方 2026-11-16 指定）；筛选口径为「政策已收录且档案品种不在禁养名单」，无档案时退化为仅按收录状态筛选
+- 选定目的地后展示确认提示（含城市名与后续规划用途说明，不设独立规划上下文卡片）；选定状态存前端 localStorage，登出即清除；顶栏展示当前目的地 chip
+- 禁养匹配：品种名精确匹配；无档案、政策未收录、品种为空或「其他」不触发；命中时列表 Badge + 选定确认高亮提醒，不阻断选定
+- 最小数据地基：行政区维度新增政策收录标记与禁养犬种名单，Flyway 迁移注入珠海/杭州种子（政府公开文件摘录，实现期数据任务）
+- 宠物档案只读消费：档案（类型/品种）的表结构、breed 字段、读写接口与 `/paws` 页面均由外部 change（US-01）交付，本 change 仅读取当前用户档案品种用于筛选与禁养判定
+- 新增用户端城市候选只读接口（含收录状态与禁养名单），复用既有认证与 Problem Details 错误契约
+
+## Non-Goals
+
+- 不做政策条文详情页与政策文本维护（#14 / US-04 承接）
+- 不做管理端政策/禁养名单维护界面（数据由种子迁移注入）
+- 不做选定目的地的服务端持久化（已确认前端本地存储）
+- 不实现宠物档案（表结构、breed 字段、读写接口与 `/paws` 页面均由外部 change / US-01 交付）
+- 不做设施与评价维度的宠物友好筛选（Release 2）
+- 不改动既有认证、错误契约、高德集成与地点管理管理端行为
+
+## Capabilities
+
+### New Capabilities
+
+- `destination-selection`: 目的地候选搜索、宠物友好筛选、选定与规划上下文生效、禁养犬种匹配与高亮提醒，及其依赖的城市政策收录状态/禁养名单数据契约
+
+### Modified Capabilities
+
+- `web-app-shell`: 导航 Tab 事实补齐（代码已含 `Cities` Tab 但 spec 未记录）；`/cities` 纳入 Tab 同步与登录守卫；新增顶栏目的地上下文展示与登出清除本地选定状态
+
+## Impact
+
+- 自身（self）：后端 `apps/server` 新增 destination（用户端城市候选）功能模块、新增 Flyway 迁移（禁养名单+收录标记+试点种子）；前端 `apps/web` 实现 `/cities` 页面、新增 cities queries 与档案只读 query、localStorage 选定状态工具、顶栏目的地 chip 与登出清理；不改动 `/paws` 页面
+- 上游（upstream）：依赖 REQ-005 已确认决策与原型口径；**外部依赖：宠物档案 change（US-01，现远端 `feature/add-pet-schema` 仅含 pet 表 schema，无 breed 字段、无接口、无 `/paws` 页面）**，契约要求：breed 枚举与禁养名单同一词表、提供当前用户档案读取接口、`/paws` 档案表单；种子数据依赖政府公开文件摘录（实现期数据任务）；复用既有认证/错误/数据访问契约，不修改其提供方
+- 下游（downstream）：#14（政策详情）复用本 change 的禁养判定与收录数据；#16/#17/#18 读取前端选定目的地上下文；`web-app-shell` spec 滞后事实顺带修正
+- 测试：后端接口验收测试（候选/筛选/禁养匹配边界，档案输入以外部契约为准）+ Playwright E2E 主链路（搜索→筛选→选定→提醒；档案相关用例依赖外部 change 交付后就绪）
+- 文档：`docs/knowledge/architecture/README.md` 增补模块与约定
+- 规模预估：M（中等）；无既有契约破坏（non-breaking）
+- 风险：① 珠海/杭州禁养名单与收录状态需实现期从政府公开文件摘录（deferred 数据任务，不阻塞规格）；② 品种枚举与禁养名单必须同一词表以保证精确匹配；③ **外部档案 change 尚未交付 breed/接口/页面，AC-2 完整口径与 AC-4 的实现及 E2E 受其进度阻塞，需与对方协调契约与合并顺序（2026-11-16 需求方确认：等对方补齐，本 change 只消费）**

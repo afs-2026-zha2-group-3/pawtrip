@@ -43,6 +43,9 @@ public class AdministrativeRegion {
 	@Column(name = "reservation_required")
 	private Boolean reservationRequired;
 
+	@Column(name = "policy_covered", nullable = false)
+	private boolean policyCovered;
+
 	protected AdministrativeRegion() {
 	}
 
@@ -96,6 +99,10 @@ public class AdministrativeRegion {
 
 	public Boolean getReservationRequired() {
 		return this.reservationRequired;
+	}
+
+	public boolean isPolicyCovered() {
+		return this.policyCovered;
 	}
 
 	public void updatePetPolicies(Integer maxPetsPerPerson, Double maxSinglePetWeightKg, Boolean leashRequired,

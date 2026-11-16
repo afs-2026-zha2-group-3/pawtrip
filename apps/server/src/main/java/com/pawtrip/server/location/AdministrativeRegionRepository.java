@@ -8,4 +8,6 @@ public interface AdministrativeRegionRepository extends JpaRepository<Administra
 
 	List<AdministrativeRegion> findAllByLevelOrderByNameAsc(String level);
 
+	List<AdministrativeRegion> findAllByPolicyCoveredTrueOrderByAdcodeAsc();
+
 }
