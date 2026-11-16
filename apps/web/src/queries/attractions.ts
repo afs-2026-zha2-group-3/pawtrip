@@ -10,6 +10,7 @@ export interface AttractionSummary {
   address: string | null;
   regionCode: string | null;
   maxPetsPerPerson: number | null;
+  petPolicies: AttractionPetPolicies;
 }
 
 export interface AttractionDetail {

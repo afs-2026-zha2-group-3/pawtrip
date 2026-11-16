@@ -109,6 +109,50 @@ class LocationQueryApiTest {
 	}
 
 	@Test
+	void listItemsCarryFullPetPoliciesAndKeepExistingFields() throws Exception {
+		JsonNode body = json(get("/api/locations/attractions")
+				.param("regionCode", "440400")
+				.param("includeWithoutRules", "true")
+				.with(user("demo").roles("USER")));
+
+		JsonNode friendly = item(body, "poi-zhu-a");
+		assertThat(friendly.path("poiId").asString()).isEqualTo("poi-zhu-a");
+		assertThat(friendly.path("name").asString()).isEqualTo("情侣路");
+		assertThat(friendly.path("address").asString()).isEqualTo("测试地址");
+		assertThat(friendly.path("maxPetsPerPerson").asInt()).isEqualTo(1);
+		assertThat(friendly.path("petPolicies").path("allowedPetTypes").asString()).isEqualTo("DOG");
+		assertThat(friendly.path("petPolicies").path("maxPetsPerPerson").asInt()).isEqualTo(1);
+		assertThat(friendly.path("petPolicies").path("maxSinglePetWeightKg").asDouble()).isEqualTo(8.5);
+		assertThat(friendly.path("petPolicies").path("maxSinglePetShoulderHeightCm").asDouble()).isEqualTo(40.0);
+		assertThat(friendly.path("petPolicies").path("leashRequired").asBoolean()).isTrue();
+		assertThat(friendly.path("petPolicies").path("vaccinationProofRequired").asBoolean()).isFalse();
+		assertThat(friendly.path("petPolicies").path("extraFeeCents").asLong()).isEqualTo(1050L);
+		assertThat(isNullOrMissing(friendly.path("petPolicies").path("reservationRequired"))).isTrue();
+
+		JsonNode unconfigured = item(body, "poi-zhu-d");
+		assertThat(unconfigured.path("petPolicies").isObject()).isTrue();
+		assertThat(isNullOrMissing(unconfigured.path("petPolicies").path("maxPetsPerPerson"))).isTrue();
+		assertThat(isNullOrMissing(unconfigured.path("petPolicies").path("allowedPetTypes"))).isTrue();
+		assertThat(isNullOrMissing(unconfigured.path("petPolicies").path("leashRequired"))).isTrue();
+
+		assertThat(body.path("page").asInt()).isEqualTo(1);
+		assertThat(body.path("totalElements").asLong()).isEqualTo(5);
+	}
+
+	@Test
+	void defaultListItemsAlsoCarryPetPolicies() throws Exception {
+		JsonNode body = json(get("/api/locations/attractions")
+				.param("regionCode", "440400")
+				.with(user("demo").roles("USER")));
+
+		assertThat(item(body, "poi-zhu-a").path("petPolicies").path("maxSinglePetWeightKg").asDouble())
+			.isEqualTo(8.5);
+		assertThat(item(body, "poi-zhu-e").path("petPolicies").path("allowedPetTypes").asString())
+			.isEqualTo("CAT,DOG");
+		assertThat(item(body, "poi-zhu-e").path("petPolicies").path("extraFeeCents").asLong()).isZero();
+	}
+
+	@Test
 	void regionPrefixMatchesDistrictRegionCodes() throws Exception {
 		JsonNode body = json(get("/api/locations/attractions")
 				.param("regionCode", "440400")

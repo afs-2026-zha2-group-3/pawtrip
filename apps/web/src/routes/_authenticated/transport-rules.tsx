@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,8 +25,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useActiveTrip, usePolicySubjects } from "../../lib/trip/selectors";
 import { evaluateRuleForPet } from "../../data/transport-rule-match";
-import { petsQueryOptions } from "../../queries/pets";
 import {
   allowanceStatusLabels,
   getFlightRules,
@@ -88,10 +87,10 @@ function TransportRulesPage() {
   );
   const navigate = useNavigate();
   const [selectedMode, setSelectedMode] = useState<TransportMode | null>(null);
-  const petsQuery = useQuery(petsQueryOptions());
-  const pets = petsQuery.data ?? [];
-  const showRecommendation =
-    !petsQuery.isPending && !petsQuery.isError && pets.length > 0;
+  const active = useActiveTrip();
+  const subjects = usePolicySubjects();
+  const pets = subjects.subjects;
+  const showRecommendation = subjects.status === "ready" && pets.length > 0;
 
   // 在挂载后读取缓存，避免服务端渲染与客户端首帧不一致
   useEffect(() => {
@@ -362,7 +361,7 @@ function TransportRulesPage() {
             <p>PawTrip 不提供站内订票，请通过官方或第三方渠道预订。</p>
           </section>
 
-          {petsQuery.isError ? (
+          {subjects.status === "error" ? (
             <section className="rounded-lg border border-border p-3">
               <p className="text-sm text-destructive">
                 宠物档案加载失败，请刷新重试。
@@ -370,7 +369,15 @@ function TransportRulesPage() {
             </section>
           ) : null}
 
-          {!petsQuery.isPending && !petsQuery.isError && pets.length === 0 ? (
+          {subjects.status === "loading" && active ? (
+            <section className="rounded-lg border border-border p-3">
+              <p className="text-sm text-muted-foreground">
+                正在读取激活行程绑定的宠物档案…
+              </p>
+            </section>
+          ) : null}
+
+          {subjects.status === "none" ? (
             <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
               <p className="text-sm">还没有宠物档案，暂时无法给出推荐。</p>
               <Button
