@@ -20,5 +20,5 @@
 - [x] 3.1 运行 `npx tsc --noEmit -p apps/web/tsconfig.json`、`npm test -w apps/web`、`npm run build`、`npm run test:e2e`，全部通过。
 - [x] 3.2 启动前后端在浏览器手动验证：狗必选品种、编辑品种、切换猫清除品种、历史无品种狗详情显示未设置。
 - [x] 3.3 更新 `docs/knowledge/architecture/README.md`：补充宠物品种字段、必填规则与品种名录接口用法。
-- [ ] 3.4 提交并推送到新分支 `feature/add-pet-dog-breed`，创建新 PR 并在描述中补充两个变更的 Spec ID（PR #40 已合并）。
+- [x] 3.4 提交并推送到新分支 `feature/add-pet-dog-breed`，创建新 PR 并在描述中补充两个变更的 Spec ID（PR #40 已合并）。
 - [ ] 3.5 待确认后归档本变更并同步 `paws-page` 主规格。
