@@ -30,9 +30,9 @@
 
 ## 4. 文档与知识库
 
-- [ ] 4.1 在 `docs/knowledge/domain/` 补充交通携宠规则摘要与来源清单（12306/国航/东航/南航/海航），指向常量模块；verification: `bash scripts/kb-lint.sh` 通过
-- [ ] 4.2 更新 `docs/knowledge/_INDEX.md` 或对应模块卡片，使新内容可被检索；verification: `bash scripts/verify-links.sh` 通过且索引链接可达
-- [ ] 4.3 在常量模块顶部注释写明"规则为人工摘录、发布前复核、以承运方最新规则为准"；verification: 文件头注释存在且与实际免责文案一致
+- [x] 4.1 在 `docs/knowledge/domain/` 补充交通携宠规则摘要与来源清单（12306/国航/东航/南航/海航），指向常量模块；verification: `bash scripts/kb-lint.sh` 通过（实际输出 `SKIP: KB lint is not configured`，该脚本仍为 bootstrap 占位；改为人工核对：`docs/knowledge/domain/transport-pet-rules.md` 已含 8 条记录摘要、8 条来源清单与常量模块指针）
+- [x] 4.2 更新 `docs/knowledge/_INDEX.md` 或对应模块卡片，使新内容可被检索；verification: `bash scripts/verify-links.sh` 通过且索引链接可达（实际：`scripts/verify-links.sh` 仍为 bootstrap 占位并 `exit 1`，记为脚本不可用；已人工核对 `_INDEX.md` 新增 `domain/transport-pet-rules` 行使相对链接 `domain/transport-pet-rules.md` 指向存在的文件）
+- [x] 4.3 在常量模块顶部注释写明"规则为人工摘录、发布前复核、以承运方最新规则为准"；verification: 文件头注释存在且与实际免责文案一致（`apps/web/src/data/transport-rules.ts` 第 1–3 行已含该三条约定，与页面底部免责文案一致）
 
 ## 5. 集成检查
 
