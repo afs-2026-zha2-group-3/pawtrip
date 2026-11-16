@@ -17,9 +17,9 @@ class CityPetPolicyController {
 	}
 
 	@GetMapping("/{adcode}/pet-policy")
-	CityPetPolicyResponses.PetPolicy policy(@PathVariable String adcode,
-			@RequestParam(required = false) String breed) {
-		return this.cityPetPolicyService.policyFor(adcode, breed);
+	CityPetPolicyResponses.PetPolicy petPolicy(@PathVariable String adcode,
+			@RequestParam(required = false) Long breedId) {
+		return this.cityPetPolicyService.policyFor(adcode, breedId);
 	}
 
 }

@@ -14,6 +14,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+import javax.sql.DataSource;
 
 import com.pawtrip.server.location.AdministrativeRegion;
 import com.pawtrip.server.location.AdministrativeRegionRepository;
@@ -54,23 +59,27 @@ class CityPetPolicyApiTest {
 	@Autowired
 	AdministrativeRegionRepository regionRepository;
 
+	@Autowired
+	DataSource dataSource;
+
 	@BeforeEach
 	void createEmptyBannedListFixture() {
 		this.regionRepository.saveAndFlush(new AdministrativeRegion("990005", "Test city", null, "province", null));
 		this.policyRepository.saveAndFlush(new CityPetPolicy("990005", "严格管理区", "[\"禁止饲养危险犬\"]",
-				"[]", "测试来源", null, "2025-07"));
+				"测试来源", null, "2025-07"));
 	}
 
 	@AfterEach
-	void removeEmptyBannedListFixture() {
+	void removeEmptyBannedListFixture() throws SQLException {
+		deleteAllowedBreeds("990005");
 		this.policyRepository.deleteById("990005");
 		this.regionRepository.deleteById("990005");
 	}
 
 	@Test
-	void returnsPolicyAndMatchedFlagForBannedBreed() throws Exception {
+	void returnsPolicyAndMatchedFlagForBannedBreedId() throws Exception {
 		this.mockMvc.perform(get("/api/cities/440400/pet-policy")
-				.param("breed", "比特斗牛梗犬")
+				.param("breedId", "18")
 				.with(user("demo")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.adcode").value("440400"))
@@ -80,54 +89,72 @@ class CityPetPolicyApiTest {
 			.andExpect(jsonPath("$.updatedMonth").value("2025-07"))
 			.andExpect(jsonPath("$.source.title").isNotEmpty())
 			.andExpect(jsonPath("$.policies").isArray())
-			.andExpect(jsonPath("$.bannedBreeds", hasItem("比特斗牛梗犬")))
-			.andExpect(jsonPath("$.match.breed").value("比特斗牛梗犬"))
-			.andExpect(jsonPath("$.match.matched").value(true));
+			.andExpect(jsonPath("$.bannedBreeds.length()").value(8))
+			.andExpect(jsonPath("$.bannedBreeds", hasItem("比特犬")))
+			.andExpect(jsonPath("$.allowedBreeds").isEmpty())
+			.andExpect(jsonPath("$.match.breedId").value(18))
+			.andExpect(jsonPath("$.match.breedName").value("比特犬"))
+			.andExpect(jsonPath("$.match.matched").value(true))
+			.andExpect(jsonPath("$.match.allowed").value(false));
 	}
 
 	@Test
-	void returnsUnmatchedFlagForNonBannedBreed() throws Exception {
+	void returnsNoMatchWhenBreedIsNeitherBannedNorAllowed() throws Exception {
 		this.mockMvc.perform(get("/api/cities/440400/pet-policy")
-				.param("breed", "柯基")
+				.param("breedId", "10")
 				.with(user("demo")))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.match.breed").value("柯基"))
-			.andExpect(jsonPath("$.match.matched").value(false));
+			.andExpect(jsonPath("$.match").value(nullValue()));
 	}
 
 	@Test
-	void returnsNoMatchWhenBreedIsMissing() throws Exception {
+	void returnsNoMatchWhenBreedIdIsMissing() throws Exception {
 		this.mockMvc.perform(get("/api/cities/440400/pet-policy").with(user("demo")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.match").value(nullValue()));
 	}
 
 	@Test
-	void returnsNoMatchWhenBreedIsOther() throws Exception {
+	void returnsNoMatchWhenBreedIdIsNotSelectable() throws Exception {
 		this.mockMvc.perform(get("/api/cities/440400/pet-policy")
-				.param("breed", "其他")
+				.param("breedId", "999")
 				.with(user("demo")))
 			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.covered").value(true))
 			.andExpect(jsonPath("$.match").value(nullValue()));
-	}
-
-	@Test
-	void doesNotMatchPartialBreedName() throws Exception {
-		this.mockMvc.perform(get("/api/cities/440400/pet-policy")
-				.param("breed", "比特")
-				.with(user("demo")))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.match.matched").value(false));
 	}
 
 	@Test
 	void returnsNoMatchWhenBannedListIsEmpty() throws Exception {
 		this.mockMvc.perform(get("/api/cities/990005/pet-policy")
-				.param("breed", "比特斗牛梗犬")
+				.param("breedId", "18")
 				.with(user("demo")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.covered").value(true))
 			.andExpect(jsonPath("$.bannedBreeds").isEmpty())
+			.andExpect(jsonPath("$.allowedBreeds").isEmpty())
+			.andExpect(jsonPath("$.match").value(nullValue()));
+	}
+
+	@Test
+	void returnsAllowedMatchForDogBreedConfiguredByAdmin() throws Exception {
+		insertAllowedBreed("990005", 10L);
+
+		this.mockMvc.perform(get("/api/cities/990005/pet-policy")
+				.param("breedId", "10")
+				.with(user("demo")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.allowedBreeds.length()").value(1))
+			.andExpect(jsonPath("$.allowedBreeds", hasItem("柯基犬")))
+			.andExpect(jsonPath("$.match.breedId").value(10))
+			.andExpect(jsonPath("$.match.breedName").value("柯基犬"))
+			.andExpect(jsonPath("$.match.matched").value(false))
+			.andExpect(jsonPath("$.match.allowed").value(true));
+
+		this.mockMvc.perform(get("/api/cities/990005/pet-policy")
+				.param("breedId", "18")
+				.with(user("demo")))
+			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.match").value(nullValue()));
 	}
 
@@ -161,6 +188,25 @@ class CityPetPolicyApiTest {
 
 		this.mockMvc.perform(get("/api/admin/pet-policies").with(user("admin").roles("ADMIN")))
 			.andExpect(status().isNotFound());
+	}
+
+	private void insertAllowedBreed(String adcode, long dogBreedId) throws SQLException {
+		try (Connection connection = this.dataSource.getConnection();
+				PreparedStatement insert = connection.prepareStatement(
+						"INSERT INTO city_allowed_dog_breed (adcode, dog_breed_id) VALUES (?, ?)")) {
+			insert.setString(1, adcode);
+			insert.setLong(2, dogBreedId);
+			insert.executeUpdate();
+		}
+	}
+
+	private void deleteAllowedBreeds(String adcode) throws SQLException {
+		try (Connection connection = this.dataSource.getConnection();
+				PreparedStatement delete = connection.prepareStatement(
+						"DELETE FROM city_allowed_dog_breed WHERE adcode = ?")) {
+			delete.setString(1, adcode);
+			delete.executeUpdate();
+		}
 	}
 
 }
