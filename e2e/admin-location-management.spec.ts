@@ -68,7 +68,13 @@ async function mockAdminLocationLists(page: Page) {
 
   await page.route("**/api/admin/location-types", async (route) => {
     await route.fulfill({
-      json: [{ key: "attraction", label: "景点", typeCodes: ["110000"] }],
+      json: [
+        { key: "attraction", label: "景点", typeCodes: ["110000"] },
+        { key: "hotel", label: "住宿", typeCodes: ["100000"] },
+        { key: "pet-hospital", label: "宠物医院", typeCodes: ["090700"] },
+        { key: "pet-supplies", label: "宠物用品店", typeCodes: ["061211"] },
+        { key: "restaurant", label: "餐厅", typeCodes: ["050000"] },
+      ],
     });
   });
 
@@ -236,6 +242,11 @@ test("ADMIN sees the location tab and can filter and paginate both server tables
   await expect(page.getByText("请选择城市后查询")).toBeVisible();
   expect(listRequests.amap).toBe(0);
   await expect(page.getByRole("combobox", { name: "地点类型筛选" })).toContainText("景点");
+  await page.getByRole("combobox", { name: "地点类型筛选" }).click();
+  for (const label of ["景点", "住宿", "宠物医院", "宠物用品店", "餐厅"]) {
+    await expect(page.getByRole("option", { name: label })).toBeVisible();
+  }
+  await page.keyboard.press("Escape");
 
   const firstAmapPage = page.waitForResponse((response) => {
     const url = new URL(response.url());
