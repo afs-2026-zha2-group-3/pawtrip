@@ -6,8 +6,9 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSelectedDestination } from "../../../lib/selected-destination";
-import { useTripDuration } from "../../../lib/trip-duration";
+import { PolicySubjectNotice } from "@/components/trip/policy-tags";
+import { useActiveTrip, usePolicySubjects, useTripCity } from "../../../lib/trip/selectors";
+import { tripActions } from "../../../lib/trip/store";
 import { attractionsQueryOptions } from "../../../queries/attractions";
 import { AttractionCard } from "./-attraction-card";
 
@@ -20,8 +21,10 @@ const PAGE_SIZE = 20;
 function AttractionsPage() {
   const isClient = typeof window !== "undefined";
   const navigate = useNavigate();
-  const selected = useSelectedDestination();
-  const totalDays = useTripDuration() ?? 1;
+  const active = useActiveTrip();
+  const city = useTripCity();
+  const policySubjects = usePolicySubjects();
+  const totalDays = active?.totalDays ?? 1;
   const [includeWithoutRules, setIncludeWithoutRules] = useState(false);
   const [page, setPage] = useState(1);
   const [activeDay, setActiveDay] = useState("1");
@@ -32,7 +35,8 @@ function AttractionsPage() {
       setActiveDay(String(totalDays));
     }
   }, [activeDay, totalDays]);
-  const regionCode = selected?.adcode ?? "";
+
+  const regionCode = active?.cityAdcode ?? "";
   const attractions = useQuery({
     ...attractionsQueryOptions({ regionCode, includeWithoutRules, page, pageSize: PAGE_SIZE }),
     enabled: isClient && Boolean(regionCode),
@@ -50,15 +54,22 @@ function AttractionsPage() {
     return null;
   }
 
-  if (!selected) {
+  if (!active) {
     return (
       <main className="mx-auto w-full max-w-3xl p-6">
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>请先选择目的地</EmptyTitle>
-            <EmptyDescription>选择目的地后才能查看该城市的景点。</EmptyDescription>
+            <EmptyTitle>先创建或激活行程</EmptyTitle>
+            <EmptyDescription>
+              景点推荐以激活行程的城市为准；请先在「城市浏览」创建行程或在「Trips」激活已有行程。
+            </EmptyDescription>
           </EmptyHeader>
-          <Button onClick={() => void navigate({ to: "/cities" })}>去选择目的地</Button>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button onClick={() => void navigate({ to: "/cities" })}>去创建行程</Button>
+            <Button variant="outline" onClick={() => void navigate({ to: "/trips" })}>
+              查看我的行程
+            </Button>
+          </div>
         </Empty>
       </main>
     );
@@ -77,6 +88,8 @@ function AttractionsPage() {
   }
 
   const data = attractions.data;
+  const cityName = city?.adcode === active.cityAdcode ? city.name : active.cityAdcode;
+  const currentDay = Number(activeDay);
   const checkingAny = friendlyEmpty && anyAttractions.isPending;
   const anyExists = (anyAttractions.data?.totalElements ?? 0) > 0;
   const emptyTitle = includeWithoutRules
@@ -91,7 +104,7 @@ function AttractionsPage() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
       <div className="flex flex-wrap items-center gap-4">
-        <h1 className="text-lg font-medium">{selected.cityName}景点</h1>
+        <h1 className="text-lg font-medium">{cityName}景点</h1>
         <label className="flex cursor-pointer items-center gap-2 text-sm">
           <Checkbox
             aria-label="显示全部景点"
@@ -108,6 +121,8 @@ function AttractionsPage() {
         </span>
       </div>
 
+      <PolicySubjectNotice subjects={policySubjects} />
+
       <Tabs
         value={activeDay}
         onValueChange={(value) => {
@@ -122,7 +137,9 @@ function AttractionsPage() {
           ))}
         </TabsList>
       </Tabs>
-      <p className="text-sm text-muted-foreground">当前查看第 {activeDay} 天景点</p>
+      <p className="text-sm text-muted-foreground">
+        当前查看第 {activeDay} 天景点，可将景点加入第 {activeDay} 天或暂不排期。
+      </p>
 
       {data.items.length === 0 ? (
         <Empty>
@@ -139,11 +156,16 @@ function AttractionsPage() {
             <AttractionCard
               key={attraction.poiId}
               attraction={attraction}
+              day={currentDay}
               onOpen={() =>
                 void navigate({
                   to: "/attractions/$poiId",
                   params: { poiId: attraction.poiId },
                 })
+              }
+              onAddDay={() => tripActions.addStop(currentDay, attraction.poiId)}
+              onAddUnscheduled={() =>
+                tripActions.addStop("unscheduled", attraction.poiId)
               }
             />
           ))}

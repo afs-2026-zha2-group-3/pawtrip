@@ -35,10 +35,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "../lib/http/api-error";
-import {
-  selectedDestinationStore,
-  useSelectedDestination,
-} from "../lib/selected-destination";
+import { tripActions } from "../lib/trip/store";
 import { authQueryOptions, logout } from "../queries/auth";
 
 import appCss from "../styles.css?url";
@@ -75,12 +72,11 @@ function AppHeader() {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const isClient = typeof window !== "undefined";
   const auth = useQuery({ ...authQueryOptions, enabled: isClient });
-  const selectedDestination = useSelectedDestination();
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
       queryClient.clear();
-      selectedDestinationStore.clear();
+      tripActions.clearTripContext();
       void navigate({ to: "/login", replace: true });
     },
   });
@@ -88,11 +84,6 @@ function AppHeader() {
   return (
     <header className="relative flex items-center justify-center px-4 py-4">
       <AppTabs />
-      {auth.isSuccess ? (
-        <span className="absolute left-4 text-sm text-muted-foreground">
-          {selectedDestination ? selectedDestination.cityName : "目的地未选"}
-        </span>
-      ) : null}
       {auth.isSuccess ? (
         <AlertDialog
           open={logoutDialogOpen}
@@ -159,11 +150,13 @@ function AppTabs() {
         ? "cities"
         : pathname === "/transport-rules"
           ? "transport-rules"
-          : pathname === "/admin/locations"
-            ? "locations"
-            : pathname === "/admin/cities"
-              ? "admin-cities"
-              : "home";
+          : pathname === "/trips"
+            ? "trips"
+            : pathname === "/admin/locations"
+              ? "locations"
+              : pathname === "/admin/cities"
+                ? "admin-cities"
+                : "home";
 
   return (
     <Tabs
@@ -177,6 +170,8 @@ function AppTabs() {
           void navigate({ to: "/attractions" });
         } else if (value === "transport-rules") {
           void navigate({ to: "/transport-rules" });
+        } else if (value === "trips") {
+          void navigate({ to: "/trips" });
         } else if (value === "locations") {
           void navigate({ to: "/admin/locations" });
         } else if (value === "admin-cities") {
@@ -192,6 +187,7 @@ function AppTabs() {
         <TabsTrigger value="cities">城市浏览</TabsTrigger>
         <TabsTrigger value="attractions">景区浏览</TabsTrigger>
         <TabsTrigger value="transport-rules">交通规则</TabsTrigger>
+        <TabsTrigger value="trips">Trips</TabsTrigger>
         {auth.data?.role === "ADMIN" ? (
           <>
             <TabsTrigger value="locations">地点管理</TabsTrigger>

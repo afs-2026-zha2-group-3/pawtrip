@@ -16,7 +16,7 @@ final class LocationQueryResponses {
 	}
 
 	record AttractionSummary(String poiId, String name, String typeCode, String typeGroup, String address,
-			String regionCode, Integer maxPetsPerPerson) {
+			String regionCode, Integer maxPetsPerPerson, PetPolicies petPolicies) {
 
 		static AttractionSummary from(PawtripLocation location) {
 			return new AttractionSummary(
@@ -26,7 +26,8 @@ final class LocationQueryResponses {
 					location.getTypeGroup(),
 					location.getAddress(),
 					location.getRegionCode(),
-					location.getMaxPetsPerPerson());
+					location.getMaxPetsPerPerson(),
+					PetPolicies.from(location));
 		}
 	}
 

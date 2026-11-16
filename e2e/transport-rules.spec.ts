@@ -86,12 +86,13 @@ test.describe("tab-and-routing", () => {
     await signIn(page, "admin");
 
     const labels = await page.getByRole("tab").allTextContents();
-    expect(labels.slice(0, 7)).toEqual([
+    expect(labels.slice(0, 8)).toEqual([
       "Home",
       "Paws",
       "城市浏览",
       "景区浏览",
       "交通规则",
+      "Trips",
       "地点管理",
       "城市管理",
     ]);
