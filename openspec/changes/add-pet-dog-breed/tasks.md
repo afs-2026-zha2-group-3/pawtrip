@@ -13,11 +13,12 @@
 - [x] 2.2 修改 `-pet-dialogs.tsx`：类型为狗时展示必填品种下拉（选项来自名录、按名称升序）；切换为猫时清空品种；提交时狗发送 `dogBreedId`，猫发送 `null`。
 - [x] 2.3 详情弹窗在狗类型下展示品种，无品种显示“未设置”；猫不展示品种行。
 - [x] 2.4 更新 `e2e/paws-pet-management.spec.ts`：创建狗时选择品种，覆盖详情展示、编辑品种、狗缺品种校验、切换为猫后品种隐藏与提交 `null`。
+- [x] 2.5 卡片右下角标签优先显示狗品种，无品种时回退显示“狗”；同步卡片可访问名称与 E2E 断言。
 
 ## 3. 验证与收尾
 
 - [x] 3.1 运行 `npx tsc --noEmit -p apps/web/tsconfig.json`、`npm test -w apps/web`、`npm run build`、`npm run test:e2e`，全部通过。
 - [x] 3.2 启动前后端在浏览器手动验证：狗必选品种、编辑品种、切换猫清除品种、历史无品种狗详情显示未设置。
 - [x] 3.3 更新 `docs/knowledge/architecture/README.md`：补充宠物品种字段、必填规则与品种名录接口用法。
-- [ ] 3.4 提交并推送到 `feature/add-paws-pet-management`，在 PR #40 描述中补充两个变更的 Spec ID。
+- [ ] 3.4 提交并推送到新分支 `feature/add-pet-dog-breed`，创建新 PR 并在描述中补充两个变更的 Spec ID（PR #40 已合并）。
 - [ ] 3.5 待确认后归档本变更并同步 `paws-page` 主规格。

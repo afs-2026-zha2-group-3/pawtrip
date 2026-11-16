@@ -86,9 +86,12 @@ test("creates, views, edits and deletes a pet", async ({ page }) => {
   await createDialog.getByRole("button", { name: "创建宠物" }).click();
   await expect(createDialog).toHaveCount(0);
 
-  const card = page.getByRole("button", { name: "Mimi（狗）" });
+  const card = page.getByRole("button", { name: "Mimi（柯基犬）" });
   await expect(card).toBeVisible();
-  await expect(page.getByRole("img", { name: "Mimi（狗）" })).toBeVisible();
+  await expect(card.getByText("柯基犬")).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: "Mimi（柯基犬）" }),
+  ).toBeVisible();
 
   await card.click();
   const detail = page.getByRole("dialog");
@@ -115,11 +118,11 @@ test("creates, views, edits and deletes a pet", async ({ page }) => {
   await detail.getByRole("button", { name: "关闭", exact: true }).click();
   await expect(detail).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "Mimi Updated（狗）" }),
+    page.getByRole("button", { name: "Mimi Updated（柴犬）" }),
   ).toBeVisible();
 
   const updatedCard = page.getByRole("button", {
-    name: "Mimi Updated（狗）",
+    name: "Mimi Updated（柴犬）",
   });
   await updatedCard.click();
   await page.getByRole("dialog").getByRole("button", { name: "删除" }).click();
