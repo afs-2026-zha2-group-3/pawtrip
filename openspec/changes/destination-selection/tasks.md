@@ -45,11 +45,12 @@
 
 ## 7. 宠物友好叠加匹配增强（2026-11-16 需求方，PR #44 合并后并入）
 
-- [ ] 7.1 后端：候选响应增 `allowedPetTypes`/`allowedDogBreedIds`；仓库增 `@EntityGraph` 派生查询；`petFriendly` 叠加 `petType`/`breedId` 过滤（null/空=未配置放行，非法 petType 400）——验证：DestinationApiTest 新用例红→绿（类型排除/保留、品种排除/空列表放行、无参退化、响应字段）
-- [ ] 7.2 前端：pet-profile adapter 消费 `dogBreed`（取第一只，失败退化 null）；`matchesCityPetPolicy` 纯函数；destinations query 扩参——验证：adapter/纯函数/params 单测绿
-- [ ] 7.3 前端：卡片右上角匹配 Badge（绿/红，无档案不显示）；已选定按钮再点取消选定——验证：tsc 绿、E2E E17/E18 绿
-- [ ] 7.4 E2E：run-e2e.mjs 暴露临时库路径；E17 标签+叠加筛选（node:sqlite 配置城市政策、API 建档案）、E18 取消选定；既有用例回归——验证：E2E 全量绿
+- [x] 7.1 后端：候选响应增 `allowedPetTypes`/`allowedDogBreedIds`；仓库增 `@EntityGraph` 派生查询；`petFriendly` 叠加 `petType`/`breedId`/`shoulderHeightCm` 过滤（类型 null=不允许；品种空列表/肩高 null=未配置放行，非法 petType 400）——验证：DestinationApiTest 新用例红→绿（类型排除/保留、品种排除/空列表放行、无参退化、响应字段）
+- [x] 7.2 前端：pet-profile adapter 消费 `dogBreed`（取第一只，失败退化 null）；`matchesCityPetPolicy` 纯函数；destinations query 扩参——验证：adapter/纯函数/params 单测绿
+- [x] 7.3 前端：卡片右上角匹配 Badge（绿/红，无档案不显示）；已选定按钮再点取消选定——验证：tsc 绿、E2E E17/E18 绿
+- [x] 7.4 E2E：run-e2e.mjs 暴露临时库路径；E17 标签+叠加筛选（node:sqlite 配置城市政策、API 建档案）、E18 取消选定；既有用例回归——验证：E2E 全量绿
 - [ ] 7.5 集成验证与本地报告——验证：后端全量/vitest/tsc/openspec strict/E2E 全绿；local-verify-report 更新；不提 PR（需求方指示）
+- [ ] 7.6 V16 全城市种子迁移（2026-11-16 需求方指定，避让在途 PR #43 的 V15）：全部城市级行政区 `allowed_pet_types='CAT,DOG'` + 7 个非烈性允许品种（含哈士奇）；API/E2E 测试适配种子（清理恢复种子口径）——验证：种子断言用例绿、全量回归绿
 
 ## Workflow follow-up
 

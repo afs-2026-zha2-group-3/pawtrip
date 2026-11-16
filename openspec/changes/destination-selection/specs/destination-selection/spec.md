@@ -138,7 +138,7 @@
 
 ### Requirement: 宠物友好叠加匹配（类型与品种）
 
-候选接口 SHALL 支持可选参数 `petType`（`CAT`/`DOG`）与 `breedId`（`dog_breed` 表 id）。`petFriendly=true` 时 SHALL 在每人限养数规则之上叠加：传 `petType` 时城市 `allowed_pet_types` 为 null 或含该类型方允许；`petType=DOG` 且传 `breedId` 时城市允许品种列表为空（未配置）或含该 id 方允许；不满足则排除。未传参数 SHALL 退化为仅限养数规则。`petType` 非法 SHALL 返回 400。响应每项 SHALL 含 `allowedPetTypes`（string|null）与 `allowedDogBreedIds`（number[]）。后端 MUST NOT 依赖宠物档案模块，匹配输入由前端传参承载。
+候选接口 SHALL 支持可选参数 `petType`（`CAT`/`DOG`）、`breedId`（`dog_breed` 表 id）与 `shoulderHeightCm`（档案肩高）。`petFriendly=true` 时 SHALL 在每人限养数规则之上叠加类型、品种与肩高匹配（类型 null=不允许；品种空列表/肩高上限 null=未配置放行），不满足则排除。未传参数 SHALL 退化为仅限养数规则。`petType` 非法 SHALL 返回 400。响应每项 SHALL 含 `allowedPetTypes`、`allowedDogBreedIds` 与 `maxSinglePetShoulderHeightCm`。后端 MUST NOT 依赖宠物档案模块，匹配输入由前端传参承载。
 
 #### Scenario: 类型不允许被排除
 
@@ -146,11 +146,23 @@
 - **WHEN** 请求 `petFriendly=true&petType=DOG`
 - **THEN** 响应不包含该城市
 
-#### Scenario: 类型未配置或包含则保留
+#### Scenario: 类型未配置视为不允许
 
-- **GIVEN** 城市 `allowed_pet_types` 为 null、`'DOG'` 或 `'CAT,DOG'`
+- **GIVEN** 城市 `allowed_pet_types` 为 null
+- **WHEN** 请求 `petFriendly=true&petType=DOG`
+- **THEN** 响应不包含该城市
+
+#### Scenario: 类型包含则保留
+
+- **GIVEN** 城市 `allowed_pet_types` 为 `'DOG'` 或 `'CAT,DOG'`
 - **WHEN** 请求 `petFriendly=true&petType=DOG`
 - **THEN** 响应包含这些城市（限养数规则同时满足时）
+
+#### Scenario: 肩高超过城市上限被排除
+
+- **GIVEN** 城市肩高上限 40cm，类型与品种均允许
+- **WHEN** 请求 `petFriendly=true&petType=DOG&shoulderHeightCm=45`
+- **THEN** 响应不包含该城市；上限为 null 或 >=45 的城市保留
 
 #### Scenario: 品种不在允许列表被排除
 
@@ -173,21 +185,21 @@
 #### Scenario: 候选响应携带匹配字段
 
 - **WHEN** 请求候选接口（任意参数）
-- **THEN** 每项包含 `allowedPetTypes` 与 `allowedDogBreedIds`，取值与行政区配置一致
+- **THEN** 每项包含 `allowedPetTypes`、`allowedDogBreedIds` 与 `maxSinglePetShoulderHeightCm`，取值与行政区配置一致
 
 ### Requirement: 候选卡片匹配标签
 
-`/cities` 候选卡片 SHALL 在右上角展示当前用户档案与城市的匹配标签：匹配显示绿色「匹配」，不匹配显示红色「不匹配」。匹配判定 SHALL 为「类型允许 且 品种允许」：城市 `allowedPetTypes` 为 null 或含档案 `petType`；档案为 DOG 且有品种时，城市允许品种列表为空或含档案品种 id。无档案（接口失败或无宠物）时 SHALL 不展示标签。标签 SHALL 独立于宠物友好筛选开关展示。档案 SHALL 取当前用户第一只宠物（需求方确认单宠口径）。
+`/cities` 候选卡片 SHALL 在右上角展示当前用户档案与城市的匹配标签：匹配显示绿色「匹配」，不匹配显示红色「不匹配」。匹配判定 SHALL 为「类型允许 且 品种允许 且 肩高允许」：城市 `allowedPetTypes` 非 null 且含档案 `petType`（null=不允许）；档案为 DOG 且有品种时，城市允许品种列表为空或含档案品种 id；城市肩高上限为 null（不限制）或 >= 档案肩高。无档案（接口失败或无宠物）时 SHALL 不展示标签。标签 SHALL 独立于宠物友好筛选开关展示。档案 SHALL 取当前用户第一只宠物（需求方确认单宠口径）。
 
 #### Scenario: 匹配显示绿色标签
 
-- **GIVEN** 用户档案为 DOG/品种 id=7，城市 `allowed_pet_types='CAT,DOG'` 且允许品种含 7
+- **GIVEN** 用户档案为 DOG/品种 id=7，城市 `allowed_pet_types='CAT,DOG'` 且允许品种含 7，肩高上限 null
 - **WHEN** 用户打开 `/cities`
 - **THEN** 该城市卡片右上角显示绿色「匹配」标签
 
 #### Scenario: 不匹配显示红色标签
 
-- **GIVEN** 用户档案为 DOG，城市 `allowed_pet_types='CAT'`
+- **GIVEN** 用户档案为 DOG，城市 `allowed_pet_types='CAT'` 或 null，或肩高上限低于档案肩高
 - **WHEN** 用户打开 `/cities`
 - **THEN** 该城市卡片右上角显示红色「不匹配」标签
 

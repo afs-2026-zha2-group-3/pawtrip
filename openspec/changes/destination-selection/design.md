@@ -39,12 +39,12 @@
 - **被否方案**：JSON/CSV 列存名单；硬编码试点 adcode 于服务层；独立 `pilot` 列（需求方先移除 pilot，后整体移除 V14）
 - **理由**：政策数据归属未定（可能由城市管理/政策能力承接），先交付候选浏览与选定闭环，避免预置数据返工
 
-### D3: 迁移版本号避让外部 V8/V9（本 change 最终无新增迁移）
+### D3: 迁移版本号避让（本 change 新增 V16 全城市种子）
 
-- **背景**：外部宠物档案系列先后占用 V8/V9（立项时未合并，现已随 PR #33–#36 合并并扩展至 V13）
-- **选择**：本 change 迁移预定 V10 起；同步 main 后重编号为 V14；2026-11-16 需求方决定移除 V14，本 change 不再新增迁移（main 宠物系列占用 V8–V13）
-- **被否方案**：抢占 V8——与外部分支直接冲突，合并顺序不可控
-- **理由**：Flyway 版本单调；政策数据迁移待数据源确定后另行编号
+- **背景**：外部宠物档案系列占用 V8–V14（PR #33–#36、#41）；在途 PR #43（city-pet-policy）占用 V15
+- **选择**：原政策种子 V14 按需求方决定移除；2026-11-16 需求方指定**全部城市级行政区**种子数据，编号 **V16**（避让在途 V15，需求方确认）：`allowed_pet_types='CAT,DOG'` + 7 个非烈性允许品种（柯基犬/贵宾犬/金毛寻回犬/拉布拉多寻回犬/比熊犬/博美犬/哈士奇，`INSERT OR IGNORE` 幂等）
+- **被否方案**：抢占 V8/V15——与外部/在途分支直接冲突，合并顺序不可控
+- **理由**：Flyway 版本单调；禁养（banned）数据源仍未定，占位契约不变
 
 ### D4: 选定状态存 sessionStorage，登出清除（2026-11-16 需求方修订）
 
@@ -77,14 +77,14 @@
 ### D8: 叠加匹配由前端传参承载，服务端不引用档案模块（2026-11-16 增强）
 
 - **背景**：筛选需叠加城市允许类型（`allowed_pet_types`，V9：NULL=未配置，'CAT'/'DOG'/'CAT,DOG'）与允许狗品种（`city_allowed_dog_breed`，V11，当前无数据无维护入口）；档案归外部 pet 模块
-- **选择**：候选接口增可选参数 `petType`/`breedId`（前端从 adapter 读取后传参）与响应字段 `allowedPetTypes`/`allowedDogBreedIds`；`petFriendly=true` 时限养数 AND 类型 AND 品种三层过滤；**空值语义统一「未配置放行」**：allowed_pet_types=null 放行、允许品种列表空放行；DOG 档案无品种时品种层放行；`petType` 用 `PetType` 枚举绑定（非法值 Spring 自动 400）；仓库新增 `@EntityGraph(attributePaths="allowedDogBreeds")` 派生查询（`open-in-view=false`，避免懒加载异常与逐城 N+1）
+- **选择**：候选接口增可选参数 `petType`/`breedId`/`shoulderHeightCm`（前端从 adapter 读取后传参）与响应字段 `allowedPetTypes`/`allowedDogBreedIds`/`maxSinglePetShoulderHeightCm`；`petFriendly=true` 时限养数 AND 类型 AND 品种 AND 肩高四层过滤；**空值语义（2026-11-16 需求方修订）**：`allowed_pet_types=null` **不允许**；允许品种列表空=未配置放行；肩高上限 null=不限制；DOG 档案无品种时品种层放行、档案无肩高时肩高层放行；`petType` 用 `PetType` 枚举绑定（非法值 Spring 自动 400）；仓库新增 `@EntityGraph(attributePaths="allowedDogBreeds")` 派生查询（`open-in-view=false`，避免懒加载异常与逐城 N+1）
 - **被否方案**：destination 服务直接读 pet 仓库（破坏模块边界与 G1 Revision「后端不引用档案模块」）；前端本地过滤（违反 D5 服务端筛选口径）
 - **理由**：保持服务端筛选与模块边界；品种按 `dog_breed` id 精确匹配，与档案同词表
 
 ### D9: 匹配标签与取消选定（2026-11-16 增强）
 
 - **背景**：需求方要求卡片右上角绿/红匹配标签、已选定再点取消
-- **选择**：匹配判定为前端纯函数 `matchesCityPetPolicy(candidate, profile)`（类型允许 AND 品种允许，语义与 D8 服务端一致），有档案渲染 shadcn `Badge`（匹配=default 主题绿、不匹配=destructive 红；卡片 relative + Badge absolute 右上角），无档案不渲染；标签独立于筛选开关。选定按钮选中态不再 disabled，再次点击调用 `selectedDestinationStore.clear()`（chip/Alert/sessionStorage 同源自动同步）
+- **选择**：匹配判定为前端纯函数 `matchesCityPetPolicy(candidate, profile)`（类型允许 AND 品种允许 AND 肩高允许，语义与 D8 服务端一致），有档案渲染 shadcn `Badge`（匹配=green-600 绿——主题无 success 令牌、需求方明确指定绿色；不匹配=destructive 红；卡片 relative + Badge absolute 右上角），无档案不渲染；标签独立于筛选开关。选定按钮选中态不再 disabled，再次点击调用 `selectedDestinationStore.clear()`（chip/Alert/sessionStorage 同源自动同步）
 - **被否方案**：服务端预算 match 布尔（需服务端读档案，违反 D8）；整卡点击切换（误触风险，保持按钮交互）
 - **理由**：判定逻辑单测可覆盖；store 既有 clear 能力零新增状态
 
@@ -99,8 +99,8 @@
 
 ## Migration Plan
 
-1. 本 change 无新增 Flyway 迁移（V14 已按需求方决定移除）；候选直接读既有 `administrative_region`（V5 种子）
-2. 政策数据迁移待数据源确定后另行交付（版本号届时复核 main）
+1. 本 change 新增 **V16**（全部城市级行政区允许类型/品种种子，需求方 2026-11-16 指定）；原政策种子 V14 已移除；候选读既有 `administrative_region`（V5 种子）+ V16 配置
+2. 禁养（banned）数据迁移待数据源确定后另行交付（版本号届时复核 main，注意在途 PR #43 的 V15）
 3. 与外部 change 的合并顺序无强约束（后端互不引用）；前端 adapter 联调需外部接口就绪
 
 ## Open Questions

@@ -15,7 +15,7 @@ issue #15（US-47，Must）：目的地是行前规划链（政策查看 → 交
 - ~~最小数据地基~~（2026-11-16 需求方移除）：V14 政策收录标记/禁养名单/种子迁移已删除；候选接口保留 `policyCovered=false`/空 `bannedBreeds` 占位字段，数据源确定后另行交付
 - 宠物档案只读消费：档案的表结构、breed 字段、读写接口与 `/paws` 页面均由外部 change（US-01）交付；宠物友好筛选由服务端按每人限养数承载、不依赖档案，档案品种仅用于（暂缓的）禁养判定
 - 新增用户端城市候选只读接口（`policyCovered`/`bannedBreeds` 为占位字段，数据源未定），复用既有认证与 Problem Details 错误契约
-- **2026-11-16 需求方增强（PR #44 合并后，并入本 change）**：① 宠物友好筛选叠加匹配——候选接口新增 `petType`/`breedId` 可选参数与 `allowedPetTypes`/`allowedDogBreedIds` 响应字段，`petFriendly=true` 时限养数规则之上叠加类型允许（null 或含该类型）与品种允许（允许列表空=未配置放行，非空须含该 id）；无档案退化为仅限养数规则；② `/cities` 卡片右上角匹配标签（绿「匹配」/红「不匹配」，无档案不显示，独立于筛选开关）；③ 已选定卡片按钮再次点击取消选定。口径确认：匹配输入=当前用户档案（需求方确认**只有一只宠物**，adapter 取第一只）；筛选**叠加匹配**；档案 breed 已随 PR #41 交付（`PetDetail.dogBreed`，V14 迁移）
+- **2026-11-16 需求方增强（PR #44 合并后，并入本 change）**：① 宠物友好筛选叠加匹配——候选接口新增 `petType`/`breedId`/`shoulderHeightCm` 可选参数与 `allowedPetTypes`/`allowedDogBreedIds`/`maxSinglePetShoulderHeightCm` 响应字段，`petFriendly=true` 时限养数规则之上叠加类型允许（**须非 null 且含该类型，null=不允许**）、品种允许（允许列表空=未配置放行，非空须含该 id）与肩高允许（上限 null=不限制，否则档案肩高须 <= 上限）；无档案退化为仅限养数规则；② `/cities` 卡片右上角匹配标签（绿「匹配」/红「不匹配」，无档案不显示，独立于筛选开关）；③ 已选定卡片按钮再次点击取消选定。口径确认：匹配输入=当前用户档案（需求方确认**只有一只宠物**，adapter 取第一只）；筛选**叠加匹配**；档案 breed 已随 PR #41 交付（`PetDetail.dogBreed`，V14 迁移）
 
 ## Non-Goals
 
@@ -38,7 +38,7 @@ issue #15（US-47，Must）：目的地是行前规划链（政策查看 → 交
 
 ## Impact
 
-- 自身（self）：后端 `apps/server` 新增 destination（用户端城市候选）功能模块，无新增 Flyway 迁移（V14 已按需求方决定移除）；前端 `apps/web` 实现 `/cities` 页面、新增 cities queries 与档案只读 query、sessionStorage 选定状态工具、顶栏目的地 chip 与登出清理；不改动 `/paws` 页面
+- 自身（self）：后端 `apps/server` 新增 destination（用户端城市候选）功能模块，新增 **V16 全城市种子迁移**（全部城市级行政区允许类型 CAT,DOG + 7 个非烈性允许品种含哈士奇，需求方 2026-11-16 指定，避让在途 PR #43 的 V15；原政策种子 V14 已移除）；前端 `apps/web` 实现 `/cities` 页面、新增 cities queries 与档案只读 query、sessionStorage 选定状态工具、顶栏目的地 chip 与登出清理；不改动 `/paws` 页面
 - 上游（upstream）：依赖 REQ-006 已确认决策与原型口径；**外部依赖：宠物档案 change（US-01）——PR #33–#36（V8–V13，`/api/pets` CRUD、`/api/dog-breeds`）与 PR #40（`/paws` 宠物管理页）已合并 main，但 `PetDetail` 仍无 breed 字段**，契约要求：breed 枚举与禁养名单同一词表、档案读取接口返回 breed；政策收录/禁养数据源未定（原政府文件摘录稿存档于 change 内 `seed-data.md`）；复用既有认证/错误/数据访问契约，不修改其提供方
 - 下游（downstream）：#14（政策详情）复用本 change 的禁养判定与收录数据；#16/#17/#18 读取前端选定目的地上下文；`web-app-shell` spec 滞后事实顺带修正
 - 测试：后端接口验收测试（候选/搜索/限养数筛选/占位字段/401）+ Playwright E2E 主链路（搜索→筛选→选定→登出清除；禁养提醒相关用例以 test.fixme 门控，待政策数据源与外部 breed 字段就绪）
