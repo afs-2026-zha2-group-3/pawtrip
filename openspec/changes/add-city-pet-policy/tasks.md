@@ -8,9 +8,9 @@
 
 ## 2. 后端接口
 
-- [ ] 2.1 先写 `CityPetPolicyApiTest`：覆盖命中、未命中、无品种、品种为"其他"、名称不完全一致、名单为空、未收录、行政区不存在、未登录九类场景，并加两个反向接口用例（`POST /api/pets`、`GET /api/admin/pet-policies` 返回 404），在实现前确认失败。验证：`./mvnw -Dtest=CityPetPolicyApiTest test` 先红。
-- [ ] 2.2 实现匹配服务：空品种 / "其他" / 空名单返回 `match:null`；精确命中 `matched:true`；名单非空但未命中 `matched:false`。验证：2.1 中四类匹配用例转绿。
-- [ ] 2.3 实现 `GET /api/cities/{adcode}/pet-policy` 与响应 DTO，并新增 `CITY_NOT_FOUND` 错误码；未收录返回 200 + `covered:false`，未知 adcode 返回 404。验证：`CityPetPolicyApiTest` 全类通过，含 401 与 404 用例。
+- [x] 2.1 先写 `CityPetPolicyApiTest`：覆盖命中、未命中、无品种、品种为"其他"、名称不完全一致、名单为空、未收录、行政区不存在、未登录九类场景，并加两个反向接口用例（`POST /api/pets`、`GET /api/admin/pet-policies` 返回 404），在实现前确认失败。验证：`./mvnw -Dtest=CityPetPolicyApiTest test` 先红。
+- [x] 2.2 实现匹配服务：空品种 / "其他" / 空名单返回 `match:null`；精确命中 `matched:true`；名单非空但未命中 `matched:false`。验证：2.1 中四类匹配用例转绿。
+- [x] 2.3 实现 `GET /api/cities/{adcode}/pet-policy` 与响应 DTO，并新增 `CITY_NOT_FOUND` 错误码；未收录返回 200 + `covered:false`，未知 adcode 返回 404。验证：`CityPetPolicyApiTest` 全类通过，含 401 与 404 用例。
 
 ## 3. 前端
 
