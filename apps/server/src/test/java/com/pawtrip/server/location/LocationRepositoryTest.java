@@ -76,8 +76,8 @@ class LocationRepositoryTest {
 	void persistsIndependentPetPoliciesForRegionsAndLocations() {
 		var region = new AdministrativeRegion("990003", "Test region", null, "province", null);
 		var location = location("poi-pet-policy-jpa", "990003", "attraction");
-		region.updatePetPolicies(3, 18.5, true, false, 1250L, null);
-		location.updatePetPolicies(1, 8.75, false, true, 75L, false);
+		region.updatePetPolicies("CAT,DOG", 3, 18.5, true, false, 1250L, null);
+		location.updatePetPolicies("DOG", 1, 8.75, false, true, 75L, false);
 
 		this.regionRepository.saveAndFlush(region);
 		this.locationRepository.saveAndFlush(location);
@@ -91,12 +91,14 @@ class LocationRepositoryTest {
 		assertThat(persistedRegion.getVaccinationProofRequired()).isFalse();
 		assertThat(persistedRegion.getExtraFeeCents()).isEqualTo(1250L);
 		assertThat(persistedRegion.getReservationRequired()).isNull();
+		assertThat(persistedRegion.getAllowedPetTypes()).isEqualTo("CAT,DOG");
 		assertThat(persistedLocation.getMaxPetsPerPerson()).isEqualTo(1);
 		assertThat(persistedLocation.getMaxSinglePetWeightKg()).isEqualTo(8.75);
 		assertThat(persistedLocation.getLeashRequired()).isFalse();
 		assertThat(persistedLocation.getVaccinationProofRequired()).isTrue();
 		assertThat(persistedLocation.getExtraFeeCents()).isEqualTo(75L);
 		assertThat(persistedLocation.getReservationRequired()).isFalse();
+		assertThat(persistedLocation.getAllowedPetTypes()).isEqualTo("DOG");
 	}
 
 	@Test

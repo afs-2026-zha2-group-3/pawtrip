@@ -66,6 +66,9 @@ public class PawtripLocation {
 	@Column(name = "reservation_required")
 	private Boolean reservationRequired;
 
+	@Column(name = "allowed_pet_types")
+	private String allowedPetTypes;
+
 	protected PawtripLocation() {
 	}
 
@@ -162,13 +165,19 @@ public class PawtripLocation {
 		return this.reservationRequired;
 	}
 
+	public String getAllowedPetTypes() {
+		return this.allowedPetTypes;
+	}
+
 	public void updateVisitHours(Integer minVisitHours, Integer maxVisitHours) {
 		this.minVisitHours = minVisitHours;
 		this.maxVisitHours = maxVisitHours;
 	}
 
-	public void updatePetPolicies(Integer maxPetsPerPerson, Double maxSinglePetWeightKg, Boolean leashRequired,
-			Boolean vaccinationProofRequired, Long extraFeeCents, Boolean reservationRequired) {
+	public void updatePetPolicies(String allowedPetTypes, Integer maxPetsPerPerson, Double maxSinglePetWeightKg,
+			Boolean leashRequired, Boolean vaccinationProofRequired, Long extraFeeCents,
+			Boolean reservationRequired) {
+		this.allowedPetTypes = allowedPetTypes;
 		this.maxPetsPerPerson = maxPetsPerPerson;
 		this.maxSinglePetWeightKg = maxSinglePetWeightKg;
 		this.leashRequired = leashRequired;

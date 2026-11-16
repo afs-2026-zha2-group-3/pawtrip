@@ -100,6 +100,49 @@ class LocationSchemaMigrationTest {
 	}
 
 	@Test
+	void addsNullableAllowedPetTypesWithoutChangingExistingRows(@TempDir Path tempDir) throws SQLException {
+		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("allowed-pet-types.db") + "?foreign_keys=on";
+		Flyway.configure().dataSource(jdbcUrl, null, null).target("8").load().migrate();
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			try (Statement statement = connection.createStatement()) {
+				statement.executeUpdate(
+						"INSERT INTO administrative_region (adcode, name, level) "
+								+ "VALUES ('990004', 'Test region', 'province')");
+			}
+			insertLocation(connection, "poi-allowed-pet-types", null, null);
+		}
+
+		Flyway.configure().dataSource(jdbcUrl, null, null).load().migrate();
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			assertThat(columns(connection, "administrative_region")).contains("allowed_pet_types");
+			assertThat(columns(connection, "pawtrip_location")).contains("allowed_pet_types");
+
+			assertThat(selectAllowedPetTypes(connection, "administrative_region", "adcode", "990004")).isNull();
+			assertThat(selectAllowedPetTypes(connection, "pawtrip_location", "poi_id", "poi-allowed-pet-types"))
+				.isNull();
+
+			updateAllowedPetTypes(connection, "administrative_region", "adcode", "990004", "CAT");
+			updateAllowedPetTypes(connection, "pawtrip_location", "poi_id", "poi-allowed-pet-types", "CAT,DOG");
+			assertThat(selectAllowedPetTypes(connection, "administrative_region", "adcode", "990004"))
+				.isEqualTo("CAT");
+			assertThat(selectAllowedPetTypes(connection, "pawtrip_location", "poi_id", "poi-allowed-pet-types"))
+				.isEqualTo("CAT,DOG");
+
+			assertThatThrownBy(() -> updateAllowedPetTypes(
+					connection, "administrative_region", "adcode", "990004", "FISH"))
+				.isInstanceOf(SQLException.class);
+			assertThatThrownBy(() -> updateAllowedPetTypes(
+					connection, "pawtrip_location", "poi_id", "poi-allowed-pet-types", "DOG,CAT"))
+				.isInstanceOf(SQLException.class);
+			assertThatThrownBy(() -> updateAllowedPetTypes(
+					connection, "pawtrip_location", "poi_id", "poi-allowed-pet-types", ""))
+				.isInstanceOf(SQLException.class);
+		}
+	}
+
+	@Test
 	void createsLocationTablesAndEnforcesUniquePoiHoursAndPhotoForeignKey(@TempDir Path tempDir)
 			throws SQLException {
 		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("locations.db") + "?foreign_keys=on";
@@ -235,6 +278,28 @@ class LocationSchemaMigrationTest {
 			}
 		}
 		return columns;
+	}
+
+	private static String selectAllowedPetTypes(Connection connection, String table, String idColumn, String id)
+			throws SQLException {
+		try (PreparedStatement query = connection.prepareStatement(
+				"SELECT allowed_pet_types FROM " + table + " WHERE " + idColumn + " = ?")) {
+			query.setString(1, id);
+			try (ResultSet result = query.executeQuery()) {
+				assertThat(result.next()).isTrue();
+				return result.getString("allowed_pet_types");
+			}
+		}
+	}
+
+	private static void updateAllowedPetTypes(Connection connection, String table, String idColumn, String id,
+			String value) throws SQLException {
+		try (PreparedStatement update = connection.prepareStatement(
+				"UPDATE " + table + " SET allowed_pet_types = ? WHERE " + idColumn + " = ?")) {
+			update.setString(1, value);
+			update.setString(2, id);
+			update.executeUpdate();
+		}
 	}
 
 	private static void assertPetPolicyIsUnconfigured(ResultSet result) throws SQLException {

@@ -43,6 +43,9 @@ public class AdministrativeRegion {
 	@Column(name = "reservation_required")
 	private Boolean reservationRequired;
 
+	@Column(name = "allowed_pet_types")
+	private String allowedPetTypes;
+
 	protected AdministrativeRegion() {
 	}
 
@@ -98,8 +101,14 @@ public class AdministrativeRegion {
 		return this.reservationRequired;
 	}
 
-	public void updatePetPolicies(Integer maxPetsPerPerson, Double maxSinglePetWeightKg, Boolean leashRequired,
-			Boolean vaccinationProofRequired, Long extraFeeCents, Boolean reservationRequired) {
+	public String getAllowedPetTypes() {
+		return this.allowedPetTypes;
+	}
+
+	public void updatePetPolicies(String allowedPetTypes, Integer maxPetsPerPerson, Double maxSinglePetWeightKg,
+			Boolean leashRequired, Boolean vaccinationProofRequired, Long extraFeeCents,
+			Boolean reservationRequired) {
+		this.allowedPetTypes = allowedPetTypes;
 		this.maxPetsPerPerson = maxPetsPerPerson;
 		this.maxSinglePetWeightKg = maxSinglePetWeightKg;
 		this.leashRequired = leashRequired;
