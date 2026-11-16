@@ -22,3 +22,11 @@ Secret scan / SAST / Dependency audit：n/a——仓库 `.github/workflows/`（e
 
 1. CI 无安全扫描作业（治理项，建议另立 change）——open
 2. 政策数据源 TODO + 外部 breed 缺失（4 条 fixme 门控）——accepted（需求方决策）
+## 增强 PR #49 CI 复核（2026-11-16 归档前补录）
+
+- PR #49（feat/destination-pet-match）已合并 main（`5d70f2a`）；CI 全绿：
+  - Browser E2E pass（3m37s / 3m33s，两轮）https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43830250850
+  - Server tests pass（41s / 1m3s）https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43830250885
+  - Web build pass（33s / 32s）https://github.com/afs-2026-zha2-group-3/pawtrip/actions/runs/43830251091
+- 残余风险 2 更新：breed 已随 PR #41 交付，门控仅剩禁养数据源 TODO（E4/E6/E10/E11）
+- 本地验证（增强）：后端 105、vitest 54、E2E 54+4 fixme、build/tsc/openspec strict 绿；报告 `docs/ai4se-plugins/20261116-161833-local-verify-report.md`
