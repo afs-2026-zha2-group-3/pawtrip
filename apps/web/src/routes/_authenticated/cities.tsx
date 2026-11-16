@@ -30,6 +30,7 @@ import {
   useTripCity,
 } from "@/lib/trip/selectors";
 import { tripActions } from "@/lib/trip/store";
+import { runViewTransition } from "@/lib/view-transition";
 import { attractionsQueryOptions } from "@/queries/attractions";
 import { cityPetPolicyQueryOptions } from "@/queries/city-pet-policy";
 import { destinationsQueryOptions } from "@/queries/destinations";
@@ -79,12 +80,14 @@ function CityCandidates() {
   });
 
   const handleSelect = (candidate: DestinationCandidate) => {
-    tripActions.cacheCity({
-      adcode: candidate.adcode,
-      name: candidate.name,
-      province: candidate.province,
+    runViewTransition(() => {
+      tripActions.cacheCity({
+        adcode: candidate.adcode,
+        name: candidate.name,
+        province: candidate.province,
+      });
+      tripActions.startDraft(candidate.adcode, 1, petsQuery.data?.[0]?.id ?? null);
     });
-    tripActions.startDraft(candidate.adcode, 1, petsQuery.data?.[0]?.id ?? null);
   };
 
   if (!destinations.data) {
@@ -201,7 +204,11 @@ function CityDetailView({ adcode, mode }: { adcode: string; mode: "active" | "dr
           </p>
         </div>
         {mode === "draft" ? (
-          <Button variant="outline" size="sm" onClick={() => tripActions.discardDraft()}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => runViewTransition(() => tripActions.discardDraft())}
+          >
             放弃草稿
           </Button>
         ) : null}

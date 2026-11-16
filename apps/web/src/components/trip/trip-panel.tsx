@@ -45,6 +45,7 @@ import {
 } from "@/lib/trip/selectors";
 import { tripActions, tripStore } from "@/lib/trip/store";
 import { MAX_TRIP_DAYS, MIN_TRIP_DAYS } from "@/lib/trip/types";
+import { runViewTransition } from "@/lib/view-transition";
 import { cn } from "@/lib/utils";
 
 interface HeaderRow {
@@ -261,7 +262,7 @@ function TripPanelContent() {
       data-testid="trip-panel"
       aria-label="行程面板"
       className={cn(
-        "z-50 flex flex-col gap-3 border bg-card text-card-foreground shadow-xl",
+        "z-50 flex flex-col gap-3 border bg-card text-card-foreground shadow-xl [view-transition-name:trip-panel]",
         expanded
           ? "fixed inset-0 overflow-y-auto p-4 lg:inset-y-4 lg:left-4 lg:right-auto lg:w-[364px] lg:rounded-xl"
           : "fixed bottom-4 left-4 w-[min(92vw,360px)] rounded-xl p-3",
@@ -297,7 +298,9 @@ function TripPanelContent() {
           size="sm"
           aria-label={expanded ? "收起行程面板" : "展开行程面板"}
           data-testid="trip-panel-toggle"
-          onClick={() => tripActions.setPanelExpanded(!expanded)}
+          onClick={() =>
+            runViewTransition(() => tripActions.setPanelExpanded(!expanded))
+          }
         >
           {expanded ? "收起" : "展开"}
         </Button>
@@ -388,7 +391,7 @@ function TripPanelContent() {
               data-testid="trip-panel-discard"
               onClick={() => {
                 setDraftError(null);
-                tripActions.discardDraft();
+                runViewTransition(() => tripActions.discardDraft());
               }}
             >
               放弃草稿

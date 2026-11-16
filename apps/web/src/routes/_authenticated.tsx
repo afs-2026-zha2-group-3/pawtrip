@@ -65,7 +65,12 @@ function AuthenticatedShell() {
 
   return (
     <>
-      <div className={cn("min-h-svh", expanded && panelVisible && "lg:pl-[380px]")}>
+      <div
+        className={cn(
+          "min-h-svh [view-transition-name:app-content]",
+          expanded && panelVisible && "lg:pl-[380px]",
+        )}
+      >
         <Outlet />
       </div>
       <TripPanel />

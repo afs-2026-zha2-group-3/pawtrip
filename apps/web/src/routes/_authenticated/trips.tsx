@@ -39,6 +39,7 @@ import {
 } from "@/queries/trips";
 import { useActiveTrip, useDraftTrip } from "@/lib/trip/selectors";
 import { tripActions } from "@/lib/trip/store";
+import { runViewTransition } from "@/lib/view-transition";
 
 export const Route = createFileRoute("/_authenticated/trips")({
   component: TripsPage,
@@ -72,15 +73,17 @@ function TripsPage() {
     setBusyId(trip.id);
     try {
       const detail = await fetchTripDetail(trip.id);
-      tripActions.setActive(detail);
       const city = destinations.data?.find((candidate) => candidate.adcode === trip.cityAdcode);
-      if (city) {
-        tripActions.cacheCity({
-          adcode: city.adcode,
-          name: city.name,
-          province: city.province,
-        });
-      }
+      runViewTransition(() => {
+        tripActions.setActive(detail);
+        if (city) {
+          tripActions.cacheCity({
+            adcode: city.adcode,
+            name: city.name,
+            province: city.province,
+          });
+        }
+      });
     } catch {
       setError("激活行程失败，请稍后重试。");
     } finally {
@@ -89,7 +92,7 @@ function TripsPage() {
   };
 
   const deactivate = () => {
-    tripActions.clearActive();
+    runViewTransition(() => tripActions.clearActive());
     setError(null);
   };
 
@@ -98,7 +101,7 @@ function TripsPage() {
     setBusyId(trip.id);
     const wasActive = active?.id === trip.id;
     if (wasActive) {
-      tripActions.clearActive();
+      runViewTransition(() => tripActions.clearActive());
     }
     try {
       await deleteTrip(trip.id);
