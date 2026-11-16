@@ -113,8 +113,8 @@ class LocationRepositoryTest {
 	@Test
 	@Transactional
 	void persistsAllowedDogBreedsForCities() {
-		var pastoralDog = this.dogBreedRepository.save(new DogBreed("中华田园犬", false));
-		var tibetanMastiff = this.dogBreedRepository.save(new DogBreed("藏獒", true));
+		var pastoralDog = this.dogBreedRepository.save(new DogBreed("测试田园犬", false));
+		var tibetanMastiff = this.dogBreedRepository.save(new DogBreed("测试獒犬", true));
 		var city = new AdministrativeRegion("990003", "Test city", null, "city", "330000");
 		city.updateAllowedDogBreeds(List.of(pastoralDog, tibetanMastiff));
 
@@ -123,7 +123,7 @@ class LocationRepositoryTest {
 
 		var persistedCity = this.regionRepository.findById("990003").orElseThrow();
 		assertThat(persistedCity.getAllowedDogBreeds()).extracting(DogBreed::getName)
-			.containsExactly("中华田园犬", "藏獒");
+			.containsExactly("测试田园犬", "测试獒犬");
 		assertThat(persistedCity.getAllowedDogBreeds()).extracting(DogBreed::isOfficialAggressive)
 			.containsExactly(false, true);
 	}
