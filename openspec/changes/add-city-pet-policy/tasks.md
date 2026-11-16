@@ -17,12 +17,12 @@
 - [x] 3.1 新增 `apps/web/src/queries/city-pet-policy.ts`：类型、query key `["city-pet-policy", adcode, breed ?? null]` 与请求封装（`breed` 仅在存在时入参）。验证：`npx tsc --noEmit -p apps/web/tsconfig.json` 通过。
 - [x] 3.2 新增 `apps/web/src/lib/demo-pet-profile.ts`：从 `breed` 搜索参数取品种，缺省返回 `null`；为核心解析写 vitest 单测（有值、空值、其他）。验证：`npm run test -w apps/web` 通过。
 - [x] 3.3 先写 `e2e/city-pet-policy.spec.ts`：覆盖命中、未命中、无品种、其他、未收录、行政区不存在、来源与免责七类，以及城市列表/档案表单/政策后台/订票四个反向用例，实现前确认失败。验证：`npm run test:e2e -- city-pet-policy` 先红。
-- [ ] 3.4 实现路由 `apps/web/src/routes/_authenticated/destinations/$adcode/policy.tsx`（`validateSearch` 校验 `breed`）与四态页面（命中红、未命中绿、不判定信息、未收录空态；404 交根错误页），复用现有 `components/ui`、不新增共享组件、不修改导航。验证：3.3 的 E2E 用例转绿。
-- [ ] 3.5 重新生成 `routeTree.gen.ts` 并构建，确认只新增该路由、无手工编辑。验证：`npm run build` 成功且生成文件差异仅包含新路由。
+- [x] 3.4 实现路由 `apps/web/src/routes/_authenticated/destinations/$adcode/policy.tsx`（`validateSearch` 校验 `breed`）与四态页面（命中红、未命中绿、不判定信息、未收录空态；404 交根错误页），复用现有 `components/ui`、不新增共享组件、不修改导航。验证：3.3 的 E2E 用例转绿。
+- [x] 3.5 重新生成 `routeTree.gen.ts` 并构建，确认只新增该路由、无手工编辑。验证：`npm run build` 成功且生成文件差异仅包含新路由。
 
 ## 4. 集成
 
-- [ ] 4.1 运行本地全量门禁：`./mvnw test`、`npm run build`、`npx tsc --noEmit -p apps/web/tsconfig.json`、`npm run test:e2e` 全部通过。验证：四条命令退出码为 0。
+- [x] 4.1 运行本地全量门禁：`./mvnw test`、`npm run build`、`npx tsc --noEmit -p apps/web/tsconfig.json`、`npm run test:e2e` 全部通过。验证：四条命令退出码为 0。
 - [ ] 4.2 提交分支并发起 PR，确认 `server.yml`、`web.yml`、`e2e.yml` 三个工作流均通过。验证：PR 检查全绿，作为 G2 的输入证据。
 
 ## Workflow follow-up
