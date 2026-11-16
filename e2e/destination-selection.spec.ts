@@ -43,6 +43,15 @@ async function candidateCount(page: Page): Promise<number> {
   return Number(text?.match(/共 (\d+) 个候选/)?.[1] ?? NaN);
 }
 
+async function selectCity(page: Page, cityName: string) {
+  const attractionsResponse = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === "/api/locations/attractions",
+  );
+  await cityCard(page, cityName).getByRole("button", { name: "选定" }).click();
+  await expect(page).toHaveURL(/\/attractions$/);
+  await attractionsResponse;
+}
+
 // E1 — 候选列表：城市级行政区卡片（政策收录判断 TODO，暂不展示 Badge）
 test("E1 shows all city-level candidates", async ({ page }) => {
   await signIn(page);
@@ -104,31 +113,33 @@ test("E5 turning the filter off restores all candidates", async ({ page }) => {
   await expect(page.getByText(`共 ${total} 个候选`)).toBeVisible();
 });
 
-// E7 — 选定目的地：确认提示承载规划上下文
-test("E7 selecting a city confirms and shows planning context", async ({ page }) => {
+// E7 — 选定目的地：进入景区浏览 Tab 并展示当前城市
+test("E7 selecting a city opens the scenic tab with the selected city", async ({ page }) => {
   await signIn(page);
   await openCities(page);
 
-  await cityCard(page, "杭州市").getByRole("button", { name: "选定" }).click();
+  await selectCity(page, "杭州市");
 
-  const confirmation = page.getByRole("alert").filter({ hasText: "目的地已选定" });
-  await expect(confirmation).toContainText("杭州市");
-  await expect(confirmation).toContainText("行程规划将使用杭州市");
+  await expect(page.locator("header").getByText("杭州市")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "杭州市景点" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "景区浏览" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
 });
 
 // E8 — 刷新/重进保留选定
 test("E8 keeps the selection across reload and re-entry", async ({ page }) => {
   await signIn(page);
   await openCities(page);
-  await cityCard(page, "杭州市").getByRole("button", { name: "选定" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "目的地已选定" })).toBeVisible();
+  await selectCity(page, "杭州市");
 
   await page.reload();
   await expect(page.locator("header").getByText("杭州市")).toBeVisible();
-  await expect(page.getByRole("alert").filter({ hasText: "目的地已选定" })).toContainText("杭州市");
+  await expect(page.getByRole("heading", { name: "杭州市景点" })).toBeVisible();
 
-  await page.getByRole("tab", { name: "Home" }).click();
   await page.getByRole("tab", { name: "城市浏览" }).click();
+  await expect(page).toHaveURL(/\/cities$/);
   await expect(page.getByRole("alert").filter({ hasText: "目的地已选定" })).toContainText("杭州市");
 });
 
@@ -136,10 +147,12 @@ test("E8 keeps the selection across reload and re-entry", async ({ page }) => {
 test("E9 reselecting overwrites the destination and syncs the header chip", async ({ page }) => {
   await signIn(page);
   await openCities(page);
-  await cityCard(page, "杭州市").getByRole("button", { name: "选定" }).click();
+  await selectCity(page, "杭州市");
   await expect(page.locator("header").getByText("杭州市")).toBeVisible();
 
-  await cityCard(page, "珠海市").getByRole("button", { name: "选定" }).click();
+  await page.getByRole("tab", { name: "城市浏览" }).click();
+  await expect(page).toHaveURL(/\/cities$/);
+  await selectCity(page, "珠海市");
   await expect(page.locator("header").getByText("珠海市")).toBeVisible();
   await expect(page.locator("header").getByText("杭州市")).toHaveCount(0);
 
@@ -153,7 +166,7 @@ test("E12 header chip shows unset and selected destination", async ({ page }) =>
   await expect(page.locator("header").getByText("目的地未选")).toBeVisible();
 
   await openCities(page);
-  await cityCard(page, "杭州市").getByRole("button", { name: "选定" }).click();
+  await selectCity(page, "杭州市");
   await expect(page.locator("header").getByText("杭州市")).toBeVisible();
   await expect(page.locator("header").getByText("目的地未选")).toHaveCount(0);
 });
@@ -162,7 +175,7 @@ test("E12 header chip shows unset and selected destination", async ({ page }) =>
 test("E13 confirmed logout clears the persisted destination", async ({ page }) => {
   await signIn(page);
   await openCities(page);
-  await cityCard(page, "杭州市").getByRole("button", { name: "选定" }).click();
+  await selectCity(page, "杭州市");
   await expect(page.locator("header").getByText("杭州市")).toBeVisible();
   expect(
     await page.evaluate((key) => sessionStorage.getItem(key), SELECTED_KEY),
@@ -181,10 +194,10 @@ test("E13 confirmed logout clears the persisted destination", async ({ page }) =
   await expect(page.locator("header").getByText("目的地未选")).toBeVisible();
 });
 
-// E14 — 导航三 Tab 与 /cities 同步；管理 Tab 守卫（回归）
+// E14 — 导航四 Tab 与 /cities 同步；管理 Tab 守卫（回归）
 test("E14 keeps tab navigation, city route sync and admin guard", async ({ page }) => {
   await signIn(page);
-  for (const tab of ["Home", "Paws", "城市浏览"]) {
+  for (const tab of ["Home", "Paws", "城市浏览", "景区浏览"]) {
     await expect(page.getByRole("tab", { name: tab })).toBeVisible();
   }
   await expect(page.getByRole("tab", { name: "地点管理" })).toHaveCount(0);

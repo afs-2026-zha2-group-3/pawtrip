@@ -63,6 +63,14 @@ com.pawtrip.server
 - 禁养匹配纯函数 `breedHitsBanList`（档案品种 × 名单，精确匹配）保留于前端 `lib/destination-matching.ts`；Badge/提醒展示暂缓（TODO）。后端不引用宠物档案模块（档案由外部 US-01 change 交付）；选定目的地不做服务端持久化。
 - 迁移版本号约定：宠物档案系列（PR #33–#36）占用 V8–V13；本模块当前无新增迁移，政策数据迁移交付时需复核 main 最新版本号。
 
+### 用户端景点查询与展示（REQ-008）
+
+- `com.pawtrip.server.location` 新增用户端只读查询：`LocationQueryController` 暴露 `GET /api/locations/attractions` 与 `GET /api/locations/{poiId}`；两者仅要求登录（不要求 `ADMIN`），只读取数据库，不调用高德。
+- `GET /api/locations/attractions`：按已选目的地 `regionCode` 过滤 `type_group='attraction'`；默认只返回 `max_pets_per_person >= 1` 的景点，`includeWithoutRules=true` 返回该城市全部已保存景点；摘要含 `maxPetsPerPerson`，前端派生“宠物友好 / 禁止携带 / 未配置”。
+- `GET /api/locations/{poiId}`：返回已保存地点基础信息与现有 8 个政策字段 `petPolicies`；不返回照片、business 或原始 POI JSON；不存在返回 `404 LOCATION_NOT_FOUND`。
+- 前端 `/attractions` 与 `/attractions/$poiId` 读取 `useSelectedDestination()`；`/cities` 选定目的地后自动进入 `/attractions`；顶部导航提供“景区浏览”Tab，城市浏览页不内嵌景点列表或入口按钮。
+- 本能力不新增数据库迁移或字段；E2E 夹具由 `scripts/seed-e2e-attractions.mjs` 写入临时 E2E 库，不触碰 `apps/server/data/pawtrip.db`。
+
 前端选定状态约定（`apps/web/src/lib/selected-destination.ts`）：
 
 - 已选目的地仅存浏览器 sessionStorage（会话级，关标签页即失效），键 `pawtrip.selectedDestination`，值为 JSON `{adcode, cityName, province, selectedAt}`；读取时校验四字段均为字符串，损坏/缺失一律视为未选。
@@ -138,7 +146,7 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 - UI 组件统一来自 `apps/web/src/components/ui/`，使用 shadcn/ui 的 Base UI 版本；不引入 Radix 版本或其他 UI 组件库。
 - 宠物卡片使用 React Bits Tilted Card 的 TS + Tailwind 变体，以源码形式纳入 `apps/web/src/components/ui/tilted-card.tsx`，不新增运行时依赖，也不引入自定义 CSS 类。
 - 页面结构与交互只通过组件库组合和 Tailwind 布局工具类表达；`apps/web/src/styles.css` 仅保留 Tailwind、`shadcn/tailwind.css` 与主题令牌，不新增自定义类。
-- 应用外壳位于 `apps/web/src/routes/__root.tsx`：顶部居中的 `Home` / `Paws` 两个 Tab 与真实路由 `/`、`/paws` 同步；`/` 展示问候语，`/paws` 展示当前用户的宠物画廊并支持查看、编辑、新增与删除；狗类型在表单中必须从 `GET /api/dog-breeds` 选择品种，卡片右下角优先显示狗品种，无品种时回退显示猫/狗类型。
+- 应用外壳位于 `apps/web/src/routes/__root.tsx`：顶部居中的 `Home` / `Paws` / `城市浏览` / `景区浏览` 四个 Tab 与真实路由 `/`、`/paws`、`/cities`、`/attractions` 同步；`/attractions` 与 `/attractions/$poiId` 归入“景区浏览”Tab 选中态；`/` 展示问候语，`/paws` 展示当前用户的宠物画廊并支持查看、编辑、新增与删除；狗类型在表单中必须从 `GET /api/dog-breeds` 选择品种，卡片右下角优先显示狗品种，无品种时回退显示猫/狗类型。
 
 ### 前端服务端状态
 

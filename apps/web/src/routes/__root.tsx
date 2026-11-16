@@ -150,15 +150,18 @@ function AppTabs() {
   const navigate = useNavigate();
   const isClient = typeof window !== "undefined";
   const auth = useQuery({ ...authQueryOptions, enabled: isClient });
-  const activeTab = pathname === "/paws"
-    ? "paws"
-    : pathname === "/cities"
-      ? "cities"
-      : pathname === "/admin/locations"
-        ? "locations"
-        : pathname === "/admin/cities"
-          ? "admin-cities"
-          : "home";
+  const isAttractions = pathname === "/attractions" || pathname.startsWith("/attractions/");
+  const activeTab = isAttractions
+    ? "attractions"
+    : pathname === "/paws"
+      ? "paws"
+      : pathname === "/cities"
+        ? "cities"
+        : pathname === "/admin/locations"
+          ? "locations"
+          : pathname === "/admin/cities"
+            ? "admin-cities"
+            : "home";
 
   return (
     <Tabs
@@ -168,6 +171,8 @@ function AppTabs() {
           void navigate({ to: "/paws" });
         } else if (value === "cities") {
           void navigate({ to: "/cities" });
+        } else if (value === "attractions") {
+          void navigate({ to: "/attractions" });
         } else if (value === "locations") {
           void navigate({ to: "/admin/locations" });
         } else if (value === "admin-cities") {
@@ -181,6 +186,7 @@ function AppTabs() {
         <TabsTrigger value="home">Home</TabsTrigger>
         <TabsTrigger value="paws">Paws</TabsTrigger>
         <TabsTrigger value="cities">城市浏览</TabsTrigger>
+        <TabsTrigger value="attractions">景区浏览</TabsTrigger>
         {auth.data?.role === "ADMIN" ? (
           <>
             <TabsTrigger value="locations">地点管理</TabsTrigger>

@@ -16,6 +16,8 @@ import { Route as AuthenticatedCitiesRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedPawsRouteImport } from './routes/_authenticated/paws'
 import { Route as AuthenticatedAdminCitiesRouteImport } from './routes/_authenticated/admin/cities'
 import { Route as AuthenticatedAdminLocationsRouteImport } from './routes/_authenticated/admin/locations'
+import { Route as AuthenticatedAttractionsIndexRouteImport } from './routes/_authenticated/attractions/index'
+import { Route as AuthenticatedAttractionsPoiIdRouteImport } from './routes/_authenticated/attractions/$poiId'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -53,6 +55,18 @@ const AuthenticatedAdminLocationsRoute =
     path: '/admin/locations',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAttractionsIndexRoute =
+  AuthenticatedAttractionsIndexRouteImport.update({
+    id: '/attractions/',
+    path: '/attractions/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAttractionsPoiIdRoute =
+  AuthenticatedAttractionsPoiIdRouteImport.update({
+    id: '/attractions/$poiId',
+    path: '/attractions/$poiId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -61,6 +75,8 @@ export interface FileRoutesByFullPath {
   '/paws': typeof AuthenticatedPawsRoute
   '/admin/cities': typeof AuthenticatedAdminCitiesRoute
   '/admin/locations': typeof AuthenticatedAdminLocationsRoute
+  '/attractions/$poiId': typeof AuthenticatedAttractionsPoiIdRoute
+  '/attractions/': typeof AuthenticatedAttractionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -69,6 +85,8 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/admin/cities': typeof AuthenticatedAdminCitiesRoute
   '/admin/locations': typeof AuthenticatedAdminLocationsRoute
+  '/attractions/$poiId': typeof AuthenticatedAttractionsPoiIdRoute
+  '/attractions': typeof AuthenticatedAttractionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -79,14 +97,30 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admin/cities': typeof AuthenticatedAdminCitiesRoute
   '/_authenticated/admin/locations': typeof AuthenticatedAdminLocationsRoute
+  '/_authenticated/attractions/$poiId': typeof AuthenticatedAttractionsPoiIdRoute
+  '/_authenticated/attractions/': typeof AuthenticatedAttractionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/login' | '/cities' | '/paws' | '/admin/cities' | '/admin/locations'
+    | '/'
+    | '/login'
+    | '/cities'
+    | '/paws'
+    | '/admin/cities'
+    | '/admin/locations'
+    | '/attractions/$poiId'
+    | '/attractions/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/login' | '/cities' | '/paws' | '/' | '/admin/cities' | '/admin/locations'
+    | '/login'
+    | '/cities'
+    | '/paws'
+    | '/'
+    | '/admin/cities'
+    | '/admin/locations'
+    | '/attractions/$poiId'
+    | '/attractions'
   id:
     | '__root__'
     | '/_authenticated'
@@ -96,6 +130,8 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/admin/cities'
     | '/_authenticated/admin/locations'
+    | '/_authenticated/attractions/$poiId'
+    | '/_authenticated/attractions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -154,6 +190,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLocationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/attractions/': {
+      id: '/_authenticated/attractions/'
+      path: '/attractions'
+      fullPath: '/attractions/'
+      preLoaderRoute: typeof AuthenticatedAttractionsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/attractions/$poiId': {
+      id: '/_authenticated/attractions/$poiId'
+      path: '/attractions/$poiId'
+      fullPath: '/attractions/$poiId'
+      preLoaderRoute: typeof AuthenticatedAttractionsPoiIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -163,6 +213,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAdminCitiesRoute: typeof AuthenticatedAdminCitiesRoute
   AuthenticatedAdminLocationsRoute: typeof AuthenticatedAdminLocationsRoute
+  AuthenticatedAttractionsPoiIdRoute: typeof AuthenticatedAttractionsPoiIdRoute
+  AuthenticatedAttractionsIndexRoute: typeof AuthenticatedAttractionsIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -171,6 +223,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAdminCitiesRoute: AuthenticatedAdminCitiesRoute,
   AuthenticatedAdminLocationsRoute: AuthenticatedAdminLocationsRoute,
+  AuthenticatedAttractionsPoiIdRoute: AuthenticatedAttractionsPoiIdRoute,
+  AuthenticatedAttractionsIndexRoute: AuthenticatedAttractionsIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
