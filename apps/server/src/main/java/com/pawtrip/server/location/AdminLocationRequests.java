@@ -14,7 +14,8 @@ public final class AdminLocationRequests {
 	public record UpdateLocation(Integer minVisitHours, Integer maxVisitHours, PetPolicies petPolicies) {
 	}
 
-	public record PetPolicies(BigDecimal maxPetsPerPerson, Double maxSinglePetWeightKg, Boolean leashRequired,
-			Boolean vaccinationProofRequired, BigDecimal extraFeeCents, Boolean reservationRequired) {
+	public record PetPolicies(String allowedPetTypes, BigDecimal maxPetsPerPerson, Double maxSinglePetWeightKg,
+			Double maxSinglePetShoulderHeightCm, Boolean leashRequired, Boolean vaccinationProofRequired,
+			BigDecimal extraFeeCents, Boolean reservationRequired) {
 	}
 }

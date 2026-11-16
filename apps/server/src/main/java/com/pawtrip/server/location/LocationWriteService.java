@@ -51,10 +51,10 @@ public class LocationWriteService {
 		location.updateVisitHours(minVisitHours, maxVisitHours);
 		if (petPolicies != null) {
 			location.updatePetPolicies(
-					location.getAllowedPetTypes(),
+					petPolicies.allowedPetTypes(),
 					petPolicies.maxPetsPerPerson(),
 					petPolicies.maxSinglePetWeightKg(),
-					location.getMaxSinglePetShoulderHeightCm(),
+					petPolicies.maxSinglePetShoulderHeightCm(),
 					petPolicies.leashRequired(),
 					petPolicies.vaccinationProofRequired(),
 					petPolicies.extraFeeCents(),
@@ -79,8 +79,9 @@ public class LocationWriteService {
 	record PhotoMetadata(int order, String sourceJson, String title, String sourceUrl) {
 	}
 
-	record PetPolicyValues(Integer maxPetsPerPerson, Double maxSinglePetWeightKg, Boolean leashRequired,
-			Boolean vaccinationProofRequired, Long extraFeeCents, Boolean reservationRequired) {
+	record PetPolicyValues(String allowedPetTypes, Integer maxPetsPerPerson, Double maxSinglePetWeightKg,
+			Double maxSinglePetShoulderHeightCm, Boolean leashRequired, Boolean vaccinationProofRequired,
+			Long extraFeeCents, Boolean reservationRequired) {
 	}
 
 	static final class DuplicatePoiIdException extends RuntimeException {
