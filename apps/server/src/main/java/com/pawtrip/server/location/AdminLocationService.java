@@ -7,6 +7,7 @@ import com.pawtrip.server.application.port.maps.PlaceSearchPort;
 import com.pawtrip.server.error.ApiErrorCode;
 import com.pawtrip.server.error.ApiException;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -160,6 +161,7 @@ AdminLocationService(AdministrativeRegionRepository regionRepository,
 		String poiId = validatePoiId(request.poiId());
 		List<String> typeCodes = typeCodesForGroup(request.typeGroup());
 		validateVisitHours(request.minVisitHours(), request.maxVisitHours());
+		validatePetPolicies(request.petPolicies());
 		if (this.locationRepository.existsByPoiId(poiId)) {
 			throw locationConflict();
 		}
@@ -182,6 +184,18 @@ AdminLocationService(AdministrativeRegionRepository regionRepository,
 				businessJson,
 				request.minVisitHours(),
 				request.maxVisitHours());
+		LocationWriteService.PetPolicyValues petPolicies = toPetPolicyValues(request.petPolicies());
+		if (petPolicies != null) {
+			location.updatePetPolicies(
+					null,
+					petPolicies.maxPetsPerPerson(),
+					petPolicies.maxSinglePetWeightKg(),
+					null,
+					petPolicies.leashRequired(),
+					petPolicies.vaccinationProofRequired(),
+					petPolicies.extraFeeCents(),
+					petPolicies.reservationRequired());
+		}
 		PawtripLocation savedLocation;
 		try {
 			savedLocation = this.locationWriteService.create(location, photos);
@@ -193,18 +207,23 @@ AdminLocationService(AdministrativeRegionRepository regionRepository,
 	}
 
 	AdminLocationResponses.LocationDetail updateLocation(String requestedPoiId,
-			AdminLocationRequests.UpdateVisitHours request) {
+			AdminLocationRequests.UpdateLocation request) {
 		String poiId = validatePoiId(requestedPoiId);
 		if (request == null) {
 			throw invalidQuery();
 		}
 		validateVisitHours(request.minVisitHours(), request.maxVisitHours());
+		validatePetPolicies(request.petPolicies());
 		PawtripLocation existing = findLocation(poiId);
 		if (!ATTRACTION_TYPE_GROUP.equals(existing.getTypeGroup())
 				&& (request.minVisitHours() != null || request.maxVisitHours() != null)) {
 			throw invalidQuery();
 		}
-		this.locationWriteService.updateVisitHours(poiId, request.minVisitHours(), request.maxVisitHours());
+		this.locationWriteService.updateExtraInfo(
+				poiId,
+				request.minVisitHours(),
+				request.maxVisitHours(),
+				toPetPolicyValues(request.petPolicies()));
 		return locationDetail(poiId);
 	}
 
@@ -224,6 +243,7 @@ AdminLocationService(AdministrativeRegionRepository regionRepository,
 				location.getTypeGroup(),
 				location.getMinVisitHours(),
 				location.getMaxVisitHours(),
+				AdminLocationResponses.PetPolicies.from(location),
 				parseJson(location.getPoiJson()),
 				parseJson(location.getBusinessJson()),
 				photos);
@@ -311,6 +331,53 @@ AdminLocationService(AdministrativeRegionRepository regionRepository,
 				|| (minVisitHours != null && maxVisitHours != null && minVisitHours > maxVisitHours)) {
 			throw invalidQuery();
 		}
+	}
+
+	private static void validatePetPolicies(AdminLocationRequests.PetPolicies petPolicies) {
+		if (petPolicies == null) {
+			return;
+		}
+		validateNonNegativeInteger(petPolicies.maxPetsPerPerson(), true);
+		Double weight = petPolicies.maxSinglePetWeightKg();
+		if (weight != null && (!Double.isFinite(weight) || weight < 0
+				|| BigDecimal.valueOf(weight).scale() > 2)) {
+			throw invalidQuery();
+		}
+		validateNonNegativeInteger(petPolicies.extraFeeCents(), false);
+	}
+
+	private static void validateNonNegativeInteger(BigDecimal value, boolean fitsInInt) {
+		if (value == null) {
+			return;
+		}
+		if (value.signum() < 0 || value.stripTrailingZeros().scale() > 0) {
+			throw invalidQuery();
+		}
+		try {
+			if (fitsInInt) {
+				value.intValueExact();
+			}
+			else {
+				value.longValueExact();
+			}
+		}
+		catch (ArithmeticException exception) {
+			throw invalidQuery();
+		}
+	}
+
+	private static LocationWriteService.PetPolicyValues toPetPolicyValues(
+			AdminLocationRequests.PetPolicies petPolicies) {
+		if (petPolicies == null) {
+			return null;
+		}
+		return new LocationWriteService.PetPolicyValues(
+				petPolicies.maxPetsPerPerson() == null ? null : petPolicies.maxPetsPerPerson().intValueExact(),
+				petPolicies.maxSinglePetWeightKg(),
+				petPolicies.leashRequired(),
+				petPolicies.vaccinationProofRequired(),
+				petPolicies.extraFeeCents() == null ? null : petPolicies.extraFeeCents().longValueExact(),
+				petPolicies.reservationRequired());
 	}
 
 	private static String validatePoiId(String poiId) {

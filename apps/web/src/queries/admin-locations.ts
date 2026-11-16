@@ -80,11 +80,21 @@ export interface LocationPhoto {
   metadata: JsonValue;
 }
 
+export interface PetPolicies {
+  maxPetsPerPerson: number | null;
+  maxSinglePetWeightKg: number | null;
+  leashRequired: boolean | null;
+  vaccinationProofRequired: boolean | null;
+  extraFeeCents: number | null;
+  reservationRequired: boolean | null;
+}
+
 export interface LocationDetail {
   poiId: string;
   typeGroup: string;
   minVisitHours: number | null;
   maxVisitHours: number | null;
+  petPolicies: PetPolicies;
   poi: JsonValue;
   business: JsonValue;
   photos: LocationPhoto[];
@@ -95,11 +105,13 @@ export interface SaveLocationInput {
   typeGroup: string;
   minVisitHours?: number | null;
   maxVisitHours?: number | null;
+  petPolicies?: PetPolicies | null;
 }
 
 export interface UpdateLocationInput {
   minVisitHours?: number | null;
   maxVisitHours?: number | null;
+  petPolicies?: PetPolicies | null;
 }
 
 

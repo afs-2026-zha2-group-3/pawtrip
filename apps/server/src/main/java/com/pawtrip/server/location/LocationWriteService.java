@@ -44,10 +44,22 @@ public class LocationWriteService {
 	}
 
 	@Transactional
-	PawtripLocation updateVisitHours(String poiId, Integer minVisitHours, Integer maxVisitHours) {
+	PawtripLocation updateExtraInfo(String poiId, Integer minVisitHours, Integer maxVisitHours,
+			PetPolicyValues petPolicies) {
 		PawtripLocation location = this.locationRepository.findByPoiId(poiId)
 				.orElseThrow(() -> new ApiException(ApiErrorCode.LOCATION_NOT_FOUND, "Saved location was not found"));
 		location.updateVisitHours(minVisitHours, maxVisitHours);
+		if (petPolicies != null) {
+			location.updatePetPolicies(
+					location.getAllowedPetTypes(),
+					petPolicies.maxPetsPerPerson(),
+					petPolicies.maxSinglePetWeightKg(),
+					location.getMaxSinglePetShoulderHeightCm(),
+					petPolicies.leashRequired(),
+					petPolicies.vaccinationProofRequired(),
+					petPolicies.extraFeeCents(),
+					petPolicies.reservationRequired());
+		}
 		return this.locationRepository.save(location);
 	}
 
@@ -65,6 +77,10 @@ public class LocationWriteService {
 	}
 
 	record PhotoMetadata(int order, String sourceJson, String title, String sourceUrl) {
+	}
+
+	record PetPolicyValues(Integer maxPetsPerPerson, Double maxSinglePetWeightKg, Boolean leashRequired,
+			Boolean vaccinationProofRequired, Long extraFeeCents, Boolean reservationRequired) {
 	}
 
 	static final class DuplicatePoiIdException extends RuntimeException {

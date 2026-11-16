@@ -141,6 +141,7 @@ async function terminateChild(child) {
       killer.once("error", resolvePromise);
       killer.once("close", resolvePromise);
     });
+    await waitForChild(child, 5_000);
     return;
   }
 
@@ -159,6 +160,27 @@ async function terminateChild(child) {
   await waitForChild(child, 1_000);
 }
 
+async function removeTemporaryDirectory() {
+  if (!temporaryDirectory) return;
+
+  let lastError;
+  for (const delayMilliseconds of [0, 250, 500, 1_000, 2_000]) {
+    if (delayMilliseconds > 0) {
+      await delay(delayMilliseconds);
+    }
+    try {
+      await rm(temporaryDirectory, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      if (error.code !== "EBUSY" && error.code !== "EPERM") {
+        throw error;
+      }
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+
 function cleanup() {
   if (cleanupPromise) return cleanupPromise;
 
@@ -166,9 +188,7 @@ function cleanup() {
     for (const child of [...children].reverse()) {
       await terminateChild(child);
     }
-    if (temporaryDirectory) {
-      await rm(temporaryDirectory, { recursive: true, force: true });
-    }
+    await removeTemporaryDirectory();
   })();
 
   return cleanupPromise;
