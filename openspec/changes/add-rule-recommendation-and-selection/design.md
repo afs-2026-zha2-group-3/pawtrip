@@ -32,8 +32,8 @@
 新增 `apps/web/src/data/transport-rule-match.ts`，导出 `evaluateRuleForPet(rule, pet)` 返回 `{ recommended, reasons }`。
 
 - 理由：规则常量只在前端有一份，后端判定需要在后端复制体重/肩高/检疫阈值，规则一改要改两处；档案接口只提供原始字段，判定是展示层的轻量派生。
-- 备选（已否决）：后端 `GET /api/pets/recommendations`。会立刻产生两套阈值，且与 REQ-006 D1「规则前端写死、不建规则 API」直接冲突。
-- 偏离说明：REQ-006 design D5 曾记"对比判定后端实现、随 US-06"。本次需求明确按档案表字段直接比对、且规则仍在前端，故改在前端实现；若将来多端需要判定，再把纯函数迁到后端，接口契约不变。
+- 备选（已否决）：后端 `GET /api/pets/recommendations`。会立刻产生两套阈值，且与 REQ-007 D1「规则前端写死、不建规则 API」直接冲突。
+- 偏离说明：REQ-007 design D5 曾记"对比判定后端实现、随 US-06"。本次需求明确按档案表字段直接比对、且规则仍在前端，故改在前端实现；若将来多端需要判定，再把纯函数迁到后端，接口契约不变。
 
 ### D2 判定算法与原因文案
 
@@ -97,8 +97,8 @@
 ## Risks
 
 - **并行会话**：主干上宠物档案能力由其他会话推进，`PetResponses.PetDetail` 字段可能变动（如新增品种）。判定只读取 `weightKg`/`shoulderHeightCm`/`hasVaccinationProof`，字段缺失时前端类型报错而非静默错判。
-- **REQ-006 未归档**：本 change 的 delta 以叠加方式写在 `transport-rules-comparison-page` 规格上，必须等 REQ-006 合并后再归档本 change，否则规格文件会丢内容。
-- **规则阈值仍需人工复核**（2026-11-16 已关闭）：REQ-006 遗留的 4 条 `verifiedOn: null` 已补齐，8 条规则复核日期均为 `2026-11-16`（复核记录见 `docs/ai4se-plugins/20261116-124503-local-verify-report.md`「规则复核闭合」）；本 change 不再受该门禁阻隔，但推荐结论仍随规则时效性变化。
+- **REQ-007 未归档**：本 change 的 delta 以叠加方式写在 `transport-rules-comparison-page` 规格上，必须等 REQ-007 合并后再归档本 change，否则规格文件会丢内容。
+- **规则阈值仍需人工复核**（2026-11-16 已关闭）：REQ-007 遗留的 4 条 `verifiedOn: null` 已补齐，8 条规则复核日期均为 `2026-11-16`（复核记录见 `docs/ai4se-plugins/20261116-124503-local-verify-report.md`「规则复核闭合」）；本 change 不再受该门禁阻隔，但推荐结论仍随规则时效性变化。
 - **判定口径的局限**：品种、烈性犬、笼具规格、办理时长都不参与判定，用户可能看到"推荐"但实际仍需人工确认；免责声明已覆盖，但文案未突出，属已知取舍。
 
 ## Open Questions

@@ -2,7 +2,7 @@
 
 ## Why
 
-规则页（REQ-006 / US-05）目前只能"看规则"：用户仍需自己对照宠物档案判断"我家这只到底能不能用这种方式"，判断完也没有地方记录本次行程打算怎么走。本次在规则页补两件事：让规则直接对着用户已录入的宠物给结论，并让用户把本次选定的交通方式记下来，供后续生成行程单使用。
+规则页（REQ-007 / US-05）目前只能"看规则"：用户仍需自己对照宠物档案判断"我家这只到底能不能用这种方式"，判断完也没有地方记录本次行程打算怎么走。本次在规则页补两件事：让规则直接对着用户已录入的宠物给结论，并让用户把本次选定的交通方式记下来，供后续生成行程单使用。
 
 ## What Changes
 
@@ -26,8 +26,8 @@
 - 前端：`apps/web/src/data/transport-rules.ts`（补 `shoulderLimitCm`）、新增判定模块与 `queries/pets.ts`、修改 `apps/web/src/routes/_authenticated/transport-rules.tsx`（两列 + 无档案提示改造）。
 - 后端：无改动。
 - 数据：`scripts/seed-users.mjs` 新增验收账号 `petowner`（USER）并为其补两只宠物（一只满足全部条件、一只全部不满足）；`demo` 与 `admin` 保持无档案（`demo` 供 `/paws` 空态流程、`admin` 验证「无档案隐藏列」），用于验收两种页面形态。
-- 测试：新增判定纯函数的 vitest 用例；E2E 扩展推荐列、无档案形态、单选与缓存回显四组场景；REQ-006 现有的「无档案提示」断言需改为「按钮可点击且跳转 `/paws`」。
-- 依赖顺序：本 change 的 delta 以 REQ-006（`transport-pet-rules-comparison`）合并入 main 为前置；两者都触及规则页规格，需先合并 REQ-006 再归档本 change。
+- 测试：新增判定纯函数的 vitest 用例；E2E 扩展推荐列、无档案形态、单选与缓存回显四组场景；REQ-007 现有的「无档案提示」断言需改为「按钮可点击且跳转 `/paws`」。
+- 依赖顺序：本 change 的 delta 以 REQ-007（`transport-pet-rules-comparison`）合并入 main 为前置；两者都触及规则页规格，需先合并 REQ-007 再归档本 change。
 
 ## Effort Notes
 

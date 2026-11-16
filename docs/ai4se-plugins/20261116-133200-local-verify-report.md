@@ -3,7 +3,7 @@
 | 项 | 值 |
 |---|---|
 | Change | `openspec/changes/add-rule-recommendation-and-selection` |
-| 需求 | REQ-007（2026-11-16 由需求方在 REQ-006 之后追加） |
+| 需求 | REQ-008（2026-11-16 由需求方在 REQ-007 之后追加；原登记 REQ-007，合并 main 时因上游规则页需求改为 REQ-007 而顺延） |
 | 分支 | `feat/rule-recommendation-and-selection`（rebase 至 `feat/transport-rules-comparison`，后者再 rebase 至 `origin/main` @ `d92ecb9`；分支 tip 以 `git log` 为准） |
 | 提交 | 依次为：`feat(web): 规则页新增交通方式选择与宠物档案推荐列` → `docs(openspec): 补充推荐与选择能力的规格与知识库` → `docs(REQ-006): 登记需求条目并更新 REQ-005 状态` → `fix(web): 复核携宠规则来源并补齐复核日期` → `feat(web): 无档案提示按钮跳转 /paws` → `docs(sdd): 记录 REQ-005/REQ-006 的 G2 决策与验证报告` → `docs: 同步 rebase 与验收账号调整`；rebase 会重写哈希，故只记提交主题，具体哈希以 `git log` 为准 |
 | 执行时间 | 2026-11-16 13:32 (+08:00) |
@@ -32,7 +32,7 @@
 | `npm run test -w apps/web` | 0 | 3 files / **17 passed**（新增 `transport-rule-match.test.ts` 6 例） |
 | `npm run build` | 0 | 构建成功（`transport-rules` chunk 生成） |
 | `.\apps\server\mvnw.cmd -f apps\server\pom.xml test` | 0 | **Tests run: 75, Failures: 0, Errors: 0**，BUILD SUCCESS（26.0s） |
-| `npm run test:e2e` | 1 | **32 passed (36.7s)**；退出码 1 为 REQ-006 遗留 W1（`run-e2e.mjs` 清理临时 SQLite 的 `EBUSY`），非本次引入 |
+| `npm run test:e2e` | 1 | **32 passed (36.7s)**；退出码 1 为 REQ-007 遗留 W1（`run-e2e.mjs` 清理临时 SQLite 的 `EBUSY`），非本次引入 |
 
 ## Evidence checklist
 
@@ -75,7 +75,7 @@
 
 | # | Finding | Mark | Location | Suggestion |
 |---|---------|------|----------|------------|
-| W1 | `npm run test:e2e` 测试全绿但退出码 1（`EBUSY` 清理异常），继承自 REQ-006 | [fact] | `scripts/run-e2e.mjs` cleanup | 需求方 2026-11-16 决定不修；为 `rm` 增加 `maxRetries/retryDelay` 可消除误判 |
+| W1 | `npm run test:e2e` 测试全绿但退出码 1（`EBUSY` 清理异常），继承自 REQ-007 | [fact] | `scripts/run-e2e.mjs` cleanup | 需求方 2026-11-16 决定不修；为 `rm` 增加 `maxRetries/retryDelay` 可消除误判 |
 | W2 | 「档案加载失败」分支无自动化覆盖，只能靠代码审查 | [fact] | `transport-rules.tsx` `petsQuery.isError` 段 | 引入请求拦截（`page.route`）或 MSW 后补 1 例 E2E |
 | W3 | `Pet.weightKg` / `shoulderHeightCm` 在 TS 中为 `number`，但 API 侧是 `Double`；若返回 `null`，`null > 5` 为 `false`，判定会**静默判为满足** | [inference] | `transport-rule-match.ts` 比较表达式 | DB 迁移 V10 已 NOT NULL，当前不可达；建议后续把类型改为 `number \| null` 并在判定入口做空值保护，避免后端字段放宽后静默误判 |
 
@@ -96,7 +96,7 @@
 | 3 | 判定口径局限（不含品种/笼具等） | 需求方已选定 3 项硬条件 | accepted（免责声明 + 逐条原因展示） |
 | 4 | 服务端字段若放宽为可空，前端判定会静默误判 | 当前 NOT NULL，不可达 | tracking（W3） |
 | 5 | E2E 命令退出码非 0 | 清理逻辑缺陷，需求方决定不修 | tracking（W1） |
-| 6 | 本 change 的 delta 叠加在未归档的 `transport-rules-comparison-page` 上 | REQ-006 未合并 | 必须先合 REQ-006 再合本分支，否则规格归档会覆盖 |
+| 6 | 本 change 的 delta 叠加在未归档的 `transport-rules-comparison-page` 上 | REQ-007 未合并 | 必须先合 REQ-007 再合本分支，否则规格归档会覆盖 |
 
 ## Waiver
 
@@ -112,9 +112,9 @@ N/A — 无豁免，本报告不构成放行。
 |---|---|---|
 | 1 | 「新增宠物档案」按钮由 `disabled` 改为点击跳转 `/paws`（需求方指定目标路径），使用 `useNavigate` 导航，不手写 `href` | `apps/web/src/routes/_authenticated/transport-rules.tsx` |
 | 2 | E2E `no-pet-profile` 用例由「按钮可见且 disabled」改为「按钮可用 → 点击后 URL 为 `/paws` 且表格消失」 | `e2e/transport-rules.spec.ts` |
-| 3 | delta spec「无宠物档案」scenario、design D5、知识库、REQ-007 需求条目、registry 同步为跳转口径 | 对应文件 |
+| 3 | delta spec「无宠物档案」scenario、design D5、知识库、REQ-008 需求条目、registry 同步为跳转口径 | 对应文件 |
 | 4 | 分支 rebase 到 `origin/main` @ `d92ecb9`：主干已由 #40 实现 `/paws` 宠物管理，因此原「`/paws` 为空壳」的保留意见全部作废 | `git log --oneline feat/transport-rules-comparison` |
-| 5 | 需求编号重排：远端 `REQ-005` 已归属「管理员维护地点宠物政策」（Archived，PR #37/#38），本次两个 change 改为 REQ-006（规则页）/ REQ-007（推荐与选择），全量文档已同步 | `requirement-workspace/registry.md` 登记缺口说明 |
+| 5 | 需求编号重排：远端 `REQ-005` 已归属「管理员维护地点宠物政策」（Archived，PR #37/#38），本次两个 change 改为 REQ-006（规则页）/ REQ-007（推荐与选择），全量文档已同步；2026-11-16 合并 `origin/main` 时再次发现远端 `REQ-006` 已归属「选择目的地」（destination-selection），故规则页再改为 **REQ-007**、推荐与选择顺延为 **REQ-008**，全量文档同步 | `requirement-workspace/registry.md` 登记缺口说明 |
 | 6 | rebase 后回归发现：种子给 `demo` 预置宠物会破坏 `#40` 的 `paws-pet-management.spec.ts`（其首屏断言「还没有宠物」），故预置档案改放到新账号 `petowner`，`demo`/`admin` 保持无档案，`e2e/rule-recommendation-and-selection.spec.ts` 改用 `petowner` 登录 | `scripts/seed-users.mjs`、`scripts/run-e2e.mjs`、`e2e/rule-recommendation-and-selection.spec.ts` |
 
 复验：`npm run test:e2e` → **32 passed (38.5s)**，退出码 1 仍为 W1。

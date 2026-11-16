@@ -26,7 +26,7 @@
 - [x] 4.1 `scripts/seed-users.mjs`：新增账号 `petowner`（USER）并为其幂等写入两只宠物（豆豆 CAT 4.5kg/25cm/有证；毛毛 DOG 38kg/55cm/无证）；`demo` / `admin` 不写档案，并同步 `scripts/run-e2e.mjs` 的 `verifySeededUsers` 账号清单
 - [x] 4.2 新增 `e2e/rule-recommendation-and-selection.spec.ts`：`petowner` 视角（推荐列存在、豆豆推荐、毛毛不推荐且各行原因不同、切航司后结论正确）；admin 视角（列隐藏、提示按钮跳转 `/paws`、单选列可用）
 - [x] 4.3 同 spec：单选互斥、`sessionStorage` 值正确、刷新后回显
-- 验证：`npm run test:e2e` → **32 passed (36.3s)**（原 28 + 新增 4）；退出码仍为 1，属 REQ-006 遗留的 W1（`run-e2e.mjs` 清理临时 SQLite 的 EBUSY），非本次引入。
+- 验证：`npm run test:e2e` → **32 passed (36.3s)**（原 28 + 新增 4）；退出码仍为 1，属 REQ-007 遗留的 W1（`run-e2e.mjs` 清理临时 SQLite 的 EBUSY），非本次引入。
 - 过程记录：首轮 31 passed / 1 failed，失败为 `defaults to the first airline without leaving empty cells` 对「选择」列断言 `not.toBeEmpty()`；该列只含单选控件、本无文本，已改为从「方式」列起检查。
 
 ## 5. 全量验证与文档

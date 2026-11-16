@@ -1,7 +1,7 @@
 # G2 decision — transport-pet-rules-comparison
 
 - **Gate**: G2（Verify）
-- **Change**: `transport-pet-rules-comparison`（REQ-006 / US-05）
+- **Change**: `transport-pet-rules-comparison`（REQ-007 / US-05；原登记 REQ-006，因 main 已将 REQ-006 用于「选择目的地」而于 2026-11-16 合并 main 时改编号）
 - **Timestamp**: 2026-11-16T13:35:13+08:00
 
 ## Inputs
@@ -60,9 +60,9 @@
 
 ## Next
 
-1. 提交本记录与 REQ-007 的 G2 记录
-2. PR #45 已建（base=`main`），checks 全绿；E1 已升级为机器证据
-3. 窄屏 Tab 目视 + G3 签核
+1. 本记录与下游 REQ-008 的 G2 记录均已提交
+2. PR #45 已合并入 `main`（merge commit `e1169b4`）；E1 已升级为机器证据（Web/E2E/Server 三个 job 全 success）
+3. 窄屏 Tab 目视（残留条件）+ G3 签核
 4. G3 + `/sdd:living-merge` → `/sdd:archive-change`
 
 ## Traceability appendix

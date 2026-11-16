@@ -1,10 +1,10 @@
 ---
-id: REQ-006
+id: REQ-007
 title: 对比高铁/航班/自驾/火车携宠规则
 status: ready-for-split
 discovery: Go (2026-11-16)
-impact: ../analysis/REQ-006/impact-brief.md
-deep_dive: ../analysis/REQ-006/deep-dive.md
+impact: ../analysis/REQ-007/impact-brief.md
+deep_dive: ../analysis/REQ-007/deep-dive.md
 sources:
   - openspec/specs/web-app-shell/spec.md
   - openspec/specs/backend-data-access/spec.md
@@ -13,7 +13,7 @@ sources:
   - docs/knowledge/architecture/README.md
 ---
 
-# REQ-006: 对比高铁/航班/自驾/火车携宠规则
+# REQ-007: 对比高铁/航班/自驾/火车携宠规则
 
 ## Discovery Decision
 
@@ -21,7 +21,7 @@ Go — 候选能力清晰：新增"交通携宠规则对比"能力，以表格�
 
 ## 六字段
 
-1. **id**：REQ-006
+1. **id**：REQ-007
 2. **statement**：为计划携宠出行的已登录用户提供四种交通方式（飞机、高铁、火车、自驾）的携宠规则对比页面：以**表格列表**呈现四行（四种方式）× 基础列（方式、能否携带、体重上限、容器要求、办理流程概要）；列可按规则需要新增（如体型限制、检疫证明），基础列不得缺失；飞机行的"能否携带/体重上限"等单元格按航司不同而变化，通过**下拉选择器**切换航司查看（国航/东航/南航/海航）；其余三种方式展示通用规则；所有规则注明"以承运方最新规则为准"。规则数据全部写死在前端（`apps/web` 常量模块，标注来源与复核日期，发布前人工复核），页面为纯前端静态展示（无后端规则接口、无站内订票、无实时查询）。规则 vs 宠物档案的对比逻辑放后端，宠物档案表随 US-06 建立（不在本需求建）；本次仅预留对比契约与无档案时跳转宠物档案录入页的按钮（指向未来路由），本次可验收范围为规则展示。
 3. **actors**：
    - 已登录用户（有/无宠物档案）：进入规则对比页，浏览四行表格；在飞机行下拉切换航司；无档案时看到录入档案入口
@@ -194,4 +194,4 @@ BLOCKER 数：0。
 - 取数模式（参考）：`apps/web/src/queries/greeting.ts`、`openspec/specs/frontend-data-fetching/spec.md`
 - 纯前端常量先例：`apps/web/src/components/ui/` 配置类文件、`openspec/specs/ui-foundation/spec.md`
 - 地点管理（含宠物政策字段先例）：`openspec/specs/location-management/spec.md`
-- 规则数据检索记录：见 `../analysis/REQ-006/deep-dive.md` 数据来源表（P1 检索产出）
+- 规则数据检索记录：见 `../analysis/REQ-007/deep-dive.md` 数据来源表（P1 检索产出）

@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PawPrint } from "lucide-react";
 import {
   AlertDialog,
@@ -42,6 +42,7 @@ import { photoDataUrl, readPhotoFile } from "@/lib/pet-photo";
 import {
   createPetMutationOptions,
   deletePetMutationOptions,
+  dogBreedsQueryOptions,
   petQueryKeys,
   updatePetMutationOptions,
   type Pet,
@@ -57,6 +58,7 @@ const petTypeLabels: Record<PetType, string> = {
 type PetDraft = {
   name: string;
   petType: PetType | "";
+  dogBreedId: string;
   weightKg: string;
   shoulderHeightCm: string;
   hasLeash: boolean;
@@ -65,13 +67,17 @@ type PetDraft = {
 };
 
 type DraftErrors = Partial<
-  Record<"name" | "petType" | "weightKg" | "shoulderHeightCm", string>
+  Record<
+    "name" | "petType" | "dogBreedId" | "weightKg" | "shoulderHeightCm",
+    string
+  >
 >;
 
 function draftFromPet(pet: Pet | null): PetDraft {
   return {
     name: pet?.name ?? "",
     petType: pet?.petType ?? "",
+    dogBreedId: pet?.dogBreed ? String(pet.dogBreed.id) : "",
     weightKg: pet ? String(pet.weightKg) : "",
     shoulderHeightCm: pet ? String(pet.shoulderHeightCm) : "",
     hasLeash: pet?.hasLeash ?? false,
@@ -87,6 +93,9 @@ function validateDraft(draft: PetDraft): DraftErrors {
   }
   if (draft.petType !== "CAT" && draft.petType !== "DOG") {
     errors.petType = "请选择宠物类型。";
+  }
+  if (draft.petType === "DOG" && !draft.dogBreedId) {
+    errors.dogBreedId = "请选择狗的品种。";
   }
   const weight = Number(draft.weightKg);
   if (!draft.weightKg.trim() || !Number.isFinite(weight) || weight <= 0) {
@@ -151,6 +160,10 @@ export function PetDialog({
     createMutation.error ?? updateMutation.error,
   );
   const photoPreview = photoDataUrl(draft.photo);
+  const dogBreedsQuery = useQuery({
+    ...dogBreedsQueryOptions(),
+    enabled: draft.petType === "DOG",
+  });
 
   function updateDraft(patch: Partial<PetDraft>) {
     setDraft((current) => ({ ...current, ...patch }));
@@ -212,6 +225,8 @@ export function PetDialog({
       hasLeash: draft.hasLeash,
       hasVaccinationProof: draft.hasVaccinationProof,
       photo: draft.photo,
+      dogBreedId:
+        draft.petType === "DOG" ? Number(draft.dogBreedId) : null,
     };
 
     if (pet) {
@@ -262,7 +277,9 @@ export function PetDialog({
                   <Select
                     value={draft.petType}
                     onValueChange={(value) => {
-                      if (value === "CAT" || value === "DOG") {
+                      if (value === "CAT") {
+                        updateDraft({ petType: value, dogBreedId: "" });
+                      } else if (value === "DOG") {
                         updateDraft({ petType: value });
                       }
                     }}
@@ -329,6 +346,53 @@ export function PetDialog({
                   ) : null}
                 </Field>
               </div>
+
+              {draft.petType === "DOG" ? (
+                <Field>
+                  <FieldLabel htmlFor="pet-breed">品种</FieldLabel>
+                  <Select
+                    value={draft.dogBreedId}
+                    onValueChange={(value) => {
+                      if (typeof value === "string") {
+                        updateDraft({ dogBreedId: value });
+                      }
+                    }}
+                  >
+                    <SelectTrigger
+                      id="pet-breed"
+                      aria-label="狗的品种"
+                      aria-invalid={Boolean(errors.dogBreedId)}
+                      className="w-full"
+                    >
+                      <SelectValue>
+                        {(value: string | null) =>
+                          dogBreedsQuery.data?.find(
+                            (breed) => String(breed.id) === value,
+                          )?.name ?? "选择品种"
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {(dogBreedsQuery.data ?? []).map((breed) => (
+                          <SelectItem key={breed.id} value={String(breed.id)}>
+                            {breed.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  {dogBreedsQuery.isPending ? (
+                    <FieldDescription>正在加载品种…</FieldDescription>
+                  ) : null}
+                  {dogBreedsQuery.isError ? (
+                    <FieldError>品种加载失败，请稍后重试。</FieldError>
+                  ) : null}
+                  {errors.dogBreedId ? (
+                    <FieldError>{errors.dogBreedId}</FieldError>
+                  ) : null}
+                </Field>
+              ) : null}
 
               <div className="flex flex-wrap gap-6">
                 <Field>
@@ -449,6 +513,12 @@ function PetDetails({ pet, photo }: { pet: Pet; photo: string | null }) {
         <dd>{pet.name}</dd>
         <dt className="font-medium">类型</dt>
         <dd>{petTypeLabels[pet.petType]}</dd>
+        {pet.petType === "DOG" ? (
+          <>
+            <dt className="font-medium">品种</dt>
+            <dd>{pet.dogBreed?.name ?? "未设置"}</dd>
+          </>
+        ) : null}
         <dt className="font-medium">体重</dt>
         <dd>{pet.weightKg} kg</dd>
         <dt className="font-medium">肩高</dt>
