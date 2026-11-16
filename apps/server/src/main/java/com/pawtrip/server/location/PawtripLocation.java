@@ -54,6 +54,9 @@ public class PawtripLocation {
 	@Column(name = "max_single_pet_weight_kg")
 	private Double maxSinglePetWeightKg;
 
+	@Column(name = "max_single_pet_shoulder_height_cm")
+	private Double maxSinglePetShoulderHeightCm;
+
 	@Column(name = "leash_required")
 	private Boolean leashRequired;
 
@@ -149,6 +152,10 @@ public class PawtripLocation {
 		return this.maxSinglePetWeightKg;
 	}
 
+	public Double getMaxSinglePetShoulderHeightCm() {
+		return this.maxSinglePetShoulderHeightCm;
+	}
+
 	public Boolean getLeashRequired() {
 		return this.leashRequired;
 	}
@@ -175,11 +182,12 @@ public class PawtripLocation {
 	}
 
 	public void updatePetPolicies(String allowedPetTypes, Integer maxPetsPerPerson, Double maxSinglePetWeightKg,
-			Boolean leashRequired, Boolean vaccinationProofRequired, Long extraFeeCents,
-			Boolean reservationRequired) {
+			Double maxSinglePetShoulderHeightCm, Boolean leashRequired, Boolean vaccinationProofRequired,
+			Long extraFeeCents, Boolean reservationRequired) {
 		this.allowedPetTypes = allowedPetTypes;
 		this.maxPetsPerPerson = maxPetsPerPerson;
 		this.maxSinglePetWeightKg = maxSinglePetWeightKg;
+		this.maxSinglePetShoulderHeightCm = maxSinglePetShoulderHeightCm;
 		this.leashRequired = leashRequired;
 		this.vaccinationProofRequired = vaccinationProofRequired;
 		this.extraFeeCents = extraFeeCents;

@@ -53,6 +53,16 @@ public class Pet {
 		this.hasVaccinationProof = hasVaccinationProof;
 	}
 
+	public void update(String name, PetType petType, Double weightKg, Double shoulderHeightCm, boolean hasLeash,
+			boolean hasVaccinationProof) {
+		this.name = name;
+		this.petType = petType;
+		this.weightKg = weightKg;
+		this.shoulderHeightCm = shoulderHeightCm;
+		this.hasLeash = hasLeash;
+		this.hasVaccinationProof = hasVaccinationProof;
+	}
+
 	public Long getId() {
 		return this.id;
 	}
