@@ -2,20 +2,20 @@
 
 ## Purpose
 
-定义 PawTrip 登录后的应用外壳：顶部居中 `Home` / `Paws` 路由 Tab、独立登录页、受保护路由跳转与登出二次确认，确保导航、页面内容与路由状态一致。
+定义 PawTrip 登录后的应用外壳：顶部居中 `Home` / `Paws` / `城市浏览` / `交通规则` 路由 Tab 与管理员专属 Tab、独立登录页、受保护路由跳转与登出二次确认（含清除已选目的地）、顶栏目的地上下文展示，确保导航、页面内容与路由状态一致。
 
 ## Requirements
 
-### Requirement: 顶部居中横向两 Tab 导航
+### Requirement: 顶部居中横向导航
 
-应用 SHALL 在登录后的页面顶部居中展示横向导航，包含 `Home` 与 `Paws` 两个 Tab，并在 `/` 与 `/paws` 保持一致；已登录时 SHALL 同时显示 `Log out` 入口。
+应用 SHALL 在登录后的页面顶部居中展示横向导航，包含 `Home`、`Paws`、`城市浏览` 与 `交通规则` 四个 Tab，并在 `/`、`/paws`、`/cities` 与 `/transport-rules` 保持一致；已登录时 SHALL 同时显示 `Log out` 入口。
 
 #### Scenario: 打开任意受保护页面
 
-- **GIVEN** 已登录用户打开 `/` 或 `/paws`
+- **GIVEN** 已登录用户打开 `/`、`/paws`、`/cities` 或 `/transport-rules`
 - **WHEN** 页面渲染
 - **THEN** 页面顶部居中显示横向 Tab 导航
-- **AND** 导航包含 `Home` 与 `Paws` 两个 Tab
+- **AND** 导航包含 `Home`、`Paws`、`城市浏览` 与 `交通规则` 四个 Tab
 - **AND** 顶部显示 `Log out`
 
 ### Requirement: 登录页独立于应用外壳
@@ -54,16 +54,29 @@
 - **WHEN** 页面渲染
 - **THEN** `Paws` Tab 处于选中状态
 
+#### Scenario: 切换到城市浏览
+
+- **GIVEN** 已登录用户位于 `/`
+- **WHEN** 用户点击 `城市浏览` Tab
+- **THEN** 浏览器地址变为 `/cities`
+- **AND** `城市浏览` Tab 处于选中状态
+
+#### Scenario: 直接访问城市浏览
+
+- **GIVEN** 已登录用户直接访问 `/cities`
+- **WHEN** 页面渲染
+- **THEN** `城市浏览` Tab 处于选中状态
+
 ### Requirement: 受保护路由与登录跳转
 
-`/` 与 `/paws` SHALL 位于登录守卫之下。未登录用户访问任一路由时 MUST 跳转 `/login`，且 MUST NOT 展示受保护页面内容。登录成功后 SHALL 回到 `/`；登出前 MUST 通过确认弹窗二次确认，确认且请求成功后 SHALL 回到 `/login`。路由守卫只负责界面引导，服务端 API 仍独立执行认证。
+`/`、`/paws`、`/cities` 与 `/transport-rules` SHALL 位于登录守卫之下。未登录用户访问任一路由时 MUST 跳转 `/login`，且 MUST NOT 展示受保护页面内容。登录成功后 SHALL 回到 `/`；登出前 MUST 通过确认弹窗二次确认，确认且请求成功后 SHALL 回到 `/login`，并 SHALL 清除浏览器端持久化的已选目的地。路由守卫只负责界面引导，服务端 API 仍独立执行认证。
 
 #### Scenario: 未登录访问首页
 
 - **GIVEN** 浏览器没有有效登录会话
-- **WHEN** 访问 `/` 或 `/paws`
+- **WHEN** 访问 `/`、`/paws`、`/cities` 或 `/transport-rules`
 - **THEN** 浏览器地址变为 `/login`
-- **AND** 不展示问候语或 Paws 内容
+- **AND** 不展示问候语、Paws、目的地选择或交通规则内容
 
 #### Scenario: 登录后进入首页
 
@@ -82,10 +95,11 @@
 
 #### Scenario: 确认登出
 
-- **GIVEN** 登出确认弹窗已打开
+- **GIVEN** 登出确认弹窗已打开，且用户已选定目的地
 - **WHEN** 用户确认登出且请求成功
 - **THEN** 地址变为 `/login`
 - **AND** 受保护查询缓存被清理
+- **AND** 浏览器端持久化的已选目的地被清除
 
 ### Requirement: Home Tab 展示问候语
 
@@ -105,37 +119,45 @@
 - **THEN** 进入根路由错误页并展示可读错误信息与重试入口
 - **AND** auth query 失败时优先跳转 `/login`，不展示受保护内容
 
-### Requirement: 管理员地点管理导航 Tab
-应用 SHALL 为 `ADMIN` 用户在顶部导航提供“地点管理”Tab，并与管理员地点管理路由同步；非管理员 SHALL NOT 在顶部导航看到该 Tab。
+### Requirement: 管理员管理导航 Tab
+
+应用 SHALL 为 `ADMIN` 用户在顶部导航提供「地点管理」与「城市管理」Tab，并分别与 `/admin/locations`、`/admin/cities` 同步；非管理员 SHALL NOT 在顶部导航看到这两个 Tab。
 
 #### Scenario: 管理员看到地点管理 Tab
+
 - **GIVEN** 当前用户已登录且角色为 `ADMIN`
 - **WHEN** 应用顶部导航渲染
-- **THEN** 导航显示“地点管理”Tab
-- **AND** 选择该 Tab 导航到 `/admin/locations`
+- **THEN** 导航显示「地点管理」与「城市管理」Tab
+- **AND** 选择「地点管理」导航到 `/admin/locations`
+- **AND** 选择「城市管理」导航到 `/admin/cities`
 
 #### Scenario: 普通用户不看到地点管理 Tab
+
 - **GIVEN** 当前用户已登录且角色为 `USER`
 - **WHEN** 应用顶部导航渲染
-- **THEN** 导航不显示“地点管理”Tab
+- **THEN** 导航不显示「地点管理」与「城市管理」Tab
 
 #### Scenario: 管理员页面的导航选中状态
-- **GIVEN** 管理员当前位于 `/admin/locations`
+
+- **GIVEN** 管理员当前位于 `/admin/locations` 或 `/admin/cities`
 - **WHEN** 顶部导航渲染
-- **THEN** “地点管理”Tab 处于选中状态
+- **THEN** 对应管理 Tab 处于选中状态
 
 ### Requirement: 管理员页面路由守卫
-管理员地点管理路由 SHALL 仅允许已认证且角色为 `ADMIN` 的用户访问；前端路由守卫 SHALL 与后端管理 API 授权相互独立。
+
+管理员路由 `/admin/locations` 与 `/admin/cities` SHALL 仅允许已认证且角色为 `ADMIN` 的用户访问；前端路由守卫 SHALL 与后端管理 API 授权相互独立。
 
 #### Scenario: 普通用户直接访问管理员路由
+
 - **GIVEN** 当前用户已认证且角色为 `USER`
-- **WHEN** 用户直接访问 `/admin/locations`
+- **WHEN** 用户直接访问 `/admin/locations` 或 `/admin/cities`
 - **THEN** 管理页面内容不显示
 - **AND** 用户返回普通受保护页面
 
 #### Scenario: 未登录用户访问管理员路由
-- **GIVEN** 浏览器没有有效登录会话
-- **WHEN** 用户访问 `/admin/locations`
+
+- **GIVEN** 用户没有有效登录会话
+- **WHEN** 用户访问 `/admin/locations` 或 `/admin/cities`
 - **THEN** 用户被引导到 `/login`
 - **AND** 管理页面内容不显示
 
@@ -175,3 +197,25 @@
 - **WHEN** 浏览器没有有效登录会话且访问 `/transport-rules`
 - **THEN** 用户被引导到 `/login`
 - **AND** 规则页面内容不显示
+
+### Requirement: 顶栏目的地上下文展示
+
+登录后的应用外壳 SHALL 在顶栏展示当前已选目的地：已选定时显示城市名，未选定时显示「目的地未选」。该展示 SHALL 与浏览器端持久化的选定状态一致，并在重新选定后同步更新。
+
+#### Scenario: 已选定目的地
+
+- **GIVEN** 用户已选定杭州
+- **WHEN** 任一受保护页面渲染
+- **THEN** 顶栏显示当前目的地「杭州」
+
+#### Scenario: 未选定目的地
+
+- **GIVEN** 用户尚未选定目的地
+- **WHEN** 任一受保护页面渲染
+- **THEN** 顶栏显示「目的地未选」
+
+#### Scenario: 重新选定后同步
+
+- **GIVEN** 顶栏当前显示「杭州」
+- **WHEN** 用户在 `/cities` 重新选定珠海
+- **THEN** 顶栏更新为「珠海」
