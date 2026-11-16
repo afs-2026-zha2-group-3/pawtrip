@@ -22,6 +22,15 @@ function jsonResponse(data: unknown, status = 200): Response {
   });
 }
 
+const emptyPetPolicies = {
+  maxPetsPerPerson: null,
+  maxSinglePetWeightKg: null,
+  leashRequired: null,
+  vaccinationProofRequired: null,
+  extraFeeCents: null,
+  reservationRequired: null,
+};
+
 describe("admin location queries", () => {
   beforeEach(() => {
     fetchMock.mockReset();
@@ -132,6 +141,7 @@ describe("admin location queries", () => {
       typeGroup: "attraction",
       minVisitHours: null,
       maxVisitHours: null,
+      petPolicies: emptyPetPolicies,
       poi: { name: "Park" },
       business: {},
       photos: [{
@@ -163,6 +173,7 @@ describe("admin location queries", () => {
       typeGroup: "attraction",
       minVisitHours: 2,
       maxVisitHours: 5,
+      petPolicies: emptyPetPolicies,
       poi: { name: "地点" },
       business: {},
       photos: [],
