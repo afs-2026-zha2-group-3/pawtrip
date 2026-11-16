@@ -23,8 +23,10 @@ function jsonResponse(data: unknown, status = 200): Response {
 }
 
 const emptyPetPolicies = {
+  allowedPetTypes: null,
   maxPetsPerPerson: null,
   maxSinglePetWeightKg: null,
+  maxSinglePetShoulderHeightCm: null,
   leashRequired: null,
   vaccinationProofRequired: null,
   extraFeeCents: null,

@@ -8,6 +8,7 @@ hand-authored index here long-term.
 | architecture        | Architecture                                    | [architecture/README.md](architecture/README.md)   |
 | domain              | Domain knowledge                                | [domain/README.md](domain/README.md)               |
 | domain/shared       | Shared domain vocabulary                        | [domain/shared/README.md](domain/shared/README.md) |
+| domain/transport-pet-rules | Transport pet rules catalog (constants, sources, pet verdict, mode cache) | [domain/transport-pet-rules.md](domain/transport-pet-rules.md) |
 | external            | External systems knowledge                      | [external/README.md](external/README.md)           |
 | interfaces          | Interfaces knowledge                            | [interfaces/README.md](interfaces/README.md)       |
 | operations          | Operations knowledge                            | [operations/README.md](operations/README.md)       |

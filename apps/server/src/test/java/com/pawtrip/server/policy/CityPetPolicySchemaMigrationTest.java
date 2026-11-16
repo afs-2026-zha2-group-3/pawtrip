@@ -36,6 +36,9 @@ class CityPetPolicySchemaMigrationTest {
 	private static final List<String> ZHUHAI_BANNED_BREEDS = List.of("藏獒", "德国牧羊犬", "罗威纳犬", "杜宾犬",
 			"秋田犬", "比特犬", "高加索犬", "卡斯罗犬");
 
+	private static final List<String> CITY_ALLOWED_BREEDS = List.of("金毛寻回犬", "拉布拉多寻回犬", "贵宾犬", "柯基犬",
+			"哈士奇", "博美犬", "比熊犬");
+
 	@Test
 	void createsPolicyTablesAndSeedsZhuhaiWithUncoveredCitiesLeftEmpty(@TempDir Path tempDir) throws Exception {
 		String jdbcUrl = jdbcUrl(tempDir.resolve("city-pet-policy.db"));
@@ -62,10 +65,10 @@ class CityPetPolicySchemaMigrationTest {
 			}
 
 			assertThat(bannedBreedNames(connection, "440400")).containsExactlyElementsOf(ZHUHAI_BANNED_BREEDS);
-			assertThat(allowedBreedNames(connection, "440400")).isEmpty();
+			assertThat(allowedBreedNames(connection, "440400")).containsExactlyElementsOf(CITY_ALLOWED_BREEDS);
 			assertThat(countPolicies(connection, "440300")).isZero();
 			assertThat(countBannedBreeds(connection, "440300")).isZero();
-			assertThat(countAllowedBreeds(connection, "440300")).isZero();
+			assertThat(allowedBreedNames(connection, "440300")).containsExactlyElementsOf(CITY_ALLOWED_BREEDS);
 		}
 	}
 
@@ -122,7 +125,7 @@ class CityPetPolicySchemaMigrationTest {
 			assertThat(columns(connection, "city_banned_dog_breed")).contains("dog_breed_id");
 			assertThat(countPolicies(connection, "440400")).isEqualTo(1);
 			assertThat(bannedBreedNames(connection, "440400")).hasSize(8);
-			assertThat(allowedBreedNames(connection, "440400")).isEmpty();
+			assertThat(allowedBreedNames(connection, "440400")).containsExactlyElementsOf(CITY_ALLOWED_BREEDS);
 		}
 	}
 
@@ -159,10 +162,6 @@ class CityPetPolicySchemaMigrationTest {
 
 	private static int countBannedBreeds(Connection connection, String adcode) throws SQLException {
 		return count(connection, "SELECT COUNT(*) FROM city_banned_dog_breed WHERE adcode = ?", adcode);
-	}
-
-	private static int countAllowedBreeds(Connection connection, String adcode) throws SQLException {
-		return count(connection, "SELECT COUNT(*) FROM city_allowed_dog_breed WHERE adcode = ?", adcode);
 	}
 
 	private static int count(Connection connection, String sql, String adcode) throws SQLException {

@@ -102,14 +102,17 @@ test("renders only a few banned breed examples", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "可携带犬种" }),
   ).toBeVisible();
-  await expect(page.getByText("暂未收录可携带犬种")).toBeVisible();
+  await expect(page.getByText("柯基犬").first()).toBeVisible();
+  await expect(page.getByText(/等 7 种/)).toBeVisible();
   await expect(page.getByText("比特斗牛梗犬")).toHaveCount(0);
   await expect(page.getByText("日本土佐")).toHaveCount(0);
   await expect(page.getByText("斯塔福梗犬")).toHaveCount(0);
 });
 
-test("does not judge when the breed is not in the allowed list", async ({ page }) => {
-  await resetPets(page, 10);
+test("does not judge when the breed is neither banned nor allowed", async ({
+  page,
+}) => {
+  await resetPets(page, 12);
   await page.goto(policyUrl("440400"));
 
   await expect(
@@ -117,6 +120,17 @@ test("does not judge when the breed is not in the allowed list", async ({ page }
   ).toBeVisible();
   await expect(page.getByText(/禁养犬种名单/)).toBeVisible();
   await expect(page.getByText(/以当地政府最新文件为准/)).toBeVisible();
+});
+
+test("confirms when the pet breed is on the allowed list", async ({ page }) => {
+  await resetPets(page, 10);
+  await page.goto(policyUrl("440400"));
+
+  await expect(
+    page.getByRole("heading", { name: "未命中禁养名单" }),
+  ).toBeVisible();
+  await expect(page.getByText(/柯基犬/).first()).toBeVisible();
+  await expect(page.getByText(/可携带犬种名单中/)).toBeVisible();
 });
 
 test("does not judge when no pet profile is available", async ({ page }) => {
@@ -214,22 +228,40 @@ test("does not render a booking entry", async ({ page }) => {
   await expect(page.getByRole("button", { name: /订票|预订/ })).toHaveCount(0);
 });
 
+async function editZhuhaiAllowedBreeds(page: Page, breedName: string, checked: boolean) {
+  await page.goto("/admin/cities");
+  await page.getByRole("textbox", { name: "搜索城市" }).fill("珠海");
+  await page.getByRole("button", { name: "编辑 珠海市" }).click();
+
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("textbox", { name: "搜索犬种" }).fill(breedName);
+  const checkbox = dialog.getByRole("checkbox", { name: breedName });
+  await expect(checkbox).toBeVisible();
+  if ((await checkbox.isChecked()) !== checked) {
+    await checkbox.click();
+  }
+  await dialog.getByRole("button", { name: "保存修改" }).click();
+  await expect(dialog.getByText("城市政策已更新。")).toBeVisible();
+  await dialog.getByRole("button", { name: "关闭" }).click();
+}
+
 test("admin configures allowed breeds and the policy page reflects it", async ({
   page,
 }) => {
-  await page.goto("/admin/cities");
-  await page.getByLabel("城市").selectOption({ label: "珠海市" });
+  await editZhuhaiAllowedBreeds(page, "萨摩耶犬", true);
 
-  const allowed = page.getByRole("checkbox", { name: "柯基犬" });
-  await expect(allowed).toBeVisible();
-  if (!(await allowed.isChecked())) {
-    await allowed.click();
-  }
-  await page.getByRole("button", { name: "保存" }).click();
-  await expect(page.getByText("已保存")).toBeVisible();
-
-  await resetPets(page, 10);
+  await resetPets(page, 12);
   await page.goto(policyUrl("440400"));
-  await expect(page.getByText(/未命中禁养名单/)).toBeVisible();
-  await expect(page.getByText(/可携带犬种名单中/)).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "未命中禁养名单" }),
+  ).toBeVisible();
+  await expect(page.getByText(/萨摩耶犬/).first()).toBeVisible();
+
+  await editZhuhaiAllowedBreeds(page, "萨摩耶犬", false);
+
+  await page.goto(policyUrl("440400"));
+  await expect(
+    page.getByRole("heading", { name: "暂时无法判断" }),
+  ).toBeVisible();
 });

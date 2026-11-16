@@ -7,7 +7,6 @@ public final class AdminCityRequests {
 	private AdminCityRequests() {
 	}
 
-	public record UpdateAllowedBreeds(List<Long> breedIds) {
+	public record UpdateCity(AdminLocationRequests.PetPolicies petPolicies, List<Long> allowedDogBreedIds) {
 	}
-
 }

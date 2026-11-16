@@ -43,6 +43,15 @@
 - [x] 6.2 E2E 全量——验证：`npm run test:e2e` 全绿（与 CI 相同用例；fixme 门控用例除外）
 - [x] 6.3 规格覆盖核对——验证：`openspec validate destination-selection --strict` 通过；两份 delta spec 共 12 条 requirement（destination-selection 6 + web-app-shell 6）的 scenario 与 A/E 用例对照无遗漏（门控项显式标注）；diff 审查确认未新增档案端点、未改 `/paws`（Non-goal 反向验证）
 
+## 7. 宠物友好叠加匹配增强（2026-11-16 需求方，PR #44 合并后并入）
+
+- [x] 7.1 后端：候选响应增 `allowedPetTypes`/`allowedDogBreedIds`；仓库增 `@EntityGraph` 派生查询；`petFriendly` 叠加 `petType`/`breedId`/`shoulderHeightCm` 过滤（类型 null=不允许；品种空列表/肩高 null=未配置放行，非法 petType 400）——验证：DestinationApiTest 新用例红→绿（类型排除/保留、品种排除/空列表放行、无参退化、响应字段）
+- [x] 7.2 前端：pet-profile adapter 消费 `dogBreed`（取第一只，失败退化 null）；`matchesCityPetPolicy` 纯函数；destinations query 扩参——验证：adapter/纯函数/params 单测绿
+- [x] 7.3 前端：卡片右上角匹配 Badge（绿/红，无档案不显示）；已选定按钮再点取消选定——验证：tsc 绿、E2E E17/E18 绿
+- [x] 7.4 E2E：run-e2e.mjs 暴露临时库路径；E17 标签+叠加筛选（node:sqlite 配置城市政策、API 建档案）、E18 取消选定；既有用例回归——验证：E2E 全量绿
+- [x] 7.5 集成验证与本地报告——验证：后端全量/vitest/tsc/openspec strict/E2E 全绿；local-verify-report 更新；需求方已授权提 PR
+- [x] 7.6 V16 全城市种子迁移（2026-11-16 需求方指定，V15 空缺（PR #43 由 #47 取代））：全部城市级行政区 `allowed_pet_types='CAT,DOG'` + 7 个非烈性允许品种（含哈士奇）；API/E2E 测试适配种子（清理恢复种子口径）；队友 DogBreedSchemaMigrationTest 计数断言改为种子基线相对值（V16 为其测试城市注入 7 品种）——验证：种子断言用例绿、全量回归绿
+
 ## Workflow follow-up
 
 - 外部档案 change 交付后：核对 breed 词表与 adapter 契约，解除组 5 `test.fixme` 并转绿（E4/E6/E10/E11），必要时补联调修复

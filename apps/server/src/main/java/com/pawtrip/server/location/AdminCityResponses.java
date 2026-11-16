@@ -2,26 +2,20 @@ package com.pawtrip.server.location;
 
 import java.util.List;
 
-import com.pawtrip.server.pet.DogBreed;
-
 public final class AdminCityResponses {
 
 	private AdminCityResponses() {
 	}
 
-	public record BreedOption(Long id, String name, boolean officialAggressive) {
-
-		static BreedOption from(DogBreed breed) {
-			return new BreedOption(breed.getId(), breed.getName(), breed.isOfficialAggressive());
-		}
+	public record CityListItem(String adcode, String name, String level, String provinceAdcode,
+			String provinceName, AdminLocationResponses.PetPolicies petPolicies) {
 	}
 
-	public record AllowedBreeds(String adcode, String name, List<Long> allowedBreedIds, List<BreedOption> breeds) {
+	public record CityDetail(String adcode, String name, String level, String provinceAdcode, String provinceName,
+			AdminLocationResponses.PetPolicies petPolicies, List<Long> allowedDogBreedIds) {
 
-		public AllowedBreeds {
-			allowedBreedIds = List.copyOf(allowedBreedIds);
-			breeds = List.copyOf(breeds);
+		public CityDetail {
+			allowedDogBreedIds = List.copyOf(allowedDogBreedIds);
 		}
 	}
-
 }

@@ -1,6 +1,7 @@
 package com.pawtrip.server.policy;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -91,7 +92,8 @@ class CityPetPolicyApiTest {
 			.andExpect(jsonPath("$.policies").isArray())
 			.andExpect(jsonPath("$.bannedBreeds.length()").value(8))
 			.andExpect(jsonPath("$.bannedBreeds", hasItem("比特犬")))
-			.andExpect(jsonPath("$.allowedBreeds").isEmpty())
+			.andExpect(jsonPath("$.allowedBreeds", hasSize(7)))
+			.andExpect(jsonPath("$.allowedBreeds", hasItem("柯基犬")))
 			.andExpect(jsonPath("$.match.breedId").value(18))
 			.andExpect(jsonPath("$.match.breedName").value("比特犬"))
 			.andExpect(jsonPath("$.match.matched").value(true))
@@ -101,10 +103,22 @@ class CityPetPolicyApiTest {
 	@Test
 	void returnsNoMatchWhenBreedIsNeitherBannedNorAllowed() throws Exception {
 		this.mockMvc.perform(get("/api/cities/440400/pet-policy")
-				.param("breedId", "10")
+				.param("breedId", "12")
 				.with(user("demo")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.match").value(nullValue()));
+	}
+
+	@Test
+	void returnsAllowedMatchForSeededAllowedBreed() throws Exception {
+		this.mockMvc.perform(get("/api/cities/440400/pet-policy")
+				.param("breedId", "10")
+				.with(user("demo")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.match.breedId").value(10))
+			.andExpect(jsonPath("$.match.breedName").value("柯基犬"))
+			.andExpect(jsonPath("$.match.matched").value(false))
+			.andExpect(jsonPath("$.match.allowed").value(true));
 	}
 
 	@Test

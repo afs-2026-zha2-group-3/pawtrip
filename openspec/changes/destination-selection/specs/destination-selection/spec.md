@@ -2,7 +2,7 @@
 
 ## Purpose
 
-定义用户选择目的地的完整行为：在城市级行政区候选中搜索、按每人限养数做宠物友好筛选、选定目的地作为规划上下文。政策收录状态与禁养犬种名单的数据源未定（2026-11-16 需求方决定移除 V14 政策种子迁移），相关 Badge/提醒展示暂缓（TODO），接口保留占位字段。宠物档案（含品种）由外部档案能力（US-01 change）提供，本能力只读消费，不定义档案的创建与维护行为。
+定义用户选择目的地的完整行为：在城市级行政区候选中搜索、按每人限养数做宠物友好筛选、选定目的地作为规划上下文。政策收录状态与禁养犬种名单的数据源未定（2026-11-16 需求方决定移除 V14 政策种子迁移），相关 Badge/提醒展示暂缓（TODO），接口保留占位字段。宠物档案（含品种）由外部档案能力（US-01 change）提供，本能力只读消费，不定义档案的创建与维护行为。2026-11-16 需求方增强：宠物友好筛选叠加城市允许宠物类型与允许狗品种匹配（档案 breed 已随 PR #41 交付）、候选卡片右上角匹配标签（绿/红）、已选定再次点击取消选定。
 
 ## ADDED Requirements
 
@@ -134,4 +134,93 @@
 
 - **GIVEN** 系统已完成初始化
 - **WHEN** 已登录用户请求城市候选接口
-- **THEN** 每个候选含 `policyCovered=false` 与空 `bannedBreeds` 数组
+- **THEN** 每个候选含 `policyCovered=false` 与空 `bannedBreeds` 数组## ADDED Requirements
+
+### Requirement: 宠物友好叠加匹配（类型与品种）
+
+候选接口 SHALL 支持可选参数 `petType`（`CAT`/`DOG`）、`breedId`（`dog_breed` 表 id）与 `shoulderHeightCm`（档案肩高）。`petFriendly=true` 时 SHALL 在每人限养数规则之上叠加类型、品种与肩高匹配（类型 null=不允许；品种空列表/肩高上限 null=未配置放行），不满足则排除。未传参数 SHALL 退化为仅限养数规则。`petType` 非法 SHALL 返回 400。响应每项 SHALL 含 `allowedPetTypes`、`allowedDogBreedIds` 与 `maxSinglePetShoulderHeightCm`。后端 MUST NOT 依赖宠物档案模块，匹配输入由前端传参承载。
+
+#### Scenario: 类型不允许被排除
+
+- **GIVEN** 城市 `allowed_pet_types='CAT'`，限养数未设置
+- **WHEN** 请求 `petFriendly=true&petType=DOG`
+- **THEN** 响应不包含该城市
+
+#### Scenario: 类型未配置视为不允许
+
+- **GIVEN** 城市 `allowed_pet_types` 为 null
+- **WHEN** 请求 `petFriendly=true&petType=DOG`
+- **THEN** 响应不包含该城市
+
+#### Scenario: 类型包含则保留
+
+- **GIVEN** 城市 `allowed_pet_types` 为 `'DOG'` 或 `'CAT,DOG'`
+- **WHEN** 请求 `petFriendly=true&petType=DOG`
+- **THEN** 响应包含这些城市（限养数规则同时满足时）
+
+#### Scenario: 肩高超过城市上限被排除
+
+- **GIVEN** 城市肩高上限 40cm，类型与品种均允许
+- **WHEN** 请求 `petFriendly=true&petType=DOG&shoulderHeightCm=45`
+- **THEN** 响应不包含该城市；上限为 null 或 >=45 的城市保留
+
+#### Scenario: 品种不在允许列表被排除
+
+- **GIVEN** 城市允许品种列表非空且不含品种 id=7，限养数与类型均允许
+- **WHEN** 请求 `petFriendly=true&petType=DOG&breedId=7`
+- **THEN** 响应不包含该城市
+
+#### Scenario: 允许品种列表为空视为未配置
+
+- **GIVEN** 城市允许品种列表为空，限养数与类型均允许
+- **WHEN** 请求 `petFriendly=true&petType=DOG&breedId=7`
+- **THEN** 响应包含该城市
+
+#### Scenario: 无档案退化为限养数规则
+
+- **GIVEN** 请求不携带 `petType`/`breedId`
+- **WHEN** 请求 `petFriendly=true`
+- **THEN** 过滤仅按每人限养数规则执行
+
+#### Scenario: 候选响应携带匹配字段
+
+- **WHEN** 请求候选接口（任意参数）
+- **THEN** 每项包含 `allowedPetTypes`、`allowedDogBreedIds` 与 `maxSinglePetShoulderHeightCm`，取值与行政区配置一致
+
+### Requirement: 候选卡片匹配标签
+
+`/cities` 候选卡片 SHALL 在右上角展示当前用户档案与城市的匹配标签：匹配显示绿色「匹配」，不匹配显示红色「不匹配」。匹配判定 SHALL 为「类型允许 且 品种允许 且 肩高允许」：城市 `allowedPetTypes` 非 null 且含档案 `petType`（null=不允许）；档案为 DOG 且有品种时，城市允许品种列表为空或含档案品种 id；城市肩高上限为 null（不限制）或 >= 档案肩高。无档案（接口失败或无宠物）时 SHALL 不展示标签。标签 SHALL 独立于宠物友好筛选开关展示。档案 SHALL 取当前用户第一只宠物（需求方确认单宠口径）。
+
+#### Scenario: 匹配显示绿色标签
+
+- **GIVEN** 用户档案为 DOG/品种 id=7，城市 `allowed_pet_types='CAT,DOG'` 且允许品种含 7，肩高上限 null
+- **WHEN** 用户打开 `/cities`
+- **THEN** 该城市卡片右上角显示绿色「匹配」标签
+
+#### Scenario: 不匹配显示红色标签
+
+- **GIVEN** 用户档案为 DOG，城市 `allowed_pet_types='CAT'` 或 null，或肩高上限低于档案肩高
+- **WHEN** 用户打开 `/cities`
+- **THEN** 该城市卡片右上角显示红色「不匹配」标签
+
+#### Scenario: 无档案不展示标签
+
+- **GIVEN** 当前用户无宠物档案
+- **WHEN** 用户打开 `/cities`
+- **THEN** 候选卡片不展示匹配/不匹配标签
+
+### Requirement: 取消选定目的地
+
+已选定城市的卡片按钮 SHALL 可再次点击以取消选定：清除 sessionStorage 选定状态，确认提示消失，顶栏 chip 恢复「目的地未选」。取消选定 SHALL 不影响候选列表与筛选状态。
+
+#### Scenario: 再次点击取消选定
+
+- **GIVEN** 用户已选定杭州（确认提示与顶栏 chip 显示杭州）
+- **WHEN** 用户再次点击杭州卡片的选定按钮
+- **THEN** 确认提示消失，顶栏显示「目的地未选」，sessionStorage 选定键被清除
+
+#### Scenario: 取消后可重新选定
+
+- **GIVEN** 用户刚取消选定杭州
+- **WHEN** 用户点击珠海卡片的「选定」
+- **THEN** 已选目的地变为珠海

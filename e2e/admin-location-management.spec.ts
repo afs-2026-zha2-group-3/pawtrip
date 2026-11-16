@@ -1,8 +1,10 @@
 import { expect, test, type Locator, type Page, type Route } from "@playwright/test";
 
 const defaultSavedPetPolicies = {
+  allowedPetTypes: "CAT,DOG",
   maxPetsPerPerson: 1,
   maxSinglePetWeightKg: 8.75,
+  maxSinglePetShoulderHeightCm: 38.25,
   leashRequired: true,
   vaccinationProofRequired: false,
   extraFeeCents: 1050,
@@ -170,6 +172,15 @@ async function selectPolicyTriState(
   option: "未配置" | "需要" | "不需要",
 ) {
   await dialog.getByRole("combobox", { name: label }).click();
+  await page.getByRole("option", { name: option, exact: true }).click();
+}
+
+async function selectAllowedPetTypes(
+  page: Page,
+  dialog: Locator,
+  option: "未配置" | "仅猫" | "仅狗" | "猫和狗",
+) {
+  await dialog.getByRole("combobox", { name: "允许宠物类型" }).click();
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 
@@ -369,8 +380,10 @@ test("saving an Amap candidate validates visit hours and updates the current row
         minVisitHours: 2,
         maxVisitHours: 4,
         petPolicies: {
+          allowedPetTypes: "CAT,DOG",
           maxPetsPerPerson: 1,
           maxSinglePetWeightKg: 8.75,
+          maxSinglePetShoulderHeightCm: 38.25,
           leashRequired: true,
           vaccinationProofRequired: false,
           extraFeeCents: 1050,
@@ -433,6 +446,15 @@ test("saving an Amap candidate validates visit hours and updates the current row
   expect(createCalls).toBe(0);
   await policyDialog.getByLabel("额外费用（元 / 只 / 次）").fill("10.5");
 
+  await policyDialog.getByLabel("单只宠物最大肩高（cm）").fill("38.251");
+  await policyDialog.getByRole("button", { name: "保存地点" }).click();
+  await expect(policyDialog.getByRole("alert")).toHaveText(
+    "单只宠物最大肩高必须为不小于 0 且最多两位小数的数字。",
+  );
+  expect(createCalls).toBe(0);
+  await policyDialog.getByLabel("单只宠物最大肩高（cm）").fill("38.25");
+
+  await selectAllowedPetTypes(page, policyDialog, "猫和狗");
   await selectPolicyTriState(page, policyDialog, "牵引绳要求", "需要");
   await selectPolicyTriState(page, policyDialog, "疫苗证明要求", "不需要");
 
@@ -445,8 +467,10 @@ test("saving an Amap candidate validates visit hours and updates the current row
     minVisitHours: 3,
     maxVisitHours: 4,
     petPolicies: {
+      allowedPetTypes: "CAT,DOG",
       maxPetsPerPerson: 1,
       maxSinglePetWeightKg: 8.75,
+      maxSinglePetShoulderHeightCm: 38.25,
       leashRequired: true,
       vaccinationProofRequired: false,
       extraFeeCents: 1050,
@@ -468,14 +492,16 @@ test("saved location details use direct photo URLs and preserve the current list
   let photoApiCalls = 0;
   let directImageRequests = 0;
   const updatedPetPolicies = {
+    allowedPetTypes: "DOG",
     maxPetsPerPerson: 2,
     maxSinglePetWeightKg: 12.5,
+    maxSinglePetShoulderHeightCm: 42.5,
     leashRequired: false,
     vaccinationProofRequired: true,
     extraFeeCents: 2000,
     reservationRequired: true,
   };
-  const clearedPetPolicies = { ...updatedPetPolicies, extraFeeCents: null };
+  const clearedPetPolicies = { ...updatedPetPolicies, allowedPetTypes: null, extraFeeCents: null };
   const updatedDetail = savedDetail(4, 6, updatedPetPolicies);
   const clearedDetail = savedDetail(4, 6, clearedPetPolicies);
   const patchBodies: unknown[] = [];
@@ -537,14 +563,18 @@ test("saved location details use direct photo URLs and preserve the current list
 
   await expect(dialog.getByLabel("每位游客最多携带宠物数（只）")).toHaveValue("1");
   await expect(dialog.getByLabel("单只宠物最大体重（kg）")).toHaveValue("8.75");
+  await expect(dialog.getByLabel("单只宠物最大肩高（cm）")).toHaveValue("38.25");
   await expect(dialog.getByLabel("额外费用（元 / 只 / 次）")).toHaveValue("10.5");
+  await expect(dialog.getByRole("combobox", { name: "允许宠物类型" })).toContainText("猫和狗");
   await expect(dialog.getByRole("combobox", { name: "牵引绳要求" })).toContainText("需要");
   await expect(dialog.getByRole("combobox", { name: "疫苗证明要求" })).toContainText("不需要");
   await expect(dialog.getByRole("combobox", { name: "预约要求" })).toContainText("未配置");
 
   await dialog.getByLabel("每位游客最多携带宠物数（只）").fill("2");
   await dialog.getByLabel("单只宠物最大体重（kg）").fill("12.5");
+  await dialog.getByLabel("单只宠物最大肩高（cm）").fill("42.5");
   await dialog.getByLabel("额外费用（元 / 只 / 次）").fill("20");
+  await selectAllowedPetTypes(page, dialog, "仅狗");
   await selectPolicyTriState(page, dialog, "牵引绳要求", "不需要");
   await selectPolicyTriState(page, dialog, "疫苗证明要求", "需要");
   await selectPolicyTriState(page, dialog, "预约要求", "需要");
@@ -556,7 +586,9 @@ test("saved location details use direct photo URLs and preserve the current list
   await expect(dialog.getByLabel("最少游玩时间（小时）")).toHaveValue("4");
   await expect(dialog.getByLabel("最多游玩时间（小时）")).toHaveValue("6");
   await expect(dialog.getByLabel("每位游客最多携带宠物数（只）")).toHaveValue("2");
+  await expect(dialog.getByLabel("单只宠物最大肩高（cm）")).toHaveValue("42.5");
   await expect(dialog.getByLabel("额外费用（元 / 只 / 次）")).toHaveValue("20");
+  await expect(dialog.getByRole("combobox", { name: "允许宠物类型" })).toContainText("仅狗");
   await expect(dialog.getByRole("combobox", { name: "预约要求" })).toContainText("需要");
   expect(patchBodies).toEqual([{
     minVisitHours: 4,
@@ -573,7 +605,9 @@ test("saved location details use direct photo URLs and preserve the current list
   const reopenedDialog = page.getByRole("dialog", { name: "数据库景点详情" });
   await expect(reopenedDialog.getByLabel("最少游玩时间（小时）")).toHaveValue("4");
   await expect(reopenedDialog.getByLabel("每位游客最多携带宠物数（只）")).toHaveValue("2");
+  await expect(reopenedDialog.getByLabel("单只宠物最大肩高（cm）")).toHaveValue("42.5");
   await expect(reopenedDialog.getByLabel("额外费用（元 / 只 / 次）")).toHaveValue("20");
+  await expect(reopenedDialog.getByRole("combobox", { name: "允许宠物类型" })).toContainText("仅狗");
   await expect(reopenedDialog.getByRole("combobox", { name: "预约要求" })).toContainText("需要");
   await expect(reopenedDialog.getByRole("img", { name: "主照片" })).toHaveAttribute(
     "src",
@@ -582,9 +616,11 @@ test("saved location details use direct photo URLs and preserve the current list
   await expect(reopenedDialog.getByRole("button", { name: /获取图片|重试/ })).toHaveCount(0);
 
   await reopenedDialog.getByLabel("额外费用（元 / 只 / 次）").fill("");
+  await selectAllowedPetTypes(page, reopenedDialog, "未配置");
   await reopenedDialog.getByRole("button", { name: "保存修改" }).click();
   await expect(reopenedDialog.getByText("地点信息已更新。", { exact: true })).toBeVisible();
   await expect(reopenedDialog.getByLabel("额外费用（元 / 只 / 次）")).toHaveValue("");
+  await expect(reopenedDialog.getByRole("combobox", { name: "允许宠物类型" })).toContainText("未配置");
   expect(patchBodies).toEqual([
     { minVisitHours: 4, maxVisitHours: 6, petPolicies: updatedPetPolicies },
     { minVisitHours: 4, maxVisitHours: 6, petPolicies: clearedPetPolicies },
@@ -600,8 +636,10 @@ test("non-attraction saved locations still expose pet policy editing", async ({ 
   await mockUser(page, "ADMIN");
   await mockAdminLocationLists(page);
   const petPolicies = {
+    allowedPetTypes: "CAT",
     maxPetsPerPerson: 2,
     maxSinglePetWeightKg: 6.5,
+    maxSinglePetShoulderHeightCm: 28.5,
     leashRequired: false,
     vaccinationProofRequired: true,
     extraFeeCents: 300,
@@ -670,6 +708,8 @@ test("non-attraction saved locations still expose pet policy editing", async ({ 
   await expect(dialog.getByText("携宠政策")).toBeVisible();
   await expect(dialog.getByLabel("最少游玩时间（小时）")).toHaveCount(0);
   await expect(dialog.getByLabel("每位游客最多携带宠物数（只）")).toHaveValue("2");
+  await expect(dialog.getByLabel("单只宠物最大肩高（cm）")).toHaveValue("28.5");
+  await expect(dialog.getByRole("combobox", { name: "允许宠物类型" })).toContainText("仅猫");
   await expect(dialog.getByRole("button", { name: "保存修改" })).toBeVisible();
 
   await dialog.getByLabel("额外费用（元 / 只 / 次）").fill("3.5");

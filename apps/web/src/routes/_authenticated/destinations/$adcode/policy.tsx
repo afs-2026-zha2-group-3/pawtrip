@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -268,6 +270,15 @@ function Notice({
 
 function PageFrame({ children }: { children: ReactNode }) {
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-4 p-6">{children}</main>
+    <main className="mx-auto w-full max-w-3xl space-y-4 p-6">
+      <Link
+        to="/cities"
+        className={buttonVariants({ variant: "ghost", size: "sm" })}
+      >
+        <ArrowLeft aria-hidden="true" />
+        返回城市列表
+      </Link>
+      {children}
+    </main>
   );
 }
