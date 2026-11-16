@@ -9,6 +9,7 @@ import { readPersistedActiveTripId } from "../lib/trip/persistence";
 import { scheduleTripSave } from "../lib/trip/save";
 import {
   useActiveTrip,
+  useDraftTrip,
   useHydrationStatus,
   usePanelExpanded,
   useSaveRevision,
@@ -42,6 +43,8 @@ function AuthenticatedShell() {
   const queryClient = useQueryClient();
   const expanded = usePanelExpanded();
   const activeId = useActiveTrip()?.id ?? null;
+  const draft = useDraftTrip();
+  const panelVisible = activeId != null || draft != null;
   const revision = useSaveRevision();
   const hydration = useHydrationStatus();
   const [hasPersistedTrip, setHasPersistedTrip] = useState(false);
@@ -62,7 +65,7 @@ function AuthenticatedShell() {
 
   return (
     <>
-      <div className={cn("min-h-svh", expanded && "lg:pl-[380px]")}>
+      <div className={cn("min-h-svh", expanded && panelVisible && "lg:pl-[380px]")}>
         <Outlet />
       </div>
       <TripPanel />

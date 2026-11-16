@@ -96,10 +96,16 @@ test("lists trips in id order and supports activate, deactivate and delete", asy
 
   await tripCard(page, "杭州两日").getByRole("button", { name: "激活" }).click();
   await expect(page.getByTestId("trip-panel")).toContainText("2 天");
+  await page.getByRole("button", { name: "展开行程面板" }).click();
   await tripCard(page, "杭州两日").getByRole("button", { name: "删除" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "删除" }).click();
   await expect(page.getByText("还没有行程")).toBeVisible();
   await expect(page.getByTestId("trip-panel")).toHaveCount(0);
+  const paddingLeft = await page.evaluate(() => {
+    const main = document.querySelector("main");
+    return main?.parentElement ? getComputedStyle(main.parentElement).paddingLeft : null;
+  });
+  expect(paddingLeft).toBe("0px");
   expect(
     await page.evaluate(() => window.localStorage.getItem("pawtrip.activeTripId")),
   ).toBeNull();
