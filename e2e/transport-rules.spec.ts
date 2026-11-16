@@ -97,6 +97,10 @@ test.describe("tab-and-routing", () => {
 test.describe("comparison-table", () => {
   test.beforeEach(async ({ page }) => {
     await openTransportRules(page);
+    // demo 账号有宠物档案：等待推荐列出现，避免档案请求未完成时列数不稳定
+    await expect(
+      page.getByRole("columnheader", { name: "是否推荐" }),
+    ).toBeVisible();
   });
 
   test("renders four modes with the base columns in a stable order", async ({
@@ -104,12 +108,13 @@ test.describe("comparison-table", () => {
   }) => {
     await expect(page.getByRole("row")).toHaveCount(5);
     const headers = await page.getByRole("columnheader").allTextContents();
-    expect(headers.slice(0, 5)).toEqual([
+    expect(headers.slice(0, 6)).toEqual([
+      "选择",
       "方式",
+      "是否推荐",
       "能否携带",
       "体重上限",
       "容器要求",
-      "办理流程概要",
     ]);
 
     for (const mode of modeLabels) {
@@ -121,14 +126,15 @@ test.describe("comparison-table", () => {
     page,
   }) => {
     const headers = await page.getByRole("columnheader").allTextContents();
-    expect(headers.slice(0, 5)).toEqual([
+    expect(headers.slice(0, 6)).toEqual([
+      "选择",
       "方式",
+      "是否推荐",
       "能否携带",
       "体重上限",
       "容器要求",
-      "办理流程概要",
     ]);
-    expect(headers[5]).toBe("检疫证明");
+    expect(headers.at(-1)).toBe("检疫证明");
 
     for (const mode of modeLabels) {
       await expect(ruleRow(page, mode).getByRole("cell").last()).not.toBeEmpty();
@@ -142,7 +148,7 @@ test.describe("comparison-table", () => {
   });
 
   test("shows no unified weight limit for driving", async ({ page }) => {
-    const weightCell = ruleRow(page, "自驾").getByRole("cell").nth(2);
+    const weightCell = ruleRow(page, "自驾").getByRole("cell").nth(4);
 
     await expect(weightCell).toContainText("无统一限制");
     await expect(weightCell).not.toContainText("kg");
@@ -162,7 +168,9 @@ test.describe("comparison-table", () => {
       "中国国际航空",
     );
 
-    for (let index = 0; index < 6; index += 1) {
+    // 第 0 格是单选控件所在列，本就不含文本，从「方式」列开始检查空单元格
+    const cellCount = await flightRow.getByRole("cell").count();
+    for (let index = 1; index < cellCount; index += 1) {
       await expect(flightRow.getByRole("cell").nth(index)).not.toBeEmpty();
     }
   });
@@ -201,19 +209,7 @@ test.describe("comparison-table", () => {
     expect(await footer.getByRole("link").count()).toBeGreaterThan(3);
   });
 
-  test("offers the profile entry without blocking the table", async ({ page }) => {
-    const entry = page.getByRole("link", { name: "录入宠物档案" });
-    await expect(entry).toBeVisible();
-    await expect(page.getByRole("table", { name: tableName })).toBeVisible();
-    await expect(entry).toHaveAttribute("href", "/paws/profile");
-
-    await entry.click();
-    await expect(page).toHaveURL("/paws/profile");
-  });
-
-  test("shows no verdict or booking action on the page", async ({ page }) => {
-    const content = await page.locator("main").innerText();
-    expect(content).not.toMatch(/不推荐|符合|不适合/);
+  test("shows no booking action on the page", async ({ page }) => {
     await expect(page.getByRole("button", { name: /预订|购票/ })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /预订|购票/ })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /刷新/ })).toHaveCount(0);
@@ -227,6 +223,24 @@ test.describe("comparison-table", () => {
     await expect(page).toHaveURL("/cities");
     await expect(page.getByRole("table")).toHaveCount(0);
     await expect(page.getByRole("link", { name: "交通规则" })).toHaveCount(0);
+  });
+});
+
+test.describe("no-pet-profile", () => {
+  test("hides the recommendation column and disables the profile entry", async ({
+    page,
+  }) => {
+    await signIn(page, "admin");
+    await page.getByRole("tab", { name: "交通规则" }).click();
+    await expect(page.getByRole("table", { name: tableName })).toBeVisible();
+
+    await expect(
+      page.getByRole("columnheader", { name: "是否推荐" }),
+    ).toHaveCount(0);
+    const entry = page.getByRole("button", { name: "新增宠物档案" });
+    await expect(entry).toBeVisible();
+    await expect(entry).toBeDisabled();
+    await expect(page.getByRole("link", { name: /宠物档案/ })).toHaveCount(0);
   });
 });
 

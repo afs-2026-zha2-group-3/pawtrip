@@ -32,6 +32,8 @@ export function petsQueryOptions() {
   return queryOptions({
     queryKey: petQueryKeys.all,
     queryFn: ({ signal }) => request<Pet[]>("/api/pets", { signal }),
+    staleTime: 60_000,
+    retry: 1,
   });
 }
 
