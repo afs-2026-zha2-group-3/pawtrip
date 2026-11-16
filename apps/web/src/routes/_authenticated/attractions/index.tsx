@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSelectedDestination } from "../../../lib/selected-destination";
+import { useTripDuration } from "../../../lib/trip-duration";
 import { attractionsQueryOptions } from "../../../queries/attractions";
 import { AttractionCard } from "./-attraction-card";
 
@@ -19,8 +21,17 @@ function AttractionsPage() {
   const isClient = typeof window !== "undefined";
   const navigate = useNavigate();
   const selected = useSelectedDestination();
+  const totalDays = useTripDuration() ?? 1;
   const [includeWithoutRules, setIncludeWithoutRules] = useState(false);
   const [page, setPage] = useState(1);
+  const [activeDay, setActiveDay] = useState("1");
+  const dayOptions = Array.from({ length: totalDays }, (_, index) => index + 1);
+
+  useEffect(() => {
+    if (Number(activeDay) > totalDays) {
+      setActiveDay(String(totalDays));
+    }
+  }, [activeDay, totalDays]);
   const regionCode = selected?.adcode ?? "";
   const attractions = useQuery({
     ...attractionsQueryOptions({ regionCode, includeWithoutRules, page, pageSize: PAGE_SIZE }),
@@ -96,6 +107,22 @@ function AttractionsPage() {
           共 {data.totalElements} 个景点
         </span>
       </div>
+
+      <Tabs
+        value={activeDay}
+        onValueChange={(value) => {
+          if (value) setActiveDay(value);
+        }}
+      >
+        <TabsList aria-label="行程天数" className="max-w-full overflow-x-auto">
+          {dayOptions.map((day) => (
+            <TabsTrigger key={day} value={String(day)}>
+              第{day}天
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+      <p className="text-sm text-muted-foreground">当前查看第 {activeDay} 天景点</p>
 
       {data.items.length === 0 ? (
         <Empty>

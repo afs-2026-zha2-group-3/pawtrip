@@ -79,6 +79,12 @@ com.pawtrip.server
 - 顶栏目的地 chip 与 `/cities` 确认提示同源于该 store：已选显示城市名，未选显示「目的地未选」；chip 仅在登录成功后渲染。
 - 档案经 `queries/pet-profile.ts` 只读 adapter 消费外部 US-01 接口 `GET /api/pets`（PR #41 后含 `dogBreed`），取第一只宠物（需求方确认单宠口径）暴露 `petType`/`breedId`/`breedName`/`shoulderHeightCm`，任何失败/无档案退化为 null。`/cities` 卡片右上角按 `matchesCityPetPolicy`（lib/destination-matching.ts，与服务端筛选同语义：类型 null=不允许，品种空列表/肩高 null=未配置放行）显示绿色「匹配」/红色「不匹配」Badge，无档案不显示，标签独立于筛选开关；已选定卡片按钮再次点击取消选定（store.clear）。
 
+前端旅游总天数约定（`apps/web/src/lib/trip-duration.ts`）：
+
+- 当前行程总天数仅存浏览器 `sessionStorage`，键为 `pawtrip.tripDuration`，值为 1–7 的整数文本；不写入 `localStorage`、服务端或数据库，也不做跨标签页同步。
+- `createTripDurationStore` 的 `set` 在写入前统一校验整数范围，合法值覆盖同一会话中的旧值；空值、越界、小数、非数字和被篡改的存储值均按未填写处理，非法写入不会覆盖最近一次合法值。
+- `/cities` 页面在目的地卡片前显示该输入，未保存会话值时默认显示 1；目的地「选定」按钮仅在输入为合法整数时可用。页面通过 `useTripDuration()` 在客户端挂载后恢复值。US-09 下游应读取 `tripDurationStore.get()`，得到 `null` 时阻止生成并回到 `/cities` 的“旅游总天数”输入处，得到合法整数后按该值生成天数。
+
 ## 运行拓扑
 
 ```text
@@ -168,4 +174,3 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 - 后端：`cd apps/server && ./mvnw test`，包含使用临时 SQLite 文件的接口验收测试与错误路径测试。认证 E2E 前先运行根目录 `npm run seed:users` 注入本地测试账号。
 - 前端：根目录 `npm run build`；类型检查 `npx tsc --noEmit -p apps/web/tsconfig.json`。
 - 端到端：冷启动后端后确认数据库文件与接口，再启动前端验证登录/登出、受保护路由跳转、`/` 问候语、`/paws`、Tab 切换、前进后退、404 与首页首次加载失败；CORS 不在当前范围。
-- 
