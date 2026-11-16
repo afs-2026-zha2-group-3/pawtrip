@@ -1,7 +1,7 @@
 # Delta Spec AC / DoV Review
 
 - change: `openspec/changes/transport-pet-rules-comparison`
-- requirement: REQ-006 / US-05（规则前端写死、对比在后端随 US-06）
+- requirement: REQ-007 / US-05（规则前端写死、对比在后端随 US-06）
 - step: generate（已在 `/sdd:proposal-split` 完成，`openspec validate --strict` 通过）+ review（本次）
 - reviewer: agent（待 IO/SA 复核）
 - date: 2026-11-16
@@ -27,7 +27,7 @@
 | DoV-2 歧义已列出或解决 | Partial | `design.md` Open Questions 2 条：档案路由最终路径（US-06 确认）、飞机行默认航司 | 二者均可延后且不改规格；建议 G1 记录中确认"默认取排序首个航司、档案路由集中一处常量" |
 | DoV-3 角色关注点 | Partial | IO：顶部 Tab 变 4/6 项后的窄屏可用性；SA：`transport-rules-catalog` 为数据型能力，归档时可能被建议并入页面能力 | 仅记录残余风险，不阻断；实现阶段由 IO 复核 Tab 布局 |
 | DoV-4 未宣称实现完成 | Pass | 本文件与 `tasks.md` 仅含规划，无代码改动 | 工作区未新增前端实现文件 |
-| DoV-5 Delta 可追溯到提案/需求 | Pass | `proposal.md` → `specs/*` → `tasks.md` 1–5 组；REQ-006 场景 S1–S7 ↔ delta 场景 | REQ-006 S7（预留对比契约）明确不实现，delta 亦未写入"不推荐"判定，范围一致 |
+| DoV-5 Delta 可追溯到提案/需求 | Pass | `proposal.md` → `specs/*` → `tasks.md` 1–5 组；REQ-007 场景 S1–S7 ↔ delta 场景 | REQ-007 S7（预留对比契约）明确不实现，delta 亦未写入"不推荐"判定，范围一致 |
 
 ## 残余风险（交 G1）
 

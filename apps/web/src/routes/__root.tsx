@@ -35,6 +35,10 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "../lib/http/api-error";
+import {
+  selectedDestinationStore,
+  useSelectedDestination,
+} from "../lib/selected-destination";
 import { authQueryOptions, logout } from "../queries/auth";
 
 import appCss from "../styles.css?url";
@@ -71,10 +75,12 @@ function AppHeader() {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const isClient = typeof window !== "undefined";
   const auth = useQuery({ ...authQueryOptions, enabled: isClient });
+  const selectedDestination = useSelectedDestination();
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
       queryClient.clear();
+      selectedDestinationStore.clear();
       void navigate({ to: "/login", replace: true });
     },
   });
@@ -82,6 +88,11 @@ function AppHeader() {
   return (
     <header className="relative flex items-center justify-center px-4 py-4">
       <AppTabs />
+      {auth.isSuccess ? (
+        <span className="absolute left-4 text-sm text-muted-foreground">
+          {selectedDestination ? selectedDestination.cityName : "目的地未选"}
+        </span>
+      ) : null}
       {auth.isSuccess ? (
         <AlertDialog
           open={logoutDialogOpen}

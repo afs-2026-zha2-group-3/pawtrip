@@ -8,9 +8,9 @@ public final class PetResponses {
 	}
 
 	public record PetDetail(Long id, String name, PetType petType, Double weightKg, Double shoulderHeightCm,
-			boolean hasLeash, boolean hasVaccinationProof, String photo) {
+			boolean hasLeash, boolean hasVaccinationProof, String photo, DogBreedDetail dogBreed) {
 
-		static PetDetail from(Pet pet) {
+		static PetDetail from(Pet pet, DogBreed dogBreed) {
 			byte[] photo = pet.getPhoto();
 			return new PetDetail(
 					pet.getId(),
@@ -20,7 +20,8 @@ public final class PetResponses {
 					pet.getShoulderHeightCm(),
 					pet.hasLeash(),
 					pet.hasVaccinationProof(),
-					photo == null ? null : Base64.getEncoder().encodeToString(photo));
+					photo == null ? null : Base64.getEncoder().encodeToString(photo),
+					dogBreed == null ? null : DogBreedDetail.from(dogBreed));
 		}
 	}
 

@@ -1,85 +1,95 @@
-# Impact brief — REQ-006 对比高铁/航班/自驾/火车携宠规则
+# Impact brief — REQ-006 选择目的地
 
-- 生成日期：2026-11-16
-- 上游需求：[../requirements/REQ-006-transport-pet-rules-comparison.md](../requirements/REQ-006-transport-pet-rules-comparison.md)
-- Deep-dive：[deep-dive.md](deep-dive.md)
+- 生成日期：2026-11-16（G1 Revision 同日修订：宠物档案改外部依赖）
+- 上游需求：[requirements/REQ-006-destination-selection.md](../../requirements/REQ-006-destination-selection.md)
+- 意图来源：[intents/REQ-006-issue-15-destination-selection.md](../../intents/REQ-006-issue-15-destination-selection.md)（issue #15，US-47，Must）
 
 ## 1. Requirement set
 
 | id | title | status | path |
 |---|---|---|---|
-| REQ-006 | 对比高铁/航班/自驾/火车携宠规则 | ready-for-split | `requirements/REQ-006-transport-pet-rules-comparison.md` |
+| REQ-006 | 选择目的地（搜索、宠物友好筛选与选定生效） | ready-for-split | `requirements/REQ-006-destination-selection.md` |
 
-阻塞开放问题：0（3 项 blocking 均 resolved）；DoR BLOCKER：0；deep-dive ⑨–⑫ Pass。终版决策（2026-11-16）：**规则全部前端写死（不建规则表/API），本需求为纯前端变更**；对比在后端、档案表随 US-06 建；航司（国航/东航/南航/海航）、入口（**顶部导航新增 Tab「交通规则」**）、预留档案路由均已 resolved；车型细分与复核频率 deferred。
+阻塞开放问题：0；DoR BLOCKER：0（WARNING「种子数据内容」已标 deferred）。
+
+已确认决策（2026-11-16，需求方）：
+1. 依赖路径：本 change 携带最小数据地基（禁养名单+政策收录标记+试点种子）；**宠物档案由外部 change（US-01）交付，本 change 只读消费（G1 Revision）**
+2. AC-2 筛选口径：原型口径（政策已收录且档案品种不在禁养名单；无档案退化为仅按收录状态）
+3. AC-3 状态归属：前端 localStorage，后端不感知
+4. 候选城市：珠海、杭州（需求方指定，替代原型 5 城）
+5. 政策详情整页留给 #14；禁养判定逻辑本 change 落地供复用
+6. 顶栏目的地 chip 保留（G1 Revision 确认）
 
 ## 2. As-is 资产清单（证据路径）
 
 | 区域 | 路径 | 现状 | 是否受影响 |
 |---|---|---|---|
-| Living Spec | `openspec/specs/backend-data-access/spec.md` | JPA 数据访问规范 | 否（复用） |
-| Living Spec | `openspec/specs/frontend-data-fetching/spec.md`、`frontend-api-request/spec.md` | TanStack Query + request 层规范 | 否（复用） |
-| Living Spec | `openspec/specs/backend-authentication/spec.md`、`frontend-authentication/spec.md` | `/api/**` 会话保护、`_authenticated` 守卫 | 否（复用，不改放行名单） |
-| Living Spec | `openspec/specs/web-app-shell/spec.md`、`paws-page/spec.md` | Home/Paws 两 Tab 基线；后续变更已加"城市浏览"`/cities`（空占位页）与管理员城市/地点 Tab | 是（新增顶部 Tab「交通规则」，AppTabs 扩一项） |
-| Living Spec | `openspec/specs/location-management/spec.md` | 地点含宠物政策字段 | 否（不同概念，不共表） |
-| 后端迁移 | `apps/server/src/main/resources/db/migration/V1~V6` | greeting/用户/地点管理/行政区划 | 否（本需求不建规则表） |
-| 后端代码 | `apps/server/src/main/java/com/pawtrip/server/` | greeting/用户/地点/amap 模块 | 否（对比逻辑随 US-06） |
-| 前端路由 | `apps/web/src/routes/_authenticated/cities.tsx` | `/cities` 为空占位页 | 否（不动）；新增兄弟路由 `_authenticated/transport-rules.tsx` → `/transport-rules` |
-| 前端取数 | `apps/web/src/queries/greeting.ts` | query options 模式先例 | 否（规则常量直出，不走查询） |
-| 前端外壳 | `apps/web/src/routes/__root.tsx` | AppTabs：Home/Paws/城市浏览 + 管理员 Tab | 是（新增顶部 Tab「交通规则」，插在「城市浏览」之后、管理员 Tab 之前；activeTab 与 navigate 同步扩展） |
-| 知识库 | `docs/knowledge/domain/README.md` | 占位 | 是（补交通携宠规则内容与来源约定） |
-| 规则 | `docs/knowledge/rules/**` | spec-first、分层、测试规则 | 约束实现，不修改 |
-| 归档资产 | `openspec/changes/archive/2026-11-16-admin-location-management/` 等 | 最近 change 先例（迁移+API+前端页） | 否（参考模式） |
+| 架构知识 | `docs/knowledge/architecture/README.md` | 技术栈、认证、数据访问、前端约定完整；无目的地/宠物档案模块 | 是（新增模块说明） |
+| Living Spec | `openspec/specs/web-app-shell/spec.md` | Home/Paws 两 Tab；**未含 PR #30 新增的 Cities Tab（spec 滞后于代码）** | 是（顺带补齐 Cities Tab 事实） |
+| Living Spec | `openspec/specs/paws-page/spec.md` | `/paws` 受保护空页 | 否（档案由外部 change 交付，本 change 不改 paws-page） |
+| Living Spec | `openspec/specs/location-management/spec.md` | 管理员地点管理 + V7 携宠政策字段；无禁养名单/收录标记 | 间接（数据模型扩展，管理端行为不变） |
+| Living Spec | `openspec/specs/frontend-data-fetching/`、`frontend-api-request/`、`backend-data-access/`、`backend-error-handling/`、`backend-authentication/`、`ui-foundation/`、`browser-e2e-testing/` | 取数/请求/数据访问/错误/认证/UI/E2E 约定 | 复用约定，契约不变 |
+| 归档资产 | `openspec/changes/archive/2026-11-16-admin-location-management/`、`2026-11-15-add-amap-poi-search/` | 行政区树读取、POI 分层模式可参照 | 参照 |
+| 代码 | `apps/web/src/routes/_authenticated/cities.tsx` | 空占位页（PR #30） | 是（本 REQ 主页面） |
+| 代码 | `apps/web/src/routes/_authenticated/paws.tsx` | 空占位页 | 否（外部 change 实现档案表单） |
+| 代码 | `apps/server/.../db/migration/V4/V5/V7` | 行政区表+全国种子+携宠政策字段 | 是（新增迁移） |
+| 代码 | `apps/server/.../location/AdminLocationService.java` | 省市树仅 `/api/admin/regions` 管理端 | 参照（用户端需新接口） |
+| 外部依赖 | 宠物档案 | main 无 pet 表/实体/API/页面；远端 `feature/add-pet-schema`（未合并）仅 pet 表 schema（V8）+ `allowed_pet_types`（V9），**无 breed、无接口、无页面** | 只读消费（等对方补齐 breed/接口/`/paws`） |
+| 缺口 | 禁养犬种数据 | 无禁养名单、无政策收录标记 | 是（新建） |
 
-## 3. As-is → Proposed delta
+## 3. As-is → proposed delta
 
 | 资产 | As-is | Proposed delta |
 |---|---|---|
-| 数据库 | 无交通规则数据 | 无变化（规则不入库） |
-| 后端 | 无规则接口 | 无变化（对比逻辑与档案表随 US-06） |
-| 前端数据 | 无规则常量 | 新增规则常量模块（建议 `apps/web/src/data/transport-rules.ts`：四方式×四维度，飞机按航司，含 `allowanceStatus`/`weightLimitKg`/来源/复核日期） |
-| 前端页面 | 无规则页 | 新增顶层页面 `/transport-rules`（建议）：四行表格（方式/能否携带/体重上限/容器要求/办理流程概要）+ 飞机行航司下拉 + 底部免责/无站内订票提示 + 无档案跳转按钮 + 预留"不推荐"位置 |
-| 前端取数 | 仅 greeting/auth/locations queries | 无新增查询；页面直接引用常量 |
-| 导航 | AppTabs：Home/Paws/城市浏览 + 管理员 Tab | **新增顶部 Tab「交通规则」**（路由 `/transport-rules`，已登录可见；普通用户 3→4 项，管理员 5→6 项；不放在 `/cities` 下）（2026-11-16 需求方更改） |
-| 知识库 | domain/interfaces 占位 | 补交通携宠规则内容、来源清单与复核约定 |
-| Living Spec | 无交通规则能力 | 归档后新增 `transport-rules-catalog`、`transport-rules-comparison-page`，MODIFIED `web-app-shell`（新增 Tab） |
+| `web-app-shell` spec | 两 Tab（Home/Paws），Cities Tab 已在代码但未入 spec | MODIFIED：补 Cities Tab 事实；如顶栏展示当前目的地上下文则一并定义 |
+| `paws-page` spec | `/paws` 内容为空 | **不改**（G1 Revision：档案表/breed/接口/页面由外部 change / US-01 交付） |
+| 新能力 `destination-selection` | 不存在 | ADDED：`/cities` 搜索/筛选/选定/提醒；候选=珠海+杭州；筛选原型口径；选定存 localStorage；禁养精确匹配判定 |
+| `location-management` spec | 管理端行为 + V7 字段 | 不改管理端需求；数据模型扩展（禁养名单+收录标记）在新能力 spec 中声明，避免污染 admin 契约 |
+| 数据库 | V1–V7（外部未合并分支另有 V8/V9） | 新增迁移：禁养犬种名单 + 政策收录标记（挂行政区维度，沿用 PR #32 方向）+ 珠海/杭州种子；**不建档案表**（外部 change 交付，注意迁移版本号协调） |
+| 后端 API | `/api/admin/**` 管理端；`/api/auth/**`；`/api/greeting` | 新增用户端只读城市候选接口（含收录状态、禁养名单）；档案读取走外部 change 提供的接口；均走既有认证/错误契约 |
+| 前端状态 | TanStack Query 服务端状态；无全局 store | 新增 cities queries 与档案只读 query（消费外部接口）；新增 localStorage「已选目的地」读写（客户端状态，不进 Query 服务端缓存语义） |
+| E2E | 登录/登出/Tab/404 等 | 新增 `/cities` 搜索→筛选→选定→提醒链路（Playwright Chromium）；档案相关用例依赖外部 change 交付 |
+| 架构 KB | 无目的地/档案模块 | 补充模块、接口、数据与 localStorage 约定说明 |
 
-## 4. Blast radius
+## 4. Blast radius（应用架构层）
 
-- **apps/server**：无变化（无新表、无新接口）。
-- **apps/web**：新增规则常量模块、顶层受保护路由 `/transport-rules`；`__root.tsx` AppTabs 新增「交通规则」Tab；`routeTree.gen.ts` 重新生成；`/cities` 不变。
-- **数据内容面**：规则时效性由"常量来源链接+复核日期+免责声明+合并前人工复核"承担；火车/自驾/海航条目当前为"待复核"，合并前必须核实。
-- **不受影响**：认证后端契约、地点管理、greeting、高德 POI、部署流水线。
+- `apps/server`：新增 destination（用户端城市候选）功能模块 + Flyway 迁移；不改认证、错误契约、既有 admin/location 行为；不建 pet 模块（外部 change）
+- `apps/web`：`/cities` 页面实现、queries 新增（含档案只读）、localStorage 选定状态、顶栏目的地 chip（保留，已确认）；不改 `/paws`
+- `e2e/`：新增验收链路
+- 不影响：高德集成、地点管理管理端、登录契约、greeting
 
 ## 5. Artifact impact
 
-- **Specs**：一个 OpenSpec change 承载 2 个 ADDED capability + MODIFIED `web-app-shell`（新增顶部 Tab「交通规则」）；无后端 capability 变更。
-- **Tests**：无需后端接口测试；E2E 加规则页场景（登录→四行表格→飞机航司下拉切换→未登录跳转）；前端组件测试沿用现状（未引入）。
-- **Docs/KB**：domain 知识库补充；deep-dive 数据来源表作为复核底稿。
-- **CI/CD**：沿用现有 server/web/e2e 流水线，无新增产品。
+- specs：ADDED `destination-selection`；MODIFIED `web-app-shell`（paws-page 不改，G1 Revision）
+- tests：后端接口验收测试（城市候选/禁养匹配边界，档案输入按外部契约）+ Playwright E2E
+- docs：`docs/knowledge/architecture/README.md` 增补；registry/handoff 更新
+- 数据：珠海/杭州禁养名单与收录状态需政府公开文件摘录（deferred 数据任务）
 
 ## 6. Dual-track notes
 
-- **OpenSpec**：单 change（建议 id `transport-pet-rules-comparison`），切片：常量模块→页面→入口/测试。
-- **Agile**：可拆 2–3 薄故事（规则常量与来源记录 / 对比页 / 入口与 E2E），US-05 对应整体；US-06（后端对比、档案表）、US-07（证明清单）在 deep-dive 中已锚定。
-- 需求保持后端无关表述；"规则前端写死、对比后端"已写入 Constraints。
+- OpenSpec：单 change 即可承载（见 §8）；delta spec 按能力拆分
+- Agile：issue #15 为 Must story；最小数据地基是本 story 的使能子任务；宠物档案为外部 change（US-01）交付的依赖项，需协调契约（breed 词表）与合并顺序；#14 后续 story 直接复用本 change 落地的判定逻辑
 
 ## 7. Risks & blockers
 
-| 级别 | 风险 | 说明 / 缓解 |
+| 级别 | 风险 | 处置 |
 |---|---|---|
-| blocker | 无 | 无阻塞性未知依赖 |
-| 合并前置 | 待复核数据（D2 火车/D6-D7 海航/D8 自驾） | 常量合并前人工复核；`verifiedOn` 为空不得合并 |
-| 风险 R1 | 官方页面 JS 渲染/反爬导致摘录不全 | 已记录来源与复核状态；复核阶段人工打开页面/致电 95572、95530、95583 核实 |
-| 风险 R2 | 规则时效（高铁试点扩围、赴美犬只暂停等动态政策） | 免责声明 + sourceUrl + 常量变更更新机制；文案注明"以承运方最新规则为准" |
-| 风险 R3 | 高铁体型限制（肩高/身长）无法仅靠体重判定 | MVP 判定契约仅体重（US-06）；体型限制写入 weightLimitNote 展示，判定扩展由 US-06 决定 |
-| 风险 R4 | 顶部 Tab 「交通规则」与现有 Tab（普通 3 项 / 管理员 5 项）在小屏下拥挤 | Tab 顺序固定为 Home/Paws/城市浏览/交通规则/管理员项；窄屏沿用现有 Tab 横向压缩策略；非阻塞 |
-| 风险 R5 | 规则前端写死与 US-06 后端对比的数据同步 | 对比需要后端拿到规则阈值，方式待 US-06 定（前端传参或后端留最小副本）；本次以 `id`+`weightLimitKg` 字段与稳定常量结构降低迁移成本 |
+| 非阻塞 | 珠海禁养名单/收录状态未摘录；品种命名需与档案品种枚举精确对齐（精确匹配不支持别名） | 实现期数据任务；品种枚举与名单用同一词表，deep-dive 定字段 |
+| 非阻塞 | localStorage 选定状态换设备即丢，后端不感知 | 需求方已确认接受；后续 story 需要服务端上下文时另行演进 |
+| 非阻塞（规格）/ 阻塞（P4 实现） | 外部档案 change 未交付 breed/接口/`/paws` 页面（现仅 schema）；AC-2 完整口径与 AC-4 的实现/E2E 依赖其就绪 | 需求方确认等对方补齐、本 change 只消费（2026-11-16）；与对方协调 breed 词表、读取接口契约与合并顺序；迁移版本号避免冲突 |
+| 记录 | `web-app-shell` spec 滞后于代码（Cities Tab） | 本 change delta 顺带补齐 |
+
+**Critical blockers：0。**
 
 ## 8. Suggested split boundaries
 
-- 建议 change id：`transport-pet-rules-comparison`
-- 工作切片（按依赖顺序）：
-  1. **T1 规则常量**：`transport-rules` 常量模块（含来源/复核字段，完成待复核条目人工核实）
-  2. **T2 对比页**：`/transport-rules` 路由 + 四行表格/"能否携带"状态标识（由 `allowanceStatus` 驱动）/飞机行航司下拉/底部提示/无档案按钮 + 预留契约位置
-  3. **T3 导航与收尾**：`__root.tsx` AppTabs 新增「交通规则」Tab（activeTab/navigate 同步）、知识库补充、E2E 场景（登录→点顶部「交通规则」→四行表格→航司下拉切换→未登录跳转 `/login`）
-- 边界原则：纯前端交付，不涉及数据库/后端接口；数据复核（T1）可与页面开发（T2）并行，但合并前必须完成。
+建议**单 change**：`destination-selection`（或 `add-destination-selection`），内含两块使能+主体（G1 Revision 后）：
+1. 数据地基：禁养名单+收录标记+珠海/杭州种子（迁移）
+2. 目的地选择主体：用户端城市候选 API + `/cities` 页面 + localStorage 选定 + 禁养提醒（档案品种只读消费外部 change）
+
+理由：两块共同构成 issue #15 的可验收闭环；宠物档案由外部 change（US-01）交付，本 change 不重复实现，AC-2/AC-4 的完整验收以外部契约就绪为前提。
+## 修订记录（2026-11-16，合并 main 后）
+
+- 编号 REQ-005 → REQ-006（main 已将 REQ-005 用于地点宠物政策）；上文为 P1 时点简报，历史口径保留。
+- 拆分结论修订：最小数据地基（V14）移除，候选=全部城市级行政区；选定存 sessionStorage；搜索/宠物友好筛选为服务端实现（`max_pets_per_person` null 或 >=1 友好）。
+- 外部依赖进展：宠物档案接口与 `/paws` 页面已合并 main（PR #33–#36、#40），breed 字段仍缺失；禁养提醒相关验收继续门控。

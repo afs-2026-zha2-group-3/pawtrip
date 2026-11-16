@@ -27,13 +27,19 @@ class AdminLocationService {
 	private static final int AMAP_MAX_PAGE_SIZE = 25;
 	private static final int AMAP_MAX_PAGE = 100;
 	private static final int AMAP_MAX_RESULTS = 200;
+	private static final int AMAP_UPSTREAM_PAGE_SIZE = 25;
 	private static final int DATABASE_MAX_PAGE_SIZE = 100;
 	private static final String ATTRACTION_TYPE_GROUP = "attraction";
-	private static final List<String> ATTRACTION_TYPE_CODES = List.of("110000");
 	private static final List<AdminLocationResponses.LocationTypeOption> LOCATION_TYPES = List.of(
-			new AdminLocationResponses.LocationTypeOption(ATTRACTION_TYPE_GROUP, "景点", ATTRACTION_TYPE_CODES));
-	private static final Map<String, List<String>> TYPE_CODES_BY_GROUP = Map.of(
-			ATTRACTION_TYPE_GROUP, ATTRACTION_TYPE_CODES);
+			new AdminLocationResponses.LocationTypeOption(ATTRACTION_TYPE_GROUP, "景点", List.of("110000")),
+			new AdminLocationResponses.LocationTypeOption("hotel", "住宿", List.of("100000")),
+			new AdminLocationResponses.LocationTypeOption("pet-hospital", "宠物医院", List.of("090700")),
+			new AdminLocationResponses.LocationTypeOption("pet-supplies", "宠物用品店", List.of("061211")),
+			new AdminLocationResponses.LocationTypeOption("restaurant", "餐厅", List.of("050000")));
+	private static final Map<String, List<String>> TYPE_CODES_BY_GROUP = LOCATION_TYPES.stream()
+			.collect(Collectors.toUnmodifiableMap(
+					AdminLocationResponses.LocationTypeOption::key,
+					AdminLocationResponses.LocationTypeOption::typeCodes));
 
 	private final AdministrativeRegionRepository regionRepository;
 	private final PawtripLocationRepository locationRepository;
@@ -90,12 +96,11 @@ AdminLocationService(AdministrativeRegionRepository regionRepository,
 			throw invalidQuery();
 		}
 
-		PlaceSearchResult searchResult = this.placeSearchPort.searchByTypes(new PlaceTypeSearchRequest(
-				typeCodes, region == null ? null : region.code(), page.page(), page.pageSize()));
-		long totalElements = Math.min(searchResult.totalCount(), AMAP_MAX_RESULTS);
-		int totalPages = (int) ((totalElements + page.pageSize() - 1) / page.pageSize());
-		List<JsonNode> pois = searchResult.pois();
-		List<String> poiIds = pois.stream().map(poi -> requiredPoiId(poi)).toList();
+		ScanResult scan = scanMatchedPois(typeCodes, region, page);
+		int from = Math.min((page.page() - 1) * page.pageSize(), scan.matched().size());
+		int to = Math.min(from + page.pageSize(), scan.matched().size());
+		List<JsonNode> pois = scan.matched().subList(from, to);
+		List<String> poiIds = pois.stream().map(AdminLocationService::requiredPoiId).toList();
 		Set<String> savedPoiIds = poiIds.isEmpty()
 				? Set.of()
 				: this.locationRepository.findAllByPoiIdIn(poiIds).stream()
@@ -116,14 +121,41 @@ AdminLocationService(AdministrativeRegionRepository regionRepository,
 					poi));
 		}
 
+		int totalElements = scan.matched().size();
+		int totalPages = (totalElements + page.pageSize() - 1) / page.pageSize();
 		return new AdminLocationResponses.Page<>(
-				searchResult.pageNum(),
-				searchResult.pageSize(),
+				page.page(),
+				page.pageSize(),
 				totalElements,
 				totalPages,
-				searchResult.pageNum() < totalPages,
-				searchResult.pageNum() > 1,
+				scan.matched().size() > page.page() * page.pageSize() || scan.hasMorePages(),
+				page.page() > 1,
 				items);
+	}
+
+	/**
+	 * Amap matches POIs when any of their type codes belongs to the requested category, so a
+	 * hotel with a restaurant code can appear in a restaurant search and vice versa. Scanning
+	 * consecutive Amap pages keeps only POIs whose primary type matches and fills the requested page.
+	 */
+	private ScanResult scanMatchedPois(List<String> typeCodes, ValidatedRegion region, PageParameters page) {
+		int target = page.page() * page.pageSize();
+		List<JsonNode> matched = new ArrayList<>();
+		int rawFetched = 0;
+		boolean exhausted = false;
+		for (int amapPage = 1; matched.size() < target && rawFetched < AMAP_MAX_RESULTS && !exhausted; amapPage++) {
+			PlaceSearchResult result = this.placeSearchPort.searchByTypes(new PlaceTypeSearchRequest(
+					typeCodes, region == null ? null : region.code(), amapPage, AMAP_UPSTREAM_PAGE_SIZE));
+			List<JsonNode> pois = result.pois();
+			rawFetched += pois.size();
+			for (JsonNode poi : pois) {
+				if (matchesTypeGroup(text(poi, "typecode"), typeCodes)) {
+					matched.add(poi);
+				}
+			}
+			exhausted = pois.size() < AMAP_UPSTREAM_PAGE_SIZE;
+		}
+		return new ScanResult(matched, !exhausted && rawFetched < AMAP_MAX_RESULTS);
 	}
 
 	AdminLocationResponses.Page<AdminLocationResponses.SavedLocation> savedLocations(
@@ -263,21 +295,37 @@ AdminLocationService(AdministrativeRegionRepository regionRepository,
 		if (name == null || name.isBlank() || actualTypeCode == null || actualTypeCode.isBlank()) {
 			throw upstreamPlaceFailure();
 		}
-		boolean typeMatches = false;
-		for (String actual : actualTypeCode.split("[;,|]")) {
-			for (String expected : typeCodes) {
-				if (actual.trim().startsWith(expected.substring(0, 2))) {
-					typeMatches = true;
-					break;
-				}
-			}
-			if (typeMatches) {
-				break;
-			}
-		}
-		if (!typeMatches) {
+		if (!matchesTypeGroup(actualTypeCode, typeCodes)) {
 			throw invalidQuery();
 		}
+	}
+
+	private static boolean matchesTypeGroup(String typeCode, List<String> typeCodes) {
+		String primaryTypeCode = primaryTypeCode(typeCode);
+		if (primaryTypeCode == null || primaryTypeCode.isEmpty()) {
+			return false;
+		}
+		for (String expected : typeCodes) {
+			if (primaryTypeCode.startsWith(typeCodePrefix(expected))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static String primaryTypeCode(String typeCode) {
+		if (typeCode == null || typeCode.isBlank()) {
+			return null;
+		}
+		return typeCode.split("[;,|]", 2)[0].trim();
+	}
+
+	private static String typeCodePrefix(String typeCode) {
+		String prefix = typeCode;
+		while (prefix.length() > 2 && prefix.endsWith("00")) {
+			prefix = prefix.substring(0, prefix.length() - 2);
+		}
+		return prefix;
 	}
 
 	private static List<LocationWriteService.PhotoMetadata> photoMetadata(JsonNode photos) {
@@ -462,6 +510,9 @@ AdminLocationService(AdministrativeRegionRepository regionRepository,
 	}
 
 	private record PageParameters(int page, int pageSize) {
+	}
+
+	private record ScanResult(List<JsonNode> matched, boolean hasMorePages) {
 	}
 
 	private record ValidatedRegion(String code, String level) {

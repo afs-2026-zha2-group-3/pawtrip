@@ -91,11 +91,102 @@ class AdminLocationApiTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].key").value("attraction"))
 				.andExpect(jsonPath("$[0].label").value("景点"))
-				.andExpect(jsonPath("$[0].typeCodes[0]").value("110000"));
+				.andExpect(jsonPath("$[0].typeCodes[0]").value("110000"))
+				.andExpect(jsonPath("$[1].key").value("hotel"))
+				.andExpect(jsonPath("$[1].label").value("住宿"))
+				.andExpect(jsonPath("$[1].typeCodes[0]").value("100000"))
+				.andExpect(jsonPath("$[2].key").value("pet-hospital"))
+				.andExpect(jsonPath("$[2].label").value("宠物医院"))
+				.andExpect(jsonPath("$[2].typeCodes[0]").value("090700"))
+				.andExpect(jsonPath("$[3].key").value("pet-supplies"))
+				.andExpect(jsonPath("$[3].label").value("宠物用品店"))
+				.andExpect(jsonPath("$[3].typeCodes[0]").value("061211"))
+				.andExpect(jsonPath("$[4].key").value("restaurant"))
+				.andExpect(jsonPath("$[4].label").value("餐厅"))
+				.andExpect(jsonPath("$[4].typeCodes[0]").value("050000"));
 	}
 
 	@Test
-	void amapPageIncludesSavedCandidatesAndCapsReachableCount() throws Exception {
+	void amapSearchUsesTypeCodesOfSelectedGroup() throws Exception {
+		given(this.placeSearchPort.searchByTypes(any()))
+				.willReturn(new PlaceSearchResult(0, 1, 10, List.of()));
+
+		for (String typeGroup : List.of("hotel", "pet-hospital", "pet-supplies", "restaurant")) {
+			this.mockMvc.perform(get("/api/admin/locations/amap")
+						.with(user("admin").roles("ADMIN"))
+						.param("typeGroup", typeGroup))
+					.andExpect(status().isOk());
+		}
+
+		var request = org.mockito.ArgumentCaptor.forClass(PlaceTypeSearchRequest.class);
+		org.mockito.Mockito.verify(this.placeSearchPort, org.mockito.Mockito.times(4))
+				.searchByTypes(request.capture());
+		assertThat(request.getAllValues()).extracting(value -> value.typeCodes().get(0))
+				.containsExactly("100000", "090700", "061211", "050000");
+	}
+
+	@Test
+	void amapSearchKeepsOnlyPoisWhosePrimaryTypeMatchesTheGroup() throws Exception {
+		JsonNode restaurantWithHotelCategory = JSON_MAPPER.readTree("""
+				{"id":"poi-restaurant","name":"Restaurant","typecode":"050101|100100","address":"Shanghai"}
+				""");
+		JsonNode hotelWithRestaurantCategory = JSON_MAPPER.readTree("""
+				{"id":"poi-hotel","name":"Hotel","typecode":"100102|050000","address":"Shanghai"}
+				""");
+
+		given(this.placeSearchPort.searchByTypes(any()))
+				.willReturn(new PlaceSearchResult(2, 1, 10, List.of(restaurantWithHotelCategory, hotelWithRestaurantCategory)));
+		this.mockMvc.perform(get("/api/admin/locations/amap")
+					.with(user("admin").roles("ADMIN"))
+					.param("typeGroup", "hotel"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items.length()").value(1))
+				.andExpect(jsonPath("$.items[0].poiId").value("poi-hotel"));
+
+		given(this.placeSearchPort.searchByTypes(any()))
+				.willReturn(new PlaceSearchResult(2, 1, 10, List.of(hotelWithRestaurantCategory, restaurantWithHotelCategory)));
+		this.mockMvc.perform(get("/api/admin/locations/amap")
+					.with(user("admin").roles("ADMIN"))
+					.param("typeGroup", "restaurant"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items.length()").value(1))
+				.andExpect(jsonPath("$.items[0].poiId").value("poi-restaurant"));
+	}
+
+	@Test
+	void amapSearchScansFurtherPagesUntilTheRequestedPageIsFilled() throws Exception {
+		List<JsonNode> firstAmapPage = new java.util.ArrayList<>();
+		for (int index = 0; index < 24; index++) {
+			firstAmapPage.add(JSON_MAPPER.readTree(
+					"{\"id\":\"poi-restaurant-" + index + "\",\"name\":\"Restaurant\",\"typecode\":\"050101|100100\"}"));
+		}
+		firstAmapPage.add(JSON_MAPPER.readTree(
+				"{\"id\":\"poi-hotel-1\",\"name\":\"Hotel 1\",\"typecode\":\"100100\"}"));
+		JsonNode secondAmapPageHotel = JSON_MAPPER.readTree(
+				"{\"id\":\"poi-hotel-2\",\"name\":\"Hotel 2\",\"typecode\":\"100101\"}");
+
+		given(this.placeSearchPort.searchByTypes(any()))
+				.willReturn(new PlaceSearchResult(0, 1, 25, List.copyOf(firstAmapPage)))
+				.willReturn(new PlaceSearchResult(0, 2, 25, List.of(secondAmapPageHotel)));
+
+		this.mockMvc.perform(get("/api/admin/locations/amap")
+					.with(user("admin").roles("ADMIN"))
+					.param("typeGroup", "hotel")
+					.param("page", "1")
+					.param("pageSize", "2"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items.length()").value(2))
+				.andExpect(jsonPath("$.items[0].poiId").value("poi-hotel-1"))
+				.andExpect(jsonPath("$.items[1].poiId").value("poi-hotel-2"));
+
+		var request = org.mockito.ArgumentCaptor.forClass(PlaceTypeSearchRequest.class);
+		org.mockito.Mockito.verify(this.placeSearchPort, org.mockito.Mockito.times(2))
+				.searchByTypes(request.capture());
+		assertThat(request.getAllValues()).extracting(PlaceTypeSearchRequest::pageNum).containsExactly(1, 2);
+	}
+
+	@Test
+	void amapPageMarksSavedCandidatesWithoutHidingThem() throws Exception {
 		this.locationRepository.saveAndFlush(location("poi-saved", "330106", "attraction"));
 		JsonNode savedPoi = JSON_MAPPER.readTree("""
 				{"id":"poi-saved","name":"Saved Park","typecode":"110000","address":"Hangzhou","adcode":"330106","future":{"value":true}}
@@ -104,34 +195,44 @@ class AdminLocationApiTest {
 				{"id":"poi-new","name":"New Park","typecode":"110000","address":"Hangzhou","adcode":"330106"}
 				""");
 		given(this.placeSearchPort.searchByTypes(any()))
-				.willReturn(new PlaceSearchResult(231, 2, 2, List.of(savedPoi, newPoi)));
+				.willReturn(new PlaceSearchResult(0, 1, 25, List.of(savedPoi, newPoi)));
 
 		this.mockMvc.perform(get("/api/admin/locations/amap")
 					.with(user("admin").roles("ADMIN"))
 					.param("regionCode", "330100")
 					.param("typeGroup", "attraction")
-					.param("page", "2")
+					.param("page", "1")
 					.param("pageSize", "2"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.page").value(2))
+				.andExpect(jsonPath("$.page").value(1))
 				.andExpect(jsonPath("$.pageSize").value(2))
-				.andExpect(jsonPath("$.totalElements").value(200))
-				.andExpect(jsonPath("$.totalPages").value(100))
-				.andExpect(jsonPath("$.hasNext").value(true))
-				.andExpect(jsonPath("$.hasPrevious").value(true))
 				.andExpect(jsonPath("$.items.length()").value(2))
 				.andExpect(jsonPath("$.items[0].poiId").value("poi-saved"))
 				.andExpect(jsonPath("$.items[0].saved").value(true))
 				.andExpect(jsonPath("$.items[0].poi.future.value").value(true))
 				.andExpect(jsonPath("$.items[1].poiId").value("poi-new"))
-				.andExpect(jsonPath("$.items[1].saved").value(false));
+				.andExpect(jsonPath("$.items[1].saved").value(false))
+				.andExpect(jsonPath("$.hasNext").value(false))
+				.andExpect(jsonPath("$.hasPrevious").value(false));
 
 		var request = org.mockito.ArgumentCaptor.forClass(PlaceTypeSearchRequest.class);
 		verify(this.placeSearchPort).searchByTypes(request.capture());
 		assertThat(request.getValue().typeCodes()).containsExactly("110000");
 		assertThat(request.getValue().regionCode()).isEqualTo("330100");
-		assertThat(request.getValue().pageNum()).isEqualTo(2);
-		assertThat(request.getValue().pageSize()).isEqualTo(2);
+		assertThat(request.getValue().pageNum()).isEqualTo(1);
+		assertThat(request.getValue().pageSize()).isEqualTo(25);
+	}
+
+	@Test
+	void amapSearchRejectsPagesBeyondTheTwoHundredResultLimit() throws Exception {
+		this.mockMvc.perform(get("/api/admin/locations/amap")
+					.with(user("admin").roles("ADMIN"))
+					.param("typeGroup", "attraction")
+					.param("page", "9")
+					.param("pageSize", "25"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+		org.mockito.Mockito.verifyNoInteractions(this.placeSearchPort);
 	}
 
 	@Test

@@ -1,7 +1,7 @@
 # G2 decision — transport-pet-rules-comparison
 
 - **Gate**: G2（Verify）
-- **Change**: `transport-pet-rules-comparison`（REQ-006 / US-05）
+- **Change**: `transport-pet-rules-comparison`（REQ-007 / US-05；原登记 REQ-006，因 main 已将 REQ-006 用于「选择目的地」而于 2026-11-16 合并 main 时改编号）
 - **Timestamp**: 2026-11-16T13:35:13+08:00
 
 ## Inputs
@@ -60,8 +60,8 @@
 
 ## Next
 
-1. 提交本记录与 REQ-007 的 G2 记录
-2. `/sdd:pr-submit`：先提本分支（REQ-006），再提 `feat/rule-recommendation-and-selection`
+1. 提交本记录与 REQ-008 的 G2 记录
+2. `/sdd:pr-submit`：先提本分支（REQ-007），再提 `feat/rule-recommendation-and-selection`
 3. `/sdd:pipeline-report` 回填 E1
 4. G3 + `/sdd:living-merge` → `/sdd:archive-change`
 

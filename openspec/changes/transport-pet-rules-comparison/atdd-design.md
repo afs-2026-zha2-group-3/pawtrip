@@ -1,6 +1,6 @@
 # ATDD Design — transport-pet-rules-comparison
 
-- change: `openspec/changes/transport-pet-rules-comparison`（REQ-006 / US-05）
+- change: `openspec/changes/transport-pet-rules-comparison`（REQ-007 / US-05）
 - delta specs: `specs/transport-rules-catalog/spec.md`、`specs/transport-rules-comparison-page/spec.md`、`specs/web-app-shell/spec.md`
 - 前置复核：`dov-ac-review.md`（0 blocking Fail / 2 Partial）
 - date: 2026-11-16

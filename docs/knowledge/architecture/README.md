@@ -54,6 +54,23 @@ com.pawtrip.server
 
 `com.pawtrip.server.location` 是地点管理功能模块，包含管理员 API、应用服务、地点/行政区/照片持久化实体及 Spring Data 仓库。`AdminLocationController` 只依赖地点管理应用服务；应用服务依赖仓库和 `application.port.maps.PlaceSearchPort`，不得直接依赖 `infrastructure.amap` 实现。管理 API 位于 `/api/admin/**`，由 Spring Security 在服务端要求 `ADMIN`。高德候选查询调用地图端口；已保存地点查询只访问数据库。地点详情与创建/更新请求通过可选 `petPolicies` 对象维护 6 项宠物政策；管理端“保存地点”和“pawtrip地点”两个现有弹窗提供编辑入口，地点列表响应不包含政策。
 
+### 目的地候选功能模块
+
+`com.pawtrip.server.destination` 是目的地候选功能模块（US-47），只读、无写入端点：
+
+- `GET /api/destinations`：需登录（沿用 `/api/**` 认证链，未登录 `401 UNAUTHENTICATED`）；返回全部城市级行政区候选数组（`level='city'`，按名称排序），每项含 `adcode`、`name`、`province`（父级省名）、`policyCovered`、`bannedBreeds[]`。可选查询参数：`keyword`（服务端按城市名/省份 trim 后 contains 过滤）、`petFriendly=true`（服务端按每人限养数筛选：`max_pets_per_person` 为 null 或 >=1 视为宠物友好，限养 0 排除）。
+- 政策数据暂缓（2026-11-16 需求方移除 V14 政策种子迁移）：`policyCovered` 占位恒为 `false`、`bannedBreeds` 占位恒为空数组；收录状态与禁养名单的数据源确定后恢复（判断点在 `DestinationController` 留 TODO）。原摘录稿存档于 `openspec/changes/destination-selection/seed-data.md`。
+- 禁养匹配纯函数 `breedHitsBanList`（档案品种 × 名单，精确匹配）保留于前端 `lib/destination-matching.ts`；Badge/提醒展示暂缓（TODO）。后端不引用宠物档案模块（档案由外部 US-01 change 交付）；选定目的地不做服务端持久化。
+- 迁移版本号约定：宠物档案系列（PR #33–#36）占用 V8–V13；本模块当前无新增迁移，政策数据迁移交付时需复核 main 最新版本号。
+
+前端选定状态约定（`apps/web/src/lib/selected-destination.ts`）：
+
+- 已选目的地仅存浏览器 sessionStorage（会话级，关标签页即失效），键 `pawtrip.selectedDestination`，值为 JSON `{adcode, cityName, province, selectedAt}`；读取时校验四字段均为字符串，损坏/缺失一律视为未选。
+- 状态经 `createSelectedDestinationStore` + `useSyncExternalStore` 订阅（`useSelectedDestination()`），无全局状态库；重选直接覆盖，同标签页内刷新/重进页面保留。
+- 确认登出（`__root.tsx` logout mutation `onSuccess`）在 `queryClient.clear()` 之外调用 `selectedDestinationStore.clear()` 清除该键。
+- 顶栏目的地 chip 与 `/cities` 确认提示同源于该 store：已选显示城市名，未选显示「目的地未选」；chip 仅在登录成功后渲染。
+- 档案品种经 `queries/pet-profile.ts` 只读 adapter 消费外部 US-01 接口（临时契约 `GET /api/pets`），任何失败/无档案退化为 null；宠物友好筛选由服务端按每人限养数承载，不依赖档案 breed。
+
 ## 运行拓扑
 
 ```text
@@ -72,6 +89,13 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 - `GET /api/greeting`：需登录；通过 `GreetingRepository.findFirstByOrderByIdAsc()` 读取单条问候语，返回 `200` + `application/json` + `{"message":"Hello World"}`；未登录返回 `401 UNAUTHENTICATED`。
 - 首页通过 TanStack Query 在客户端请求同源 `/api/greeting`，仅展示响应中的 `message`，不在前端硬编码文案。
 - 错误响应统一为 RFC 9457 Problem Details（`application/problem+json`），并扩展稳定字段 `code`；成功响应不套统一 envelope。
+
+### 宠物接口与品种
+
+- 宠物接口：`GET/POST /api/pets`、`GET/PUT/DELETE /api/pets/{id}`，均需登录且只能访问本人宠物；请求体包含 `name`、`petType`、`weightKg`、`shoulderHeightCm`、`hasLeash`、`hasVaccinationProof`、可选 `photo`（base64）与 `dogBreedId`。
+- 品种：`dog_breed` 表保存 20 条常见犬种；`GET /api/dog-breeds` 按名称升序返回 `id`、`name`、`officialAggressive`。`pet.dog_breed_id` 为可空外键（`ON DELETE SET NULL`）。
+- 校验：类型为 `DOG` 时 `dogBreedId` 必填且必须存在；类型为 `CAT` 时不得携带品种；历史无品种的狗可读取，详情显示“未设置”，编辑保存前必须补选。
+- 响应：宠物详情与列表返回嵌套 `dogBreed` 对象；无品种时为 `null`。
 
 ## 认证与授权
 
@@ -114,7 +138,7 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 - UI 组件统一来自 `apps/web/src/components/ui/`，使用 shadcn/ui 的 Base UI 版本；不引入 Radix 版本或其他 UI 组件库。
 - 宠物卡片使用 React Bits Tilted Card 的 TS + Tailwind 变体，以源码形式纳入 `apps/web/src/components/ui/tilted-card.tsx`，不新增运行时依赖，也不引入自定义 CSS 类。
 - 页面结构与交互只通过组件库组合和 Tailwind 布局工具类表达；`apps/web/src/styles.css` 仅保留 Tailwind、`shadcn/tailwind.css` 与主题令牌，不新增自定义类。
-- 应用外壳位于 `apps/web/src/routes/__root.tsx`：顶部居中的 `Home` / `Paws` 两个 Tab 与真实路由 `/`、`/paws` 同步；`/` 展示问候语，`/paws` 展示当前用户的宠物画廊并支持查看、编辑、新增与删除。
+- 应用外壳位于 `apps/web/src/routes/__root.tsx`：顶部居中的 `Home` / `Paws` 两个 Tab 与真实路由 `/`、`/paws` 同步；`/` 展示问候语，`/paws` 展示当前用户的宠物画廊并支持查看、编辑、新增与删除；狗类型在表单中必须从 `GET /api/dog-breeds` 选择品种，卡片右下角优先显示狗品种，无品种时回退显示猫/狗类型。
 
 ### 前端服务端状态
 
