@@ -58,17 +58,19 @@ test("E3 shows pet policy fields in attraction detail", async ({ page }) => {
   await tripTo(page, "珠海市");
 
   await attractionCard(page, "情侣路").getByRole("button", { name: "查看详情" }).click();
-  await expect(page).toHaveURL(/\/attractions\/e2e-zhu-a$/);
-  await expect(page.locator('[data-slot="card-title"]').filter({ hasText: "情侣路" })).toBeVisible();
-  await expect(page.getByText("宠物友好", { exact: true })).toBeVisible();
-  await expect(page.getByText("1 只 / 人")).toBeVisible();
-  await expect(page.getByText("8.5 kg")).toBeVisible();
-  await expect(page.getByText("40 cm")).toBeVisible();
-  await expect(page.getByText("需要", { exact: true })).toBeVisible();
-  await expect(page.getByText("不需要", { exact: true })).toBeVisible();
-  await expect(page.getByText("10.5 元 / 只 / 次")).toBeVisible();
-  await expect(page.getByText("狗", { exact: true })).toBeVisible();
-  await expect(page.getByText("预约要求")).toHaveCount(0);
+  const dialog = page.locator('[data-slot="dialog-content"]');
+  await expect(dialog).toBeVisible();
+  await expect(page).toHaveURL(/\/attractions$/);
+  await expect(dialog.getByText("情侣路", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("宠物友好", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("1 只 / 人")).toBeVisible();
+  await expect(dialog.getByText("8.5 kg")).toBeVisible();
+  await expect(dialog.getByText("40 cm")).toBeVisible();
+  await expect(dialog.getByText("需要", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("不需要", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("10.5 元 / 只 / 次")).toBeVisible();
+  await expect(dialog.getByText("狗", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("预约要求")).toHaveCount(0);
 });
 
 test("E4 shows forbidden detail and empty policy detail", async ({ page }) => {
@@ -76,16 +78,18 @@ test("E4 shows forbidden detail and empty policy detail", async ({ page }) => {
 
   await page.getByRole("checkbox", { name: "显示全部景点" }).click();
   await attractionCard(page, "珠海渔女").getByRole("button", { name: "查看详情" }).click();
-  await expect(page).toHaveURL(/\/attractions\/e2e-zhu-b$/);
-  await expect(page.getByText("禁止携带", { exact: true })).toBeVisible();
+  const dialog = page.locator('[data-slot="dialog-content"]');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("禁止携带", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "返回景点列表" }).click();
-  await expect(page).toHaveURL(/\/attractions$/);
-  await page.getByRole("checkbox", { name: "显示全部景点" }).click();
+  await page.getByRole("button", { name: "关闭弹窗" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { name: "显示全部景点" })).toBeChecked();
+
   await attractionCard(page, "珠海无名景点").getByRole("button", { name: "查看详情" }).click();
-  await expect(page).toHaveURL(/\/attractions\/e2e-zhu-d$/);
-  await expect(page.getByText("未配置", { exact: true })).toBeVisible();
-  await expect(page.getByText("暂无携宠政策")).toBeVisible();
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("未配置", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("暂无携宠政策")).toBeVisible();
 });
 
 test("E5 switching city requires deactivating the current trip", async ({ page }) => {
@@ -134,6 +138,11 @@ test("E7 keeps the scenic tab selected on list and detail", async ({ page }) => 
   );
 
   await attractionCard(page, "情侣路").getByRole("button", { name: "查看详情" }).click();
+  const dialog = page.locator('[data-slot="dialog-content"]');
+  await expect(dialog).toBeVisible();
+  await expect(page).toHaveURL(/\/attractions$/);
+  await page.getByRole("button", { name: "关闭弹窗" }).click();
+  await expect(dialog).toHaveCount(0);
   await expect(page.getByRole("tab", { name: "景区浏览" })).toHaveAttribute(
     "aria-selected",
     "true",
@@ -166,7 +175,7 @@ test("E10 exposes no city selector or admin controls but offers add actions", as
   await expect(page.getByLabel("地点类型筛选")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /编辑|保存|删除/ })).toHaveCount(0);
   await expect(
-    attractionCard(page, "情侣路").getByRole("button", { name: "加入第 1 天" }),
+    attractionCard(page, "情侣路").getByRole("combobox", { name: "添加到行程" }),
   ).toBeVisible();
   await expect(
     attractionCard(page, "情侣路").getByRole("button", { name: "暂不排期" }),

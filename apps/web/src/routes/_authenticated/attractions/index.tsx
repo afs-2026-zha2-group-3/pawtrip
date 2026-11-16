@@ -1,16 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PolicySubjectNotice } from "@/components/trip/policy-tags";
 import { useActiveTrip, usePolicySubjects, useTripCity } from "../../../lib/trip/selectors";
 import { tripActions } from "../../../lib/trip/store";
 import { attractionsQueryOptions } from "../../../queries/attractions";
 import { AttractionCard } from "./-attraction-card";
+import { AttractionDetailDialog } from "./-attraction-detail-dialog";
 
 export const Route = createFileRoute("/_authenticated/attractions/")({
   component: AttractionsPage,
@@ -27,14 +27,7 @@ function AttractionsPage() {
   const totalDays = active?.totalDays ?? 1;
   const [includeWithoutRules, setIncludeWithoutRules] = useState(false);
   const [page, setPage] = useState(1);
-  const [activeDay, setActiveDay] = useState("1");
-  const dayOptions = Array.from({ length: totalDays }, (_, index) => index + 1);
-
-  useEffect(() => {
-    if (Number(activeDay) > totalDays) {
-      setActiveDay(String(totalDays));
-    }
-  }, [activeDay, totalDays]);
+  const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null);
 
   const regionCode = active?.cityAdcode ?? "";
   const attractions = useQuery({
@@ -89,7 +82,6 @@ function AttractionsPage() {
 
   const data = attractions.data;
   const cityName = city?.adcode === active.cityAdcode ? city.name : active.cityAdcode;
-  const currentDay = Number(activeDay);
   const checkingAny = friendlyEmpty && anyAttractions.isPending;
   const anyExists = (anyAttractions.data?.totalElements ?? 0) > 0;
   const emptyTitle = includeWithoutRules
@@ -123,24 +115,6 @@ function AttractionsPage() {
 
       <PolicySubjectNotice subjects={policySubjects} />
 
-      <Tabs
-        value={activeDay}
-        onValueChange={(value) => {
-          if (value) setActiveDay(value);
-        }}
-      >
-        <TabsList aria-label="行程天数" className="max-w-full overflow-x-auto">
-          {dayOptions.map((day) => (
-            <TabsTrigger key={day} value={String(day)}>
-              第{day}天
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-      <p className="text-sm text-muted-foreground">
-        当前查看第 {activeDay} 天景点，可将景点加入第 {activeDay} 天或暂不排期。
-      </p>
-
       {data.items.length === 0 ? (
         <Empty>
           <EmptyHeader>
@@ -156,14 +130,9 @@ function AttractionsPage() {
             <AttractionCard
               key={attraction.poiId}
               attraction={attraction}
-              day={currentDay}
-              onOpen={() =>
-                void navigate({
-                  to: "/attractions/$poiId",
-                  params: { poiId: attraction.poiId },
-                })
-              }
-              onAddDay={() => tripActions.addStop(currentDay, attraction.poiId)}
+              totalDays={totalDays}
+              onOpen={() => setSelectedPoiId(attraction.poiId)}
+              onAddStop={(day) => tripActions.addStop(day, attraction.poiId)}
               onAddUnscheduled={() =>
                 tripActions.addStop("unscheduled", attraction.poiId)
               }
@@ -194,6 +163,13 @@ function AttractionsPage() {
             下一页
           </Button>
         </div>
+      ) : null}
+
+      {selectedPoiId ? (
+        <AttractionDetailDialog
+          poiId={selectedPoiId}
+          onClose={() => setSelectedPoiId(null)}
+        />
       ) : null}
     </main>
   );

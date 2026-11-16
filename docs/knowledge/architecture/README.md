@@ -68,7 +68,7 @@ com.pawtrip.server
 - `com.pawtrip.server.location` 新增用户端只读查询：`LocationQueryController` 暴露 `GET /api/locations/attractions` 与 `GET /api/locations/{poiId}`；两者仅要求登录（不要求 `ADMIN`），只读取数据库，不调用高德。
 - `GET /api/locations/attractions`：按激活行程的 `active.cityAdcode` 过滤 `type_group='attraction'`；默认只返回 `max_pets_per_person >= 1` 的景点，`includeWithoutRules=true` 返回该城市全部已保存景点。列表项在既有 `poiId`、`name`、`typeCode`、`typeGroup`、`address`、`regionCode`、`maxPetsPerPerson` 之外**新增 `petPolicies`**（与详情一致的 8 字段），为纯增量契约，既有筛选参数与分页字段不变。
 - `GET /api/locations/{poiId}`：返回已保存地点基础信息与 8 个政策字段 `petPolicies`；不返回照片、business 或原始 POI JSON；不存在返回 `404 LOCATION_NOT_FOUND`。
-- 前端 `/attractions` 与 `/attractions/$poiId` 读取激活行程城市；无激活行程（含仅有草稿）时展示“先创建或激活行程”空态且不请求列表；天 tab 由 `active.totalDays` 生成。列表卡片与详情提供“加入第 N 天”与“暂不排期”。
+- 前端 `/attractions` 读取激活行程城市；无激活行程（含仅有草稿）时展示“先创建或激活行程”空态且不请求列表；页面不展示天数 Tabs。列表卡片与详情弹窗提供「添加到行程」选择器与「暂不排期」：选择器选项由 `active.totalDays` 生成（第 1 天…第 N 天），选中即写入对应天。景点详情以居中弹窗在列表页内打开（对齐 paws 弹窗模式），关闭后列表筛选与分页保持；不再提供 `/attractions/$poiId` 独立路由。
 - 本能力不新增数据库迁移；E2E 夹具由 `scripts/seed-e2e-attractions.mjs` 写入临时 E2E 库，不触碰 `apps/server/data/pawtrip.db`。
 
 ### 前端行程上下文（trip-context）

@@ -11,19 +11,20 @@ import { PolicyTags } from "@/components/trip/policy-tags";
 import { matchAttractionPolicy } from "@/lib/trip/policy-match";
 import { usePolicySubjects } from "@/lib/trip/selectors";
 import type { AttractionSummary } from "../../../queries/attractions";
+import { DaySelect } from "./-day-select";
 import { PetFriendlyBadge } from "./-pet-friendly-badge";
 
 export function AttractionCard({
   attraction,
-  day,
+  totalDays,
   onOpen,
-  onAddDay,
+  onAddStop,
   onAddUnscheduled,
 }: {
   attraction: AttractionSummary;
-  day: number;
+  totalDays: number;
   onOpen: () => void;
-  onAddDay: () => void;
+  onAddStop: (day: number) => void;
   onAddUnscheduled: () => void;
 }) {
   const subjects = usePolicySubjects();
@@ -44,9 +45,11 @@ export function AttractionCard({
         <Button size="sm" variant="outline" onClick={onOpen}>
           查看详情
         </Button>
-        <Button size="sm" onClick={onAddDay}>
-          加入第 {day} 天
-        </Button>
+        <DaySelect
+          label="添加到行程"
+          totalDays={totalDays}
+          onSelectDay={onAddStop}
+        />
         <Button size="sm" variant="outline" onClick={onAddUnscheduled}>
           暂不排期
         </Button>
