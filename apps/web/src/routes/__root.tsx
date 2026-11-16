@@ -141,9 +141,13 @@ function AppTabs() {
   const auth = useQuery({ ...authQueryOptions, enabled: isClient });
   const activeTab = pathname === "/paws"
     ? "paws"
-    : pathname === "/admin/locations"
-      ? "locations"
-      : "home";
+    : pathname === "/cities"
+      ? "cities"
+      : pathname === "/admin/locations"
+        ? "locations"
+        : pathname === "/admin/cities"
+          ? "admin-cities"
+          : "home";
 
   return (
     <Tabs
@@ -151,8 +155,12 @@ function AppTabs() {
       onValueChange={(value) => {
         if (value === "paws") {
           void navigate({ to: "/paws" });
+        } else if (value === "cities") {
+          void navigate({ to: "/cities" });
         } else if (value === "locations") {
           void navigate({ to: "/admin/locations" });
+        } else if (value === "admin-cities") {
+          void navigate({ to: "/admin/cities" });
         } else {
           void navigate({ to: "/" });
         }
@@ -161,8 +169,12 @@ function AppTabs() {
       <TabsList aria-label="主导航">
         <TabsTrigger value="home">Home</TabsTrigger>
         <TabsTrigger value="paws">Paws</TabsTrigger>
+        <TabsTrigger value="cities">城市浏览</TabsTrigger>
         {auth.data?.role === "ADMIN" ? (
-          <TabsTrigger value="locations">地点管理</TabsTrigger>
+          <>
+            <TabsTrigger value="locations">地点管理</TabsTrigger>
+            <TabsTrigger value="admin-cities">城市管理</TabsTrigger>
+          </>
         ) : null}
       </TabsList>
     </Tabs>
