@@ -19,6 +19,7 @@ import { Route as AuthenticatedAdminCitiesRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminLocationsRouteImport } from './routes/_authenticated/admin/locations'
 import { Route as AuthenticatedAttractionsIndexRouteImport } from './routes/_authenticated/attractions/index'
 import { Route as AuthenticatedAttractionsPoiIdRouteImport } from './routes/_authenticated/attractions/$poiId'
+import { Route as AuthenticatedDestinationsAdcodePolicyRouteImport } from './routes/_authenticated/destinations/$adcode/policy'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -74,6 +75,12 @@ const AuthenticatedAttractionsPoiIdRoute =
     path: '/attractions/$poiId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedDestinationsAdcodePolicyRoute =
+  AuthenticatedDestinationsAdcodePolicyRouteImport.update({
+    id: '/destinations/$adcode/policy',
+    path: '/destinations/$adcode/policy',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/admin/locations': typeof AuthenticatedAdminLocationsRoute
   '/attractions/$poiId': typeof AuthenticatedAttractionsPoiIdRoute
   '/attractions/': typeof AuthenticatedAttractionsIndexRoute
+  '/destinations/$adcode/policy': typeof AuthenticatedDestinationsAdcodePolicyRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -96,6 +104,7 @@ export interface FileRoutesByTo {
   '/admin/locations': typeof AuthenticatedAdminLocationsRoute
   '/attractions/$poiId': typeof AuthenticatedAttractionsPoiIdRoute
   '/attractions': typeof AuthenticatedAttractionsIndexRoute
+  '/destinations/$adcode/policy': typeof AuthenticatedDestinationsAdcodePolicyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -109,6 +118,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/locations': typeof AuthenticatedAdminLocationsRoute
   '/_authenticated/attractions/$poiId': typeof AuthenticatedAttractionsPoiIdRoute
   '/_authenticated/attractions/': typeof AuthenticatedAttractionsIndexRoute
+  '/_authenticated/destinations/$adcode/policy': typeof AuthenticatedDestinationsAdcodePolicyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/admin/locations'
     | '/attractions/$poiId'
     | '/attractions/'
+    | '/destinations/$adcode/policy'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/admin/locations'
     | '/attractions/$poiId'
     | '/attractions'
+    | '/destinations/$adcode/policy'
   id:
     | '__root__'
     | '/_authenticated'
@@ -145,6 +157,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/locations'
     | '/_authenticated/attractions/$poiId'
     | '/_authenticated/attractions/'
+    | '/_authenticated/destinations/$adcode/policy'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -224,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAttractionsPoiIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/destinations/$adcode/policy': {
+      id: '/_authenticated/destinations/$adcode/policy'
+      path: '/destinations/$adcode/policy'
+      fullPath: '/destinations/$adcode/policy'
+      preLoaderRoute: typeof AuthenticatedDestinationsAdcodePolicyRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -236,6 +256,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminLocationsRoute: typeof AuthenticatedAdminLocationsRoute
   AuthenticatedAttractionsPoiIdRoute: typeof AuthenticatedAttractionsPoiIdRoute
   AuthenticatedAttractionsIndexRoute: typeof AuthenticatedAttractionsIndexRoute
+  AuthenticatedDestinationsAdcodePolicyRoute: typeof AuthenticatedDestinationsAdcodePolicyRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -247,6 +268,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminLocationsRoute: AuthenticatedAdminLocationsRoute,
   AuthenticatedAttractionsPoiIdRoute: AuthenticatedAttractionsPoiIdRoute,
   AuthenticatedAttractionsIndexRoute: AuthenticatedAttractionsIndexRoute,
+  AuthenticatedDestinationsAdcodePolicyRoute:
+    AuthenticatedDestinationsAdcodePolicyRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

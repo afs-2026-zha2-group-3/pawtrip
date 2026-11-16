@@ -11,14 +11,14 @@
 
 ### Requirement: 顶部居中横向导航
 
-应用 SHALL 在登录后的页面顶部居中展示横向导航，包含 `Home`、`Paws` 与 `城市浏览` 三个 Tab，并在 `/`、`/paws` 与 `/cities` 保持一致；已登录时 SHALL 同时显示 `Log out` 入口。
+应用 SHALL 在登录后的页面顶部居中展示横向导航，包含 `Home`、`Paws`、`城市浏览` 与 `交通规则` 四个 Tab，并在 `/`、`/paws`、`/cities` 与 `/transport-rules` 保持一致；已登录时 SHALL 同时显示 `Log out` 入口。
 
 #### Scenario: 打开任意受保护页面
 
-- **GIVEN** 已登录用户打开 `/`、`/paws` 或 `/cities`
+- **GIVEN** 已登录用户打开 `/`、`/paws`、`/cities` 或 `/transport-rules`
 - **WHEN** 页面渲染
 - **THEN** 页面顶部居中显示横向 Tab 导航
-- **AND** 导航包含 `Home`、`Paws` 与 `城市浏览` 三个 Tab
+- **AND** 导航包含 `Home`、`Paws`、`城市浏览` 与 `交通规则` 四个 Tab
 - **AND** 顶部显示 `Log out`
 
 ### Requirement: Tab 与路由同步
@@ -60,14 +60,14 @@
 
 ### Requirement: 受保护路由与登录跳转
 
-`/`、`/paws` 与 `/cities` SHALL 位于登录守卫之下。未登录用户访问任一路由时 MUST 跳转 `/login`，且 MUST NOT 展示受保护页面内容。登录成功后 SHALL 回到 `/`；登出前 MUST 通过确认弹窗二次确认，确认且请求成功后 SHALL 回到 `/login`，并 SHALL 清除浏览器端持久化的已选目的地。路由守卫只负责界面引导，服务端 API 仍独立执行认证。
+`/`、`/paws`、`/cities` 与 `/transport-rules` SHALL 位于登录守卫之下。未登录用户访问任一路由时 MUST 跳转 `/login`，且 MUST NOT 展示受保护页面内容。登录成功后 SHALL 回到 `/`；登出前 MUST 通过确认弹窗二次确认，确认且请求成功后 SHALL 回到 `/login`，并 SHALL 清除浏览器端持久化的已选目的地。路由守卫只负责界面引导，服务端 API 仍独立执行认证。
 
 #### Scenario: 未登录访问首页
 
 - **GIVEN** 浏览器没有有效登录会话
-- **WHEN** 访问 `/`、`/paws` 或 `/cities`
+- **WHEN** 访问 `/`、`/paws`、`/cities` 或 `/transport-rules`
 - **THEN** 浏览器地址变为 `/login`
-- **AND** 不展示问候语、Paws 或目的地选择内容
+- **AND** 不展示问候语、Paws、目的地选择或交通规则内容
 
 #### Scenario: 登录后进入首页
 

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
@@ -153,7 +153,7 @@ function CitiesPage() {
                   <CardDescription>{candidate.province}</CardDescription>
                 </CardHeader>
                 {/* TODO: 政策收录 Badge 与档案品种禁养 Badge——数据源确定后恢复 */}
-                <CardFooter>
+                <CardFooter className="gap-2">
                   <Button
                     size="sm"
                     title={isSelected ? "点击取消选定" : undefined}
@@ -161,6 +161,14 @@ function CitiesPage() {
                   >
                     {isSelected ? "已选定" : "选定"}
                   </Button>
+                  <Link
+                    to="/destinations/$adcode/policy"
+                    params={{ adcode: candidate.adcode }}
+                    aria-label={`查看${candidate.name}的城市政策`}
+                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                  >
+                    查看政策
+                  </Link>
                 </CardFooter>
               </Card>
             );
