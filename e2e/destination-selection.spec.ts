@@ -44,7 +44,7 @@ async function candidateCount(page: Page): Promise<number> {
 }
 
 // E1 — 候选列表：城市级行政区卡片（政策收录判断 TODO，暂不展示 Badge）
-test("E1 shows city cards including both pilot cities", async ({ page }) => {
+test("E1 shows all city-level candidates", async ({ page }) => {
   await signIn(page);
   await openCities(page);
 
@@ -225,7 +225,7 @@ test("E15 does not expose policy detail content or entry on /cities", async ({ p
 });
 
 // E16 — 反向：筛选仅政策维度，无设施/评价参与（Non-goal Release 2）
-test("E16 filter is policy-only without facility or rating dimensions", async ({ page }) => {
+test("E16 filter offers only the pet-friendly dimension without facility or rating", async ({ page }) => {
   await signIn(page);
   await openCities(page);
 

@@ -41,7 +41,7 @@
 
 - [x] 6.1 后端全量测试——验证：`./mvnw test` 全绿（含既有回归）
 - [x] 6.2 E2E 全量——验证：`npm run test:e2e` 全绿（与 CI 相同用例；fixme 门控用例除外）
-- [x] 6.3 规格覆盖核对——验证：`openspec validate destination-selection --strict` 通过；7 条 requirement 的 scenario 与 A/E 用例对照无遗漏（门控项显式标注）；diff 审查确认未新增档案端点、未改 `/paws`（Non-goal 反向验证）
+- [x] 6.3 规格覆盖核对——验证：`openspec validate destination-selection --strict` 通过；两份 delta spec 共 12 条 requirement（destination-selection 6 + web-app-shell 6）的 scenario 与 A/E 用例对照无遗漏（门控项显式标注）；diff 审查确认未新增档案端点、未改 `/paws`（Non-goal 反向验证）
 
 ## Workflow follow-up
 
