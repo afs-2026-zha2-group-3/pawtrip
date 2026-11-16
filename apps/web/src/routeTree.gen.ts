@@ -13,7 +13,9 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedPawsRouteImport } from './routes/_authenticated/paws'
+import { Route as AuthenticatedCitiesRouteImport } from './routes/_authenticated/cities'
 import { Route as AuthenticatedAdminLocationsRouteImport } from './routes/_authenticated/admin/locations'
+import { Route as AuthenticatedAdminCitiesRouteImport } from './routes/_authenticated/admin/cities'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -34,10 +36,21 @@ const AuthenticatedPawsRoute = AuthenticatedPawsRouteImport.update({
   path: '/paws',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCitiesRoute = AuthenticatedCitiesRouteImport.update({
+  id: '/cities',
+  path: '/cities',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAdminLocationsRoute =
   AuthenticatedAdminLocationsRouteImport.update({
     id: '/admin/locations',
     path: '/admin/locations',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminCitiesRoute =
+  AuthenticatedAdminCitiesRouteImport.update({
+    id: '/admin/cities',
+    path: '/admin/cities',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 
@@ -45,34 +58,48 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/paws': typeof AuthenticatedPawsRoute
+  '/cities': typeof AuthenticatedCitiesRoute
   '/admin/locations': typeof AuthenticatedAdminLocationsRoute
+  '/admin/cities': typeof AuthenticatedAdminCitiesRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/paws': typeof AuthenticatedPawsRoute
+  '/cities': typeof AuthenticatedCitiesRoute
   '/': typeof AuthenticatedIndexRoute
   '/admin/locations': typeof AuthenticatedAdminLocationsRoute
+  '/admin/cities': typeof AuthenticatedAdminCitiesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/paws': typeof AuthenticatedPawsRoute
+  '/_authenticated/cities': typeof AuthenticatedCitiesRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/admin/locations': typeof AuthenticatedAdminLocationsRoute
+  '/_authenticated/admin/cities': typeof AuthenticatedAdminCitiesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/paws' | '/admin/locations'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/paws'
+    | '/cities'
+    | '/admin/locations'
+    | '/admin/cities'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/paws' | '/' | '/admin/locations'
+  to: '/login' | '/paws' | '/cities' | '/' | '/admin/locations' | '/admin/cities'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
     | '/_authenticated/paws'
+    | '/_authenticated/cities'
     | '/_authenticated/'
     | '/_authenticated/admin/locations'
+    | '/_authenticated/admin/cities'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -110,6 +137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPawsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/cities': {
+      id: '/_authenticated/cities'
+      path: '/cities'
+      fullPath: '/cities'
+      preLoaderRoute: typeof AuthenticatedCitiesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin/locations': {
       id: '/_authenticated/admin/locations'
       path: '/admin/locations'
@@ -117,19 +151,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLocationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/cities': {
+      id: '/_authenticated/admin/cities'
+      path: '/admin/cities'
+      fullPath: '/admin/cities'
+      preLoaderRoute: typeof AuthenticatedAdminCitiesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedPawsRoute: typeof AuthenticatedPawsRoute
+  AuthenticatedCitiesRoute: typeof AuthenticatedCitiesRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAdminLocationsRoute: typeof AuthenticatedAdminLocationsRoute
+  AuthenticatedAdminCitiesRoute: typeof AuthenticatedAdminCitiesRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedPawsRoute: AuthenticatedPawsRoute,
+  AuthenticatedCitiesRoute: AuthenticatedCitiesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAdminLocationsRoute: AuthenticatedAdminLocationsRoute,
+  AuthenticatedAdminCitiesRoute: AuthenticatedAdminCitiesRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
