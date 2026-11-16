@@ -138,3 +138,11 @@ badge 三态由 `maxPetsPerPerson` 派生：`>=1` → “宠物友好”，`0` �
 ## Open Questions
 
 无。分页控件形态、省级叶节点实现细节均在 P3 任务中按现有模式落地，不改变本设计的接口或范围。
+
+## 2026-11-17 修订记录（对齐当前代码）
+
+- 查询上下文由“已选目的地”改为激活行程：`/attractions` 读取 `active.cityAdcode`；无激活行程（含仅有草稿）时展示“先创建或激活行程”空态并提供 `/cities`、`/trips` 入口。`pawtrip.selectedDestination` 已被 `add-frontend-trip-context` 移除。
+- 景点详情由 `/attractions/$poiId` 独立路由改为列表页内居中弹窗；打开/关闭不改变 URL，关闭后保留筛选与分页。该调整由 `refine-attraction-browse` 引入。
+- `/cities` 选定城市后创建行程草稿并停留在城市详情，不再自动跳转 `/attractions`；“景区浏览”入口为顶部 Tab。
+- 逐宠物政策 tag 与「添加到行程」由 `add-frontend-trip-context` / `refine-attraction-browse` 提供，不属于本变更的验收范围。
+- 后端只读查询 API 与默认 `maxPetsPerPerson >= 1` 口径保持不变。

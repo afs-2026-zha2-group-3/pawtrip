@@ -157,3 +157,10 @@ city_banned_dog_breed
 ## Open Questions
 
 无。珠海名单的具体条文与日期在实现时按公开发布页面录入；若录入时发现名单版本更新，仍按同一结构写入 V15，不改设计。
+
+## 2026-11-17 修订记录（对齐当前代码）
+
+- 匹配主体改为统一政策匹配主体：存在激活行程且已绑定宠物时仅判定该宠物，否则判定全部宠物，并以宠物名 tag 展示；页面不再取"第一只带犬种的宠物"传入 `breedId`。`GET /api/cities/{adcode}/pet-policy` 仍保留可选 `breedId`，页面以 `breedId=null` 查询后在前端完成逐宠物判定。
+- 政策入口从候选卡「查看政策」迁移到城市详情视图的「查看完整城市政策」；选定城市后 `/cities` 展示城市详情。
+- 管理员维护可携带犬种改为复用 `/admin/cities` 城市管理页与 `PATCH /api/admin/cities/{adcode}` 的 `allowedDogBreedIds` 整体替换；原 `GET/PUT /api/admin/cities/{adcode}/allowed-breeds` 未落地。
+- 上述调整由 `add-frontend-trip-context` 与 `location-and-city-policy-editing` 引入，本变更实现随之对齐。
