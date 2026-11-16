@@ -56,10 +56,12 @@ class DogBreedSchemaMigrationTest {
 
 			long pastoralDogId = insertDogBreed(connection, "测试牧羊犬", 0);
 			long tibetanMastiffId = insertDogBreed(connection, "测试獒犬", 1);
+			// V16 全城市种子已为 990001 注入允许品种，断言以插入前基线计
+			int seeded = countCityAllowedDogBreeds(connection, "990001");
 			insertCityAllowedDogBreed(connection, "990001", pastoralDogId);
 			insertCityAllowedDogBreed(connection, "990001", tibetanMastiffId);
 
-			assertThat(countCityAllowedDogBreeds(connection, "990001")).isEqualTo(2);
+			assertThat(countCityAllowedDogBreeds(connection, "990001")).isEqualTo(seeded + 2);
 			assertThat(selectOfficialAggressive(connection, tibetanMastiffId)).isEqualTo(1);
 		}
 	}
@@ -102,11 +104,12 @@ class DogBreedSchemaMigrationTest {
 			insertRegion(connection, "990001", "990000", "city");
 			long firstBreedId = insertDogBreed(connection, "测试犬种一", 0);
 			long secondBreedId = insertDogBreed(connection, "测试犬种二", 1);
+			int seeded = countCityAllowedDogBreeds(connection, "990001");
 			insertCityAllowedDogBreed(connection, "990001", firstBreedId);
 			insertCityAllowedDogBreed(connection, "990001", secondBreedId);
 
 			deleteById(connection, "dog_breed", "id", firstBreedId);
-			assertThat(countCityAllowedDogBreeds(connection, "990001")).isEqualTo(1);
+			assertThat(countCityAllowedDogBreeds(connection, "990001")).isEqualTo(seeded + 1);
 
 			deleteById(connection, "administrative_region", "adcode", "990001");
 			assertThat(countCityAllowedDogBreeds(connection, "990001")).isZero();
