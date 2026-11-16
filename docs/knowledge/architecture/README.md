@@ -73,6 +73,13 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 - 首页通过 TanStack Query 在客户端请求同源 `/api/greeting`，仅展示响应中的 `message`，不在前端硬编码文案。
 - 错误响应统一为 RFC 9457 Problem Details（`application/problem+json`），并扩展稳定字段 `code`；成功响应不套统一 envelope。
 
+### 宠物接口与品种
+
+- 宠物接口：`GET/POST /api/pets`、`GET/PUT/DELETE /api/pets/{id}`，均需登录且只能访问本人宠物；请求体包含 `name`、`petType`、`weightKg`、`shoulderHeightCm`、`hasLeash`、`hasVaccinationProof`、可选 `photo`（base64）与 `dogBreedId`。
+- 品种：`dog_breed` 表保存 20 条常见犬种；`GET /api/dog-breeds` 按名称升序返回 `id`、`name`、`officialAggressive`。`pet.dog_breed_id` 为可空外键（`ON DELETE SET NULL`）。
+- 校验：类型为 `DOG` 时 `dogBreedId` 必填且必须存在；类型为 `CAT` 时不得携带品种；历史无品种的狗可读取，详情显示“未设置”，编辑保存前必须补选。
+- 响应：宠物详情与列表返回嵌套 `dogBreed` 对象；无品种时为 `null`。
+
 ## 认证与授权
 
 - 登录方式：Spring Security 表单登录（`formLogin`），登录处理地址 `POST /api/auth/login`，使用服务端会话 `JSESSIONID`；不使用 JWT，也不在前端存储认证令牌。
@@ -114,7 +121,7 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 - UI 组件统一来自 `apps/web/src/components/ui/`，使用 shadcn/ui 的 Base UI 版本；不引入 Radix 版本或其他 UI 组件库。
 - 宠物卡片使用 React Bits Tilted Card 的 TS + Tailwind 变体，以源码形式纳入 `apps/web/src/components/ui/tilted-card.tsx`，不新增运行时依赖，也不引入自定义 CSS 类。
 - 页面结构与交互只通过组件库组合和 Tailwind 布局工具类表达；`apps/web/src/styles.css` 仅保留 Tailwind、`shadcn/tailwind.css` 与主题令牌，不新增自定义类。
-- 应用外壳位于 `apps/web/src/routes/__root.tsx`：顶部居中的 `Home` / `Paws` 两个 Tab 与真实路由 `/`、`/paws` 同步；`/` 展示问候语，`/paws` 展示当前用户的宠物画廊并支持查看、编辑、新增与删除。
+- 应用外壳位于 `apps/web/src/routes/__root.tsx`：顶部居中的 `Home` / `Paws` 两个 Tab 与真实路由 `/`、`/paws` 同步；`/` 展示问候语，`/paws` 展示当前用户的宠物画廊并支持查看、编辑、新增与删除；狗类型在表单中必须从 `GET /api/dog-breeds` 选择品种。
 
 ### 前端服务端状态
 

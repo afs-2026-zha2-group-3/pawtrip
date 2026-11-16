@@ -39,6 +39,22 @@ test("validates required pet fields before submitting", async ({ page }) => {
   await expect(dialog.getByText("体重必须为大于 0 的数字。")).toBeVisible();
   await expect(dialog.getByText("肩高必须为大于 0 的数字。")).toBeVisible();
 
+  await dialog.getByLabel("名字").fill("Rex");
+  await dialog.getByRole("combobox", { name: "宠物类型" }).click();
+  await page.getByRole("option", { name: "狗" }).click();
+  await dialog.getByLabel("体重（kg）").fill("10");
+  await dialog.getByLabel("肩高（cm）").fill("40");
+  await dialog.getByRole("button", { name: "创建宠物" }).click();
+  await expect(dialog.getByText("请选择狗的品种。")).toBeVisible();
+
+  await dialog.getByRole("combobox", { name: "狗的品种" }).click();
+  await page.getByRole("option", { name: "柯基犬" }).click();
+  await dialog.getByRole("combobox", { name: "宠物类型" }).click();
+  await page.getByRole("option", { name: "猫" }).click();
+  await expect(
+    dialog.getByRole("combobox", { name: "狗的品种" }),
+  ).toHaveCount(0);
+
   await dialog.getByRole("button", { name: "取消" }).click();
   await expect(dialog).toHaveCount(0);
 });
@@ -53,6 +69,8 @@ test("creates, views, edits and deletes a pet", async ({ page }) => {
   await createDialog.getByLabel("名字").fill("Mimi");
   await createDialog.getByRole("combobox", { name: "宠物类型" }).click();
   await page.getByRole("option", { name: "狗" }).click();
+  await createDialog.getByRole("combobox", { name: "狗的品种" }).click();
+  await page.getByRole("option", { name: "柯基犬" }).click();
   await createDialog.getByLabel("体重（kg）").fill("6.5");
   await createDialog.getByLabel("肩高（cm）").fill("35");
   await createDialog.getByRole("checkbox", { name: "有牵引绳" }).click();
@@ -77,6 +95,7 @@ test("creates, views, edits and deletes a pet", async ({ page }) => {
   await expect(detail.getByRole("heading", { name: "Mimi" })).toBeVisible();
   await expect(detail.getByText("6.5 kg")).toBeVisible();
   await expect(detail.getByText("35 cm")).toBeVisible();
+  await expect(detail.getByText("柯基犬")).toBeVisible();
   await expect(detail.getByText("有", { exact: true })).toHaveCount(2);
 
   await detail.getByRole("button", { name: "编辑" }).click();
@@ -85,11 +104,14 @@ test("creates, views, edits and deletes a pet", async ({ page }) => {
   ).toBeVisible();
   await detail.getByLabel("名字").fill("Mimi Updated");
   await detail.getByLabel("体重（kg）").fill("7");
+  await detail.getByRole("combobox", { name: "狗的品种" }).click();
+  await page.getByRole("option", { name: "柴犬" }).click();
   await detail.getByRole("button", { name: "保存" }).click();
   await expect(
     detail.getByRole("heading", { name: "Mimi Updated" }),
   ).toBeVisible();
   await expect(detail.getByText("7 kg")).toBeVisible();
+  await expect(detail.getByText("柴犬")).toBeVisible();
   await detail.getByRole("button", { name: "关闭", exact: true }).click();
   await expect(detail).toHaveCount(0);
   await expect(
