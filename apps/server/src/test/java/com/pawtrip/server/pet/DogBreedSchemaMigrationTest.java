@@ -20,6 +20,23 @@ import org.junit.jupiter.api.io.TempDir;
 class DogBreedSchemaMigrationTest {
 
 	@Test
+	void seedsCommonDogBreeds(@TempDir Path tempDir) throws SQLException {
+		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("seeded-dog-breeds.db") + "?foreign_keys=on";
+		Flyway.configure().dataSource(jdbcUrl, null, null).load().migrate();
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			assertThat(count(connection, "SELECT COUNT(*) FROM dog_breed")).isEqualTo(20);
+			assertThat(count(connection,
+					"SELECT COUNT(*) FROM dog_breed WHERE official_aggressive = 1")).isEqualTo(9);
+			assertThat(count(connection,
+					"SELECT COUNT(*) FROM dog_breed WHERE official_aggressive = 0")).isEqualTo(11);
+			assertThat(officialAggressive(connection, "藏獒")).isEqualTo(1);
+			assertThat(officialAggressive(connection, "中华田园犬")).isEqualTo(1);
+			assertThat(officialAggressive(connection, "金毛寻回犬")).isZero();
+		}
+	}
+
+	@Test
 	void createsDogBreedAndCityAllowedDogBreedTables(@TempDir Path tempDir) throws SQLException {
 		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("dog-breeds.db") + "?foreign_keys=on";
 		Flyway.configure().dataSource(jdbcUrl, null, null).target("10").load().migrate();
@@ -37,8 +54,8 @@ class DogBreedSchemaMigrationTest {
 			assertThat(columns(connection, "city_allowed_dog_breed"))
 				.containsExactlyInAnyOrder("adcode", "dog_breed_id");
 
-			long pastoralDogId = insertDogBreed(connection, "中华田园犬", 0);
-			long tibetanMastiffId = insertDogBreed(connection, "藏獒", 1);
+			long pastoralDogId = insertDogBreed(connection, "测试牧羊犬", 0);
+			long tibetanMastiffId = insertDogBreed(connection, "测试獒犬", 1);
 			insertCityAllowedDogBreed(connection, "990001", pastoralDogId);
 			insertCityAllowedDogBreed(connection, "990001", tibetanMastiffId);
 
@@ -55,13 +72,14 @@ class DogBreedSchemaMigrationTest {
 		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
 			insertRegion(connection, "990000", null, "province");
 			insertRegion(connection, "990001", "990000", "city");
-			long breedId = insertDogBreed(connection, "中华田园犬", 0);
+			long breedId = insertDogBreed(connection, "测试犬种", 0);
 
-			assertThatThrownBy(() -> insertDogBreed(connection, "中华田园犬", 0))
+			assertThatThrownBy(() -> insertDogBreed(connection, "测试犬种", 0))
 				.isInstanceOf(SQLException.class);
 			assertThatThrownBy(() -> insertDogBreed(connection, "  ", 0)).isInstanceOf(SQLException.class);
-			assertThatThrownBy(() -> insertDogBreed(connection, "藏獒", 2)).isInstanceOf(SQLException.class);
-			assertThatThrownBy(() -> insertDogBreedWithoutOfficialFlag(connection, "藏獒"))
+			assertThatThrownBy(() -> insertDogBreed(connection, "无效标记测试犬种", 2))
+				.isInstanceOf(SQLException.class);
+			assertThatThrownBy(() -> insertDogBreedWithoutOfficialFlag(connection, "缺少标记测试犬种"))
 				.isInstanceOf(SQLException.class);
 
 			insertCityAllowedDogBreed(connection, "990001", breedId);
@@ -82,8 +100,8 @@ class DogBreedSchemaMigrationTest {
 		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
 			insertRegion(connection, "990000", null, "province");
 			insertRegion(connection, "990001", "990000", "city");
-			long firstBreedId = insertDogBreed(connection, "中华田园犬", 0);
-			long secondBreedId = insertDogBreed(connection, "藏獒", 1);
+			long firstBreedId = insertDogBreed(connection, "测试犬种一", 0);
+			long secondBreedId = insertDogBreed(connection, "测试犬种二", 1);
 			insertCityAllowedDogBreed(connection, "990001", firstBreedId);
 			insertCityAllowedDogBreed(connection, "990001", secondBreedId);
 
@@ -152,6 +170,25 @@ class DogBreedSchemaMigrationTest {
 				assertThat(result.next()).isTrue();
 				return result.getInt("official_aggressive");
 			}
+		}
+	}
+
+	private static int officialAggressive(Connection connection, String name) throws SQLException {
+		try (PreparedStatement query = connection.prepareStatement(
+				"SELECT official_aggressive FROM dog_breed WHERE name = ?")) {
+			query.setString(1, name);
+			try (ResultSet result = query.executeQuery()) {
+				assertThat(result.next()).isTrue();
+				return result.getInt("official_aggressive");
+			}
+		}
+	}
+
+	private static int count(Connection connection, String sql) throws SQLException {
+		try (Statement statement = connection.createStatement();
+				ResultSet result = statement.executeQuery(sql)) {
+			assertThat(result.next()).isTrue();
+			return result.getInt(1);
 		}
 	}
 
