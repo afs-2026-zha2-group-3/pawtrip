@@ -3,7 +3,7 @@
 - Gate: G3 (Merge & Archive)
 - Change id: `add-city-personalized-recommendation`（归档目录 `2026-11-17-add-city-personalized-recommendation`）
 - Inputs:
-  - living-merge / archive: `npx openspec archive add-city-personalized-recommendation --yes` 成功；Living Spec `destination-selection`（+3 Requirement）与 `paws-page`（+1 新增 / ~1 修改）已同步；`openspec validate --all` 26 passed / 0 failed；`openspec list` 仅剩 main 自带的 `2026-11-17-city-browse-policy-panel`（非本分支范围）
+  - living-merge / archive: 归档 PR #95（`archive/city-recommendation-and-itinerary-export` → main）；`npx openspec archive add-city-personalized-recommendation --yes` 成功；Living Spec `destination-selection`（+3 Requirement）与 `paws-page`（+1 新增 / ~1 修改）已同步；`openspec validate --all` 26 passed / 0 failed；`openspec list` 仅剩 main 自带的 `2026-11-17-city-browse-policy-panel`（非本分支范围）
   - change-summary: 归档目录 `change-summary.md`
   - archive completeness: proposal、design、tasks（30/30 [x]）、ATDD、DoV、alignment、G1/G2 决策、spec delta 与 change-summary 齐备；CI 证据共用同分支 `2026-11-17-export-itinerary-pdf/ci-report.md`
 - Findings:
