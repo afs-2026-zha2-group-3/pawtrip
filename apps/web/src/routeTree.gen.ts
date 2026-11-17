@@ -13,6 +13,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedCitiesRouteImport } from './routes/_authenticated/cities'
+import { Route as AuthenticatedItineraryRouteImport } from './routes/_authenticated/itinerary'
 import { Route as AuthenticatedPawsRouteImport } from './routes/_authenticated/paws'
 import { Route as AuthenticatedTransportRulesRouteImport } from './routes/_authenticated/transport-rules'
 import { Route as AuthenticatedTripsRouteImport } from './routes/_authenticated/trips'
@@ -38,6 +39,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedCitiesRoute = AuthenticatedCitiesRouteImport.update({
   id: '/cities',
   path: '/cities',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedItineraryRoute = AuthenticatedItineraryRouteImport.update({
+  id: '/itinerary',
+  path: '/itinerary',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPawsRoute = AuthenticatedPawsRouteImport.update({
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/cities': typeof AuthenticatedCitiesRoute
+  '/itinerary': typeof AuthenticatedItineraryRoute
   '/paws': typeof AuthenticatedPawsRoute
   '/transport-rules': typeof AuthenticatedTransportRulesRoute
   '/trips': typeof AuthenticatedTripsRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/cities': typeof AuthenticatedCitiesRoute
+  '/itinerary': typeof AuthenticatedItineraryRoute
   '/paws': typeof AuthenticatedPawsRoute
   '/transport-rules': typeof AuthenticatedTransportRulesRoute
   '/trips': typeof AuthenticatedTripsRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/cities': typeof AuthenticatedCitiesRoute
+  '/_authenticated/itinerary': typeof AuthenticatedItineraryRoute
   '/_authenticated/paws': typeof AuthenticatedPawsRoute
   '/_authenticated/transport-rules': typeof AuthenticatedTransportRulesRoute
   '/_authenticated/trips': typeof AuthenticatedTripsRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/cities'
+    | '/itinerary'
     | '/paws'
     | '/transport-rules'
     | '/trips'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/cities'
+    | '/itinerary'
     | '/paws'
     | '/transport-rules'
     | '/trips'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/_authenticated/cities'
+    | '/_authenticated/itinerary'
     | '/_authenticated/paws'
     | '/_authenticated/transport-rules'
     | '/_authenticated/trips'
@@ -192,6 +204,13 @@ declare module '@tanstack/react-router' {
       path: '/cities'
       fullPath: '/cities'
       preLoaderRoute: typeof AuthenticatedCitiesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/itinerary': {
+      id: '/_authenticated/itinerary'
+      path: '/itinerary'
+      fullPath: '/itinerary'
+      preLoaderRoute: typeof AuthenticatedItineraryRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/paws': {
@@ -248,6 +267,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedCitiesRoute: typeof AuthenticatedCitiesRoute
+  AuthenticatedItineraryRoute: typeof AuthenticatedItineraryRoute
   AuthenticatedPawsRoute: typeof AuthenticatedPawsRoute
   AuthenticatedTransportRulesRoute: typeof AuthenticatedTransportRulesRoute
   AuthenticatedTripsRoute: typeof AuthenticatedTripsRoute
@@ -260,6 +280,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCitiesRoute: AuthenticatedCitiesRoute,
+  AuthenticatedItineraryRoute: AuthenticatedItineraryRoute,
   AuthenticatedPawsRoute: AuthenticatedPawsRoute,
   AuthenticatedTransportRulesRoute: AuthenticatedTransportRulesRoute,
   AuthenticatedTripsRoute: AuthenticatedTripsRoute,

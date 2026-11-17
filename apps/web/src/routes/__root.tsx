@@ -150,7 +150,7 @@ function AppTabs() {
         ? "cities"
         : pathname === "/transport-rules"
           ? "transport-rules"
-          : pathname === "/trips"
+          : pathname === "/trips" || pathname === "/itinerary"
             ? "trips"
             : pathname === "/admin/locations"
               ? "locations"
