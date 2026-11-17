@@ -5,6 +5,7 @@ import {
   locationTypesQueryOptions,
   locationsQueryOptions,
   mapLocationsQueryOptions,
+  nearbyPetServicesQueryOptions,
 } from "./locations";
 
 const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>();
@@ -147,6 +148,25 @@ describe("location browsing queries", () => {
       "/api/locations?regionCode=440400&typeGroup=hotel&petFriendlyOnly=true&nearPoiId=poi-anchor&page=1&pageSize=100",
       "/api/locations?regionCode=440400&typeGroup=hotel&petFriendlyOnly=true&nearPoiId=poi-anchor&page=2&pageSize=100",
     ]);
+
+    vi.unstubAllGlobals();
+  });
+
+  it("builds the nearby pet services URL", async () => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(jsonResponse({ hospital: null, supplies: null })),
+    );
+
+    const data = await nearbyPetServicesQueryOptions("poi/a").queryFn?.({
+      signal: new AbortController().signal,
+    } as never);
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      "/api/locations/poi%2Fa/nearby-services",
+    );
+    expect(data).toEqual({ hospital: null, supplies: null });
 
     vi.unstubAllGlobals();
   });
