@@ -1,49 +1,45 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import {
-  confirmDraft,
+  confirmTripDialog,
   openCities,
+  openTripDialog,
   resetTrips,
-  selectCity,
-  setDraftDays,
+  setTripDates,
   signIn,
 } from "./trip-helpers";
-
-async function openDraft(page: Page, city = "杭州市") {
-  await openCities(page);
-  await selectCity(page, city);
-}
 
 test.beforeEach(async ({ page }) => {
   await signIn(page);
   await resetTrips(page);
 });
 
-test("defaults to one day and confirms a one-day trip", async ({ page }) => {
-  await openDraft(page);
-  const panel = page.getByTestId("trip-panel");
-  const input = panel.getByRole("textbox", { name: "行程天数" });
-  await expect(input).toHaveValue("1");
-  await expect(page.getByTestId("trip-panel-confirm")).toBeEnabled();
+test("defaults to a one-day trip when start and end are the same day", async ({
+  page,
+}) => {
+  await openCities(page);
+  const dialog = await openTripDialog(page, "杭州市");
+  await dialog.getByLabel("开始日期").fill("2026-12-01");
+  await dialog.getByLabel("结束日期").fill("2026-12-01");
+  await expect(dialog.getByText("行程共 1 天")).toBeVisible();
 
-  await confirmDraft(page);
+  await confirmTripDialog(page);
+  const panel = page.getByTestId("trip-panel");
   await expect(panel).toContainText("1 天");
 
-  await page.getByRole("tab", { name: "地点浏览" }).click();
   await page.getByRole("combobox", { name: "添加到行程" }).first().click();
   await expect(page.getByRole("option", { name: "第 1 天" })).toBeVisible();
   await expect(page.getByRole("option", { name: "第 2 天" })).toHaveCount(0);
 });
 
-test("edits the draft duration and applies it to the trip", async ({ page }) => {
-  await openDraft(page);
-  const panel = page.getByTestId("trip-panel");
-  await setDraftDays(page, 3);
-  await expect(panel.getByRole("textbox", { name: "行程天数" })).toHaveValue("3");
+test("derives the duration from the selected date range", async ({ page }) => {
+  await openCities(page);
+  await openTripDialog(page, "杭州市");
+  await setTripDates(page, 3);
+  await confirmTripDialog(page);
 
-  await confirmDraft(page);
+  const panel = page.getByTestId("trip-panel");
   await expect(panel).toContainText("3 天");
 
-  await page.getByRole("tab", { name: "地点浏览" }).click();
   await page.getByRole("combobox", { name: "添加到行程" }).first().click();
   await expect(page.getByRole("option", { name: "第 1 天" })).toBeVisible();
   await expect(page.getByRole("option", { name: "第 2 天" })).toBeVisible();
@@ -51,30 +47,36 @@ test("edits the draft duration and applies it to the trip", async ({ page }) => 
   await expect(page.getByRole("option", { name: "第 4 天" })).toHaveCount(0);
 });
 
-test("rejects invalid durations without overwriting the last legal value", async ({ page }) => {
-  await openDraft(page);
-  const panel = page.getByTestId("trip-panel");
-  const input = panel.getByRole("textbox", { name: "行程天数" });
+test("rejects ranges longer than seven days", async ({ page }) => {
+  const posts: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      new URL(request.url()).pathname === "/api/trips"
+    ) {
+      posts.push(request.url());
+    }
+  });
 
-  await setDraftDays(page, 4);
-  for (const invalid of ["0", "8", "1.5", "abc"]) {
-    await input.fill(invalid);
-    await expect(panel.getByRole("alert")).toContainText("旅游总天数需为 1–7 的整数");
-    await expect(input).toHaveValue("4");
-  }
+  await openCities(page);
+  const dialog = await openTripDialog(page, "杭州市");
+  await dialog.getByLabel("开始日期").fill("2026-12-01");
+  await dialog.getByLabel("结束日期").fill("2026-12-08");
+  await expect(dialog.getByText(/行程需为 1–7 天/)).toBeVisible();
+
+  await dialog.getByRole("button", { name: "确定" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("行程需为 1–7 天");
+  await expect(dialog).toBeVisible();
+  expect(posts).toHaveLength(0);
 });
 
-test("steppers clamp the draft duration to 1 and 7", async ({ page }) => {
-  await openDraft(page);
-  const panel = page.getByTestId("trip-panel");
-  const input = panel.getByRole("textbox", { name: "行程天数" });
+test("rejects an end date before the start date", async ({ page }) => {
+  await openCities(page);
+  const dialog = await openTripDialog(page, "杭州市");
+  await dialog.getByLabel("开始日期").fill("2026-12-10");
+  await dialog.getByLabel("结束日期").fill("2026-12-09");
 
-  await panel.getByRole("button", { name: "减少行程天数" }).click();
-  await expect(input).toHaveValue("1");
-  for (let index = 0; index < 8; index += 1) {
-    await panel.getByRole("button", { name: "增加行程天数" }).click();
-  }
-  await expect(input).toHaveValue("7");
-  await panel.getByRole("button", { name: "减少行程天数" }).click();
-  await expect(input).toHaveValue("6");
+  await dialog.getByRole("button", { name: "确定" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("结束日期不能早于开始日期");
+  await expect(dialog).toBeVisible();
 });

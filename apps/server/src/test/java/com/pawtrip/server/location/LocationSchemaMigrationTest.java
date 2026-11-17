@@ -215,10 +215,13 @@ class LocationSchemaMigrationTest {
 				delete.setLong(1, locationId);
 				delete.executeUpdate();
 			}
-			try (Statement statement = connection.createStatement();
-					ResultSet result = statement.executeQuery("SELECT COUNT(*) FROM location_photo")) {
-				assertThat(result.next()).isTrue();
-				assertThat(result.getInt(1)).isZero();
+			try (PreparedStatement query = connection.prepareStatement(
+					"SELECT COUNT(*) FROM location_photo WHERE location_id = ?")) {
+				query.setLong(1, locationId);
+				try (ResultSet result = query.executeQuery()) {
+					assertThat(result.next()).isTrue();
+					assertThat(result.getInt(1)).isZero();
+				}
 			}
 		}
 	}

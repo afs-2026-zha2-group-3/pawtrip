@@ -51,52 +51,61 @@ export function cityCard(page: Page, cityName: string) {
 export async function openCities(page: Page) {
   await page.getByRole("tab", { name: "城市浏览" }).click();
   await expect(page).toHaveURL(/\/cities$/);
-  await expect(
-    page.getByText(/共 \d+ 个候选|草稿未确认|行程已激活/).first(),
-  ).toBeVisible();
+  await expect(page.getByText(/共 \d+ 个候选/)).toBeVisible();
 }
 
-export async function selectCity(page: Page, cityName: string) {
+function isoDate(offsetDays: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+export async function openTripDialog(page: Page, cityName: string) {
   await cityCard(page, cityName).getByRole("button", { name: "选定" }).click();
-  await expect(page.getByRole("heading", { name: cityName, level: 1 })).toBeVisible();
-  await expect(page.getByTestId("trip-panel")).toContainText("未确认草稿");
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText(cityName).first()).toBeVisible();
+  return dialog;
 }
 
-export async function setDraftDays(page: Page, days: number) {
-  const panel = page.getByTestId("trip-panel");
-  const input = panel.getByRole("textbox", { name: "行程天数" });
-  await input.fill(String(days));
-  await expect(input).toHaveValue(String(days));
+export async function setTripDates(page: Page, days: number) {
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("开始日期").fill(isoDate(1));
+  await dialog.getByLabel("结束日期").fill(isoDate(days));
 }
 
-export async function chooseDraftPet(page: Page, petName: string) {
-  const panel = page.getByTestId("trip-panel");
-  await panel.getByRole("combobox", { name: "选择携带宠物" }).click();
-  await page.getByRole("option", { name: petName }).click();
-}
-
-export async function confirmDraft(page: Page) {
+export async function confirmTripDialog(page: Page) {
   const created = page.waitForResponse(
     (response) =>
       new URL(response.url()).pathname === "/api/trips" &&
       response.request().method() === "POST",
   );
-  await page.getByTestId("trip-panel-confirm").click();
+  await page.getByRole("dialog").getByRole("button", { name: "确定" }).click();
   const response = await created;
   expect(response.status()).toBe(201);
-  await expect(page.getByTestId("trip-panel")).not.toContainText("未确认草稿");
-  await expect(page.getByTestId("save-status")).toContainText("已保存");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/attractions$/);
+}
+
+export async function chooseTripPet(page: Page, petName: string) {
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("combobox", { name: "选择携带宠物" }).click();
+  await page.getByRole("option", { name: petName }).click();
 }
 
 export async function createTrip(
   page: Page,
-  { city, days, pet }: { city: string; days: number; pet: string },
+  { city, days, pet }: { city: string; days: number; pet?: string },
 ) {
   await openCities(page);
-  await selectCity(page, city);
-  await setDraftDays(page, days);
-  await chooseDraftPet(page, pet);
-  await confirmDraft(page);
+  await openTripDialog(page, city);
+  await setTripDates(page, days);
+  if (pet) {
+    await chooseTripPet(page, pet);
+  }
+  await confirmTripDialog(page);
 }
 
 export async function openTrips(page: Page) {
