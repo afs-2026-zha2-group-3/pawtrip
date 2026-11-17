@@ -1,7 +1,7 @@
 # Change summary — 2026-11-17-add-trip-start-date
 
 - Change id: `2026-11-17-add-trip-start-date`
-- 状态：实现与本地验证完成；未提交、未建 PR、未归档
+- 状态：已合并（PR #66，merge `7e09d96`）并归档；G3 Pass（SA=LEO）
 - 分支：`feat/add-trip-start-date`（与 `2026-11-17-calendar-range-picker` 同一分支、同一 PR 交付）
 
 ## Intent
@@ -29,7 +29,7 @@
 | 受影响 E2E | Pass | 4 个 spec、44 passed（destination-selection / trip-duration-input / trips-panel / attraction-pet-rules） |
 | OpenSpec | Pass | 本 change `--strict` 通过；`validate --specs` 23/23 |
 | PR / CI | Pass | PR #66（merge `7e09d96`）：Server tests 1m26s、Web build 30s、Browser E2E 8m13s 全绿 |
-| G1 / G2 / G3 | G1 Pass（IO=Kitty Su、SA=HARLAN HUANG）；G2 Pass（VL=SCOTT）；G3 见归档记录 | `g1-decision.md`、`g2-decision.md` |
+| G1 / G2 / G3 | G1 Pass（IO=Kitty Su、SA=HARLAN HUANG）；G2 Pass（VL=SCOTT）；G3 Pass（SA=LEO） | `g1-decision.md`、`g2-decision.md`、`g3-decision.md` |
 
 ## Residual risks / follow-ups
 

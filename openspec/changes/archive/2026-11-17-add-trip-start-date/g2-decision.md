@@ -35,4 +35,4 @@
 - Approvers：VL=SCOTT
 - Timestamp：2026-11-17（Asia/Shanghai）
 
-> 本记录依据 VL=SCOTT 的明确决定转写；G3（合并归档）待 PR 合并后另行签署；归档顺序必须先日历、后本变更。
+> 本记录依据 VL=SCOTT 的明确决定转写；G3（合并归档）已由 SA=LEO 签署 Pass，见 `g3-decision.md`；归档顺序为先日历、后本变更。

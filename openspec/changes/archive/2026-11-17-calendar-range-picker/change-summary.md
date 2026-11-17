@@ -1,8 +1,8 @@
 # Change summary — 2026-11-17-calendar-range-picker
 
 - Change id: `2026-11-17-calendar-range-picker`
-- 状态：实现与本地验证完成；未提交、未建 PR、未归档
-- 分支：`feat/add-trip-start-date`（同一分支承载 `calendar-range-picker` 与 `add-trip-start-date` 两个 change，计划一个 PR 交付）
+- 状态：已合并（PR #66，merge `7e09d96`）并归档；G3 Pass（SA=LEO）
+- 分支：`feat/add-trip-start-date`（同一分支承载 `calendar-range-picker` 与 `add-trip-start-date` 两个 change，同一 PR 交付）
 
 ## Intent
 
@@ -25,7 +25,7 @@
 | 受影响 E2E | Pass（组合运行） | `destination-selection` + `trip-duration-input`：19 passed；运行包含日期持久化改动，不能单独证明本 change，已由同一 PR 的 Browser E2E 补证 |
 | 浏览器结构验证 | Pass | 5 天区间端点/底色正确；跨月 9 天提示超限；缺结束日期提示；月切换正常 |
 | OpenSpec validate | Pass | `npx --no-install openspec validate 2026-11-17-calendar-range-picker --strict` |
-| G1 / G2 / G3 | G1 Pass（IO=Kitty Su、SA=HARLAN HUANG）；G2 Pass（VL=SCOTT）；G3 见归档记录 | `g1-decision.md`、`g2-decision.md` |
+| G1 / G2 / G3 | G1 Pass（IO=Kitty Su、SA=HARLAN HUANG）；G2 Pass（VL=SCOTT）；G3 Pass（SA=LEO） | `g1-decision.md`、`g2-decision.md`、`g3-decision.md` |
 | PR / CI | Pass | PR #66（merge `7e09d96`）：Server tests 1m26s、Web build 30s、Browser E2E 8m13s 全绿 |
 
 ## Residual risks / follow-ups

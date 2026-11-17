@@ -23,4 +23,4 @@
 - 提交 PR，等待 Web CI / E2E CI / Server CI 通过后合并——已完成（PR #66，三工作流全绿后 merge `7e09d96`）。
 - 合并后归档顺序：先归档 `2026-11-17-calendar-range-picker`，再归档本 change；反向会覆盖「MUST NOT 持久化」的翻转。
 - 最后同步 `trip-planning` / `trip-context` 主 specs 并复跑 `openspec validate --specs`。
-- G1 已记录 Pass，G2 已记录 Pass（整改项全部完成且 PR CI 已回填，VL=SCOTT）；G3 待归档后实名签署。
+- G1（Pass，IO=Kitty Su、SA=HARLAN HUANG）、G2（Pass，VL=SCOTT，PR #66 CI 已回填）与 G3（Pass，SA=LEO）已记录；归档完成。
