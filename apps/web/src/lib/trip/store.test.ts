@@ -10,6 +10,7 @@ function activeTrip(totalDays = 3): Trip {
     cityAdcode: "330100",
     petId: 1,
     totalDays,
+    startDate: null,
     transportMode: null,
     plan: { version: 1, days: [], unscheduled: [] },
     createdAt: "2026-11-16T00:00:00Z",
@@ -138,6 +139,8 @@ describe("trip store", () => {
         extraFeeCents: null,
         reservationRequired: null,
       },
+      coverPhotoUrl: null,
+      rating: null,
     });
 
     expect(tripStore.state.cache.city?.name).toBe("杭州市");

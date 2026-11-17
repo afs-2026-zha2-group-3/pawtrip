@@ -22,6 +22,12 @@ const fixtures = [
 		vaccinationProofRequired: 0,
 		extraFeeCents: 1050,
 		reservationRequired: null,
+		rating: "4.6",
+		// 故意先插 order 1：封面必须按 photo_order 取第一张，而非插入顺序。
+		photos: [
+			{ photoOrder: 1, sourceUrl: "https://photos.e2e.test/a-1.png" },
+			{ photoOrder: 0, sourceUrl: "https://photos.e2e.test/a-0.png" },
+		],
 	},
 	{
 		poiId: "e2e-zhu-b",
@@ -80,12 +86,14 @@ const fixtures = [
 		regionCode: "440402",
 		allowedPetTypes: "DOG",
 		maxPetsPerPerson: 1,
-		maxSinglePetWeightKg: null,
+		maxSinglePetWeightKg: 15,
 		maxSinglePetShoulderHeightCm: null,
-		leashRequired: null,
-		vaccinationProofRequired: null,
-		extraFeeCents: null,
+		leashRequired: 1,
+		vaccinationProofRequired: 1,
+		extraFeeCents: 8000,
 		reservationRequired: null,
+		rating: "4.8",
+		photos: [{ photoOrder: 0, sourceUrl: "https://photos.e2e.test/broken.png" }],
 	},
 	{
 		poiId: "e2e-hz-a",
@@ -185,12 +193,21 @@ const insert = db.prepare(`
 		max_single_pet_weight_kg, max_single_pet_shoulder_height_cm,
 		leash_required, vaccination_proof_required, extra_fee_cents, reservation_required
 	)
-	VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, '{}', '{}', ?, ?, ?, ?, ?, ?, ?, ?)
+	VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, '{}', ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
+const insertPhoto = db.prepare(`
+	INSERT INTO location_photo (location_id, photo_order, source_json, title, source_url)
+	VALUES (?, ?, '{}', NULL, ?)
+`);
+const locationIdByPoiId = db.prepare(
+	"SELECT id FROM pawtrip_location WHERE poi_id = ?",
+);
 
 db.exec("BEGIN IMMEDIATE");
 try {
-	db.exec("DELETE FROM pawtrip_location WHERE poi_id LIKE 'e2e-%'");
+	// Flyway V19 seeds Zhuhai demo locations into this temporary database; E2E specs expect only fixtures.
+	db.exec("DELETE FROM location_photo");
+	db.exec("DELETE FROM pawtrip_location");
 	for (const fixture of fixtures) {
 		insert.run(
 			fixture.poiId,
@@ -199,6 +216,7 @@ try {
 			fixture.typeGroup,
 			fixture.address,
 			fixture.regionCode,
+			fixture.rating ? JSON.stringify({ rating: fixture.rating }) : "{}",
 			fixture.allowedPetTypes,
 			fixture.maxPetsPerPerson,
 			fixture.maxSinglePetWeightKg,
@@ -208,6 +226,10 @@ try {
 			fixture.extraFeeCents,
 			fixture.reservationRequired,
 		);
+		for (const photo of fixture.photos ?? []) {
+			const { id } = locationIdByPoiId.get(fixture.poiId);
+			insertPhoto.run(id, photo.photoOrder, photo.sourceUrl);
+		}
 	}
 	db.exec("COMMIT");
 } catch (error) {

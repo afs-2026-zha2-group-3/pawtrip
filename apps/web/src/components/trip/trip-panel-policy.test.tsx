@@ -58,6 +58,8 @@ function location(poiId: string, name: string, patch: Partial<PetPolicies> = {})
     address: null,
     regionCode: null,
     petPolicies: policies(patch),
+    coverPhotoUrl: null,
+    rating: null,
   };
 }
 
@@ -75,6 +77,7 @@ function tripWith(plan: TripPlan, transportMode: TransportMode | null = null): T
     cityAdcode: "440400",
     petId: 1,
     totalDays: 3,
+    startDate: null,
     transportMode,
     plan,
     createdAt: "2026-11-17T00:00:00Z",

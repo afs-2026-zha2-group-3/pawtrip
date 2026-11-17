@@ -38,6 +38,7 @@ function tripWith(stops: TripStop[], transportMode: TransportMode | null = null)
     cityAdcode: "330100",
     petId: 1,
     totalDays: 3,
+    startDate: null,
     transportMode,
     plan,
     createdAt: "2026-11-17T00:00:00Z",

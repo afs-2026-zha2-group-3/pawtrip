@@ -2,9 +2,15 @@ package com.pawtrip.server.location;
 
 import com.pawtrip.server.error.ApiErrorCode;
 import com.pawtrip.server.error.ApiException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 class LocationQueryService {
@@ -15,11 +21,16 @@ class LocationQueryService {
 
 	private final PawtripLocationRepository locationRepository;
 	private final AdministrativeRegionRepository regionRepository;
+	private final LocationPhotoRepository photoRepository;
+	private final ObjectMapper objectMapper;
 
 	LocationQueryService(PawtripLocationRepository locationRepository,
-			AdministrativeRegionRepository regionRepository) {
+			AdministrativeRegionRepository regionRepository, LocationPhotoRepository photoRepository,
+			ObjectMapper objectMapper) {
 		this.locationRepository = locationRepository;
 		this.regionRepository = regionRepository;
+		this.photoRepository = photoRepository;
+		this.objectMapper = objectMapper;
 	}
 
 	LocationQueryResponses.Page<LocationQueryResponses.LocationSummary> locations(String regionCode, String typeGroup,
@@ -38,6 +49,7 @@ class LocationQueryService {
 				typeGroup,
 				petFriendlyOnly ? 1 : 0,
 				PageRequest.of(page.page() - 1, page.pageSize()));
+		Map<Long, String> covers = coverPhotos(result.getContent());
 		return new LocationQueryResponses.Page<>(
 				page.page(),
 				page.pageSize(),
@@ -45,14 +57,45 @@ class LocationQueryService {
 				result.getTotalPages(),
 				result.hasNext(),
 				result.hasPrevious(),
-				result.getContent().stream().map(LocationQueryResponses.LocationSummary::from).toList());
+				result.getContent().stream()
+					.map(location -> LocationQueryResponses.LocationSummary.from(location,
+							covers.get(location.getId()), rating(location)))
+					.toList());
 	}
 
 
 	LocationQueryResponses.LocationDetail detail(String poiId) {
 		return this.locationRepository.findByPoiId(poiId)
-				.map(LocationQueryResponses.LocationDetail::from)
-				.orElseThrow(() -> new ApiException(ApiErrorCode.LOCATION_NOT_FOUND, "Saved location was not found"));
+			.map(location -> LocationQueryResponses.LocationDetail.from(location,
+					coverPhotos(List.of(location)).get(location.getId()), rating(location)))
+			.orElseThrow(() -> new ApiException(ApiErrorCode.LOCATION_NOT_FOUND, "Saved location was not found"));
+	}
+
+	private Map<Long, String> coverPhotos(List<PawtripLocation> locations) {
+		if (locations.isEmpty()) {
+			return Map.of();
+		}
+		List<Long> ids = locations.stream().map(PawtripLocation::getId).toList();
+		Map<Long, String> covers = new HashMap<>();
+		for (LocationPhoto photo : this.photoRepository
+			.findAllByLocationIdInOrderByLocationIdAscPhotoOrderAsc(ids)) {
+			covers.putIfAbsent(photo.getLocationId(), photo.getSourceUrl());
+		}
+		return covers;
+	}
+
+	private String rating(PawtripLocation location) {
+		try {
+			JsonNode rating = this.objectMapper.readTree(location.getBusinessJson()).path("rating");
+			if (rating.isMissingNode() || rating.isNull()) {
+				return null;
+			}
+			String value = rating.asString().trim();
+			return value.isEmpty() ? null : value;
+		}
+		catch (JacksonException exception) {
+			return null;
+		}
 	}
 
 	private ValidatedRegion validateOptionalRegion(String regionCode) {

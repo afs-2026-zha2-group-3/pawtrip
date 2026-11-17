@@ -22,6 +22,7 @@ function tripWithPlan(plan: TripPlan, transportMode: Trip["transportMode"] = nul
     cityAdcode: "330100",
     petId: 1,
     totalDays: 3,
+    startDate: null,
     transportMode,
     plan,
     createdAt: "2026-11-17T00:00:00Z",

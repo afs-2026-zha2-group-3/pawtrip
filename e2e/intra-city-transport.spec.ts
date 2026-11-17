@@ -36,6 +36,7 @@ interface TripDetail {
   id: number;
   name: string;
   totalDays: number;
+  startDate: string | null;
   transportMode: string | null;
   plan: {
     version: 1;
@@ -62,6 +63,8 @@ async function putTripPatch(
     data: {
       name: trip.name,
       totalDays: trip.totalDays,
+      // main 新增 startDate（可空）：透传现值，避免 PUT 全量覆盖语义下意外清空。
+      startDate: trip.startDate,
       plan: patch.plan ?? trip.plan,
       transportMode:
         patch.transportMode !== undefined ? patch.transportMode : trip.transportMode,

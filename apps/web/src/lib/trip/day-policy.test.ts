@@ -26,6 +26,8 @@ function location(poiId: string, name: string, patch: Partial<PetPolicies> = {})
     address: null,
     regionCode: null,
     petPolicies: policies(patch),
+    coverPhotoUrl: null,
+    rating: null,
   };
 }
 

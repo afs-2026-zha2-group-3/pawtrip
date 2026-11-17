@@ -142,7 +142,94 @@ class TripApiTest {
 			.andExpect(jsonPath("$.plan.version").value(1))
 			.andExpect(jsonPath("$.plan.days.length()").value(0))
 			.andExpect(jsonPath("$.plan.unscheduled.length()").value(0))
-			.andExpect(jsonPath("$.transportMode").value(nullValue()));
+			.andExpect(jsonPath("$.transportMode").value(nullValue()))
+			.andExpect(jsonPath("$.startDate").value(nullValue()));
+	}
+
+	@Test
+	void persistsStartDateInSummaryAndDetail() throws Exception {
+		MvcResult createResult = this.mockMvc.perform(post("/api/trips")
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"带日期","cityAdcode":"%s","petId":%d,"totalDays":3,"startDate":"2026-12-01"}
+							""".formatted(CITY_ADCODE, this.petId)))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.startDate").value("2026-12-01"))
+			.andReturn();
+		long tripId = JSON_MAPPER.readTree(createResult.getResponse().getContentAsString()).path("id").asLong();
+
+		this.mockMvc.perform(get("/api/trips").with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].startDate").value("2026-12-01"));
+
+		this.mockMvc.perform(get("/api/trips/{tripId}", tripId).with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.startDate").value("2026-12-01"));
+	}
+
+	@Test
+	void updatesAndClearsStartDate() throws Exception {
+		long tripId = createTrip(this.username, "改日期", CITY_ADCODE, this.petId, 2, null);
+
+		this.mockMvc.perform(put("/api/trips/{tripId}", tripId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"改日期","totalDays":2,"startDate":"2026-12-05","plan":%s}
+							""".formatted(EMPTY_PLAN)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.startDate").value("2026-12-05"));
+
+		this.mockMvc.perform(put("/api/trips/{tripId}", tripId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"改日期","totalDays":2,"plan":%s}
+							""".formatted(EMPTY_PLAN)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.startDate").value(nullValue()));
+	}
+
+	@Test
+	void acceptsExplicitNullStartDate() throws Exception {
+		MvcResult createResult = this.mockMvc.perform(post("/api/trips")
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"空日期","cityAdcode":"%s","petId":%d,"totalDays":1,"startDate":null}
+							""".formatted(CITY_ADCODE, this.petId)))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.startDate").value(nullValue()))
+			.andReturn();
+		long tripId = JSON_MAPPER.readTree(createResult.getResponse().getContentAsString()).path("id").asLong();
+
+		this.mockMvc.perform(put("/api/trips/{tripId}", tripId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"空日期","totalDays":1,"startDate":null,"plan":%s}
+							""".formatted(EMPTY_PLAN)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.startDate").value(nullValue()));
+	}
+
+	@Test
+	void rejectsInvalidStartDate() throws Exception {
+		assertInvalidCreate("""
+				{"name":"非法日期","cityAdcode":"%s","petId":%d,"totalDays":1,"startDate":"2026-02-30"}
+				""".formatted(CITY_ADCODE, this.petId));
+		assertInvalidCreate("""
+				{"name":"非法日期","cityAdcode":"%s","petId":%d,"totalDays":1,"startDate":"2026/12/01"}
+				""".formatted(CITY_ADCODE, this.petId));
+		assertInvalidCreate("""
+				{"name":"非法日期","cityAdcode":"%s","petId":%d,"totalDays":1,"startDate":"2026-2-3"}
+				""".formatted(CITY_ADCODE, this.petId));
 	}
 
 	@Test

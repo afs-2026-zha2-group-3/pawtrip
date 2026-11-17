@@ -1,4 +1,5 @@
 import { createStore } from "@tanstack/store";
+import type { TransportMode } from "@/data/transport-rules";
 import type { LocationBrowseDetail } from "@/queries/locations";
 import type { Pet } from "@/queries/pets";
 import {
@@ -23,7 +24,6 @@ import type {
   TripPlan,
   TripState,
   TripStop,
-  TransportMode,
 } from "./types";
 
 const initialCache: TripCache = { city: null, pets: {}, locations: {} };

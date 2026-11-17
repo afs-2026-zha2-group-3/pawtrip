@@ -46,6 +46,8 @@ export interface LocationSummary {
   maxVisitHours: number | null;
   maxPetsPerPerson: number | null;
   petPolicies: PetPolicies;
+  coverPhotoUrl: string | null;
+  rating: string | null;
 }
 
 export interface LocationListParams extends PaginationParams {
@@ -62,6 +64,8 @@ export interface LocationBrowseDetail {
   address: string | null;
   regionCode: string | null;
   petPolicies: PetPolicies;
+  coverPhotoUrl: string | null;
+  rating: string | null;
 }
 
 function queryString(params: Record<string, string | number | boolean | undefined>): string {
