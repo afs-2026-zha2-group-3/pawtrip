@@ -53,9 +53,9 @@ area: domain
 7. 铁路普速列车宠物托运口径（北青报转述国铁集团/95572）— `http://railway.china.com.cn/2025-04/09/content_117813396.shtml`
 8. 《道路交通安全法实施条例》第六十二条（不得有妨碍安全驾驶的行为）— `https://jtgl.beijing.gov.cn/jgj/jgxx/flfg/xzfg/119781/index.html`
 
-## 档案判定与交通方式缓存
+## 档案判定与交通方式持久化
 
-判定是前端纯函数 `apps/web/src/data/transport-rule-match.ts` 的 `evaluateRuleForPet(rule, pet)`，规则仍以前端常量为唯一真源；档案由 `GET /api/pets`（`apps/web/src/queries/pets.ts`）读取，后端不复制规则阈值。
+判定是前端纯函数 `apps/web/src/data/transport-rule-match.ts` 的 `evaluateRuleForPet(rule, pet)`，规则仍以前端常量为唯一真源；档案由 `GET /api/pets`（`apps/web/src/queries/pets.ts`）读取，后端不复制规则阈值。推荐列使用统一政策匹配主体：存在激活行程且已绑定宠物时只评估该宠物；否则评估当前用户全部宠物；无档案时不渲染该列并提供“新增宠物档案”入口；档案加载失败时不渲染并提示失败；激活行程宠物数据未就绪时展示加载/不可用状态，不使用其他宠物替代。
 
 判定条件（同时满足才算「推荐」）：
 
@@ -64,20 +64,21 @@ area: domain
 3. 存在 `shoulderLimitCm` 时，`pet.shoulderHeightCm <= shoulderLimitCm`；
 4. `pet.hasVaccinationProof === true`（八条规则均要求检疫证明，属硬条件）。
 
-不满足原因按「体重 → 肩高 → 检疫证明」顺序全部列出；阈值为 `null` 表示该维度无限制，跳过该维度；`hasLeash` 不参与判定（“带牵引绳”与规则的容器/口套要求不是同一维度）。页面逐只宠物显示结论；无档案时不渲染该列，并显示「新增宠物档案」按钮——点击跳转 `/paws`（该页已由主干 `#40 feature/add-paws-pet-management` 实现宠物档案维护）。
+不满足原因按「体重 → 肩高 → 检疫证明」顺序全部列出；阈值为 `null` 表示该维度无限制，跳过该维度；`hasLeash` 不参与判定（“带牵引绳”与规则的容器/口套要求不是同一维度）。
 
-交通方式选择契约（供后续行程单消费）：
+交通方式选择契约：
 
 | 项 | 值 |
 |----|----|
-| 存储 | `sessionStorage`（关闭标签页即失效） |
-| 键 | `pawtrip:selected-transport-mode` |
-| 取值 | `flight` / `high_speed_rail` / `train` / `drive` |
+| 存储 | 当前激活行程的 `transportMode` 字段（服务端 `trip` 表，Flyway V18 可空列） |
+| 持久化 | 规则页单选调用 `tripActions.setTransportMode`，递增 `saveRevision`，由 `_authenticated` 布局约 600ms 防抖 `PUT /api/trips/{id}` 保存 |
+| 取值 | `flight` / `high_speed_rail` / `train` / `drive`；未选择为 `null` |
 | 写入方 | 规则页「选择」列单选控件（互斥，一次一种） |
-| 读取方 | 当前仅规则页回显；行程单页面待接入 |
-| 非法值 / 不可用 | 丢弃缓存值、按未选中渲染，不报错 |
+| 读取方 | 规则页回显 + 行程面板“大交通 · {方式}”tag |
+| 前置条件 | 需要激活行程；hydrate 中显示加载态，无激活行程显示“先创建或激活行程”空态并提供 `/cities`、`/trips` 入口 |
+| 旧缓存 | `pawtrip:selected-transport-mode` 不再读写，旧值不参与业务 |
 
-- 能力变更证据：`openspec/changes/add-rule-recommendation-and-selection/`（design D1–D8）
+- 能力变更证据：`openspec/changes/add-rule-recommendation-and-selection/`（design D1–D8）、`openspec/changes/save-transport-mode-to-active-trip/`。
 
 ## 维护约定
 
@@ -86,4 +87,4 @@ area: domain
 - 海航客舱的基础费不写具体金额：承运方未在可核页面公布固定值，只写「以航司公布标准为准」，避免数字过期误导。
 - 更新规则 = 修改常量文件 + 更新 `verifiedOn`，无需改页面；新增列 = 在 `extra` 加键 + 在列配置加一项。
 - 页面与知识库均以承运方最新规则为准，不提供站内订票。
-- 规则目录本身不保存用户选择；「选择」列的选中值只写入浏览器 `sessionStorage`（见上节）。
+- 规则目录本身不保存用户选择；「选择」列的选中值写入当前激活行程的 `transportMode`（见上节）。
