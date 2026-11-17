@@ -20,7 +20,7 @@
 ## Workflow follow-up
 
 - 与 `2026-11-17-calendar-range-picker` 放在同一个 PR 交付：dialog 与 E2E 改动 hunk 交织，按路径拆不开。
-- 提交 PR，等待 Web CI / E2E CI / Server CI 通过后合并。
+- 提交 PR，等待 Web CI / E2E CI / Server CI 通过后合并——已完成（PR #66，三工作流全绿后 merge `7e09d96`）。
 - 合并后归档顺序：先归档 `2026-11-17-calendar-range-picker`，再归档本 change；反向会覆盖「MUST NOT 持久化」的翻转。
 - 最后同步 `trip-planning` / `trip-context` 主 specs 并复跑 `openspec validate --specs`。
-- G1 已记录 Pass，G2 已记录 Conditional（整改项 2、3 已完成，仅剩 PR CI 证据，owner=SCOTT）；G3 待合并归档后实名签署。
+- G1 已记录 Pass，G2 已记录 Pass（整改项全部完成且 PR CI 已回填，VL=SCOTT）；G3 待归档后实名签署。

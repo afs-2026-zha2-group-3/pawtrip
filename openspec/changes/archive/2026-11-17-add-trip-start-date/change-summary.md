@@ -28,8 +28,8 @@
 | 前端单测 | Pass | `npm test -w apps/web`：99 tests |
 | 受影响 E2E | Pass | 4 个 spec、44 passed（destination-selection / trip-duration-input / trips-panel / attraction-pet-rules） |
 | OpenSpec | Pass | 本 change `--strict` 通过；`validate --specs` 23/23 |
-| PR / CI | 未执行 | 与日历 change 同一 PR，待合并阶段补 |
-| G1 / G2 / G3 | G1 Pass（IO=Kitty Su、SA=HARLAN HUANG）；G2 Conditional（VL=SCOTT，整改 owner=SCOTT）；G3 待签 | `g1-decision.md`、`g2-decision.md` |
+| PR / CI | Pass | PR #66（merge `7e09d96`）：Server tests 1m26s、Web build 30s、Browser E2E 8m13s 全绿 |
+| G1 / G2 / G3 | G1 Pass（IO=Kitty Su、SA=HARLAN HUANG）；G2 Pass（VL=SCOTT）；G3 见归档记录 | `g1-decision.md`、`g2-decision.md` |
 
 ## Residual risks / follow-ups
 
@@ -37,7 +37,7 @@
 2. 本 change 的 E2E 断言依赖日历 UI，必须与日历 change 同 PR 交付。
 3. `PUT` 为整量更新，省略 `startDate` 会清为 `null`；当前唯一写入方是前端自动保存，始终携带该字段。
 4. G2 整改项已全部完成（`save.test.ts` 断言 `startDate`、API 显式 `"startDate": null` 用例）。
-5. 全量 CI 与 G3 尚未完成/签署；G1 已 Pass、G2 为 Conditional，仅剩 PR CI 证据待回填，回填后转 Pass。
+5. 全量 CI 已由 PR #66 三工作流覆盖并通过；G3 待归档后签署。
 
 ## Links
 

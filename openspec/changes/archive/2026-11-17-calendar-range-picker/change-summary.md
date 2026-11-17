@@ -22,18 +22,18 @@
 | 项 | 结果 | 证据 |
 |---|---|---|
 | TypeScript | Pass | `npx tsc --noEmit -p apps/web/tsconfig.json` |
-| 受影响 E2E | Pass（组合运行） | `destination-selection` + `trip-duration-input`：19 passed；运行包含日期持久化改动，不能单独证明本 change，最终以同一 PR 的 CI 为准 |
+| 受影响 E2E | Pass（组合运行） | `destination-selection` + `trip-duration-input`：19 passed；运行包含日期持久化改动，不能单独证明本 change，已由同一 PR 的 Browser E2E 补证 |
 | 浏览器结构验证 | Pass | 5 天区间端点/底色正确；跨月 9 天提示超限；缺结束日期提示；月切换正常 |
 | OpenSpec validate | Pass | `npx --no-install openspec validate 2026-11-17-calendar-range-picker --strict` |
-| G1 / G2 / G3 | G1 Pass（IO=Kitty Su、SA=HARLAN HUANG）；G2 Conditional（VL=SCOTT）；G3 待签 | `g1-decision.md`、`g2-decision.md` |
-| 全量 E2E / CI | 未运行 | 待 PR 阶段补齐 |
+| G1 / G2 / G3 | G1 Pass（IO=Kitty Su、SA=HARLAN HUANG）；G2 Pass（VL=SCOTT）；G3 见归档记录 | `g1-decision.md`、`g2-decision.md` |
+| PR / CI | Pass | PR #66（merge `7e09d96`）：Server tests 1m26s、Web build 30s、Browser E2E 8m13s 全绿 |
 
 ## Residual risks / follow-ups
 
 1. 自研日历不支持方向键导航；如后续多处使用日期选择，应评估换用成熟日历库。
 2. 与 `2026-11-17-add-trip-start-date` 修改同一组 requirement：同一 PR 合并后必须先归档本变更，再归档日期持久化变更。本变更 delta 中的「起止日期 MUST NOT 持久化」是过渡文本，最终由日期 change 翻转。
 3. `-city-trip-dialog.tsx` 与 E2E 文件同时含两个 change 的 hunk，按路径拆不开；计划一个 PR 交付两个 change。
-4. 全量 E2E 与 CI 尚未在本变更上执行。
+4. 全量 E2E 与 CI 已由 PR #66 三工作流覆盖（Server / Web / Browser E2E 全绿）。
 
 ## Links
 

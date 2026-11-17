@@ -36,4 +36,4 @@
 
 - 与 `2026-11-17-add-trip-start-date` 放在同一个 PR 交付：dialog 与 E2E 改动 hunk 交织，按路径拆不开。
 - 先归档本变更，再归档 `2026-11-17-add-trip-start-date`；本变更 delta 中的「MUST NOT 持久化」是过渡文本，由日期 change 翻转。
-- G1（Pass，IO=Kitty Su、SA=HARLAN HUANG）与 G2（Conditional，VL=SCOTT）已记录；G3 待合并归档后实名签署。
+- G1（Pass，IO=Kitty Su、SA=HARLAN HUANG）与 G2（Pass，VL=SCOTT，PR #66 CI 已回填）已记录；G3 待合并归档后实名签署。

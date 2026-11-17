@@ -21,11 +21,11 @@
 
 ## Gaps / residual risks
 
-- 全量 E2E 与 CI 未在本变更上运行，PR 阶段补齐。
+- 全量 E2E 与 CI 已由 PR #66 的 Server / Web / Browser E2E 三工作流覆盖，均通过。
 - 自研日历无方向键导航，已作为设计取舍记录。
 - 与 `2026-11-17-add-trip-start-date` 共享 requirement：同一 PR 合并后先归档本变更，再归档日期持久化变更，避免 MODIFIED 文本互相覆盖。
 - dialog 与 E2E 改动和日期持久化 hunk 交织，按路径拆不开；计划一个 PR 交付两个 change。
 
 ## Outcome
 
-**Pass（计划层）**：Spec、Design、ATDD 与 Tasks 一致。该结果不代表 Gate 决策，也不代表 CI 已通过。
+**Pass（计划层）**：Spec、Design、ATDD 与 Tasks 一致；PR #66 三工作流已通过。Gate 决策见 G1/G2/G3 记录。

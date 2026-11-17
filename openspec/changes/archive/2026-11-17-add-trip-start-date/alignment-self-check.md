@@ -27,9 +27,9 @@
 
 ## Gaps / residual risks
 
-- G1 已 Pass（IO=Kitty Su、SA=HARLAN HUANG），G2 为 Conditional（VL=SCOTT，整改 owner=SCOTT）；整改项 2、3 已完成，仅剩 PR CI 证据与 G3。
-- 全量 CI 尚未运行，PR 合并前需回填三工作流 run 链接。
+- G1 已 Pass（IO=Kitty Su、SA=HARLAN HUANG），G2 已 Pass（VL=SCOTT）；G3 待归档后签署。
+- 全量 CI 已由 PR #66 的 Server / Web / Browser E2E 三工作流覆盖并通过。
 
 ## Outcome
 
-**Pass（实现与本地验证）**：规格、设计、任务与本地测试一致；跨 change 的 requirement 重叠已通过「同一 PR + 先日历后日期」的归档顺序约束处理。该结果不代表 PR CI 已通过，也不代表 Gate 已签署。
+**Pass（实现与本地验证）**：规格、设计、任务与本地测试一致；跨 change 的 requirement 重叠已通过「同一 PR + 先日历后日期」的归档顺序约束处理。PR #66 三工作流已通过，Gate 决策见 G1/G2/G3 记录。
