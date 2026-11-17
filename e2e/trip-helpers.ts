@@ -153,7 +153,13 @@ export function tripCard(page: Page, name: string) {
 
 export async function createTripViaApi(
   page: Page,
-  input: { name: string; cityAdcode: string; petId: number; totalDays: number },
+  input: {
+    name: string;
+    cityAdcode: string;
+    petId: number;
+    totalDays: number;
+    startDate?: string | null;
+  },
 ) {
   const headers = await csrfHeaders(page);
   const response = await page.request.post("/api/trips", {
