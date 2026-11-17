@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
+  cityCard,
   createTrip,
   openCities,
   openTrips,
@@ -117,9 +118,15 @@ test("E5 switching city requires deactivating the current trip", async ({ page }
   await tripTo(page, "珠海市");
   await expect(attractionCard(page, "情侣路")).toBeVisible();
 
+  await openCities(page);
+  await expect(page.getByText("当前已有激活行程")).toBeVisible();
+  await expect(
+    cityCard(page, "杭州市").getByRole("button", { name: "选定" }),
+  ).toBeDisabled();
+
   await openTrips(page);
   await tripCard(page, "珠海市 · 1天 · 豆豆").getByRole("button", { name: "取消激活" }).click();
-  await createTrip(page, { city: "杭州市", days: 1, pet: "豆豆" });
+  await createTrip(page, { city: "杭州市", days: 1 });
   await openAttractions(page);
 
   await expect(attractionCard(page, "西湖")).toBeVisible();
