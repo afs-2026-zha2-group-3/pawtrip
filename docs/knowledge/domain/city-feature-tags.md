@@ -6,7 +6,7 @@ area: domain
 
 # 城市特征标签
 
-为 `/cities` 个性化推荐提供城市侧特征数据（REQ-014）。与养犬政策（`city-pet-policy.md`）相互独立：特征只影响推荐排序与「系统推荐」徽标，不参与政策判定。
+为 `/cities` 个性化推荐提供城市侧特征数据（REQ-014）。与养犬政策（`city-pet-policy.md`）相互独立：特征只影响推荐排序与得分，不参与政策判定。「系统推荐」徽标 = 得分 >0 且首宠政策判定非「明确违反」（2026-11-17 修订：复用 `matchCityCandidate`，匹配或无法判定均展示，仅 unfriendly 隐藏）；政策判定仅影响徽标，不改排序。
 
 - 后端常量：`com.pawtrip.server.destination.CityFeatureTags.KEYS`（只读词表，不做写入校验）
 - 下发接口：`GET /api/destinations` 每项 `featureTags: string[]`（契约见 `interfaces/http-api.md`「城市特征标签」）

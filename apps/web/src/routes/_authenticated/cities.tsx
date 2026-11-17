@@ -30,6 +30,7 @@ import {
 } from "@/queries/city-pet-policy";
 import { destinationsQueryOptions } from "@/queries/destinations";
 import { petProfileQueryOptions } from "@/queries/pet-profile";
+import { petsQueryOptions } from "@/queries/pets";
 import { CityTripDialog } from "./-city-trip-dialog";
 
 export const Route = createFileRoute("/_authenticated/cities")({
@@ -60,6 +61,9 @@ function CitiesPage() {
   }, [keyword, friendlyOnly]);
 
   const profile = useQuery({ ...petProfileQueryOptions, enabled: isClient });
+  // REQ-014 修订：徽标政策判定取第一只宠物（与打分同口径；subjects 在有激活行程时会被替换为行程宠物，不适用）
+  const pets = useQuery({ ...petsQueryOptions(), enabled: isClient, throwOnError: false });
+  const firstPet = pets.data?.[0] ?? null;
   const destinations = useQuery({
     ...destinationsQueryOptions({
       keyword,
@@ -183,11 +187,15 @@ function CitiesPage() {
                       ]
                     }
                     recommended={
+                      // REQ-014 修订（2026-11-17）：徽标 = 得分 >0 且首宠政策判定非「明确违反」
+                      // （matchCityCandidate：friendly/unjudgeable 均展示，仅 unfriendly 隐藏；排序不受政策影响）
                       scoreCity(
                         candidate.featureTags,
                         profile.data?.preferences ?? [],
                         profile.data?.personality ?? null,
-                      ) > 0
+                      ) > 0 &&
+                      firstPet != null &&
+                      matchCityCandidate(candidate, firstPet).status !== "unfriendly"
                     }
                     selected={selected?.adcode === candidate.adcode}
                     disabled={Boolean(active)}
