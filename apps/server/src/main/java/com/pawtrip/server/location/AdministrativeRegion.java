@@ -66,6 +66,10 @@ public class AdministrativeRegion {
 	@Column(name = "allowed_pet_types")
 	private String allowedPetTypes;
 
+	// REQ-014 城市特征标签（V27 种子维护）：只读下发，管理端写路径不触碰
+	@Column(name = "feature_tags")
+	private String featureTags;
+
 	protected AdministrativeRegion() {
 	}
 
@@ -136,6 +140,10 @@ public class AdministrativeRegion {
 
 	public String getAllowedPetTypes() {
 		return this.allowedPetTypes;
+	}
+
+	public String getFeatureTags() {
+		return this.featureTags;
 	}
 
 	public void updatePetPolicies(String allowedPetTypes, Integer maxPetsPerPerson, Double maxSinglePetWeightKg,

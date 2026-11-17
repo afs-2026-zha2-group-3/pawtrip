@@ -10,6 +10,7 @@ hand-authored index here long-term.
 | domain/shared       | Shared domain vocabulary                        | [domain/shared/README.md](domain/shared/README.md) |
 | domain/transport-pet-rules | Transport pet rules catalog (constants, sources, pet verdict, trip transportMode) | [domain/transport-pet-rules.md](domain/transport-pet-rules.md) |
 | domain/city-pet-policy | City pet policy (coverage, banned/allowed breeds, matching) | [domain/city-pet-policy.md](domain/city-pet-policy.md) |
+| domain/city-feature-tags | City feature tags (REQ-014 recommendation vocabulary, 48-city seed) | [domain/city-feature-tags.md](domain/city-feature-tags.md) |
 | external            | External systems knowledge                      | [external/README.md](external/README.md)           |
 | interfaces          | Interfaces knowledge                            | [interfaces/README.md](interfaces/README.md)       |
 | interfaces          | HTTP API contracts and error codes              | [interfaces/http-api.md](interfaces/http-api.md)   |

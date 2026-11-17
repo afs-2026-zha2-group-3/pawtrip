@@ -48,6 +48,12 @@ function tripWith(stops: TripStop[], transportMode: TransportMode | null = null)
 
 const REF: StopRef = { container: 1, index: 0 };
 
+// 共享 Select（base-ui）交互：点开 combobox 后按文案选中 option
+async function chooseMode(name: string, label: string) {
+  await userEvent.click(screen.getByRole("combobox", { name }));
+  await userEvent.click(await screen.findByRole("option", { name: label }));
+}
+
 function renderRow(options: {
   stop?: TripStop;
   toPoiId?: string;
@@ -180,8 +186,7 @@ describe("live estimate without a snapshot", () => {
     renderRow({});
 
     expect(await screen.findByText(ESTIMATE_UNAVAILABLE_TEXT)).toBeTruthy();
-    const select = screen.getByRole("combobox", { name: "选择途内交通方式" });
-    await userEvent.selectOptions(select, "walk");
+    await chooseMode("选择途内交通方式", "步行");
 
     const stop = tripStore.state.active!.plan.days[0].stops[0];
     expect(stop.toNext).toBe("walk");
@@ -207,11 +212,11 @@ describe("live estimate without a snapshot", () => {
 });
 
 describe("mode selection", () => {
-  it("offers only taxi and walking for public transport", () => {
+  it("offers only taxi and walking for public transport", async () => {
     renderRow({ stop: { poiId: "poi-a", toNext: "drive", toNextEstimate: DRIVE_SNAPSHOT } });
-    const select = screen.getByRole("combobox", { name: "选择途内交通方式" });
-    const values = [...select.querySelectorAll("option")].map((option) => option.value);
-    expect(values).toEqual(["drive", "walk"]);
+    await userEvent.click(screen.getByRole("combobox", { name: "选择途内交通方式" }));
+    const labels = (await screen.findAllByRole("option")).map((option) => option.textContent);
+    expect(labels).toEqual(["打车", "步行"]);
   });
 
   it("offers the drive-mode dropdown with taxi, walking and explicit driving", async () => {
@@ -219,11 +224,11 @@ describe("mode selection", () => {
       transportMode: "drive",
       stop: { poiId: "poi-a", toNext: "drive", toNextEstimate: DRIVE_SNAPSHOT },
     });
-    const select = screen.getByRole("combobox", { name: "选择其他途内交通方式" });
-    const values = [...select.querySelectorAll("option")].map((option) => option.value);
-    expect(values).toEqual(["drive", "walk", "self_drive"]);
+    await userEvent.click(screen.getByRole("combobox", { name: "选择其他途内交通方式" }));
+    const labels = (await screen.findAllByRole("option")).map((option) => option.textContent);
+    expect(labels).toEqual(["打车", "步行", "驾车"]);
 
-    await userEvent.selectOptions(select, "self_drive");
+    await userEvent.click(screen.getByRole("option", { name: "驾车" }));
     const stop = tripStore.state.active!.plan.days[0].stops[0];
     expect(stop.toNext).toBe("self_drive");
   });
@@ -233,7 +238,7 @@ describe("mode selection", () => {
     renderRow({ stop: { poiId: "poi-a", toNext: "drive", toNextEstimate: DRIVE_SNAPSHOT } });
     expect(fetchMock).not.toHaveBeenCalled();
 
-    await userEvent.selectOptions(screen.getByRole("combobox", { name: "选择途内交通方式" }), "walk");
+    await chooseMode("选择途内交通方式", "步行");
     // 切换瞬间的快照清空由 store-transport.test.ts 确定性覆盖；这里 mock 立即成功，回填可能已完成
     const stop = tripStore.state.active!.plan.days[0].stops[0];
     expect(stop.toNext).toBe("walk");

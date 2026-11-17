@@ -1,6 +1,14 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSelector } from "@tanstack/react-store";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { TransportMode } from "@/data/transport-rules";
 import type { StopRef } from "@/lib/trip/plan";
 import { displayToNext } from "@/lib/trip/plan";
@@ -99,30 +107,37 @@ export function TransportSegmentRow({
         ) : (
           <span>{ESTIMATE_LOADING_TEXT}</span>
         )}
-        <select
-          aria-label={
-            transportMode === "drive" ? "选择其他途内交通方式" : "选择途内交通方式"
-          }
-          className="ml-auto rounded-md border bg-card px-1 py-0.5 text-xs"
-          value={selectValue}
-          onChange={(event) => {
-            const value = event.target.value;
+        <Select
+          value={selectValue === "" ? null : selectValue}
+          onValueChange={(value) => {
             if (value === "walk" || value === "drive" || value === "self_drive") {
               tripActions.setStopTransport(stopRef, value, null);
             }
           }}
         >
-          {selectValue === "" ? (
-            <option value="" disabled>
-              切换方式
-            </option>
-          ) : null}
-          {options.map((mode) => (
-            <option key={mode} value={mode}>
-              {toNextLabels[mode]}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger
+            size="sm"
+            aria-label={
+              transportMode === "drive" ? "选择其他途内交通方式" : "选择途内交通方式"
+            }
+            className="ml-auto text-xs"
+          >
+            <SelectValue>
+              {(value: string | null) =>
+                value ? toNextLabels[value as keyof typeof toNextLabels] : "切换方式"
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {options.map((mode) => (
+                <SelectItem key={mode} value={mode}>
+                  {toNextLabels[mode]}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
       {displayMode === "drive" ? (
         <p className="text-xs text-muted-foreground">{TAXI_PET_HINT}</p>
