@@ -158,7 +158,7 @@ test("E5 switching city requires deactivating the current trip", async ({ page }
   await openCities(page);
   await expect(page.getByText("当前已有激活行程")).toBeVisible();
   await expect(
-    cityCard(page, "杭州市").getByRole("button", { name: "选定" }),
+    cityCard(page, "杭州市").getByRole("button", { name: "Pick" }),
   ).toBeDisabled();
 
   await openTrips(page);

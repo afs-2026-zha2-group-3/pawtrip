@@ -21,13 +21,13 @@ test.beforeEach(async ({ page }) => {
   await resetTrips(page);
 });
 
-test("E1 shows city candidates with Trips tab and without duration input", async ({ page }) => {
+test("E1 shows city candidates with 我的行程 tab and without duration input", async ({ page }) => {
   await openCities(page);
 
   await expect(cityCard(page, "杭州市")).toBeVisible();
   await expect(cityCard(page, "珠海市")).toBeVisible();
   expect(await guestCount(page)).toBeGreaterThan(2);
-  await expect(page.getByRole("tab", { name: "Trips" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "我的行程" })).toBeVisible();
   await expect(page.getByText("旅游总天数")).toHaveCount(0);
   await expect(page.locator("header").getByText("目的地未选")).toHaveCount(0);
 });
@@ -139,18 +139,21 @@ test("E7 rejects incomplete or overlong date ranges without creating a trip", as
   expect(posts).toHaveLength(0);
 });
 
-test("E8 city cards expose policy only through the policy link", async ({ page }) => {
+test("E8 city cards expose policy inline without policy links", async ({ page }) => {
   await openCities(page);
+  await page.getByRole("textbox", { name: "搜索城市" }).fill("珠海");
+  await page.getByText("共 1 个候选").waitFor();
 
   const card = cityCard(page, "珠海市");
   await expect(
-    card.getByRole("link", { name: "查看珠海市的城市政策" }),
+    card.getByRole("link", { name: /查看.*的城市政策/ }),
+  ).toHaveCount(0);
+  await card.click();
+  await expect(page).toHaveURL(/\/cities$/);
+  await expect(
+    page.getByRole("heading", { name: "珠海市宠物管理政策" }),
   ).toBeVisible();
-  await expect(page.getByText("政策要点")).toHaveCount(0);
-
-  await card.getByRole("link", { name: "查看珠海市的城市政策" }).click();
-  await expect(page).toHaveURL(/\/destinations\/440400\/policy$/);
-  await expect(page.getByRole("heading", { name: "珠海市养宠政策" })).toBeVisible();
+  await expect(page.getByText("政策要点")).toBeVisible();
 });
 
 test("E9 active trip keeps candidates but blocks selecting another city", async ({
@@ -162,11 +165,14 @@ test("E9 active trip keeps candidates but blocks selecting another city", async 
   await expect(page.getByRole("textbox", { name: "搜索城市" })).toBeVisible();
   await expect(page.getByText("当前已有激活行程")).toBeVisible();
   const card = cityCard(page, "杭州市");
-  await expect(card.getByRole("button", { name: "选定" })).toBeDisabled();
+  await expect(card.getByRole("button", { name: "Pick" })).toBeDisabled();
   await expect(
-    card.getByRole("link", { name: "查看杭州市的城市政策" }),
+    card.getByRole("link", { name: /查看.*的城市政策/ }),
+  ).toHaveCount(0);
+  await card.click();
+  await expect(
+    page.getByRole("heading", { name: "杭州市宠物管理政策" }),
   ).toBeVisible();
-  await expect(page.getByText("政策要点")).toHaveCount(0);
 });
 
 test("E10 cleans legacy session storage keys on startup", async ({ page }) => {
@@ -187,10 +193,10 @@ test("E10 cleans legacy session storage keys on startup", async ({ page }) => {
     .toEqual({ selected: null, duration: null });
 });
 
-test("E11 keeps Trips tab selected on direct access", async ({ page }) => {
+test("E11 keeps 我的行程 tab selected on direct access", async ({ page }) => {
   await page.goto("/trips");
   await expect(page).toHaveURL(/\/trips$/);
-  await expect(page.getByRole("tab", { name: "Trips" })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: "我的行程" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -267,13 +273,16 @@ test("E14 reports a pet API failure instead of an empty pet list", async ({ page
   await expect(page.getByText(/尚未添加宠物档案/)).toHaveCount(0);
 });
 
-test("E15 policy content stays on the policy page", async ({ page }) => {
+test("E15 policy content renders in the cities pane", async ({ page }) => {
   await openCities(page);
+  await page.getByRole("textbox", { name: "搜索城市" }).fill("珠海");
+  await page.getByText("共 1 个候选").waitFor();
 
   await expect(
-    page.getByRole("link", { name: /查看.*的城市政策/ }).first(),
-  ).toBeVisible();
-  await expect(page.getByRole("heading", { name: /养犬政策/ })).toHaveCount(0);
-  await expect(page.getByText("禁养犬种名单")).toHaveCount(0);
+    page.getByRole("link", { name: /查看.*的城市政策/ }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: /养宠政策/ })).toHaveCount(0);
+  await expect(page.getByText("政策要点")).toBeVisible();
+  await expect(page.getByText("禁养犬种名单").first()).toBeVisible();
   await expect(page.getByRole("checkbox")).toHaveCount(1);
 });

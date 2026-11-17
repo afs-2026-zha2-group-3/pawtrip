@@ -11,6 +11,7 @@ function tripWithPlan(days: Trip["plan"]["days"], unscheduled: Trip["plan"]["uns
     petId: 1,
     totalDays: 2,
     transportMode: null,
+    startDate: null,
     plan: { version: 1, days, unscheduled },
     createdAt: "2026-11-17T00:00:00Z",
     updatedAt: "2026-11-17T00:00:00Z",
@@ -25,6 +26,8 @@ function detail(poiId: string, name: string, typeGroup: string): LocationBrowseD
     typeGroup,
     address: null,
     regionCode: "440402",
+    coverPhotoUrl: null,
+    rating: null,
     petPolicies: {
       allowedPetTypes: null,
       maxPetsPerPerson: 1,

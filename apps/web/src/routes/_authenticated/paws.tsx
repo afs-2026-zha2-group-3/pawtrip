@@ -1,16 +1,14 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { PawPrint, Plus } from "lucide-react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { PetCard } from "./-pet-card";
+  PetProfileView,
+  petPillPrimaryClass,
+} from "@/components/pet/pet-profile-card";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { photoDataUrl } from "@/lib/pet-photo";
 import { PetDeleteDialog, PetDialog } from "./-pet-dialogs";
 import { petsQueryOptions, type Pet } from "../../queries/pets";
 
@@ -20,51 +18,83 @@ export const Route = createFileRoute("/_authenticated/paws")({
 
 function PawsPage() {
   const petsQuery = useQuery(petsQueryOptions());
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [dialog, setDialog] = useState<{ pet: Pet | null } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Pet | null>(null);
   const pets = petsQuery.data ?? [];
+  const selected = pets.find((pet) => pet.id === selectedId) ?? pets[0] ?? null;
 
   return (
-    <main className="mx-auto w-full max-w-6xl p-6">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">我的宠物</h1>
-          <p className="text-sm text-muted-foreground">管理宠物资料与照片。</p>
-        </div>
-        <Button onClick={() => setDialog({ pet: null })}>
-          <Plus aria-hidden="true" />
-          添加宠物
-        </Button>
-      </header>
-
+    <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
       {petsQuery.isPending ? (
-        <PetGridSkeleton />
-      ) : pets.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>还没有宠物</CardTitle>
-            <CardDescription>
-              添加第一只宠物，开始记录你们的信息。
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => setDialog({ pet: null })}>
-              <Plus aria-hidden="true" />
-              添加第一只宠物
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {pets.map((pet, index) => (
-            <PetCard
-              key={pet.id}
-              pet={pet}
-              index={index}
-              onOpen={(selected) => setDialog({ pet: selected })}
-            />
-          ))}
+        <div
+          className="h-[420px] animate-pulse rounded-[26px] bg-card/80"
+          aria-busy="true"
+        >
+          <span className="sr-only">正在加载宠物…</span>
         </div>
+      ) : selected ? (
+        <>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {pets.map((pet) => {
+              const thumb = photoDataUrl(pet.photo);
+              const active = pet.id === selected.id;
+              return (
+                <button
+                  key={pet.id}
+                  type="button"
+                  aria-current={active ? "true" : undefined}
+                  onClick={() => setSelectedId(pet.id)}
+                  className={cn(
+                    "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                    active
+                      ? "bg-foreground text-background shadow-md"
+                      : "bg-card text-foreground shadow-sm hover:bg-muted",
+                  )}
+                >
+                  {thumb ? (
+                    <img
+                      src={thumb}
+                      alt=""
+                      className="size-6 rounded-full object-cover"
+                    />
+                  ) : (
+                    <PawPrint aria-hidden="true" className="size-4" />
+                  )}
+                  {pet.name}
+                </button>
+              );
+            })}
+            <Button
+              variant="outline"
+              className="rounded-full bg-card px-4 shadow-sm"
+              onClick={() => setDialog({ pet: null })}
+            >
+              <Plus aria-hidden="true" />
+              添加宠物
+            </Button>
+          </div>
+          <PetProfileView
+            pet={selected}
+            onEdit={() => setDialog({ pet: selected })}
+            onDelete={() => setPendingDelete(selected)}
+          />
+        </>
+      ) : (
+        <section className="flex flex-col items-center gap-3 rounded-[26px] bg-card p-8 text-center shadow-pet-card">
+          <PawPrint aria-hidden="true" className="size-10 text-muted-foreground/40" />
+          <h2 className="text-lg font-medium leading-[21.6px]">还没有宠物</h2>
+          <p className="text-sm text-muted-foreground">
+            添加第一只宠物，开始记录你们的信息。
+          </p>
+          <Button
+            className={petPillPrimaryClass}
+            onClick={() => setDialog({ pet: null })}
+          >
+            <Plus aria-hidden="true" />
+            添加第一只宠物
+          </Button>
+        </section>
       )}
 
       {dialog ? (
@@ -72,10 +102,6 @@ function PawsPage() {
           key={dialog.pet?.id ?? "new"}
           initialPet={dialog.pet}
           onClose={() => setDialog(null)}
-          onRequestDelete={(pet) => {
-            setDialog(null);
-            setPendingDelete(pet);
-          }}
         />
       ) : null}
 
@@ -86,19 +112,5 @@ function PawsPage() {
         />
       ) : null}
     </main>
-  );
-}
-
-function PetGridSkeleton() {
-  return (
-    <div
-      className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-      aria-busy="true"
-    >
-      <span className="sr-only">正在加载宠物…</span>
-      {Array.from({ length: 3 }, (_, index) => (
-        <div key={index} className="h-80 animate-pulse rounded-xl bg-muted" />
-      ))}
-    </div>
   );
 }
