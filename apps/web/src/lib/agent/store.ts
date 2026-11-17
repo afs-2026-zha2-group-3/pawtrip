@@ -1,10 +1,8 @@
 import { createStore } from "@tanstack/store";
 import type { DestinationCandidate } from "@/lib/destination-matching";
-import type { Trip } from "@/lib/trip/types";
 import type {
   AgentProposal,
   AgentProposalStatus,
-  AgentTarget,
   PrepareNewTripOutput,
 } from "./types";
 
@@ -19,20 +17,16 @@ export interface PendingNewTripFlow {
 
 export interface AgentState {
   open: boolean;
-  target: AgentTarget | null;
-  targetTrip: Trip | null;
   proposals: AgentProposal[];
-  allowedPoiIds: string[];
+  allowedPoi: { tripId: number; poiIds: string[] } | null;
   locationNames: Record<string, string>;
   newTripFlow: PendingNewTripFlow | null;
 }
 
 export const initialAgentState: AgentState = {
   open: false,
-  target: null,
-  targetTrip: null,
   proposals: [],
-  allowedPoiIds: [],
+  allowedPoi: null,
   locationNames: {},
   newTripFlow: null,
 };
@@ -50,27 +44,18 @@ export const agentActions = {
   toggleOpen(): void {
     update((state) => ({ ...state, open: !state.open }));
   },
-  setTarget(target: AgentTarget | null, targetTrip: Trip | null = null): void {
-    update((state) => ({
-      ...state,
-      target,
-      targetTrip,
-      proposals: [],
-      allowedPoiIds: [],
-    }));
-  },
-  setTargetTrip(targetTrip: Trip | null): void {
-    update((state) => ({ ...state, targetTrip }));
-  },
-  addAllowedPoiIds(poiIds: readonly string[]): void {
+  addAllowedPoiIds(tripId: number, poiIds: readonly string[]): void {
     if (poiIds.length === 0) return;
-    update((state) => ({
-      ...state,
-      allowedPoiIds: [...new Set([...state.allowedPoiIds, ...poiIds])],
-    }));
+    update((state) => {
+      const existing = state.allowedPoi?.tripId === tripId ? state.allowedPoi.poiIds : [];
+      return {
+        ...state,
+        allowedPoi: { tripId, poiIds: [...new Set([...existing, ...poiIds])] },
+      };
+    });
   },
   resetAllowedPoiIds(): void {
-    update((state) => (state.allowedPoiIds.length === 0 ? state : { ...state, allowedPoiIds: [] }));
+    update((state) => (state.allowedPoi === null ? state : { ...state, allowedPoi: null }));
   },
   rememberLocations(names: Record<string, string>): void {
     update((state) => ({
@@ -91,13 +76,16 @@ export const agentActions = {
       ],
     }));
   },
-  setProposalStatus(id: string, status: AgentProposalStatus, message?: string): void {
+  setProposalStatus(id: string, status: AgentProposalStatus): void {
     update((state) => ({
       ...state,
       proposals: state.proposals.map((proposal) =>
-        proposal.id === id ? { ...proposal, status, message } : proposal,
+        proposal.id === id ? { ...proposal, status } : proposal,
       ),
     }));
+  },
+  clearProposals(): void {
+    update((state) => (state.proposals.length === 0 ? state : { ...state, proposals: [] }));
   },
   setNewTripFlow(flow: PendingNewTripFlow | null): void {
     update((state) => ({ ...state, newTripFlow: flow }));

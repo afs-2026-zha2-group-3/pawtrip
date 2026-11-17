@@ -42,7 +42,7 @@ area: external
   - `text` → Bubble 正文（流式）；
   - `thinking` → Reasoning；
   - `tool-call` / `tool-result` → Tool 卡片（对用户展示 Pawtrip 工具调用）；
-  - `structured-output` / 自定义方案（如 `propose_trip_plan` 结果）→ 自研方案卡片（Card + 差异预览 + 确认/拒绝）。
+  - `structured-output` / 自定义方案（如 `update_trip_plan` 的增量结果）→ 自研方案卡片（Card + 差异预览 + 确认/拒绝）。
 - 数据链路仍是 `fetchServerSentEvents('/agent')` + `useChat`；AI Elements 不引入新的传输层。
 
 ## @shadcn/helpers/tanstack-ai（可选，测试/开发 fixture）
@@ -66,5 +66,5 @@ area: external
 
 - 组件以 vendored 形式位于 `apps/web/src/components/ui/`：`sheet.tsx`、`message-scroller.tsx`、`message.tsx`、`bubble.tsx`、`input-group.tsx`；未新增 npm 依赖，保持 base-nova 风格。
 - Agent 面板使用 `Sheet` 受控 `open` + `modal={false}`、仅渲染 Popup（无 Backdrop），桌面端 `lg:inset-y-4 lg:right-4 lg:w-[400px]`，小屏 `inset-0`；z-index（面板 60、入口 70、Select 80、Dialog 100）保证高于 TripPanel 与表单弹窗。
-- `MessageScroller` 在用户位于底部时自动跟随流式内容；parts 映射在 `components/agent/agent-panel.tsx`，`propose_trip_plan` 使用 `components/agent/proposal-card.tsx` 展示差异与确认/拒绝。
+- `MessageScroller` 在用户位于底部时自动跟随流式内容；parts 映射在 `components/agent/agent-panel.tsx`：`text` → Bubble，`thinking` 与 `tool-call` / `tool-result` 通过 `lib/agent/status.ts` 聚合为单条活动状态（正在规划行程/正在搜集景点/正在编辑行程等），已完成步骤折叠为「已完成 N 个步骤」，当前轮次最多显示一条状态；`update_trip_plan` 使用 `components/agent/proposal-card.tsx` 展示差异与确认/拒绝。
 - 未使用 `@shadcn/helpers/tanstack-ai`；组件测试通过 mock `useChat` 覆盖入口/面板/方案卡片，E2E 通过服务端 fake provider 覆盖完整流式链路。

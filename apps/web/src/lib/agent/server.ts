@@ -156,7 +156,13 @@ function jsonError(status: number, code: string, detail: string): Response {
 }
 
 interface ToolResult {
-  kind: "find_locations" | "propose_trip_plan" | "prepare_new_trip" | "get_location_detail" | null;
+  kind:
+    | "find_locations"
+    | "get_trip_plan"
+    | "update_trip_plan"
+    | "prepare_new_trip"
+    | "get_location_detail"
+    | null;
   output: Record<string, unknown>;
 }
 
@@ -171,11 +177,58 @@ function createFakeResponseStep(): FakeResponseStep {
     const last = lastToolResult(request.messages);
     const userText = lastUserText(request.messages);
 
-    if (last?.kind === "propose_trip_plan") {
+    if (last?.kind === "update_trip_plan") {
       return { text: "方案已生成，请在方案卡片中确认是否应用。" };
+    }
+    if (last?.kind === "get_trip_plan") {
+      if (
+        last.output.status !== "ok" ||
+        typeof last.output.tripId !== "number" ||
+        typeof last.output.revision !== "string"
+      ) {
+        return { text: String(last.output.message ?? "未能读取当前行程。") };
+      }
+      const located = lastToolResultOfKind(request.messages, "find_locations");
+      const candidates = Array.isArray(located?.output.candidates)
+        ? located.output.candidates
+        : [];
+      const poiIds = candidates
+        .map((candidate) =>
+          candidate && typeof candidate === "object" && "poiId" in candidate
+            ? String((candidate as { poiId: unknown }).poiId)
+            : "",
+        )
+        .filter(Boolean)
+        .slice(0, 2);
+      if (poiIds.length === 0) {
+        return { text: "没有可用于方案的地点。" };
+      }
+      return {
+        text: "已读取最新行程，正在生成待确认方案。",
+        toolCalls: [
+          {
+            name: "update_trip_plan",
+            input: {
+              targetTripId: last.output.tripId,
+              baseRevision: last.output.revision,
+              operations: poiIds.map((poiId, index) => ({
+                op: "add_stop",
+                poiId,
+                day: 1,
+                position: index,
+              })),
+              summary: "为第 1 天添加已查询到的候选地点。",
+              warnings: [],
+            },
+          },
+        ],
+      };
     }
     if (last?.kind === "get_location_detail") {
       return { text: "已读取地点详情，可以继续编排。" };
+    }
+    if (last?.output.status === "rejected" || last?.output.status === "invalid_target") {
+      return { text: String(last.output.message ?? "方案未生成，请补充信息。") };
     }
     if (last?.kind === "prepare_new_trip") {
       const status = String(last.output.status ?? "");
@@ -195,15 +248,6 @@ function createFakeResponseStep(): FakeResponseStep {
     }
     if (last?.kind === "find_locations") {
       const candidates = Array.isArray(last.output.candidates) ? last.output.candidates : [];
-      const poiIds = candidates
-        .map((candidate) =>
-          candidate && typeof candidate === "object" && "poiId" in candidate
-            ? String((candidate as { poiId: unknown }).poiId)
-            : "",
-        )
-        .filter(Boolean)
-        .slice(0, 2);
-      const tripId = numberFrom(last.output.targetTripId) ?? targetTripId;
       if (candidates.length === 0) {
         return {
           text: last.output.noLocations
@@ -211,34 +255,23 @@ function createFakeResponseStep(): FakeResponseStep {
             : "未找到匹配的 Pawtrip 已收录地点，请换一个名称或查看其它已收录地点。",
         };
       }
-      if (!tripId || poiIds.length === 0) {
-        return { text: "请先在面板中选择规划目标，再继续编排。" };
-      }
       const truncation = last.output.truncated ? "地点目录超过抓取上限，匹配可能不完整。" : "";
       return {
-        text: truncation
-          ? `${truncation}已先按当前候选生成待确认方案。`
-          : "已找到可用地点，正在生成待确认方案。",
+        text: truncation ? `${truncation}正在读取最新行程。` : "正在读取最新行程。",
+        toolCalls: [{ name: "get_trip_plan", input: {} }],
+      };
+    }
+
+    if (isNewTripRequest(userText)) {
+      return {
+        text: "正在为你打开新行程创建确认弹窗。",
         toolCalls: [
           {
-            name: "propose_trip_plan",
+            name: "prepare_new_trip",
             input: {
-              target: { kind: "existing", tripId },
-              plan: {
-                version: 1,
-                days: [
-                  {
-                    day: 1,
-                    stops: poiIds.map((poiId, index) => ({
-                      poiId,
-                      ...(index < poiIds.length - 1 ? { toNext: "walk" } : {}),
-                    })),
-                  },
-                ],
-                unscheduled: [],
-              },
-              summary: "为第 1 天安排已查询到的候选地点。",
-              warnings: [],
+              cityName: cityName ?? guessCity(userText) ?? "珠海",
+              startDate: dateOffset(1),
+              endDate: dateOffset(2),
             },
           },
         ],
@@ -247,7 +280,7 @@ function createFakeResponseStep(): FakeResponseStep {
 
     if (mode === "existing" && targetTripId) {
       return {
-        text: "正在查询目标城市的地点。",
+        text: "正在查询当前行程城市的地点。",
         toolCalls: [{ name: "find_locations", input: { query: fakeLocationQuery(userText) } }],
       };
     }
@@ -270,6 +303,10 @@ function createFakeResponseStep(): FakeResponseStep {
 function guessCity(text: string): string | null {
   const match = /(珠海|杭州|深圳|广州|上海|北京)/.exec(text);
   return match?.[1] ?? null;
+}
+
+function isNewTripRequest(text: string): boolean {
+  return /(再规划|新建|另一个|新的行程|再来一个)/.test(text);
 }
 
 function fakeLocationQuery(text: string): string {
@@ -336,9 +373,42 @@ function lastToolResult(messages: readonly unknown[]): ToolResult | null {
   return null;
 }
 
+function lastToolResultOfKind(
+  messages: readonly unknown[],
+  kind: ToolResult["kind"],
+): ToolResult | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index] as {
+      role?: string;
+      content?: unknown;
+      parts?: Array<Record<string, unknown>>;
+    };
+    if (Array.isArray(message.parts)) {
+      for (let partIndex = message.parts.length - 1; partIndex >= 0; partIndex -= 1) {
+        const part = message.parts[partIndex];
+        if (part.type === "tool-result") {
+          const output = parseJsonish(part.content);
+          const found = classifyToolOutput(output);
+          if (found === kind) return { kind: found, output };
+        }
+      }
+    }
+    if (message.role === "tool") {
+      const output = parseJsonish(message.content);
+      const found = classifyToolOutput(output);
+      if (found === kind) return { kind: found, output };
+    }
+    if (message.role === "user") {
+      break;
+    }
+  }
+  return null;
+}
+
 function classifyToolOutput(output: Record<string, unknown>): ToolResult["kind"] {
   if (Array.isArray(output.candidates)) return "find_locations";
-  if (typeof output.proposalId === "string") return "propose_trip_plan";
+  if (typeof output.revision === "string" && output.plan != null) return "get_trip_plan";
+  if (typeof output.proposalId === "string") return "update_trip_plan";
   if (
     typeof output.status === "string" &&
     ["created", "cancelled", "needs_input", "no_pets", "save_failed", "failed"].includes(

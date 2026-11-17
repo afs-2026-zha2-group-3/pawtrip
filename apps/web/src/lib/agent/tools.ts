@@ -1,54 +1,10 @@
 import { toolDefinition } from "@tanstack/ai";
 import { AGENT_ALLOWED_TOOL_NAMES } from "./constants";
 
-const stopSchema = {
-  type: "object",
-  properties: {
-    poiId: { type: "string", description: "Pawtrip 已收录地点的 poiId" },
-    toNext: {
-      type: "string",
-      enum: ["walk", "drive", "transit"],
-      description: "前往下一地点的交通方式，可省略",
-    },
-  },
-  required: ["poiId"],
-  additionalProperties: false,
-};
-
-const planSchema = {
-  type: "object",
-  properties: {
-    version: { type: "number", enum: [1] },
-    days: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          day: { type: "number", description: "从 1 开始，不超过目标行程总天数" },
-          stops: { type: "array", items: stopSchema },
-        },
-        required: ["day", "stops"],
-        additionalProperties: false,
-      },
-    },
-    unscheduled: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: { poiId: { type: "string" } },
-        required: ["poiId"],
-        additionalProperties: false,
-      },
-    },
-  },
-  required: ["version", "days", "unscheduled"],
-  additionalProperties: false,
-};
-
 export const findLocationsTool = toolDefinition({
   name: "find_locations",
   description:
-    "按规划目标城市查询 Pawtrip 已收录地点。只返回真实 poiId；名称不唯一时 ambiguous=true，需要让用户消歧。",
+    "按当前激活行程城市查询 Pawtrip 已收录地点。只返回真实 poiId；名称不唯一时 ambiguous=true，需要让用户消歧。",
   inputSchema: {
     type: "object",
     properties: {
@@ -79,6 +35,17 @@ export const getLocationDetailTool = toolDefinition({
   },
 });
 
+export const getTripPlanTool = toolDefinition({
+  name: "get_trip_plan",
+  description:
+    "读取当前激活行程的最新计划（以客户端 store 为准，包含每天的地点、顺序、名称与 revision）。修改行程前必须先调用；不要依赖历史消息中的计划。",
+  inputSchema: {
+    type: "object",
+    properties: {},
+    additionalProperties: false,
+  },
+});
+
 export const prepareNewTripTool = toolDefinition({
   name: "prepare_new_trip",
   description:
@@ -96,27 +63,52 @@ export const prepareNewTripTool = toolDefinition({
   },
 });
 
-export const proposeTripPlanTool = toolDefinition({
-  name: "propose_trip_plan",
+const planOperationSchema = {
+  type: "object",
+  properties: {
+    op: {
+      type: "string",
+      enum: ["add_stop", "remove_stop", "add_unscheduled", "remove_unscheduled"],
+      description:
+        "add_stop 添加地点到指定天；remove_stop 从行程移除地点；add_unscheduled/remove_unscheduled 调整未排期列表",
+    },
+    poiId: { type: "string", description: "Pawtrip 已收录地点的 poiId" },
+    day: { type: "number", description: "第几天，从 1 开始" },
+    position: {
+      type: "number",
+      description: "add_stop 插入位置（从 0 开始），省略时追加到当天末尾",
+    },
+    toNext: {
+      type: "string",
+      enum: ["walk", "drive", "transit"],
+      description: "前往下一地点的交通方式，可省略",
+    },
+  },
+  required: ["op", "poiId"],
+  additionalProperties: false,
+};
+
+export const updateTripPlanTool = toolDefinition({
+  name: "update_trip_plan",
   description:
-    "提交一个待用户确认的行程计划。只能引用地点工具返回过的 poiId；只针对已持久化行程。",
+    "在当前激活行程的增量操作基础上生成待确认方案，不会整份替换计划。必须先调用 get_trip_plan 获取 baseRevision；调整顺序或跨天移动时，先 remove_stop 再用 add_stop 指定 position。多个改动放入 operations 数组。只能引用地点工具返回过或已在计划中的 poiId。",
   inputSchema: {
     type: "object",
     properties: {
-      target: {
-        type: "object",
-        properties: {
-          kind: { type: "string", enum: ["existing"] },
-          tripId: { type: "number" },
-        },
-        required: ["kind", "tripId"],
-        additionalProperties: false,
+      targetTripId: { type: "number", description: "当前激活行程的 id" },
+      baseRevision: {
+        type: "string",
+        description: "get_trip_plan 返回的 revision；与当前 store 不一致时拒绝修改",
       },
-      plan: planSchema,
-      summary: { type: "string" },
+      operations: {
+        type: "array",
+        maxItems: 30,
+        items: planOperationSchema,
+      },
+      summary: { type: "string", description: "面向用户的变更摘要" },
       warnings: { type: "array", items: { type: "string" } },
     },
-    required: ["target", "plan", "summary"],
+    required: ["targetTripId", "baseRevision", "operations", "summary"],
     additionalProperties: false,
   },
 });
@@ -124,8 +116,9 @@ export const proposeTripPlanTool = toolDefinition({
 export const AGENT_TOOL_DEFINITIONS = [
   findLocationsTool,
   getLocationDetailTool,
+  getTripPlanTool,
   prepareNewTripTool,
-  proposeTripPlanTool,
+  updateTripPlanTool,
 ] as const;
 
 export function isAllowedAgentToolName(name: string): boolean {

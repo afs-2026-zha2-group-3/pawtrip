@@ -1,24 +1,33 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { AgentPanel } from "./agent-panel";
 import { agentActions, agentStore } from "@/lib/agent/store";
 import { tripActions, tripStore } from "@/lib/trip/store";
 
+const chat = vi.hoisted(() => ({
+  state: {
+    messages: [] as unknown[],
+    isLoading: false,
+    error: undefined as Error | undefined,
+  },
+  sendMessage: vi.fn(async () => undefined),
+}));
+
 vi.mock("@tanstack/ai-react", () => ({
   fetchServerSentEvents: () => ({ kind: "mock-connection" }),
   useChat: () => ({
-    messages: [],
-    isLoading: false,
-    error: undefined,
-    sendMessage: vi.fn(async () => undefined),
+    messages: chat.state.messages,
+    isLoading: chat.state.isLoading,
+    error: chat.state.error,
+    sendMessage: chat.sendMessage,
   }),
 }));
 
-function jsonResponse(data: unknown): Response {
+function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
-    status: 200,
+    status,
     headers: { "content-type": "application/json" },
   });
 }
@@ -64,10 +73,27 @@ describe("AgentPanel", () => {
   beforeEach(() => {
     agentActions.resetForTests();
     tripActions.resetForTests();
+    chat.state.messages = [];
+    chat.state.isLoading = false;
+    chat.state.error = undefined;
+    document.cookie = "XSRF-TOKEN=test-token";
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
+        const method = (init?.method ?? "GET").toUpperCase();
+        if (url === "/api/trips/4" && method === "GET") return jsonResponse(trip);
+        if (url === "/api/trips/4" && method === "PUT") {
+          const saved = JSON.parse(String(init?.body ?? "{}")) as { plan?: unknown };
+          return jsonResponse({
+            ...trip,
+            plan: saved.plan ?? trip.plan,
+            updatedAt: "2026-01-02T00:00:00Z",
+          });
+        }
+        if (url.startsWith("/api/locations/")) {
+          return jsonResponse({ poiId: "a", name: "珠海渔女", regionCode: "440402" });
+        }
         if (url.startsWith("/api/trips")) return jsonResponse([]);
         if (url.startsWith("/api/destinations")) return jsonResponse([]);
         if (url.startsWith("/api/pets")) return jsonResponse([]);
@@ -89,11 +115,28 @@ describe("AgentPanel", () => {
       expect(screen.getByTestId("agent-panel")).toBeTruthy();
     });
     expect(screen.getByText(/描述城市、日期、宠物/)).toBeTruthy();
+    expect(screen.getByTestId("agent-current-trip").textContent).toContain("未激活行程");
     expect(tripStore.state.active).toBeNull();
   });
 
-  it("rejects a pending proposal without writing the trip", async () => {
-    agentActions.setTarget({ kind: "existing", tripId: 4 }, trip);
+  it("follows the active trip and clears stale proposals when it changes", async () => {
+    agentActions.setOpen(true);
+    agentActions.addProposal(pendingProposal);
+
+    renderPanel();
+    expect(screen.getByTestId("agent-current-trip").textContent).toContain("未激活行程");
+    expect(screen.queryByTestId("agent-proposal")).toBeNull();
+
+    act(() => tripActions.setActive(trip));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("agent-current-trip").textContent).toContain("珠海两日");
+    });
+    expect(agentStore.state.proposals).toEqual([]);
+  });
+
+  it("rejects a pending proposal and closes the card without writing the trip", async () => {
+    tripActions.setActive(trip);
     agentActions.addProposal(pendingProposal);
     agentActions.setOpen(true);
 
@@ -104,9 +147,27 @@ describe("AgentPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "拒绝" }));
 
     await waitFor(() => {
-      expect(agentStore.state.proposals[0].status).toBe("rejected");
+      expect(screen.queryByTestId("agent-proposal")).toBeNull();
     });
-    expect(tripStore.state.active).toBeNull();
+    expect(agentStore.state.proposals).toEqual([]);
+    expect(tripStore.state.active?.plan).toEqual(trip.plan);
+  });
+
+  it("removes the pending proposal card after applying it", async () => {
+    tripActions.setActive(trip);
+    agentActions.addProposal(pendingProposal);
+    agentActions.setOpen(true);
+
+    renderPanel();
+
+    const card = await screen.findByTestId("agent-proposal");
+    fireEvent.click(screen.getByRole("button", { name: "确认应用" }));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("agent-proposal")).toBeNull();
+    });
+    expect(agentStore.state.proposals).toEqual([]);
+    expect(tripStore.state.active?.plan.days[0].stops).toEqual([{ poiId: "a" }]);
   });
 
   it("asks before deactivating the current trip for a new trip", async () => {
@@ -136,5 +197,72 @@ describe("AgentPanel", () => {
     expect(confirm.textContent).toContain("取消当前激活行程");
     expect(screen.getByRole("button", { name: "确认并继续" })).toBeTruthy();
     expect(tripStore.state.active?.id).toBe(4);
+  });
+
+  it("shows one planning status while thinking", () => {
+    chat.state.messages = [
+      { id: "u1", role: "user", parts: [{ type: "text", content: "帮我调整行程" }] },
+      { id: "a1", role: "assistant", parts: [{ type: "thinking", content: "" }] },
+    ];
+    chat.state.isLoading = true;
+    agentActions.setOpen(true);
+
+    renderPanel();
+
+    expect(screen.getAllByTestId("agent-status-active")).toHaveLength(1);
+    expect(screen.getByTestId("agent-status-active").textContent).toContain("正在规划行程");
+  });
+
+  it("labels location lookup and trip editing", async () => {
+    agentActions.setOpen(true);
+    chat.state.isLoading = true;
+    chat.state.messages = [
+      { id: "u1", role: "user", parts: [{ type: "text", content: "帮我找景点" }] },
+      {
+        id: "a1",
+        role: "assistant",
+        parts: [{ type: "tool-call", id: "c1", name: "find_locations", state: "input-complete" }],
+      },
+    ];
+
+    const { unmount } = renderPanel();
+    expect(screen.getByTestId("agent-status-active").textContent).toContain("正在搜集景点");
+    unmount();
+
+    chat.state.messages = [
+      { id: "u2", role: "user", parts: [{ type: "text", content: "帮我调整" }] },
+      {
+        id: "a2",
+        role: "assistant",
+        parts: [{ type: "tool-call", id: "c2", name: "update_trip_plan", state: "input-complete" }],
+      },
+    ];
+    renderPanel();
+    expect(screen.getByTestId("agent-status-active").textContent).toContain("正在编辑行程");
+  });
+
+  it("folds completed steps and keeps at most one active status", () => {
+    chat.state.messages = [
+      { id: "u1", role: "user", parts: [{ type: "text", content: "帮我调整行程" }] },
+      {
+        id: "a1",
+        role: "assistant",
+        parts: [
+          { type: "tool-call", id: "c1", name: "find_locations", state: "complete" },
+          { type: "tool-result", toolCallId: "c1", state: "complete" },
+          { type: "thinking", content: "" },
+        ],
+      },
+    ];
+    chat.state.isLoading = true;
+    agentActions.setOpen(true);
+
+    renderPanel();
+
+    expect(screen.getAllByTestId("agent-status-active")).toHaveLength(1);
+    expect(screen.getByTestId("agent-status-active").textContent).toContain("正在规划行程");
+    const completed = screen.getByTestId("agent-completed-steps") as HTMLDetailsElement;
+    expect(completed.textContent).toContain("已完成 1 个步骤");
+    expect(completed.open).toBe(false);
   });
 });

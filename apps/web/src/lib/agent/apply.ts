@@ -1,11 +1,12 @@
 import { ApiError } from "@/lib/http/api-error";
-import type { SaveTripInput, Trip, TripPlan } from "@/lib/trip/types";
+import type { Trip, TripPlan } from "@/lib/trip/types";
 import type { TripSaveOutcome } from "@/lib/trip/save";
 import type { AgentProposal } from "./types";
 
 export type ApplyFailureReason =
   | "not_found"
   | "stale"
+  | "not_active"
   | "save_failed"
   | "validation"
   | "invalid_location"
@@ -20,7 +21,6 @@ export interface ApplyProposalDeps {
   fetchTrip: (tripId: number) => Promise<Trip>;
   flushSave: () => Promise<TripSaveOutcome>;
   replaceActivePlan: (plan: TripPlan) => void;
-  updateInactive: (tripId: number, input: SaveTripInput) => Promise<Trip>;
   verifyPoiId: (poiId: string) => Promise<boolean>;
   refresh: () => Promise<void>;
 }
@@ -29,6 +29,10 @@ export async function applyProposal(
   proposal: AgentProposal,
   deps: ApplyProposalDeps,
 ): Promise<ApplyResult> {
+  if (deps.activeTripId !== proposal.tripId) {
+    return fail("not_active", "目标行程已不是当前激活行程，请重新生成方案。");
+  }
+
   let detail: Trip;
   try {
     detail = await deps.fetchTrip(proposal.tripId);
@@ -51,41 +55,20 @@ export async function applyProposal(
     }
   }
 
-  if (deps.activeTripId === proposal.tripId) {
-    const pending = await deps.flushSave();
-    if (!pending.ok) {
-      return fail("save_failed", "当前行程的自动保存失败，方案未应用。");
-    }
-    deps.replaceActivePlan(proposal.plan);
-    const saved = await deps.flushSave();
-    if (!saved.ok) {
-      if (saved.status === 400) {
-        return fail("validation", "服务端校验未通过，方案未生效。");
-      }
-      return fail("save_failed", "保存方案失败，请稍后重试。");
-    }
-    await deps.refresh();
-    return { ok: true };
+  const pending = await deps.flushSave();
+  if (!pending.ok) {
+    return fail("save_failed", "当前行程的自动保存失败，方案未应用。");
   }
-
-  try {
-    await deps.updateInactive(proposal.tripId, {
-      name: detail.name,
-      totalDays: detail.totalDays,
-      transportMode: detail.transportMode,
-      plan: proposal.plan,
-    });
-    await deps.refresh();
-    return { ok: true };
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) {
-      return fail("not_found", "目标行程已不存在，方案未应用。");
-    }
-    if (error instanceof ApiError && error.status === 400) {
+  deps.replaceActivePlan(proposal.plan);
+  const saved = await deps.flushSave();
+  if (!saved.ok) {
+    if (saved.status === 400) {
       return fail("validation", "服务端校验未通过，方案未生效。");
     }
-    return fail("unexpected", "保存方案失败，请稍后重试。");
+    return fail("save_failed", "保存方案失败，请稍后重试。");
   }
+  await deps.refresh();
+  return { ok: true };
 }
 
 function collectPoiIds(plan: TripPlan): string[] {

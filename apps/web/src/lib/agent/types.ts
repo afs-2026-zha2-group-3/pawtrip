@@ -8,19 +8,6 @@ export interface AgentTripCity {
   province: string;
 }
 
-export type AgentTarget =
-  | {
-      kind: "new";
-      city: AgentTripCity | null;
-      startDate: string | null;
-      endDate: string | null;
-      petId: number | null;
-    }
-  | {
-      kind: "existing";
-      tripId: number;
-    };
-
 export interface AgentPetContext {
   id: number;
   name: string;
@@ -35,14 +22,34 @@ export interface AgentPetContext {
 export interface AgentContext {
   mode: "new" | "existing";
   targetTripId: number | null;
-  activeTripId: number | null;
   city: AgentTripCity | null;
   totalDays: number | null;
   transportMode: TransportMode | null;
   pet: AgentPetContext | null;
-  startDate: string | null;
-  endDate: string | null;
   constraints: string[];
+}
+
+export interface AgentPlanStopView {
+  poiId: string;
+  name?: string;
+  toNext?: string;
+}
+
+export interface AgentPlanView {
+  days: Array<{ day: number; stops: AgentPlanStopView[] }>;
+  unscheduled: AgentPlanStopView[];
+}
+
+export interface GetTripPlanOutput {
+  status: "ok" | "no_active_trip";
+  tripId?: number;
+  name?: string;
+  totalDays?: number;
+  transportMode?: TransportMode | null;
+  updatedAt?: string;
+  revision?: string;
+  plan?: AgentPlanView;
+  message?: string;
 }
 
 export interface AgentLocationCandidate {
@@ -54,7 +61,7 @@ export interface AgentLocationCandidate {
 }
 
 export interface FindLocationsOutput {
-  status: "ok" | "no_target" | "invalid_target";
+  status: "ok" | "invalid_target";
   regionCode?: string;
   targetTripId?: number;
   candidates?: AgentLocationCandidate[];
@@ -97,20 +104,33 @@ export interface PrepareNewTripOutput {
   message?: string;
 }
 
-export interface ProposeTripPlanInput {
-  target: { kind: "existing"; tripId: number };
-  plan: TripPlan;
+export interface UpdateTripPlanInput {
+  targetTripId: number;
+  baseRevision: string;
+  operations: PlanEditOperation[];
   summary: string;
   warnings?: string[];
 }
 
-export interface ProposeTripPlanOutput {
+export type PlanEditOperation =
+  | {
+      op: "add_stop";
+      poiId: string;
+      day: number;
+      position?: number;
+      toNext?: "walk" | "drive" | "transit";
+    }
+  | { op: "remove_stop"; poiId: string; day?: number }
+  | { op: "add_unscheduled"; poiId: string }
+  | { op: "remove_unscheduled"; poiId: string };
+
+export interface UpdateTripPlanOutput {
   status: "proposed" | "rejected";
   proposalId?: string;
   message?: string;
 }
 
-export type AgentProposalStatus = "pending" | "applied" | "rejected" | "error";
+export type AgentProposalStatus = "pending" | "error";
 
 export interface AgentProposal {
   id: string;
@@ -120,6 +140,5 @@ export interface AgentProposal {
   warnings: string[];
   baseUpdatedAt: string;
   status: AgentProposalStatus;
-  message?: string;
   createdAt: string;
 }

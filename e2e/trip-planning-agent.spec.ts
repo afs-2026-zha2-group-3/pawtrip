@@ -19,11 +19,6 @@ async function sendAgentMessage(page: Page, text: string) {
   await page.getByRole("button", { name: "发送" }).click();
 }
 
-async function selectTarget(page: Page, name: string | RegExp) {
-  await page.getByTestId("agent-target").click();
-  await page.getByRole("option", { name }).click();
-}
-
 function creationDialog(page: Page) {
   return page.locator('[data-slot="dialog-content"]').filter({ hasText: "创建行程" });
 }
@@ -103,7 +98,7 @@ test("creates a trip through the confirmation dialog and applies a reviewed plan
   expect(poiIds(before.plan)).toEqual([]);
 
   await proposal.getByRole("button", { name: "确认应用" }).click();
-  await expect(proposal.getByText("方案已应用。")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("agent-proposal")).toHaveCount(0, { timeout: 30_000 });
 
   const after = await tripPlan(page, created[0].id);
   expect(poiIds(after.plan).some((poiId) => poiId.startsWith("e2e-zhu-"))).toBe(true);
@@ -126,7 +121,6 @@ test("confirms deactivation before creating a new trip while one is active", asy
   await openTripsAndActivate(page, "已有珠海行程");
 
   await openAgent(page);
-  await selectTarget(page, "新建行程");
   await sendAgentMessage(page, "再规划一个珠海两天的行程");
 
   const confirm = page.getByTestId("agent-deactivate-confirm");
@@ -146,34 +140,63 @@ test("confirms deactivation before creating a new trip while one is active", asy
   expect(activeId).not.toBe(String(existing.id));
 });
 
-test("modifies an inactive trip without activating it", async ({ page }) => {
+test("modifies the active trip", async ({ page }) => {
   const pet = (await pets(page))[0];
   const trip = await createTripViaApi(page, {
-    name: "未激活珠海行程",
+    name: "激活珠海行程",
     cityAdcode: ZHUHAI,
     petId: pet.id,
     totalDays: 2,
   });
   await page.goto("/trips");
+  await openTripsAndActivate(page, "激活珠海行程");
 
   await openAgent(page);
-  await selectTarget(page, "未激活珠海行程");
   await sendAgentMessage(page, "帮我调整这个行程");
 
   const proposal = page.getByTestId("agent-proposal");
   await expect(proposal).toBeVisible({ timeout: 30_000 });
   await proposal.getByRole("button", { name: "确认应用" }).click();
-  await expect(proposal.getByText("方案已应用。")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("agent-proposal")).toHaveCount(0, { timeout: 30_000 });
 
   const after = await tripPlan(page, trip.id);
   expect(poiIds(after.plan).some((poiId) => poiId.startsWith("e2e-zhu-"))).toBe(true);
   expect(
     await page.evaluate(() => window.localStorage.getItem("pawtrip.activeTripId")),
-  ).toBeNull();
-  await expect(page.getByTestId("trip-panel")).toHaveCount(0);
+  ).toBe(String(trip.id));
 });
 
-test("rejecting an unconfirmed plan leaves the trip unchanged", async ({ page }) => {
+test("keeps existing stops when the agent inserts more locations", async ({ page }) => {
+  const pet = (await pets(page))[0];
+  const trip = await createTripViaApi(page, {
+    name: "保留既有行程",
+    cityAdcode: ZHUHAI,
+    petId: pet.id,
+    totalDays: 2,
+    plan: {
+      version: 1,
+      days: [{ day: 1, stops: [{ poiId: "e2e-zhu-a" }] }],
+      unscheduled: [],
+    },
+  });
+  await page.goto("/trips");
+  await openTripsAndActivate(page, "保留既有行程");
+
+  await openAgent(page);
+  await sendAgentMessage(page, "帮我再加一个景点");
+
+  const proposal = page.getByTestId("agent-proposal");
+  await expect(proposal).toBeVisible({ timeout: 30_000 });
+  await proposal.getByRole("button", { name: "确认应用" }).click();
+  await expect(page.getByTestId("agent-proposal")).toHaveCount(0, { timeout: 30_000 });
+
+  const after = await tripPlan(page, trip.id);
+  const dayOne = after.plan.days.find((day) => day.day === 1)?.stops ?? [];
+  expect(dayOne.map((stop) => stop.poiId)).toContain("e2e-zhu-a");
+  expect(dayOne.length).toBeGreaterThan(1);
+});
+
+test("rejecting an unconfirmed plan closes it and leaves the trip unchanged", async ({ page }) => {
   const pet = (await pets(page))[0];
   const trip = await createTripViaApi(page, {
     name: "拒绝方案行程",
@@ -182,9 +205,9 @@ test("rejecting an unconfirmed plan leaves the trip unchanged", async ({ page })
     totalDays: 2,
   });
   await page.goto("/trips");
+  await openTripsAndActivate(page, "拒绝方案行程");
 
   await openAgent(page);
-  await selectTarget(page, "拒绝方案行程");
   await sendAgentMessage(page, "帮我调整这个行程");
 
   const proposal = page.getByTestId("agent-proposal");
@@ -193,7 +216,7 @@ test("rejecting an unconfirmed plan leaves the trip unchanged", async ({ page })
   expect(poiIds(before.plan)).toEqual([]);
 
   await proposal.getByRole("button", { name: "拒绝" }).click();
-  await expect(proposal.getByText("已拒绝该方案。")).toBeVisible();
+  await expect(page.getByTestId("agent-proposal")).toHaveCount(0);
 
   const after = await tripPlan(page, trip.id);
   expect(poiIds(after.plan)).toEqual([]);
@@ -264,9 +287,9 @@ test("warns when the Pawtrip location catalog is truncated", async ({ page }) =>
     });
   });
   await page.goto("/trips");
+  await openTripsAndActivate(page, "截断目录行程");
 
   await openAgent(page);
-  await selectTarget(page, "截断目录行程");
   await sendAgentMessage(page, "帮我调整这个行程");
 
   await expect(page.getByText(/匹配可能不完整/)).toBeVisible({ timeout: 30_000 });
@@ -282,9 +305,9 @@ test("explains when a requested location is not in Pawtrip", async ({ page }) =>
     totalDays: 2,
   });
   await page.goto("/trips");
+  await openTripsAndActivate(page, "未命中地点行程");
 
   await openAgent(page);
-  await selectTarget(page, "未命中地点行程");
   await sendAgentMessage(page, "帮我查找不存在的地点");
 
   await expect(page.getByText(/未找到匹配的 Pawtrip 已收录地点/)).toBeVisible({

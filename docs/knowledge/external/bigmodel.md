@@ -49,4 +49,4 @@ area: external
 - 适配器：`openaiCompatible({ name: "bigmodel", baseURL, apiKey, models: [model] })`，默认 `baseURL=https://open.bigmodel.cn/api/paas/v4`、模型 `glm-5.3`。
 - 服务端环境变量：`BIGMODEL_API_KEY`（必填，仅服务端）、`PAWTRIP_API_BASE_URL`（Spring 地址）、`PAWTRIP_AGENT_PROVIDER`（`bigmodel` 或非生产 `fake`）、可选 `PAWTRIP_AGENT_MODEL` 与 `PAWTRIP_AGENT_BASE_URL`。
 - 生产环境必须禁用 `PAWTRIP_AGENT_PROVIDER=fake`，并按用户/会话配置模型调用限流与配额；CI 与 E2E 只使用 fake provider，不访问智谱。
-- 结构化计划不依赖 provider 结构化输出参数，而由 `propose_trip_plan` 工具调用承载，并在浏览器端重新校验。`tool_choice` 只使用默认 `auto`。
+- 结构化计划不依赖 provider 结构化输出参数，而由 `update_trip_plan` 工具调用承载增量操作，并在浏览器端基于最新计划重新计算与校验。`tool_choice` 只使用默认 `auto`。

@@ -78,15 +78,6 @@ export function ProposalCard({
             {error}
           </p>
         ) : null}
-        {proposal.status !== "pending" ? (
-          <p className="text-muted-foreground">
-            {proposal.status === "applied"
-              ? "方案已应用。"
-              : proposal.status === "rejected"
-                ? "已拒绝该方案。"
-                : (proposal.message ?? "方案未生效。")}
-          </p>
-        ) : null}
       </CardContent>
       <CardFooter className="gap-2">
         <Button size="sm" disabled={!actionable} onClick={onApply}>

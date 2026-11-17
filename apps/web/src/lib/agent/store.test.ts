@@ -20,22 +20,20 @@ describe("agent workspace store", () => {
     tripActions.resetForTests();
   });
 
-  it("switching target invalidates proposals and allowed locations", () => {
-    agentActions.setTarget({ kind: "existing", tripId: 4 });
-    agentActions.addAllowedPoiIds(["a", "b"]);
-    agentActions.addProposal(proposal);
+  it("keeps allowed locations scoped to the trip that queried them", () => {
+    agentActions.addAllowedPoiIds(4, ["a", "b"]);
+    expect(agentStore.state.allowedPoi).toEqual({ tripId: 4, poiIds: ["a", "b"] });
 
-    agentActions.setTarget({ kind: "new", city: null, startDate: null, endDate: null, petId: null });
+    agentActions.addAllowedPoiIds(9, ["c"]);
+    expect(agentStore.state.allowedPoi).toEqual({ tripId: 9, poiIds: ["c"] });
 
-    expect(agentStore.state.proposals).toEqual([]);
-    expect(agentStore.state.allowedPoiIds).toEqual([]);
-    expect(agentStore.state.target?.kind).toBe("new");
+    agentActions.resetAllowedPoiIds();
+    expect(agentStore.state.allowedPoi).toBeNull();
   });
 
-  it("selecting a target does not activate a trip", () => {
-    agentActions.setTarget({ kind: "existing", tripId: 4 });
+  it("does not activate a trip when recording allowed locations", () => {
+    agentActions.addAllowedPoiIds(4, ["a"]);
 
-    expect(agentStore.state.target).toEqual({ kind: "existing", tripId: 4 });
     expect(tripStore.state.active).toBeNull();
   });
 
@@ -44,6 +42,35 @@ describe("agent workspace store", () => {
     agentActions.addProposal({ ...proposal, id: "call-2" });
 
     expect(agentStore.state.proposals.map((entry) => entry.id)).toEqual(["call-2"]);
+  });
+
+  it("clears an applied proposal from the workspace", () => {
+    agentActions.addProposal(proposal);
+    agentActions.clearProposals();
+
+    expect(agentStore.state.proposals).toEqual([]);
+  });
+
+  it("clears stale proposals when the active trip changes", () => {
+    tripActions.setActive({
+      id: 4,
+      name: "珠海",
+      cityAdcode: "440400",
+      petId: 1,
+      totalDays: 1,
+      transportMode: null,
+      plan: { version: 1, days: [{ day: 1, stops: [] }], unscheduled: [] },
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    agentActions.addProposal(proposal);
+    agentActions.addAllowedPoiIds(4, ["a"]);
+
+    agentActions.clearProposals();
+    agentActions.resetAllowedPoiIds();
+
+    expect(agentStore.state.proposals).toEqual([]);
+    expect(agentStore.state.allowedPoi).toBeNull();
   });
 
   it("replaceActivePlan bumps revision while setPlan does not", () => {

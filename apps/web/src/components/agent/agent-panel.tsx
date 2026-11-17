@@ -1,17 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchServerSentEvents, useChat } from "@tanstack/ai-react";
-import { Bot, X } from "lucide-react";
+import { Bot, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupTextarea } from "@/components/ui/input-group";
 import { MessageScroller } from "@/components/ui/message-scroller";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Bubble } from "@/components/ui/bubble";
 import { Message, MessageContent } from "@/components/ui/message";
@@ -22,12 +15,16 @@ import { createAgentClientTools } from "@/lib/agent/client-tools";
 import { buildAgentContext } from "@/lib/agent/context";
 import { agentActions } from "@/lib/agent/store";
 import {
+  resolveAgentStatus,
+  type AgentMessageLike,
+  type AgentPartLike,
+  type AgentStatusView,
+} from "@/lib/agent/status";
+import {
   useAgentLocationNames,
   useAgentNewTripFlow,
   useAgentOpen,
   useAgentProposals,
-  useAgentTarget,
-  useAgentTargetTrip,
   usePendingProposal,
 } from "@/lib/agent/selectors";
 import { destinationsQueryOptions } from "@/queries/destinations";
@@ -35,35 +32,14 @@ import { locationBrowseDetailQueryOptions } from "@/queries/locations";
 import { petsQueryOptions } from "@/queries/pets";
 import {
   fetchTripDetail,
-  tripDetailQueryOptions,
   tripQueryKeys,
-  tripsQueryOptions,
-  updateTrip,
 } from "@/queries/trips";
 import { flushTripSave } from "@/lib/trip/save";
 import { tripActions, tripStore } from "@/lib/trip/store";
 import { useActiveTrip } from "@/lib/trip/selectors";
-import { cn } from "@/lib/utils";
-
-interface RenderedPart {
-  type: string;
-  content?: string;
-  name?: string;
-  state?: string;
-  output?: unknown;
-  errorText?: string;
-}
-
-interface RenderedMessage {
-  id: string;
-  role: string;
-  parts: RenderedPart[];
-}
 
 export function AgentPanel() {
   const open = useAgentOpen();
-  const target = useAgentTarget();
-  const targetTrip = useAgentTargetTrip();
   const active = useActiveTrip();
   const flow = useAgentNewTripFlow();
   const pending = usePendingProposal();
@@ -72,12 +48,8 @@ export function AgentPanel() {
   const names = useAgentLocationNames();
   const queryClient = useQueryClient();
   const isClient = typeof window !== "undefined";
+  const activeId = active?.id ?? null;
 
-  const trips = useQuery({
-    ...tripsQueryOptions(),
-    enabled: isClient && open,
-    throwOnError: false,
-  });
   const destinations = useQuery({
     ...destinationsQueryOptions({}),
     enabled: isClient && open,
@@ -88,68 +60,59 @@ export function AgentPanel() {
     enabled: isClient && open,
     throwOnError: false,
   });
-  const targetTripId = target?.kind === "existing" ? target.tripId : 0;
-  const detail = useQuery({
-    ...tripDetailQueryOptions(targetTripId),
-    enabled: open && target?.kind === "existing" && targetTrip?.id !== targetTripId,
-    throwOnError: false,
-  });
 
   const [threadId] = useState(() => `trip-planning-${crypto.randomUUID()}`);
   const tools = useMemo(() => createAgentClientTools(queryClient), [queryClient]);
-  const chat = useChat({
-    connection: fetchServerSentEvents("/agent"),
-    threadId,
-    tools,
-  });
   const [input, setInput] = useState("");
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
+  const lastActiveId = useRef<number | null | undefined>(undefined);
 
   useEffect(() => {
-    if (detail.data) {
-      agentActions.setTargetTrip(detail.data);
+    if (lastActiveId.current === undefined) {
+      lastActiveId.current = activeId;
+      return;
     }
-  }, [detail.data]);
-
-  useEffect(() => {
-    if (target?.kind === "existing" && active?.id === target.tripId) {
-      agentActions.setTargetTrip(active);
+    if (lastActiveId.current !== activeId) {
+      agentActions.clearProposals();
+      agentActions.resetAllowedPoiIds();
+      lastActiveId.current = activeId;
     }
-  }, [active, target]);
-
-  useEffect(() => {
-    if (!target && active) {
-      agentActions.setTarget({ kind: "existing", tripId: active.id }, active);
-    }
-  }, [active, target]);
+  }, [activeId]);
 
   useEffect(() => {
     setApplyError(null);
   }, [shownProposal?.id]);
 
   const city = useMemo(() => {
-    const adcode = targetTrip?.cityAdcode;
+    const adcode = active?.cityAdcode;
     if (!adcode) return null;
     const candidate = (destinations.data ?? []).find((item) => item.adcode === adcode);
     return candidate
       ? { adcode: candidate.adcode, name: candidate.name, province: candidate.province }
       : { adcode, name: adcode, province: "" };
-  }, [destinations.data, targetTrip?.cityAdcode]);
+  }, [destinations.data, active?.cityAdcode]);
 
   const agentContext = useMemo(
     () =>
       buildAgentContext({
-        target,
-        targetTrip,
-        activeTripId: active?.id ?? null,
+        active,
         pets: pets.data ?? [],
         city,
       }),
-    [active?.id, city, pets.data, target, targetTrip],
+    [active, city, pets.data],
   );
+  const forwardedProps = useMemo(() => ({ agentContext }), [agentContext]);
+  const chat = useChat({
+    connection: fetchServerSentEvents("/agent"),
+    threadId,
+    tools,
+    forwardedProps,
+  });
 
-  const messages = chat.messages as unknown as ReadonlyArray<RenderedMessage>;
+  const messages = chat.messages as unknown as ReadonlyArray<AgentMessageLike>;
+  const visibleMessages = messages.filter(hasRenderableText);
+  const statusView = resolveAgentStatus(messages, chat.isLoading);
 
   async function send() {
     const text = input.trim();
@@ -161,15 +124,14 @@ export function AgentPanel() {
   }
 
   async function apply() {
-    if (!pending || !targetTrip) return;
+    if (!pending || !active) return;
     setApplying(true);
     setApplyError(null);
     const result = await applyProposal(pending, {
-      activeTripId: active?.id ?? null,
+      activeTripId: active.id,
       fetchTrip: fetchTripDetail,
       flushSave: flushTripSave,
       replaceActivePlan: tripActions.replaceActivePlan,
-      updateInactive: updateTrip,
       verifyPoiId: async (poiId) => {
         try {
           await queryClient.fetchQuery(locationBrowseDetailQueryOptions(poiId));
@@ -180,41 +142,16 @@ export function AgentPanel() {
       },
       refresh: async () => {
         await queryClient.invalidateQueries({ queryKey: tripQueryKeys.all });
-        const fresh = await queryClient.fetchQuery(tripDetailQueryOptions(pending.tripId));
-        agentActions.setTargetTrip(fresh);
       },
     });
     setApplying(false);
     if (result.ok) {
-      agentActions.setProposalStatus(pending.id, "applied");
+      agentActions.clearProposals();
     } else {
-      agentActions.setProposalStatus(pending.id, "error", result.message);
+      agentActions.setProposalStatus(pending.id, "error");
       setApplyError(result.message);
     }
   }
-
-  function selectTarget(value: string) {
-    if (value === "new") {
-      agentActions.setTarget({
-        kind: "new",
-        city: null,
-        startDate: null,
-        endDate: null,
-        petId: null,
-      });
-      return;
-    }
-    const tripId = Number(value.replace("existing:", ""));
-    if (!Number.isSafeInteger(tripId) || tripId <= 0) return;
-    agentActions.setTarget({ kind: "existing", tripId }, active?.id === tripId ? active : null);
-  }
-
-  const targetValue =
-    target?.kind === "new"
-      ? "new"
-      : target?.kind === "existing"
-        ? `existing:${target.tripId}`
-        : "";
 
   async function confirmDeactivation() {
     if (!flow) return;
@@ -269,32 +206,14 @@ export function AgentPanel() {
             </Button>
           </SheetHeader>
 
-          <Select
-            value={targetValue}
-            onValueChange={(value) => {
-              if (value) selectTarget(value);
-            }}
+          <p
+            data-testid="agent-current-trip"
+            className="text-xs text-muted-foreground"
           >
-            <SelectTrigger aria-label="规划目标" data-testid="agent-target" className="w-full">
-              <SelectValue>
-                {(value: string | null) =>
-                  value === "new"
-                    ? "新建行程"
-                    : trips.data?.find((trip) => `existing:${trip.id}` === value)?.name ??
-                      "选择规划目标"
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="new">新建行程</SelectItem>
-              {(trips.data ?? []).map((trip) => (
-                <SelectItem key={trip.id} value={`existing:${trip.id}`}>
-                  {trip.name}
-                  {active?.id === trip.id ? "（激活中）" : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {active
+              ? `当前行程：${active.name}`
+              : "未激活行程：可让助手通过确认弹窗创建新行程"}
+          </p>
 
           <MessageScroller data-testid="agent-messages" className="px-1">
             {messages.length === 0 ? (
@@ -302,23 +221,19 @@ export function AgentPanel() {
                 描述城市、日期、宠物和想去的地点，我会在 Pawtrip 已收录地点中生成可确认的方案。
               </p>
             ) : null}
-            {messages.map((message) => (
+            {visibleMessages.map((message, messageIndex) => (
               <Message
-                key={message.id}
+                key={message.id ?? `message-${messageIndex}`}
                 from={message.role === "user" ? "user" : "assistant"}
               >
                 <MessageContent>
-                  {message.parts.map((part, index) => (
+                  {(message.parts ?? []).map((part, index) => (
                     <MessagePart key={`${message.id}-${index}`} part={part} />
                   ))}
                 </MessageContent>
               </Message>
             ))}
-            {chat.isLoading ? (
-              <p className="px-2 text-xs text-muted-foreground" data-testid="agent-loading">
-                正在生成…
-              </p>
-            ) : null}
+            <AgentStatusIndicator view={statusView} />
           </MessageScroller>
 
           {flow?.stage === "confirm-deactivate" ? (
@@ -357,7 +272,6 @@ export function AgentPanel() {
                 return outcome.ok;
               }}
               onCreated={(trip) => {
-                agentActions.setTarget({ kind: "existing", tripId: trip.id }, trip);
                 flow.resolve({
                   status: "created",
                   tripId: trip.id,
@@ -374,15 +288,15 @@ export function AgentPanel() {
             />
           ) : null}
 
-          {shownProposal && targetTrip ? (
+          {shownProposal && active ? (
             <ProposalCard
               proposal={shownProposal}
-              targetTrip={targetTrip}
+              targetTrip={active}
               names={names}
               applying={applying}
               error={applyError}
               onApply={() => void apply()}
-              onReject={() => agentActions.setProposalStatus(shownProposal.id, "rejected")}
+              onReject={() => agentActions.clearProposals()}
             />
           ) : null}
 
@@ -423,47 +337,49 @@ export function AgentPanel() {
   );
 }
 
-function MessagePart({ part }: { part: RenderedPart }) {
+function hasRenderableText(message: AgentMessageLike): boolean {
+  return (message.parts ?? []).some(
+    (part) => part.type === "text" && (part.content ?? "").trim() !== "",
+  );
+}
+
+function MessagePart({ part }: { part: AgentPartLike }) {
   if (part.type === "text") {
     return <Bubble variant="muted">{part.content ?? ""}</Bubble>;
-  }
-  if (part.type === "thinking") {
-    return (
-      <details className="w-full rounded-lg border bg-muted/30 px-2 py-1 text-xs">
-        <summary className="cursor-pointer text-muted-foreground">思考过程</summary>
-        <p className="mt-1 whitespace-pre-wrap">{part.content ?? ""}</p>
-      </details>
-    );
-  }
-  if (part.type === "tool-call" || part.type === "tool-result") {
-    return (
-      <div
-        data-slot="tool"
-        className={cn(
-          "flex w-full items-center justify-between gap-2 rounded-lg border bg-muted/40 px-2 py-1 text-xs",
-        )}
-      >
-        <span className="font-medium">{toolLabel(part.name)}</span>
-        <span className="text-muted-foreground">
-          {part.type === "tool-result" ? part.state ?? "done" : part.state ?? "running"}
-        </span>
-      </div>
-    );
   }
   return null;
 }
 
-function toolLabel(name: string | undefined): string {
-  switch (name) {
-    case "find_locations":
-      return "查找地点";
-    case "get_location_detail":
-      return "读取地点详情";
-    case "prepare_new_trip":
-      return "创建行程确认";
-    case "propose_trip_plan":
-      return "生成方案";
-    default:
-      return name ?? "工具调用";
+function AgentStatusIndicator({ view }: { view: AgentStatusView }) {
+  if (!view.active && view.completed.length === 0) {
+    return null;
   }
+  return (
+    <div data-testid="agent-status" className="flex flex-col gap-1 px-2 py-1 text-xs">
+      {view.active ? (
+        <div
+          data-testid="agent-status-active"
+          className="flex items-center gap-2 text-muted-foreground"
+        >
+          <Loader2 className="size-3.5 animate-spin" aria-hidden />
+          <span>正在{view.active.action}</span>
+        </div>
+      ) : null}
+      {view.completed.length > 0 ? (
+        <details
+          data-testid="agent-completed-steps"
+          className="rounded-lg border bg-muted/30 px-2 py-1"
+        >
+          <summary className="cursor-pointer text-muted-foreground">
+            已完成 {view.completed.length} 个步骤
+          </summary>
+          <ul className="mt-1 flex flex-col gap-0.5 text-muted-foreground">
+            {view.completed.map((step) => (
+              <li key={step.key}>{step.action}</li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </div>
+  );
 }

@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { daysBetween } from "@/lib/trip/duration";
+import { normalizePlan } from "@/lib/trip/plan";
 import { matchLocationPolicy } from "@/lib/trip/policy-match";
 import { MAX_TRIP_DAYS, MIN_TRIP_DAYS, type Trip } from "@/lib/trip/types";
 import { destinationsQueryOptions } from "@/queries/destinations";
@@ -8,7 +9,6 @@ import {
   type LocationBrowseDetail,
 } from "@/queries/locations";
 import { petsQueryOptions, type Pet } from "@/queries/pets";
-import { tripDetailQueryOptions } from "@/queries/trips";
 import { agentActions, agentStore, type PendingNewTripFlow } from "./store";
 import { tripStore } from "@/lib/trip/store";
 import {
@@ -19,37 +19,34 @@ import {
 import {
   findLocationsTool,
   getLocationDetailTool,
+  getTripPlanTool,
   prepareNewTripTool,
-  proposeTripPlanTool,
+  updateTripPlanTool,
 } from "./tools";
 import type {
   AgentLocationCandidate,
-  AgentTarget,
   FindLocationsOutput,
   GetLocationDetailOutput,
+  GetTripPlanOutput,
   PrepareNewTripInput,
   PrepareNewTripOutput,
-  ProposeTripPlanInput,
-  ProposeTripPlanOutput,
+  UpdateTripPlanInput,
+  UpdateTripPlanOutput,
 } from "./types";
-import { validateProposal } from "./proposal";
+import { validatePlanEdits } from "./proposal";
 
 export function createAgentClientTools(queryClient: QueryClient) {
   return [
     findLocationsTool.client(async (rawInput): Promise<FindLocationsOutput> => {
       const input = asRecord(rawInput);
-      const target = agentStore.state.target;
-      if (!target) {
-        return { status: "no_target", message: "请先在面板中选择规划目标。" };
+      const trip = tripStore.state.active;
+      if (!trip) {
+        return {
+          status: "invalid_target",
+          message: "请先在 Trips 页面创建或激活行程，再查找地点。",
+        };
       }
-      const resolved = await resolveTargetTrip(queryClient, target);
-      if (!resolved.ok) {
-        return { status: "invalid_target", message: resolved.message };
-      }
-      const regionCode = resolved.cityAdcode;
-      if (!regionCode) {
-        return { status: "invalid_target", message: "目标城市尚未确定，请先选择城市。" };
-      }
+      const regionCode = trip.cityAdcode;
       const typeGroup = typeof input.typeGroup === "string" ? input.typeGroup : undefined;
       const catalog = await queryClient.fetchQuery(
         agentLocationCatalogQueryOptions(regionCode, typeGroup),
@@ -58,7 +55,7 @@ export function createAgentClientTools(queryClient: QueryClient) {
         return {
           status: "ok",
           regionCode,
-          targetTripId: resolved.trip?.id,
+          targetTripId: trip.id,
           candidates: [],
           noLocations: true,
           totalMatched: 0,
@@ -66,18 +63,19 @@ export function createAgentClientTools(queryClient: QueryClient) {
       }
       const query = typeof input.query === "string" ? input.query : "";
       const matched = matchLocationCatalog(catalog.items, query);
-      const pet = await resolvePet(queryClient, target, resolved.trip);
-      const candidates = matched.candidates.map((item) =>
-        toCandidate(item, pet),
+      const pet = await resolvePet(queryClient, trip);
+      const candidates = matched.candidates.map((item) => toCandidate(item, pet));
+      agentActions.addAllowedPoiIds(
+        trip.id,
+        candidates.map((candidate) => candidate.poiId),
       );
-      agentActions.addAllowedPoiIds(candidates.map((candidate) => candidate.poiId));
       agentActions.rememberLocations(
         Object.fromEntries(candidates.map((candidate) => [candidate.poiId, candidate.name])),
       );
       return {
         status: "ok",
         regionCode,
-        targetTripId: resolved.trip?.id,
+        targetTripId: trip.id,
         candidates,
         ambiguous: matched.ambiguous,
         truncated: catalog.truncated,
@@ -98,29 +96,25 @@ export function createAgentClientTools(queryClient: QueryClient) {
       if (!poiId) {
         return { status: "not_found", poiId, message: "缺少地点标识。" };
       }
-      const target = agentStore.state.target;
-      const resolved = target
-        ? await resolveTargetTrip(queryClient, target)
-        : { ok: true as const, cityAdcode: null, trip: null };
-      if (!resolved.ok) {
-        return { status: "not_found", poiId, message: resolved.message };
-      }
+      const trip = tripStore.state.active;
       let detail: LocationBrowseDetail;
       try {
         detail = await queryClient.fetchQuery(locationBrowseDetailQueryOptions(poiId));
       } catch {
         return { status: "not_found", poiId, message: "该地点不存在或已失效。" };
       }
-      if (resolved.cityAdcode && !isSameCity(detail.regionCode, resolved.cityAdcode)) {
+      if (trip && !isSameCity(detail.regionCode, trip.cityAdcode)) {
         return {
           status: "not_found",
           poiId,
-          message: "该地点不属于当前规划目标城市。",
+          message: "该地点不属于当前激活行程城市。",
         };
       }
-      agentActions.addAllowedPoiIds([poiId]);
+      if (trip) {
+        agentActions.addAllowedPoiIds(trip.id, [poiId]);
+      }
       agentActions.rememberLocations({ [poiId]: detail.name });
-      const pet = await resolvePet(queryClient, target, resolved.trip);
+      const pet = trip ? await resolvePet(queryClient, trip) : null;
       return {
         status: "ok",
         poiId,
@@ -128,6 +122,49 @@ export function createAgentClientTools(queryClient: QueryClient) {
         typeGroup: detail.typeGroup,
         address: detail.address,
         policy: pet ? matchLocationPolicy(detail.petPolicies, pet) : null,
+      };
+    }),
+
+    getTripPlanTool.client(async (): Promise<GetTripPlanOutput> => {
+      const trip = tripStore.state.active;
+      if (!trip) {
+        return {
+          status: "no_active_trip",
+          message: "当前没有激活行程，请先在 Trips 页面创建或激活。",
+        };
+      }
+      const plan = normalizePlan(trip.plan, trip.totalDays);
+      const nameOf = (poiId: string) =>
+        agentStore.state.locationNames[poiId] ??
+        tripStore.state.cache.locations[poiId]?.name;
+      return {
+        status: "ok",
+        tripId: trip.id,
+        name: trip.name,
+        totalDays: trip.totalDays,
+        transportMode: trip.transportMode,
+        updatedAt: trip.updatedAt,
+        revision: tripRevision(trip, tripStore.state.saveRevision),
+        plan: {
+          days: plan.days.map((day) => ({
+            day: day.day,
+            stops: day.stops.map((stop) => {
+              const name = nameOf(stop.poiId);
+              return {
+                poiId: stop.poiId,
+                ...(name ? { name } : {}),
+                ...(stop.toNext ? { toNext: stop.toNext } : {}),
+              };
+            }),
+          })),
+          unscheduled: plan.unscheduled.map((stop) => {
+            const name = nameOf(stop.poiId);
+            return {
+              poiId: stop.poiId,
+              ...(name ? { name } : {}),
+            };
+          }),
+        },
       };
     }),
 
@@ -189,23 +226,32 @@ export function createAgentClientTools(queryClient: QueryClient) {
       });
     }),
 
-    proposeTripPlanTool.client(async (rawInput, context): Promise<ProposeTripPlanOutput> => {
-      const input = rawInput as Partial<ProposeTripPlanInput>;
-      const target = agentStore.state.target;
-      if (!target || target.kind !== "existing") {
-        return { status: "rejected", message: "请先选择要修改的已保存行程。" };
+    updateTripPlanTool.client(async (rawInput, context): Promise<UpdateTripPlanOutput> => {
+      const trip = tripStore.state.active;
+      if (!trip) {
+        return { status: "rejected", message: "请先创建或激活行程，再调整计划。" };
       }
-      if (input.target?.tripId !== target.tripId) {
-        return { status: "rejected", message: "方案目标与当前规划目标不一致。" };
+      const input = rawInput as Partial<UpdateTripPlanInput>;
+      if (input.targetTripId !== trip.id) {
+        return {
+          status: "rejected",
+          message: "方案目标不是当前激活行程，请重新生成方案。",
+        };
       }
-      const resolved = await resolveTargetTrip(queryClient, target);
-      if (!resolved.ok || !resolved.trip) {
-        return { status: "rejected", message: resolved.ok ? "目标行程不存在。" : resolved.message };
+      if (input.baseRevision !== tripRevision(trip, tripStore.state.saveRevision)) {
+        return {
+          status: "rejected",
+          message: "行程已发生变化，请先调用 get_trip_plan 读取最新行程后再修改。",
+        };
       }
-      const validation = validateProposal(input, {
-        tripId: target.tripId,
-        totalDays: resolved.trip.totalDays,
-        allowedPoiIds: new Set(agentStore.state.allowedPoiIds),
+      const allowedPoiIds =
+        agentStore.state.allowedPoi?.tripId === trip.id
+          ? new Set(agentStore.state.allowedPoi.poiIds)
+          : new Set<string>();
+      const validation = validatePlanEdits(input, trip.plan, {
+        tripId: trip.id,
+        totalDays: trip.totalDays,
+        allowedPoiIds,
       });
       if (!validation.ok) {
         return { status: "rejected", message: validation.error };
@@ -213,11 +259,11 @@ export function createAgentClientTools(queryClient: QueryClient) {
       const proposalId = context?.toolCallId ?? crypto.randomUUID();
       agentActions.addProposal({
         id: proposalId,
-        tripId: target.tripId,
+        tripId: trip.id,
         plan: validation.plan,
         summary: validation.summary,
         warnings: validation.warnings,
-        baseUpdatedAt: resolved.trip.updatedAt,
+        baseUpdatedAt: trip.updatedAt,
         status: "pending",
         createdAt: new Date().toISOString(),
       });
@@ -226,37 +272,19 @@ export function createAgentClientTools(queryClient: QueryClient) {
   ];
 }
 
-async function resolveTargetTrip(
-  queryClient: QueryClient,
-  target: AgentTarget,
-): Promise<{ ok: true; cityAdcode: string | null; trip: Trip | null } | { ok: false; message: string }> {
-  if (target.kind === "new") {
-    return { ok: true, cityAdcode: target.city?.adcode ?? null, trip: null };
-  }
-  const snapshot = agentStore.state.targetTrip;
-  if (snapshot && snapshot.id === target.tripId) {
-    return { ok: true, cityAdcode: snapshot.cityAdcode, trip: snapshot };
-  }
-  try {
-    const trip = await queryClient.fetchQuery(tripDetailQueryOptions(target.tripId));
-    agentActions.setTargetTrip(trip);
-    return { ok: true, cityAdcode: trip.cityAdcode, trip };
-  } catch {
-    return { ok: false, message: "目标行程不存在或无权访问。" };
-  }
+async function resolvePet(queryClient: QueryClient, trip: { petId: number }): Promise<Pet | null> {
+  const pets = await queryClient.fetchQuery(petsQueryOptions());
+  return pets.find((candidate) => candidate.id === trip.petId) ?? null;
 }
 
-async function resolvePet(
-  queryClient: QueryClient,
-  target: AgentTarget | null,
-  trip: Trip | null,
-): Promise<Pet | null> {
-  const petId = trip?.petId ?? (target?.kind === "new" ? target.petId : null);
-  if (petId == null) {
-    return null;
+function tripRevision(trip: Trip, saveRevision: number): string {
+  const payload = `${trip.id}|${trip.updatedAt}|${saveRevision}|${JSON.stringify(trip.plan)}`;
+  let hash = 2166136261;
+  for (let index = 0; index < payload.length; index += 1) {
+    hash ^= payload.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
   }
-  const pets = await queryClient.fetchQuery(petsQueryOptions());
-  return pets.find((candidate) => candidate.id === petId) ?? null;
+  return `${trip.id}.${saveRevision}.${(hash >>> 0).toString(36)}`;
 }
 
 function toCandidate(

@@ -21,8 +21,9 @@ export const AGENT_BIGMODEL_BASE_URL = "https://open.bigmodel.cn/api/paas/v4";
 export const AGENT_TOOL_NAMES = [
   "find_locations",
   "get_location_detail",
+  "get_trip_plan",
   "prepare_new_trip",
-  "propose_trip_plan",
+  "update_trip_plan",
 ] as const;
 
 export type AgentToolName = (typeof AGENT_TOOL_NAMES)[number];

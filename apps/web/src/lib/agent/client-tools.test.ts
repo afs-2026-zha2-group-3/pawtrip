@@ -1,9 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
 import type { Pet } from "@/queries/pets";
+import type { TripPlan } from "@/lib/trip/types";
+import { tripActions, tripStore } from "@/lib/trip/store";
 import { agentActions, agentStore } from "./store";
 import { createAgentClientTools } from "./client-tools";
-import type { FindLocationsOutput, GetLocationDetailOutput, ProposeTripPlanOutput } from "./types";
+import type {
+  FindLocationsOutput,
+  GetLocationDetailOutput,
+  GetTripPlanOutput,
+  UpdateTripPlanOutput,
+} from "./types";
 
 const pet: Pet = {
   id: 1,
@@ -28,6 +35,10 @@ const trip = {
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-01T00:00:00Z",
 };
+
+function activeTrip(plan: TripPlan = { version: 1, days: [], unscheduled: [] }) {
+  tripActions.setActive({ ...trip, plan });
+}
 
 function location(poiId: string, name: string, regionCode = "440402") {
   return {
@@ -76,10 +87,21 @@ const context = {
   emitCustomEvent: () => undefined,
 };
 
+async function readRevision(
+  tools: ReturnType<typeof createAgentClientTools>,
+): Promise<{ tripId: number; revision: string }> {
+  const output = await tool<GetTripPlanOutput>(tools, "get_trip_plan").execute({}, context);
+  if (output.status !== "ok" || !output.revision || output.tripId == null) {
+    throw new Error("missing revision");
+  }
+  return { tripId: output.tripId, revision: output.revision };
+}
+
 describe("agent client tools", () => {
   beforeEach(() => {
     agentActions.resetForTests();
-    agentActions.setTarget({ kind: "existing", tripId: 4 }, trip);
+    tripActions.resetForTests();
+    activeTrip();
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
@@ -128,7 +150,16 @@ describe("agent client tools", () => {
     expect(output.ambiguous).toBe(true);
     expect(output.candidates?.map((candidate) => candidate.poiId)).toEqual(["a", "b"]);
     expect(output.targetTripId).toBe(4);
-    expect(new Set(agentStore.state.allowedPoiIds)).toEqual(new Set(["a", "b"]));
+    expect(agentStore.state.allowedPoi).toEqual({ tripId: 4, poiIds: ["a", "b"] });
+  });
+
+  it("asks for an active trip before querying locations", async () => {
+    tripActions.resetForTests();
+    const tools = createAgentClientTools(new QueryClient());
+    const output = await tool<FindLocationsOutput>(tools, "find_locations").execute({}, context);
+
+    expect(output.status).toBe("invalid_target");
+    expect(tripStore.state.active).toBeNull();
   });
 
   it("reports cities without saved locations", async () => {
@@ -148,17 +179,38 @@ describe("agent client tools", () => {
     );
 
     expect(output.status).toBe("not_found");
-    expect(output.message).toContain("目标城市");
+    expect(output.message).toContain("激活行程城市");
   });
 
-  it("rejects a proposal that references a poiId outside location tool results", async () => {
+  it("reads the latest store plan with names and a revision", async () => {
+    activeTrip({
+      version: 1,
+      days: [{ day: 1, stops: [{ poiId: "a" }] }],
+      unscheduled: [{ poiId: "b" }],
+    });
+    agentActions.rememberLocations({ a: "珠海渔女" });
+    const tools = createAgentClientTools(new QueryClient());
+
+    const output = await tool<GetTripPlanOutput>(tools, "get_trip_plan").execute({}, context);
+
+    expect(output.status).toBe("ok");
+    expect(output.tripId).toBe(4);
+    expect(output.revision).toBeTruthy();
+    expect(output.plan?.days).toHaveLength(2);
+    expect(output.plan?.days[0].stops).toEqual([{ poiId: "a", name: "珠海渔女" }]);
+    expect(output.plan?.unscheduled).toEqual([{ poiId: "b" }]);
+  });
+
+  it("rejects an edit that references a poiId outside location tool results", async () => {
     const tools = createAgentClientTools(new QueryClient());
     await tool<FindLocationsOutput>(tools, "find_locations").execute({ query: "渔女" }, context);
+    const { revision } = await readRevision(tools);
 
-    const output = await tool<ProposeTripPlanOutput>(tools, "propose_trip_plan").execute(
+    const output = await tool<UpdateTripPlanOutput>(tools, "update_trip_plan").execute(
       {
-        target: { kind: "existing", tripId: 4 },
-        plan: { version: 1, days: [{ day: 1, stops: [{ poiId: "zzz" }] }], unscheduled: [] },
+        targetTripId: 4,
+        baseRevision: revision,
+        operations: [{ op: "add_stop", poiId: "zzz", day: 1 }],
         summary: "测试",
       },
       context,
@@ -168,15 +220,53 @@ describe("agent client tools", () => {
     expect(agentStore.state.proposals).toEqual([]);
   });
 
-  it("stores a valid proposal for the target trip", async () => {
+  it("requires a fresh trip read before editing", async () => {
+    const tools = createAgentClientTools(new QueryClient());
+
+    const withoutRead = await tool<UpdateTripPlanOutput>(tools, "update_trip_plan").execute(
+      {
+        targetTripId: 4,
+        baseRevision: "stale",
+        operations: [{ op: "add_stop", poiId: "a", day: 1 }],
+        summary: "测试",
+      },
+      context,
+    );
+    expect(withoutRead.status).toBe("rejected");
+    expect(withoutRead.message).toContain("读取最新行程");
+
+    const { revision } = await readRevision(tools);
+    tripActions.addStop(1, "manual-change");
+    const afterChange = await tool<UpdateTripPlanOutput>(tools, "update_trip_plan").execute(
+      {
+        targetTripId: 4,
+        baseRevision: revision,
+        operations: [{ op: "remove_stop", poiId: "manual-change", day: 1 }],
+        summary: "测试",
+      },
+      context,
+    );
+
+    expect(afterChange.status).toBe("rejected");
+    expect(afterChange.message).toContain("读取最新行程");
+  });
+
+  it("stores a valid proposal based on the latest active trip plan", async () => {
+    activeTrip({
+      version: 1,
+      days: [{ day: 1, stops: [{ poiId: "manual" }] }],
+      unscheduled: [],
+    });
     const tools = createAgentClientTools(new QueryClient());
     await tool<FindLocationsOutput>(tools, "find_locations").execute({ query: "渔女" }, context);
+    const { revision } = await readRevision(tools);
 
-    const output = await tool<ProposeTripPlanOutput>(tools, "propose_trip_plan").execute(
+    const output = await tool<UpdateTripPlanOutput>(tools, "update_trip_plan").execute(
       {
-        target: { kind: "existing", tripId: 4 },
-        plan: { version: 1, days: [{ day: 1, stops: [{ poiId: "a" }] }], unscheduled: [] },
-        summary: "测试",
+        targetTripId: 4,
+        baseRevision: revision,
+        operations: [{ op: "add_stop", poiId: "a", day: 1, position: 0 }],
+        summary: "在第 1 天插入渔女",
       },
       context,
     );
@@ -184,6 +274,57 @@ describe("agent client tools", () => {
     expect(output.status).toBe("proposed");
     expect(agentStore.state.proposals).toHaveLength(1);
     expect(agentStore.state.proposals[0].baseUpdatedAt).toBe(trip.updatedAt);
+    expect(agentStore.state.proposals[0].plan.days[0].stops).toEqual([
+      { poiId: "a" },
+      { poiId: "manual" },
+    ]);
+  });
+
+  it("reorders existing stops by removing and re-adding them", async () => {
+    activeTrip({
+      version: 1,
+      days: [{ day: 1, stops: [{ poiId: "a" }, { poiId: "b" }] }],
+      unscheduled: [],
+    });
+    const tools = createAgentClientTools(new QueryClient());
+    const { revision } = await readRevision(tools);
+
+    const output = await tool<UpdateTripPlanOutput>(tools, "update_trip_plan").execute(
+      {
+        targetTripId: 4,
+        baseRevision: revision,
+        operations: [
+          { op: "remove_stop", poiId: "b", day: 1 },
+          { op: "add_stop", poiId: "b", day: 1, position: 0 },
+        ],
+        summary: "把 b 移到最前",
+      },
+      context,
+    );
+
+    expect(output.status).toBe("proposed");
+    expect(agentStore.state.proposals[0].plan.days[0].stops).toEqual([
+      { poiId: "b" },
+      { poiId: "a" },
+    ]);
+  });
+
+  it("refuses to edit a trip that is no longer active", async () => {
+    const tools = createAgentClientTools(new QueryClient());
+    const { revision } = await readRevision(tools);
+
+    const output = await tool<UpdateTripPlanOutput>(tools, "update_trip_plan").execute(
+      {
+        targetTripId: 99,
+        baseRevision: revision,
+        operations: [{ op: "add_stop", poiId: "a", day: 1 }],
+        summary: "测试",
+      },
+      context,
+    );
+
+    expect(output.status).toBe("rejected");
+    expect(agentStore.state.proposals).toEqual([]);
   });
 
   it("includes deterministic pet policy in location results", async () => {

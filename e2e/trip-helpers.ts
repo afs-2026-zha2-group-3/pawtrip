@@ -125,14 +125,20 @@ export function tripCard(page: Page, name: string) {
 
 export async function createTripViaApi(
   page: Page,
-  input: { name: string; cityAdcode: string; petId: number; totalDays: number },
+  input: {
+    name: string;
+    cityAdcode: string;
+    petId: number;
+    totalDays: number;
+    plan?: { version: 1; days: unknown[]; unscheduled: unknown[] };
+  },
 ) {
   const headers = await csrfHeaders(page);
   const response = await page.request.post("/api/trips", {
     headers,
     data: {
       ...input,
-      plan: { version: 1, days: [], unscheduled: [] },
+      plan: input.plan ?? { version: 1, days: [], unscheduled: [] },
     },
   });
   expect(response.ok()).toBeTruthy();

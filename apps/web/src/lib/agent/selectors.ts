@@ -1,17 +1,9 @@
 import { useSelector } from "@tanstack/react-store";
 import { agentStore } from "./store";
-import type { AgentProposal, AgentTarget } from "./types";
+import type { AgentProposal } from "./types";
 
 export function useAgentOpen(): boolean {
   return useSelector(agentStore, (state) => state.open);
-}
-
-export function useAgentTarget(): AgentTarget | null {
-  return useSelector(agentStore, (state) => state.target);
-}
-
-export function useAgentTargetTrip() {
-  return useSelector(agentStore, (state) => state.targetTrip);
 }
 
 export function useAgentProposals(): AgentProposal[] {

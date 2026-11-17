@@ -28,3 +28,15 @@
 
 - [x] 5.1 补充端到端验收：查询城市使用珠海 `440400`，`440402` 仅作为地点 `region_code`，不引入其他城市夹具；更新 `scripts/run-e2e.mjs` 注入 `PAWTRIP_API_BASE_URL=http://127.0.0.1:18080` 与 `PAWTRIP_AGENT_PROVIDER=fake`，CI 不访问智谱；验证 E2E 下 `/agent` 不被 `/api` 代理转发。以下 Agent 流程均通过右下角入口（`agent-fab`）打开面板（`agent-panel`）并在面板内操作：覆盖创建行程确认弹窗创建（含已有激活行程时先取消激活）、创建后继续编排、未确认不入库、中途放弃留下行程、修改激活行程、修改未激活行程、未登录拒绝、无宠物、目录截断提示和 Pawtrip 地点未命中；目标城市无地点、保存 400 等边界用组件测试覆盖。验证相关 E2E 用例通过。
 - [x] 5.2 更新中文架构知识文档，说明 Agent 与 trip 上下文、工具权限、地点数据边界、全局入口与面板形态（AI Elements 模式与 Sheet 安装清单）及智谱 BigModel / TanStack AI 配置；复核 `docs/knowledge/external/{bigmodel,tanstack-ai,ai-elements}.md` 的来源与日期（截至 2026-11），补充 `/agent` server route、`mergeAgentTools`/allowlist 示例、`/agent` 与 `/api` 的反向代理分工、生产禁用 fake provider 与模型调用限流/配额，并确保与实现一致（含 `BIGMODEL_API_KEY`、`PAWTRIP_API_BASE_URL`、`PAWTRIP_AGENT_PROVIDER` 与模型覆盖变量），运行根目录 `npm run build`、`cd apps/web && npm test` 和 `cd apps/server && ./mvnw test`。
+
+## 6. 修正 Agent 规划上下文与方案应用
+
+- [x] 6.1 移除 Agent 面板的规划目标切换：面板只展示当前激活行程名称；Agent 的城市、宠物、天数与最新 `plan` 直接来自 `tripStore.active`；激活行程变化时清空旧提案与按行程隔离的地点集合。验证 `cd apps/web && npm test` 覆盖激活行程跟随与旧提案失效。
+- [x] 6.2 用 `update_trip_plan` 替换 `propose_trip_plan`：工具只接受增量操作（添加/移除地点、调整未排期），执行时读取当前激活行程的最新 `plan` 并在其上应用；上下文携带当前 `plan`，避免模型基于过期快照整份替换。补充保留既有地点、引用未查询地点、目标非激活行程与非法操作的测试。
+- [x] 6.3 应用成功后从 agent store 移除待审核方案，卡片消失；失败保留并提示。组件测试覆盖成功移除与拒绝/失败保留。
+- [x] 6.4 更新 E2E：激活行程后修改、应用后卡片消失、增量插入保留既有地点；同步 `docs/knowledge/architecture/README.md` 与外部文档中的工具与上下文说明。
+- [x] 6.5 新增 `get_trip_plan` 读取工具：从 `tripStore.active` 读取最新计划（按天排序、附带已知地点名称）并返回 `revision`；Agent 上下文不再携带计划快照。
+- [x] 6.6 `update_trip_plan` 增加 `baseRevision` 校验：与当前 `updatedAt`、`saveRevision` 和计划内容不一致时拒绝并要求重新读取，保证先读后改。
+- [x] 6.7 允许 `add_stop` 引用当前计划中已有的 poiId，通过 `remove_stop` + `add_stop(position)` 支持同天排序与跨天移动；补充先读后改、过期版本拒绝与排序测试。
+- [x] 6.8 将 Agent 进度展示改为面向用户的单条状态：thinking → 正在规划行程、find_locations → 正在搜集景点、get_trip_plan → 正在读取最新行程、update_trip_plan → 正在编辑行程等；已完成步骤折叠为「已完成 N 个步骤」，同一时刻最多一个活动状态。
+- [x] 6.9 用户点击「拒绝」时同样关闭待审核方案卡片（清空提案），行程保持不变；同步组件测试与 E2E。
