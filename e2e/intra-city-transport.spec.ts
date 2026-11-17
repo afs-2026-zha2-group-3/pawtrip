@@ -181,8 +181,19 @@ async function dragHandleTo(page: Page, stopName: string, target: Locator) {
 
 function modeSelect(page: Page, selfDrive: boolean, index = 0) {
   return page
-    .getByLabel(selfDrive ? "选择其他途内交通方式" : "选择途内交通方式", { exact: true })
+    .getByRole("combobox", {
+      name: selfDrive ? "选择其他途内交通方式" : "选择途内交通方式",
+      exact: true,
+    })
     .nth(index);
+}
+
+const MODE_LABELS: Record<string, string> = { walk: "步行", drive: "打车", self_drive: "驾车" };
+
+// 共享 Select（base-ui）交互：点开 combobox 后按文案选中 option
+async function chooseMode(page: Page, selfDrive: boolean, mode: string, index = 0) {
+  await modeSelect(page, selfDrive, index).click();
+  await page.getByRole("option", { name: MODE_LABELS[mode], exact: true }).click();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -297,7 +308,7 @@ test("E4 switching to walk saves mode only and restores after reload", async ({ 
   await activateTrip(page, "珠海切换");
 
   const put = nextPlanPut(page);
-  await modeSelect(page, false).selectOption("walk");
+  await chooseMode(page, false, "walk");
   expect((await put).status()).toBe(200);
   await expect(page.getByTestId("save-status")).toContainText("已保存");
 
@@ -309,7 +320,7 @@ test("E4 switching to walk saves mode only and restores after reload", async ({ 
   await page.reload();
   const segment = page.getByTestId("transport-segment").first();
   await expect(segment.getByTestId("segment-mode")).toHaveText("步行");
-  await expect(modeSelect(page, false)).toHaveValue("walk");
+  await expect(modeSelect(page, false)).toContainText("步行");
 });
 
 test("E5 shows one transit notice only for days with segments", async ({ page }) => {
@@ -346,7 +357,7 @@ test("E6 taxi pet hint follows the segment mode", async ({ page }) => {
 
   await expect(page.getByText(TAXI_PET_HINT)).toHaveCount(2);
   const put = nextPlanPut(page);
-  await modeSelect(page, false, 0).selectOption("walk");
+  await chooseMode(page, false, "walk", 0);
   await put;
   await expect(page.getByText(TAXI_PET_HINT)).toHaveCount(1);
   await expect(
@@ -516,7 +527,7 @@ test("E9 estimate failure falls back without blocking mode save", async ({ page 
   await expect(segment.getByText(ESTIMATE_UNAVAILABLE)).toBeVisible();
 
   const put = nextPlanPut(page);
-  await modeSelect(page, false).selectOption("walk");
+  await chooseMode(page, false, "walk");
   expect((await put).status()).toBe(200);
   await expect(page.getByTestId("save-status")).toContainText("已保存");
   await expect(segment.getByTestId("segment-mode")).toHaveText("步行");
@@ -611,7 +622,9 @@ test("E11 self-drive default shows driving duration-only without writing", async
   await expect(segment.getByText(/¥/)).toHaveCount(0);
   await expect(page.getByText(TAXI_PET_HINT)).toHaveCount(0);
   await expect(page.getByTestId("transit-pet-notice")).toHaveCount(0);
-  await expect(modeSelect(page, true).locator("option")).toHaveText(["打车", "步行", "驾车"]);
+  await modeSelect(page, true).click();
+  await expect(page.getByRole("option")).toHaveText(["打车", "步行", "驾车"]);
+  await page.keyboard.press("Escape");
 
   expect(puts).toHaveLength(0);
   const trip = await getTrip(page, id);
@@ -633,7 +646,7 @@ test("E12 drive-mode dropdown saves taxi and explicit self-drive, restores after
 
   // 下拉选打车 → 仅存方式（CI 无 Key），携宠提示展示。
   let put = nextPlanPut(page);
-  await modeSelect(page, true).selectOption("drive");
+  await chooseMode(page, true, "drive");
   expect((await put).status()).toBe(200);
   await expect(page.getByTestId("save-status")).toContainText("已保存");
   let trip = await getTrip(page, id);
@@ -643,7 +656,7 @@ test("E12 drive-mode dropdown saves taxi and explicit self-drive, restores after
 
   // 显式切回驾车 → toNext=self_drive 写库。
   put = nextPlanPut(page);
-  await modeSelect(page, true).selectOption("self_drive");
+  await chooseMode(page, true, "self_drive");
   await put;
   trip = await getTrip(page, id);
   expect(stopOf(trip, 1, 0).toNext).toBe("self_drive");
@@ -652,7 +665,7 @@ test("E12 drive-mode dropdown saves taxi and explicit self-drive, restores after
 
   await page.reload();
   await expect(page.getByTestId("transport-segment").first().getByTestId("segment-mode")).toHaveText("驾车");
-  await expect(modeSelect(page, true)).toHaveValue("self_drive");
+  await expect(modeSelect(page, true)).toContainText("驾车");
 });
 
 test("E12 preset self-drive snapshot shows duration only with zero requests", async ({ page }) => {
@@ -739,10 +752,12 @@ test("E13 drive hides transit notice; switching back restores it without rewriti
   await expect(segment.getByText("约 15 分钟")).toBeVisible();
   await expect(segment.getByText(/¥/)).toHaveCount(0);
   expect(counter.count).toBe(0);
-  // 公共交通模式选择器无驾车选项；已存 self_drive 以占位项展示。
+  // 公共交通模式选择器无驾车选项；已存 self_drive 以占位文案展示。
   const select = modeSelect(page, false);
-  await expect(select).toHaveValue("");
-  await expect(select.locator("option")).toHaveText(["切换方式", "打车", "步行"]);
+  await expect(select).toContainText("切换方式");
+  await select.click();
+  await expect(page.getByRole("option")).toHaveText(["打车", "步行"]);
+  await page.keyboard.press("Escape");
 
   const trip = await getTrip(page, id);
   expect(trip.transportMode).toBe("high_speed_rail");
@@ -766,10 +781,17 @@ test("non-goals: no rental/transit options, no call buttons, no new filters or t
   await expandPanel(page);
 
   // 方式选择器无租车/公交/地铁选项；估算只走 walk/drive。
-  const optionTexts = await page.locator('[data-testid="transport-segment"] select option').allTextContents();
-  expect(optionTexts.length).toBeGreaterThan(0);
-  for (const text of optionTexts) {
-    expect(["打车", "步行", "驾车", "切换方式"]).toContain(text);
+  const selectors = page.getByTestId("transport-segment").getByRole("combobox");
+  const selectorCount = await selectors.count();
+  expect(selectorCount).toBeGreaterThan(0);
+  for (let i = 0; i < selectorCount; i += 1) {
+    await selectors.nth(i).click();
+    const optionTexts = await page.getByRole("option").allTextContents();
+    expect(optionTexts.length).toBeGreaterThan(0);
+    for (const text of optionTexts) {
+      expect(["打车", "步行", "驾车"]).toContain(text);
+    }
+    await page.keyboard.press("Escape");
   }
   await expect(page.getByTestId("transport-segment").first().getByText(ESTIMATE_UNAVAILABLE)).toBeVisible();
   expect(counter.modes.every((mode) => mode === "walk" || mode === "drive")).toBeTruthy();
