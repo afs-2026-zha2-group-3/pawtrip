@@ -292,7 +292,10 @@ test("warns when the Pawtrip location catalog is truncated", async ({ page }) =>
   await openAgent(page);
   await sendAgentMessage(page, "帮我调整这个行程");
 
-  await expect(page.getByText(/匹配可能不完整/)).toBeVisible({ timeout: 30_000 });
+  const process = page.getByTestId("agent-process-collapsed");
+  await expect(process).toBeVisible({ timeout: 30_000 });
+  await process.locator("summary").click();
+  await expect(page.getByText(/匹配可能不完整/)).toBeVisible();
   await page.unroute("**/api/locations?*");
 });
 

@@ -14,7 +14,7 @@ Pawtrip 目前的行程规划依赖用户手动选择城市、宠物和地点；
 - 新行程分两阶段：Agent 先通过现有创建行程确认弹窗协助用户确认城市、起止日期与宠物（天数由日期区间含首尾计算，须为 1–7），用户在弹窗中确认后创建并激活空计划行程；随后 Agent 继续搜索与编排地点，计划变更先在 UI 中预览，用户明确确认后才写入行程。
 - Agent 的行程修改先读取当前激活行程的最新计划与版本，再使用增量操作（添加/移除/按位置插入地点、调整未排期）生成方案，不整份替换现有计划，避免丢失用户已有行程；排序与跨天移动通过移除后重新插入表达。
 - 行程仍遵循现有模型边界：单城市、单宠物及既有 `TripPlan` 结构；新行程天数沿用前端创建弹窗的日期区间（含首尾）1–7 天限制，已有行程的 `totalDays` 不由 Agent 修改。
-- Agent 的文本回复使用 TanStack Markdown 渲染（标题、列表、粗体、代码、链接）；用户消息保持纯文本。用户消息以靠右气泡显示；Agent 消息不使用气泡或背景，直接渲染在面板中。流式输出合并细碎增量后平滑渐显，不逐字跳动；消息不显示头像、图标或身份标签。
+- Agent 的文本回复使用 TanStack Markdown 渲染（标题、列表、粗体、代码、链接），流式阶段使用 `streamingMarkdownExtension()` 直接渲染到达的文本，不做自研渐显；用户消息保持纯文本并以靠右浅绿气泡显示；Agent 消息不使用气泡或背景。Agent 的中间说明以小号浅色文本显示，工具调用以浅色标签与中间消息同级展示，相邻重复调用合并为 `xN`；一轮完成后过程折叠为可展开块。处理期间显示单条「正在思考」。消息不显示头像、图标或身份标签。
 
 ## Capabilities
 
@@ -29,7 +29,7 @@ Pawtrip 目前的行程规划依赖用户手动选择城市、宠物和地点；
 ## Impact
 
 - 前端：`apps/web/src/routes/_authenticated.tsx`、全局应用外壳、`apps/web/src/lib/trip/` 与 `apps/web/src/queries/`；Agent 以右下角圆形入口按钮 + 可展开面板呈现，对话、预览与确认等全部操作在面板内完成；Agent 直接以 `tripStore.active` 为规划目标。
-- TanStack Start / TanStack AI：新增服务端对话编排及浏览器端工具；当前 `apps/web` 尚未集成 TanStack AI，本次使用 `@tanstack/ai`、`@tanstack/ai-react`、`@tanstack/ai-openai/compatible` 与 `@tanstack/markdown`（React 渲染入口与流式扩展）。Agent 使用同源 `/agent` SSE 端点，不使用 `/api` 前缀，避免现有 Vite `/api` 代理与生产反向代理把请求转发给 Spring；服务端只向模型暴露固定 allowlist 工具。前端渲染复用 shadcn AI Elements（base 变体，拷贝代码）与 Sheet；Agent 文本以 TanStack Markdown 渲染，用户消息保持纯文本。自研仅限方案卡片与 parts 映射层。
+- TanStack Start / TanStack AI：新增服务端对话编排及浏览器端工具；当前 `apps/web` 尚未集成 TanStack AI，本次使用 `@tanstack/ai`、`@tanstack/ai-react`、`@tanstack/ai-openai/compatible` 与 `@tanstack/markdown`（React 渲染入口与流式扩展）。Agent 使用同源 `/agent` SSE 端点，不使用 `/api` 前缀，避免现有 Vite `/api` 代理与生产反向代理把请求转发给 Spring；服务端只向模型暴露固定 allowlist 工具。前端渲染复用 shadcn AI Elements（base 变体，拷贝代码）与 Sheet；Agent 文本以 TanStack Markdown 渲染，用户消息保持纯文本。自研仅限过程模型（中间说明、工具标签与折叠）、方案卡片与 parts 映射层；流式文本直接交给 TanStack Markdown，不做自研渐显。
 - 行程保存：激活行程复用现有 UI 状态与自动保存路径；新行程遵循现有创建流程；应用成功后从面板移除待审核方案。
 - 地点查询：复用登录后可读的共享接口 `GET /api/locations`（普通用户必填 `regionCode`）与 `GET /api/locations/{poiId}`；按当前激活行程城市与全部 `typeGroup` 分页查询，不新增地点接口。
 - 外部模型服务：使用智谱开放平台（BigModel）的 OpenAI 兼容接口 `https://open.bigmodel.cn/api/paas/v4`，服务端 Bearer 密钥；默认模型 `glm-5.3`，具体可用模型与限流以官方文档为准。

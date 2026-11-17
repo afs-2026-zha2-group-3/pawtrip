@@ -61,12 +61,12 @@ Start server route 运行在 Node 运行时，不能依赖浏览器的 Vite dev 
 
 ### Agent UI 与对话生命周期
 
-Agent 以“全局浮动入口 + 可展开面板”呈现，挂在登录后的全局布局（`AuthenticatedShell` 内，与 TripPanel 同级），不随页面路由切换销毁。实现原则：AI 渲染与对话能力尽量复用现成组件——shadcn AI Elements 模式负责渲染、TanStack AI 负责对话状态与流式、shadcn Sheet 负责容器（详见 `docs/knowledge/external/ai-elements.md`）；自研仅限 Pawtrip 业务特有部分（parts 映射层、流式文本平滑呈现、方案卡片/差异预览、业务确认流程），不重造消息布局、滚动跟随、SSE 传输或工具卡片：
+Agent 以“全局浮动入口 + 可展开面板”呈现，挂在登录后的全局布局（`AuthenticatedShell` 内，与 TripPanel 同级），不随页面路由切换销毁。实现原则：AI 渲染与对话能力尽量复用现成组件——shadcn AI Elements 模式负责渲染、TanStack AI 负责对话状态与流式、shadcn Sheet 负责容器（详见 `docs/knowledge/external/ai-elements.md`）；自研仅限 Pawtrip 业务特有部分（parts 映射层、中间过程模型与折叠、方案卡片/差异预览、业务确认流程），不重造消息布局、滚动跟随、SSE 传输或工具卡片：
 
 - 入口：右下角固定圆形按钮（`data-testid="agent-fab"`，带 aria-label），所有登录后页面可见，不依赖激活行程；TripPanel 位于左下角，两者不重叠。未登录时不渲染。
 - 面板容器：shadcn/ui Sheet（base 变体，`npx shadcn@latest add sheet` 拷入项目），不复用 TripPanel（其内部耦合 dnd-kit 排序逻辑）。以受控 `open` 驱动（开关状态仅存内存，刷新后回到收起态），`SheetContent side="right"`；按非模态使用（Base UI Dialog `modal=false`、移除 Backdrop）：页面保持可见可交互，不因点击页面关闭，仅通过入口按钮或面板内关闭按钮收起，ESC 可关闭。展开态样式在默认 Sheet 上定制，镜像 TripPanel 悬浮态（`border bg-card shadow-xl rounded-xl`）：小屏 `fixed inset-0` 全屏滚动，`lg: inset-y-4 right-4 left-auto w-[400px]`。z-index 高于 TripPanel（含其小屏全屏展开态）。
-- 对话区：直接采用 AI Elements 的 Chat 组合（`npx shadcn@latest add message-scroller message bubble input-group`）：Message Scroller 负责滚动锚点与自动跟随流式回复（`scrollAnchor` 放在用户消息），Prompt Input 承担输入框与发送；不自研滚动跟随或消息布局。用户消息使用 `Message from="user"` + `Bubble variant="default"` 靠右显示；Agent 消息不使用 Bubble 或背景，直接以全宽 Markdown 内容块显示在面板中，不显示头像、图标或身份标签。
-- parts 映射：TanStack AI `useChat` 的 `UIMessage` parts 映射为——`text` → 角色化正文（用户消息为纯文本 Bubble，Agent 最终回复为 TanStack Markdown 内容块）；`thinking` 与 `tool-call`/`tool-result` 聚合为一条面向用户的活动状态（正在规划行程、正在搜集景点、正在读取最新行程、正在编辑行程等），已完成步骤折叠为「已完成 N 个步骤」，当前轮次最多显示一条活动状态；自研限于此映射层、状态聚合与方案卡片。
+- 对话区：直接采用 AI Elements 的 Chat 组合（`npx shadcn@latest add message-scroller message bubble input-group`）：Message Scroller 负责滚动锚点与自动跟随流式回复（`scrollAnchor` 放在用户消息），Prompt Input 承担输入框与发送；不自研滚动跟随或消息布局。用户消息使用 `Message from="user"` + `Bubble` 靠右显示，气泡为浅绿底、黑色文字；Agent 消息不使用 Bubble 或背景，直接以全宽 Markdown 内容块显示在面板中，不显示头像、图标或身份标签。
+- parts 映射：TanStack AI `useChat` 的 `UIMessage` parts 映射为——`text` → 角色化正文（用户消息为纯文本 Bubble，Agent 最终回复为 TanStack Markdown 内容块）；assistant 的中间说明与 `tool-call` 由轮次过程模型组织为浅色小字与工具标签，见下文“中间过程与单条状态”；`thinking` 内容不展示。自研限于此映射层、过程模型与方案卡片。
 - 方案卡片（唯一的较大自研件）：`update_trip_plan` 的结构化结果渲染为基于 Card/Button 的自研方案卡片，含与当前激活行程现有计划的差异预览及确认/拒绝按钮；结构化差异不走通用 markdown 渲染。用户确认应用成功或拒绝后移除卡片；应用失败时保留卡片。
 - 功能收口在面板内：对话、方案预览与确认/拒绝（含创建新行程确认弹窗预填、取消当前激活行程确认）全部在面板内完成，不跳转页面；面板顶部只展示当前激活行程名称，不提供行程切换。
 - 上下文随每次模型调用传递：客户端以 `useChat({ forwardedProps: { agentContext } })` 设置 chat 级上下文。`sendMessage` 的 per-message `body` 只覆盖首个请求，客户端工具执行后的续传请求依赖 chat 级 `forwardedProps`；仅用 body 会导致模型在工具调用后丢失当前激活行程上下文。
@@ -74,12 +74,22 @@ Agent 以“全局浮动入口 + 可展开面板”呈现，挂在登录后的�
 
 ### Agent 回复使用 TanStack Markdown 并直接呈现
 
-- 依赖：`@tanstack/markdown`，使用 `@tanstack/markdown/react` 的 `<Markdown>`；流式阶段使用 `@tanstack/markdown/extensions/streaming` 的 `streamingMarkdownExtension()`，设置 `frontmatter={false}`、`headingIds={false}`，流式结束后保持同一扩展。
-- 呈现：用户消息保持纯文本并靠右气泡显示；Agent 最终回复不使用 Bubble 或背景，直接以 Markdown 内容块渲染在面板中；不显示头像、图标或「行程助手」等身份标识。
-- 流式呈现：不要把每个 SSE 增量直接渲染成字符跳动。维护原始文本与展示文本，按 `requestAnimationFrame` 或固定时间片合并细碎增量，以稳定字符速率揭示；新出现的尾部文本通过短 opacity 过渡或底部渐变遮罩渐显。流结束或用户停止时立即补齐剩余文本；`prefers-reduced-motion` 下跳过动画直接显示。TanStack Markdown 始终接收展示文本，避免未闭合 Markdown 结构造成闪烁。
-- 生命周期：平滑呈现状态以消息 id 为 key，在消息切换、面板关闭或组件卸载时清理动画帧与缓冲，避免跨消息串流或残留定时器。
+- 依赖：`@tanstack/markdown`，使用 `@tanstack/markdown/react` 的 `<Markdown>`；流式阶段使用 `@tanstack/markdown/extensions/streaming` 的 `streamingMarkdownExtension()`，设置 `frontmatter={false}`、`headingIds={false}`、`allowHtml={false}`。
+- 呈现：用户消息保持纯文本并靠右气泡显示，气泡使用浅绿背景与黑色文字；Agent 最终回复不使用 Bubble 或背景，直接以 Markdown 内容块渲染在面板中；不显示头像、图标或「行程助手」等身份标识。
+- 流式呈现：到达的文本增量直接交给 TanStack Markdown 渲染，不维护展示文本、不使用 `requestAnimationFrame`、固定速率、尾部遮罩或 `prefers-reduced-motion` 分支，也不延迟补全文本。
 - 安全：`allowHtml` 保持关闭；原始 HTML 转义、可执行 URL 移除；外链与图片如需放开，由显式 `urlTransform` 或组件策略控制；不接入未审计的语法高亮器。提示词要求 Agent 输出 TanStack Markdown 支持的简洁语法，不输出原始 HTML 或 MDX。
-- 范围：结构化方案差异仍由方案卡片渲染，不走 Markdown；本次为呈现层调整，不新增仅针对视觉呈现的测试。
+- 范围：结构化方案差异仍由方案卡片渲染，不走 Markdown。
+
+### 中间过程与单条状态
+
+以 user 消息切分轮次，把该轮 assistant 输出组织为“过程 + 最终回复”：
+
+- 按 part 顺序收集中间说明（非空 `text`）与工具标签（`tool-call`）；`tool-result`、`thinking` 不展示且不打断标签合并。
+- 以本轮最后一个 `tool-call` 为边界：其后的 assistant 文本为最终回复；没有工具调用时全部文本为最终回复；边界之前的文本为过程。
+- 相邻同名工具调用合并计数（如「搜索地点 x2」）；中间出现说明文字时重新计数。
+- 活动轮次过程区始终展开，末尾显示单条「正在思考」（`isLoading` 为真时）；已完成轮次过程区折叠为 `<details>`，摘要为「过程」，用户可展开回看，最终回复保持在折叠块之外。
+- 删除按工具切换的状态推导（`resolveAgentStatus`）与「已完成 N 个步骤」计数；工具文案为：`find_locations` 搜索地点、`get_trip_plan` 读取行程、`update_trip_plan` 编辑行程、`get_location_detail` 查看地点、`prepare_new_trip` 准备行程。
+- 样式：说明文字 `text-xs text-muted-foreground whitespace-pre-wrap`；标签 `rounded bg-muted/60 px-1.5 py-0.5 text-[11px]`。组件测试覆盖过程可见、相邻合并、折叠展开、思考状态与空闲隐藏。
 
 ### 复用共享已保存地点列表作为 Agent 地点目录
 
@@ -119,7 +129,7 @@ Agent 服务端入口必须验证现有登录会话，身份只能来自可信�
 ### 验证策略
 
 - 单元与组件测试 mock 模型适配器，不访问网络；覆盖服务端 allowlist 过滤、未认证拒绝与工具 schema 校验。
-- `apps/web` 当前只有 Vitest，没有 jsdom/happy-dom/@testing-library；实施前需补充组件测试环境，或明确把 UI 行为测试放在 Playwright。
+- `apps/web` 使用 Vitest + jsdom + `@testing-library/react` 做组件测试；流式 fixture 可用 `@shadcn/helpers/tanstack-ai` 的 `createChat`/`transport()`；浏览器级流程仍由 Playwright E2E 覆盖。
 - E2E 通过 `PAWTRIP_AGENT_PROVIDER=fake` 注入确定性流式响应；E2E runner 需注入 `PAWTRIP_API_BASE_URL` 与 `PAWTRIP_AGENT_PROVIDER`，并验证 `/agent` 不被 `/api` 代理转发。本版本只使用珠海固定数据：查询城市使用 `440400`，`440402` 仅作为地点 `region_code`，不引入其他城市夹具。
 - 真实 BigModel 调用只用于手动联调，不进入 CI。
 

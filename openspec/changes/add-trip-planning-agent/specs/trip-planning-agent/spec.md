@@ -20,7 +20,7 @@
 - **THEN** Agent 可用且不会自动修改该行程
 
 ### Requirement: Agent interface is a global collapsible panel
-已登录用户 SHALL 在所有登录后页面通过右下角圆形入口按钮使用 Agent；点击入口 SHALL 展开 Agent 面板，对话、方案预览与确认等全部 Agent 操作 MUST 在面板内完成。入口与面板 MUST NOT 依赖激活行程存在；面板开关与对话状态 MUST 仅存于内存，刷新后丢失。处理请求时，面板 SHALL 显示面向用户的活动状态；同一时刻 MUST 最多显示一条活动状态，已结束的步骤 MUST 折叠。
+已登录用户 SHALL 在所有登录后页面通过右下角圆形入口按钮使用 Agent；点击入口 SHALL 展开 Agent 面板，对话、方案预览与确认等全部 Agent 操作 MUST 在面板内完成。入口与面板 MUST NOT 依赖激活行程存在；面板开关与对话状态 MUST 仅存于内存，刷新后丢失。Agent 处理请求期间，面板 SHALL 显示一条「正在思考」状态；同一时刻 MUST 最多显示一条状态；空闲时 MUST NOT 显示状态。Agent 的中间过程 MUST 在对话流中可见：中间说明文字 MUST 以小号浅色纯文本显示；工具调用 MUST 以浅色标签显示，并与中间消息处于同一层级；每两条中间消息之间，相邻重复的工具调用 MUST 合并为带次数的单个标签。该轮处理完成后，该轮过程 MUST 折叠为可展开的块，最终回复 MUST 保持可见。
 
 #### Scenario: Entry is available on any authenticated page
 - **GIVEN** 用户已登录
@@ -35,18 +35,42 @@
 - **AND** 确认与拒绝均在面板内完成
 - **AND** 不需要离开当前页面
 
-#### Scenario: Progress status is singular and readable
+#### Scenario: Thinking status while processing
 - **GIVEN** Agent 正在处理用户请求
-- **WHEN** 模型思考或调用地点/行程工具
-- **THEN** 面板显示且仅显示一条与当前动作对应的状态
-- **AND** 状态使用用户可理解的动作文案（如正在规划行程、正在搜集景点、正在编辑行程）
-- **AND** 已结束的步骤折叠，不逐条展开
+- **WHEN** 模型思考或执行工具调用
+- **THEN** 面板显示且仅显示一条「正在思考」状态
+- **AND** 不按工具调用切换状态文案
 
-#### Scenario: Intermediate narration is not displayed
-- **GIVEN** Agent 在工具调用之间输出了过程说明
+#### Scenario: Status hides when idle
+- **GIVEN** Agent 已完成本轮处理
+- **WHEN** 面板保持打开
+- **THEN** 面板不显示活动状态
+- **AND** 不保留完成计数
+
+#### Scenario: Intermediate narration is visible
+- **GIVEN** Agent 在工具调用之间输出了中间说明
 - **WHEN** 面板渲染对话
-- **THEN** 面板不显示这些过程说明
-- **AND** 仅显示用户消息与每轮最终回复
+- **THEN** 中间说明以小号浅色文本显示
+- **AND** 同时显示该轮最终回复
+
+#### Scenario: Tool calls render as light tags
+- **GIVEN** Agent 调用地点或行程工具
+- **WHEN** 面板渲染过程
+- **THEN** 工具调用以浅色标签显示，如（搜索地点）、（读取行程）
+- **AND** 标签与中间说明处于同一层级
+
+#### Scenario: Repeated adjacent tool calls merge
+- **GIVEN** 两条中间说明之间连续调用同一工具两次
+- **WHEN** 面板渲染过程
+- **THEN** 显示一个带次数的标签，如（搜索地点 x2）
+- **AND** 中间隔着说明文字的同名调用 MUST NOT 合并
+
+#### Scenario: Process collapses after the reply
+- **GIVEN** Agent 已完成本轮回复且存在中间过程
+- **WHEN** 面板渲染该轮
+- **THEN** 过程折叠为可展开的块
+- **AND** 用户可展开查看中间说明与工具标签
+- **AND** 最终回复保持可见
 
 #### Scenario: Panel state is not persisted
 - **GIVEN** 用户展开了 Agent 面板并有待审核方案
@@ -55,40 +79,34 @@
 - **AND** 对话与待审核方案丢失
 
 ### Requirement: Agent messages use Markdown and a distinct presentation
-Agent 的文本回复 SHALL 使用 TanStack Markdown 渲染；用户消息 MUST 保持纯文本。用户消息 SHALL 以靠右气泡呈现；Agent 消息 MUST NOT 使用气泡或背景，直接渲染在面板中。流式回复 SHALL 合并细碎增量并以稳定节奏平滑渐显，MUST NOT 逐字符跳动；流式结束后 MUST 补齐全部剩余文本。消息 MUST NOT 显示头像、图标或身份标签；`prefers-reduced-motion` 下 MUST 直接显示文本而不播放渐显动画。Markdown 渲染 MUST 保留 HTML 转义与危险 URL 移除。
+
+Agent 的最终文本回复 SHALL 使用 TanStack Markdown 渲染；流式阶段 MUST 使用 `streamingMarkdownExtension()` 直接渲染到达的文本增量，MUST NOT 使用自研的逐字渐显、动画帧、遮罩或降级动画。用户消息 MUST 保持纯文本。用户消息 SHALL 以靠右气泡呈现，气泡 MUST 使用浅绿色背景与深色文字；Agent 消息 MUST NOT 使用气泡或背景，直接渲染在面板中。消息 MUST NOT 显示头像、图标或身份标签。Markdown 渲染 MUST 保留 HTML 转义与危险 URL 移除。
 
 #### Scenario: Agent reply renders Markdown
+
 - **GIVEN** Agent 最终回复包含 Markdown 语法（如粗体、列表、代码、链接）
 - **WHEN** 面板显示该回复
 - **THEN** 内容按 Markdown 语义渲染为对应元素
 - **AND** 不显示原始 Markdown 标记
 
+#### Scenario: Streaming text renders directly
+
+- **GIVEN** Agent 正在流式返回回复且服务端发送多个文本增量
+- **WHEN** 面板渲染该回复
+- **THEN** 到达的文本通过 TanStack Markdown 直接渲染
+- **AND** 不播放自研渐显动画，也不延迟补全文本
+
 #### Scenario: Message presentation differs by role
+
 - **GIVEN** 对话中同时存在用户消息与 Agent 消息
 - **WHEN** 面板显示对话
 - **THEN** 用户消息显示为靠右气泡
+- **AND** 用户气泡使用浅绿色背景与深色文字
 - **AND** Agent 消息不使用气泡或背景，直接以 Markdown 内容显示
 - **AND** 两类消息均不显示头像、图标或身份标签
 
-#### Scenario: Streaming reply reveals smoothly
-- **GIVEN** Agent 正在流式返回回复且服务端发送多个细碎文本增量
-- **WHEN** 面板渲染该回复
-- **THEN** 增量被合并为稳定节奏的展示更新
-- **AND** 文本不会逐字符跳动
-
-#### Scenario: Stream completion flushes remaining text
-- **GIVEN** Agent 的流式回复已结束
-- **WHEN** 面板完成最后一次展示更新
-- **THEN** 全部剩余文本均已显示
-- **AND** 不出现截断或长时间停留在未完成状态
-
-#### Scenario: Reduced motion skips the reveal animation
-- **GIVEN** 用户启用了 `prefers-reduced-motion`
-- **WHEN** Agent 流式返回回复
-- **THEN** 文本直接显示
-- **AND** 不播放渐显动画
-
 #### Scenario: Unsafe markdown stays inert
+
 - **GIVEN** Agent 回复包含原始 HTML 或可执行 URL
 - **WHEN** 面板渲染该回复
 - **THEN** 原始 HTML 被转义

@@ -66,5 +66,5 @@ area: external
 
 - 组件以 vendored 形式位于 `apps/web/src/components/ui/`：`sheet.tsx`、`message-scroller.tsx`、`message.tsx`、`bubble.tsx`、`input-group.tsx`；未新增 npm 依赖，保持 base-nova 风格。
 - Agent 面板使用 `Sheet` 受控 `open` + `modal={false}`、仅渲染 Popup（无 Backdrop），桌面端 `lg:inset-y-4 lg:right-4 lg:w-[400px]`，小屏 `inset-0`；z-index（面板 60、入口 70、Select 80、Dialog 100）保证高于 TripPanel 与表单弹窗。
-- `MessageScroller` 在用户位于底部时自动跟随流式内容；parts 映射在 `components/agent/agent-panel.tsx`：`text` → Bubble，`thinking` 与 `tool-call` / `tool-result` 通过 `lib/agent/status.ts` 聚合为单条活动状态（正在规划行程/正在搜集景点/正在编辑行程等），已完成步骤折叠为「已完成 N 个步骤」，当前轮次最多显示一条状态；`update_trip_plan` 使用 `components/agent/proposal-card.tsx` 展示差异与确认/拒绝。
+- `MessageScroller` 在用户位于底部时自动跟随流式内容；parts 映射在 `components/agent/agent-panel.tsx`，轮次过程模型在 `lib/agent/messages.ts`：用户消息为靠右浅绿气泡，`thinking` 不展示，`tool-result` 不展示且不打断标签合并，`tool-call` 与中间说明组成过程区（相邻同名工具合并为 `xN`，完成后折叠为可展开的「过程」），本轮最后一个 `tool-call` 之后的文本作为最终回复交给 `components/agent/agent-markdown.tsx` 渲染；处理期间只显示单条「正在思考」；`update_trip_plan` 使用 `components/agent/proposal-card.tsx` 展示差异与确认/拒绝。
 - 未使用 `@shadcn/helpers/tanstack-ai`；组件测试通过 mock `useChat` 覆盖入口/面板/方案卡片，E2E 通过服务端 fake provider 覆盖完整流式链路。

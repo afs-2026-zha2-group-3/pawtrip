@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchServerSentEvents, useChat } from "@tanstack/ai-react";
 import { Bot, Loader2, X } from "lucide-react";
@@ -8,19 +8,18 @@ import { MessageScroller } from "@/components/ui/message-scroller";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Bubble } from "@/components/ui/bubble";
 import { Message, MessageContent } from "@/components/ui/message";
+import { AgentMarkdown } from "@/components/agent/agent-markdown";
 import { ProposalCard } from "@/components/agent/proposal-card";
 import { CityTripDialog } from "@/routes/_authenticated/-city-trip-dialog";
 import { applyProposal } from "@/lib/agent/apply";
 import { createAgentClientTools } from "@/lib/agent/client-tools";
 import { buildAgentContext } from "@/lib/agent/context";
-import { visibleAgentMessages } from "@/lib/agent/messages";
-import { agentActions } from "@/lib/agent/store";
 import {
-  resolveAgentStatus,
+  buildAgentTurns,
   type AgentMessageLike,
-  type AgentPartLike,
-  type AgentStatusView,
-} from "@/lib/agent/status";
+  type AgentProcessItem,
+} from "@/lib/agent/messages";
+import { agentActions } from "@/lib/agent/store";
 import {
   useAgentLocationNames,
   useAgentNewTripFlow,
@@ -112,8 +111,7 @@ export function AgentPanel() {
   });
 
   const messages = chat.messages as unknown as ReadonlyArray<AgentMessageLike>;
-  const visibleMessages = visibleAgentMessages(messages);
-  const statusView = resolveAgentStatus(messages, chat.isLoading);
+  const turns = buildAgentTurns(messages, chat.isLoading);
 
   async function send() {
     const text = input.trim();
@@ -217,24 +215,48 @@ export function AgentPanel() {
           </p>
 
           <MessageScroller data-testid="agent-messages" className="px-1">
-            {messages.length === 0 ? (
+            {turns.length === 0 ? (
               <p className="px-2 py-6 text-sm text-muted-foreground">
                 描述城市、日期、宠物和想去的地点，我会在 Pawtrip 已收录地点中生成可确认的方案。
               </p>
             ) : null}
-            {visibleMessages.map((message, messageIndex) => (
-              <Message
-                key={message.id ?? `message-${messageIndex}`}
-                from={message.role === "user" ? "user" : "assistant"}
-              >
-                <MessageContent>
-                  {(message.parts ?? []).map((part, index) => (
-                    <MessagePart key={`${message.id}-${index}`} part={part} />
-                  ))}
-                </MessageContent>
-              </Message>
+            {turns.map((turn) => (
+              <Fragment key={turn.key}>
+                {turn.user ? (
+                  <Message from="user">
+                    <MessageContent className="items-end">
+                      <Bubble
+                        variant="default"
+                        className="bg-emerald-100 text-black"
+                      >
+                        {turn.user.text}
+                      </Bubble>
+                    </MessageContent>
+                  </Message>
+                ) : null}
+                {turn.process.length > 0 ? (
+                  turn.active ? (
+                    <AgentProcess items={turn.process} />
+                  ) : (
+                    <details
+                      data-testid="agent-process-collapsed"
+                      className="px-2 py-1 text-xs text-muted-foreground"
+                    >
+                      <summary className="cursor-pointer select-none">过程</summary>
+                      <AgentProcess items={turn.process} />
+                    </details>
+                  )
+                ) : null}
+                {turn.reply ? (
+                  <Message from="assistant">
+                    <MessageContent className="gap-1">
+                      <AgentMarkdown text={turn.reply.text} />
+                    </MessageContent>
+                  </Message>
+                ) : null}
+                {turn.active ? <AgentThinking /> : null}
+              </Fragment>
             ))}
-            <AgentStatusIndicator view={statusView} />
           </MessageScroller>
 
           {flow?.stage === "confirm-deactivate" ? (
@@ -338,43 +360,40 @@ export function AgentPanel() {
   );
 }
 
-function MessagePart({ part }: { part: AgentPartLike }) {
-  if (part.type === "text") {
-    return <Bubble variant="muted">{part.content ?? ""}</Bubble>;
-  }
-  return null;
+function AgentProcess({ items }: { items: AgentProcessItem[] }) {
+  return (
+    <div data-testid="agent-process" className="flex flex-col gap-1 px-2 py-1">
+      {items.map((item) =>
+        item.kind === "text" ? (
+          <p
+            key={item.key}
+            className="text-xs whitespace-pre-wrap text-muted-foreground"
+          >
+            {item.text}
+          </p>
+        ) : (
+          <span
+            key={item.key}
+            data-testid="agent-tool-tag"
+            className="w-fit rounded bg-muted/60 px-1.5 py-0.5 text-[11px] text-muted-foreground"
+          >
+            {item.label}
+            {item.count > 1 ? ` x${item.count}` : ""}
+          </span>
+        ),
+      )}
+    </div>
+  );
 }
 
-function AgentStatusIndicator({ view }: { view: AgentStatusView }) {
-  if (!view.active && view.completed.length === 0) {
-    return null;
-  }
+function AgentThinking() {
   return (
-    <div data-testid="agent-status" className="flex flex-col gap-1 px-2 py-1 text-xs">
-      {view.active ? (
-        <div
-          data-testid="agent-status-active"
-          className="flex items-center gap-2 text-muted-foreground"
-        >
-          <Loader2 className="size-3.5 animate-spin" aria-hidden />
-          <span>正在{view.active.action}</span>
-        </div>
-      ) : null}
-      {view.completed.length > 0 ? (
-        <details
-          data-testid="agent-completed-steps"
-          className="rounded-lg border bg-muted/30 px-2 py-1"
-        >
-          <summary className="cursor-pointer text-muted-foreground">
-            已完成 {view.completed.length} 个步骤
-          </summary>
-          <ul className="mt-1 flex flex-col gap-0.5 text-muted-foreground">
-            {view.completed.map((step) => (
-              <li key={step.key}>{step.action}</li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
+    <div
+      data-testid="agent-status"
+      className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground"
+    >
+      <Loader2 className="size-3.5 animate-spin" aria-hidden />
+      <span>正在思考</span>
     </div>
   );
 }

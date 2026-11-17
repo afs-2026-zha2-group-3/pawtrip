@@ -171,7 +171,28 @@ describe("AgentPanel", () => {
     expect(tripStore.state.active?.plan.days[0].stops).toEqual([{ poiId: "a" }]);
   });
 
-  it("shows only the final reply, not intermediate tool narration", async () => {
+  it("right-aligns user messages in a light green bubble without identity marks", async () => {
+    agentActions.setOpen(true);
+    chat.state.messages = [
+      { id: "u1", role: "user", parts: [{ type: "text", content: "帮我安排住宿" }] },
+    ];
+
+    renderPanel();
+
+    const bubble = (await screen.findByText("帮我安排住宿")).closest(
+      '[data-slot="bubble"]',
+    ) as HTMLElement;
+    expect(bubble.className).toContain("bg-emerald-100");
+    expect(bubble.className).toContain("text-black");
+
+    const content = bubble.parentElement as HTMLElement;
+    expect(content.className).toContain("items-end");
+
+    const message = bubble.closest('[data-slot="message"]') as HTMLElement;
+    expect(message.querySelector("img, svg")).toBeNull();
+  });
+
+  it("shows intermediate narration in a collapsed process block", async () => {
     agentActions.setOpen(true);
     chat.state.messages = [
       { id: "u1", role: "user", parts: [{ type: "text", content: "帮我安排住宿" }] },
@@ -193,7 +214,44 @@ describe("AgentPanel", () => {
     renderPanel();
 
     expect(await screen.findByText("方案已生成，请在下方确认。")).toBeTruthy();
-    expect(screen.queryByText("我先读取当前行程计划。")).toBeNull();
+    expect(screen.getByText("我先读取当前行程计划。")).toBeTruthy();
+    expect(screen.getByText("读取行程")).toBeTruthy();
+
+    const process = screen.getByTestId(
+      "agent-process-collapsed",
+    ) as HTMLDetailsElement;
+    expect(process.open).toBe(false);
+    expect(process.querySelector("summary")?.textContent).toBe("过程");
+
+    fireEvent.click(process.querySelector("summary")!);
+    expect(process.open).toBe(true);
+  });
+
+  it("merges adjacent repeated tool calls into one tag", () => {
+    agentActions.setOpen(true);
+    chat.state.messages = [
+      { id: "u1", role: "user", parts: [{ type: "text", content: "帮我找地点" }] },
+      {
+        id: "a1",
+        role: "assistant",
+        parts: [
+          { type: "tool-call", id: "c1", name: "find_locations", state: "complete" },
+          { type: "tool-call", id: "c2", name: "find_locations", state: "complete" },
+          { type: "text", content: "再查一次。" },
+          { type: "tool-call", id: "c3", name: "find_locations", state: "complete" },
+        ],
+      },
+      {
+        id: "a2",
+        role: "assistant",
+        parts: [{ type: "text", content: "完成。" }],
+      },
+    ];
+
+    renderPanel();
+
+    expect(screen.getByText("搜索地点 x2")).toBeTruthy();
+    expect(screen.getByText("搜索地点")).toBeTruthy();
   });
 
   it("asks before deactivating the current trip for a new trip", async () => {
@@ -225,7 +283,7 @@ describe("AgentPanel", () => {
     expect(tripStore.state.active?.id).toBe(4);
   });
 
-  it("shows one planning status while thinking", () => {
+  it("shows a single thinking status while processing", () => {
     chat.state.messages = [
       { id: "u1", role: "user", parts: [{ type: "text", content: "帮我调整行程" }] },
       { id: "a1", role: "assistant", parts: [{ type: "thinking", content: "" }] },
@@ -235,11 +293,11 @@ describe("AgentPanel", () => {
 
     renderPanel();
 
-    expect(screen.getAllByTestId("agent-status-active")).toHaveLength(1);
-    expect(screen.getByTestId("agent-status-active").textContent).toContain("正在规划行程");
+    expect(screen.getAllByTestId("agent-status")).toHaveLength(1);
+    expect(screen.getByTestId("agent-status").textContent).toContain("正在思考");
   });
 
-  it("labels location lookup and trip editing", async () => {
+  it("shows tool calls as light tags while thinking", () => {
     agentActions.setOpen(true);
     chat.state.isLoading = true;
     chat.state.messages = [
@@ -252,7 +310,8 @@ describe("AgentPanel", () => {
     ];
 
     const { unmount } = renderPanel();
-    expect(screen.getByTestId("agent-status-active").textContent).toContain("正在搜集景点");
+    expect(screen.getByTestId("agent-status").textContent).toContain("正在思考");
+    expect(screen.getByText("搜索地点")).toBeTruthy();
     unmount();
 
     chat.state.messages = [
@@ -264,10 +323,10 @@ describe("AgentPanel", () => {
       },
     ];
     renderPanel();
-    expect(screen.getByTestId("agent-status-active").textContent).toContain("正在编辑行程");
+    expect(screen.getByText("编辑行程")).toBeTruthy();
   });
 
-  it("folds completed steps and keeps at most one active status", () => {
+  it("shows thinking without completed steps", () => {
     chat.state.messages = [
       { id: "u1", role: "user", parts: [{ type: "text", content: "帮我调整行程" }] },
       {
@@ -285,10 +344,31 @@ describe("AgentPanel", () => {
 
     renderPanel();
 
-    expect(screen.getAllByTestId("agent-status-active")).toHaveLength(1);
-    expect(screen.getByTestId("agent-status-active").textContent).toContain("正在规划行程");
-    const completed = screen.getByTestId("agent-completed-steps") as HTMLDetailsElement;
-    expect(completed.textContent).toContain("已完成 1 个步骤");
-    expect(completed.open).toBe(false);
+    expect(screen.getAllByTestId("agent-status")).toHaveLength(1);
+    expect(screen.getByTestId("agent-status").textContent).toContain("正在思考");
+    expect(screen.queryByTestId("agent-completed-steps")).toBeNull();
+    expect(screen.getByTestId("agent-status").textContent).not.toContain("已完成");
+  });
+
+  it("hides the status and collapses the process when idle", () => {
+    chat.state.messages = [
+      { id: "u1", role: "user", parts: [{ type: "text", content: "帮我调整行程" }] },
+      {
+        id: "a1",
+        role: "assistant",
+        parts: [
+          { type: "tool-call", id: "c1", name: "get_trip_plan", state: "complete" },
+          { type: "tool-result", toolCallId: "c1", state: "complete" },
+        ],
+      },
+    ];
+    chat.state.isLoading = false;
+    agentActions.setOpen(true);
+
+    renderPanel();
+
+    expect(screen.queryByTestId("agent-status")).toBeNull();
+    expect(screen.getByTestId("agent-process-collapsed")).toBeTruthy();
+    expect(screen.queryByTestId("agent-completed-steps")).toBeNull();
   });
 });

@@ -1,5 +1,7 @@
 # Tasks
 
+> 说明：任务按实施顺序记录；后续任务（6.x–8.x）会覆盖早期的 UI 映射与状态方案，最终行为以 `design.md` 与 `specs/trip-planning-agent/spec.md` 为准。
+
 ## 0. 测试与运行环境准备
 
 - [x] 0.1 为 `apps/web` 补充组件测试环境：安装并配置 `jsdom`（或 `happy-dom`）与 `@testing-library/react`，或明确 UI 行为只由 Playwright 覆盖；组件测试可用 `@shadcn/helpers/tanstack-ai`（`pnpm add @shadcn/helpers`）的 `createChat`/`transport()` 生成确定性流式 fixture。确保 `cd apps/web && npm test` 能运行对应测试。验证 `cd apps/web && npm test` 通过。
@@ -38,17 +40,19 @@
 - [x] 6.5 新增 `get_trip_plan` 读取工具：从 `tripStore.active` 读取最新计划（按天排序、附带已知地点名称）并返回 `revision`；Agent 上下文不再携带计划快照。
 - [x] 6.6 `update_trip_plan` 增加 `baseRevision` 校验：与当前 `updatedAt`、`saveRevision` 和计划内容不一致时拒绝并要求重新读取，保证先读后改。
 - [x] 6.7 允许 `add_stop` 引用当前计划中已有的 poiId，通过 `remove_stop` + `add_stop(position)` 支持同天排序与跨天移动；补充先读后改、过期版本拒绝与排序测试。
-- [x] 6.8 将 Agent 进度展示改为面向用户的单条状态：thinking → 正在规划行程、find_locations → 正在搜集景点、get_trip_plan → 正在读取最新行程、update_trip_plan → 正在编辑行程等；已完成步骤折叠为「已完成 N 个步骤」，同一时刻最多一个活动状态。
+- [x] 6.8 将 Agent 进度保留为单条状态：处理期间显示「正在思考」，不按工具调用切换文案，也不显示完成步骤计数；工具活动由过程区标签承担。
 - [x] 6.9 用户点击「拒绝」时同样关闭待审核方案卡片（清空提案），行程保持不变；同步组件测试与 E2E。
 
 ## 7. 扩展地点详情推荐信息
 
 - [x] 7.1 扩展 `get_location_detail`：后端地点详情从 `poi_json` 解析自然语言类型（`type`）与行政区（`pname`/`cityname`/`adname`），并返回周营业时间；Agent 工具输出评分、自然语言类型、行政区、标签、商圈与营业时间，移除 `typeGroup` 等无自然语义代码和原始政策字段。补充后端详情与浏览器工具测试，验证 `cd apps/server && ./mvnw test`、`cd apps/web && npm test` 通过。
 - [x] 7.2 调整系统提示词：`update_trip_plan` 生成方案后只提示用户在下方方案卡片中确认或拒绝，不在对话中复述或总结逐日安排与地点清单；同步 spec 场景。
-- [x] 7.3 隐藏工具调用之间的过程消息：渲染层只展示用户消息与不含工具调用的最终回复，过程进度由单条状态提示承担。补充消息过滤与面板测试。
+- [x] 7.3 将工具调用之间的中间说明改为可见：以小号浅色文本展示，并在该轮完成后与工具标签一起折叠为可展开的「过程」。补充过程模型与面板测试。
 
 ## 8. Markdown 渲染与消息呈现
 
-- [ ] 8.1 引入 `@tanstack/markdown`：Agent 最终文本使用 `@tanstack/markdown/react` 渲染，流式使用 `streamingMarkdownExtension()`，关闭 `frontmatter`、`headingIds` 与 `allowHtml`；用户消息保持纯文本。
-- [ ] 8.2 调整消息呈现：用户消息靠右气泡；Agent 消息去掉气泡与背景，直接以 Markdown 内容块显示；不显示头像、图标或身份标签。
-- [ ] 8.3 实现平滑流式渐显：维护原始文本与展示文本，按 `requestAnimationFrame`/固定时间片合并细碎增量并以稳定速率揭示；新增尾部短 opacity 过渡或底部渐变遮罩；流结束立即补齐剩余文本；`prefers-reduced-motion` 直接显示；消息切换或卸载时清理动画帧与缓冲。
+- [x] 8.1 引入 `@tanstack/markdown`：Agent 最终文本使用 `@tanstack/markdown/react` 渲染，流式阶段使用 `streamingMarkdownExtension()` 直接渲染到达的文本，不做自研渐显；关闭 `frontmatter`、`headingIds` 与 `allowHtml`；用户消息保持纯文本。
+- [x] 8.2 调整消息呈现：用户消息靠右显示为浅绿底、黑色文字气泡；Agent 消息去掉气泡与背景，直接以 Markdown 内容块显示；不显示头像、图标或身份标签。
+- [x] 8.3 实现中间过程模型：按 user 消息切分轮次，以最后一个 `tool-call` 划分过程与最终回复；中间说明为小号浅色文本，工具调用为浅色标签且同级展示，相邻同名工具合并为 `xN`；完成轮次的过程折叠为可展开的「过程」。移除 `status.ts` 工具状态推导并补充过程模型测试。
+- [x] 8.4 将进度状态统一为「正在思考」：处理期间显示单条状态，空闲隐藏；删除「已完成 N 个步骤」与工具驱动文案，更新组件测试覆盖标签合并、折叠展开与思考状态。
+- [x] 8.5 运行 `cd apps/web && npm test`、根目录 `npm run build` 与 `node scripts/run-e2e.mjs e2e/trip-planning-agent.spec.ts`，并在浏览器确认过程折叠可展开、工具标签与最终回复显示正常。
