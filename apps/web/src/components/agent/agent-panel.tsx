@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchServerSentEvents, useChat } from "@tanstack/ai-react";
-import { Bot, Loader2, X } from "lucide-react";
+import { Bot, ChevronRight, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupTextarea } from "@/components/ui/input-group";
 import { MessageScroller } from "@/components/ui/message-scroller";
@@ -240,9 +240,15 @@ export function AgentPanel() {
                   ) : (
                     <details
                       data-testid="agent-process-collapsed"
-                      className="px-2 py-1 text-xs text-muted-foreground"
+                      className="group px-2 py-1 text-xs text-muted-foreground"
                     >
-                      <summary className="cursor-pointer select-none">过程</summary>
+                      <summary className="flex cursor-pointer list-none items-center gap-1 select-none marker:hidden [&::-webkit-details-marker]:hidden">
+                        <ChevronRight
+                          aria-hidden="true"
+                          className="size-3.5 shrink-0 transition-transform group-open:rotate-90"
+                        />
+                        已完成思考
+                      </summary>
                       <AgentProcess items={turn.process} />
                     </details>
                   )

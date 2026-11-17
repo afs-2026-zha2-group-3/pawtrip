@@ -87,7 +87,7 @@ Agent 以“全局浮动入口 + 可展开面板”呈现，挂在登录后的�
 - 按 part 顺序收集中间说明（非空 `text`）与工具标签（`tool-call`）；`tool-result`、`thinking` 不展示且不打断标签合并。
 - 以本轮最后一个 `tool-call` 为边界：其后的 assistant 文本为最终回复；没有工具调用时全部文本为最终回复；边界之前的文本为过程。
 - 相邻同名工具调用合并计数（如「搜索地点 x2」）；中间出现说明文字时重新计数。
-- 活动轮次过程区始终展开，末尾显示单条「正在思考」（`isLoading` 为真时）；已完成轮次过程区折叠为 `<details>`，摘要为「过程」，用户可展开回看，最终回复保持在折叠块之外。
+- 活动轮次过程区始终展开，末尾显示单条「正在思考」（`isLoading` 为真时）；已完成轮次过程区折叠为 `<details>`，摘要文案为「已完成思考」，摘要左侧使用与「地点浏览」页面筛选下拉框一致的箭头图标并隐藏浏览器默认三角形，折叠时指向右、展开时指向下；用户可展开回看，最终回复保持在折叠块之外。
 - 删除按工具切换的状态推导（`resolveAgentStatus`）与「已完成 N 个步骤」计数；工具文案为：`find_locations` 搜索地点、`get_trip_plan` 读取行程、`update_trip_plan` 编辑行程、`get_location_detail` 查看地点、`prepare_new_trip` 准备行程。
 - 样式：说明文字 `text-xs text-muted-foreground whitespace-pre-wrap`；标签 `rounded bg-muted/60 px-1.5 py-0.5 text-[11px]`。组件测试覆盖过程可见、相邻合并、折叠展开、思考状态与空闲隐藏。
 

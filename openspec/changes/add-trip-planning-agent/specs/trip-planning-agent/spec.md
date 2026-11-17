@@ -20,7 +20,7 @@
 - **THEN** Agent 可用且不会自动修改该行程
 
 ### Requirement: Agent interface is a global collapsible panel
-已登录用户 SHALL 在所有登录后页面通过右下角圆形入口按钮使用 Agent；点击入口 SHALL 展开 Agent 面板，对话、方案预览与确认等全部 Agent 操作 MUST 在面板内完成。入口与面板 MUST NOT 依赖激活行程存在；面板开关与对话状态 MUST 仅存于内存，刷新后丢失。Agent 处理请求期间，面板 SHALL 显示一条「正在思考」状态；同一时刻 MUST 最多显示一条状态；空闲时 MUST NOT 显示状态。Agent 的中间过程 MUST 在对话流中可见：中间说明文字 MUST 以小号浅色纯文本显示；工具调用 MUST 以浅色标签显示，并与中间消息处于同一层级；每两条中间消息之间，相邻重复的工具调用 MUST 合并为带次数的单个标签。该轮处理完成后，该轮过程 MUST 折叠为可展开的块，最终回复 MUST 保持可见。
+已登录用户 SHALL 在所有登录后页面通过右下角圆形入口按钮使用 Agent；点击入口 SHALL 展开 Agent 面板，对话、方案预览与确认等全部 Agent 操作 MUST 在面板内完成。入口与面板 MUST NOT 依赖激活行程存在；面板开关与对话状态 MUST 仅存于内存，刷新后丢失。Agent 处理请求期间，面板 SHALL 显示一条「正在思考」状态；同一时刻 MUST 最多显示一条状态；空闲时 MUST NOT 显示状态。Agent 的中间过程 MUST 在对话流中可见：中间说明文字 MUST 以小号浅色纯文本显示；工具调用 MUST 以浅色标签显示，并与中间消息处于同一层级；每两条中间消息之间，相邻重复的工具调用 MUST 合并为带次数的单个标签。该轮处理完成后，该轮过程 MUST 折叠为可展开的块，摘要文案 MUST 为「已完成思考」，摘要左侧 MUST 使用与「地点浏览」页面筛选下拉框一致的箭头图标替代浏览器默认三角形，折叠时 MUST 指向右、展开时 MUST 指向下，最终回复 MUST 保持可见。
 
 #### Scenario: Entry is available on any authenticated page
 - **GIVEN** 用户已登录
@@ -69,7 +69,9 @@
 - **GIVEN** Agent 已完成本轮回复且存在中间过程
 - **WHEN** 面板渲染该轮
 - **THEN** 过程折叠为可展开的块
-- **AND** 用户可展开查看中间说明与工具标签
+- **AND** 摘要显示「已完成思考」
+- **AND** 摘要左侧显示与「地点浏览」筛选下拉框一致的箭头图标，折叠时指向右
+- **AND** 用户可展开查看中间说明与工具标签，展开后图标指向下
 - **AND** 最终回复保持可见
 
 #### Scenario: Panel state is not persisted

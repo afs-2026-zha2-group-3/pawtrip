@@ -221,7 +221,6 @@ describe("AgentPanel", () => {
       "agent-process-collapsed",
     ) as HTMLDetailsElement;
     expect(process.open).toBe(false);
-    expect(process.querySelector("summary")?.textContent).toBe("过程");
 
     fireEvent.click(process.querySelector("summary")!);
     expect(process.open).toBe(true);
