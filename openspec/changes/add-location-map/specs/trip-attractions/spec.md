@@ -56,7 +56,7 @@
 
 ### Requirement: 地图详情卡片与摘要字段
 
-地图 InfoWindow SHALL 提供“查看详情”操作；点击后 SHALL 关闭 InfoWindow 并在地图列内打开该地点的详情卡片。卡片 SHALL 展示地点名称、类型、地址、锚点距离（有锚点时）、首张照片（有 `photoUrl` 时）、评分（有 `rating` 时）、商圈/标签（有 `businessArea`/`keytag` 时）、宠物友好结论、逐宠物政策、携宠政策与“添加到行程/暂不排期”操作。缺失字段 MUST NOT 伪造；押金/清洁费与宠物设施当前数据模型没有，MUST NOT 作为必需字段；`extraFeeCents` SHALL 以“额外费用”展示。共享地点详情接口 `GET /api/locations/{poiId}` SHALL 在现有字段外返回可选 `photoUrl`、`rating`、`keytag`、`businessArea`；MUST NOT 返回原始 `photos` 数组、`business` 对象或 `poi` JSON；字段缺失时 SHALL 返回 `null`。
+地图 InfoWindow SHALL 提供“查看详情”操作；点击后 SHALL 关闭 InfoWindow 并在地图列内打开该地点的详情卡片。卡片 SHALL 展示地点名称、类型、地址、锚点距离（有锚点时）、首张照片（有 `coverPhotoUrl` 时）、评分（有 `rating` 时）、商圈/标签（有 `businessArea`/`keytag` 时）、宠物友好结论、逐宠物政策、携宠政策与“添加到行程/暂不排期”操作。缺失字段 MUST NOT 伪造；押金/清洁费与宠物设施当前数据模型没有，MUST NOT 作为必需字段；`extraFeeCents` SHALL 以“额外费用”展示。共享地点详情接口 `GET /api/locations/{poiId}` SHALL 在既有 `coverPhotoUrl`/`rating` 基础上返回可选 `keytag`、`businessArea`；MUST NOT 返回原始 `photos` 数组、`business` 对象或 `poi` JSON；字段缺失时 SHALL 返回 `null`。
 
 #### Scenario: InfoWindow 打开详情卡片
 
@@ -91,5 +91,5 @@
 
 - **GIVEN** 已登录用户请求地点详情
 - **WHEN** 后端返回详情
-- **THEN** 响应包含可选的 `photoUrl`、`rating`、`keytag`、`businessArea`
+- **THEN** 响应包含可选的 `keytag`、`businessArea`，并保留既有 `coverPhotoUrl`、`rating`
 - **AND** 不包含原始 `photos`、`business` 或 `poi` 字段

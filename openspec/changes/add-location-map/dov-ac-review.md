@@ -10,7 +10,7 @@
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
 | AC-1 每个 requirement 至少一个可测 AC | Pass | “地点地图展示与列表联动”含 7 个 scenario；“地图详情卡片与摘要字段”含 5 个 scenario | 覆盖点位、联动、筛选刷新、降级、详情卡片、接口字段 |
-| AC-2 AC 可观察 | Pass | marker/卡片高亮、InfoWindow 内容、占位文案、`photoUrl` 等字段、缺失字段不展示 | 无模糊表述 |
+| AC-2 AC 可观察 | Pass | marker/卡片高亮、InfoWindow 内容、占位文案、`coverPhotoUrl`/`keytag` 等字段、缺失字段不展示 | 无模糊表述 |
 | AC-3 负向/边界覆盖 | Pass | 未配置 Key、SDK 加载失败、缺失照片/评分/商圈、不返回原始 JSON、不伪造押金/清洁费/设施 | 与 `design.md` Non-Goals 一致 |
 | AC-4 不把实现细节伪装成 AC | Pass | 约束落在页面行为、接口字段与降级结果；未指定组件名、Loader 实现或安全密钥方案 | 生产代理方案保留为 Open Question |
 

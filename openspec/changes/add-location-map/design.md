@@ -57,7 +57,7 @@
 ### D6. 地图详情卡片复用现有 JSON 摘要字段
 
 - InfoWindow 保留基础信息，并增加“查看详情”按钮；点击后关闭 InfoWindow，在地图列内打开 `MapLocationCard`。
-- 卡片展示名称、类型、地址、锚点距离、首张照片、评分、商圈/标签、宠物政策、逐宠物结论和行程操作；这些展示字段从现有 `poi_json`/`business_json` 解析为 `photoUrl`/`rating`/`keytag`/`businessArea`，不新增 schema 列。
+- 卡片展示名称、类型、地址、锚点距离、首张照片、评分、商圈/标签、宠物政策、逐宠物结论和行程操作；照片与评分复用 REQ-013 已有的 `coverPhotoUrl`/`rating`，`keytag`/`businessArea` 从现有 `poi_json`/`business_json` 解析，不新增 schema 列。
 - 共享详情接口不返回原始 `photos`、`business` 或 `poi` JSON；字段缺失时返回 `null`，卡片不伪造押金、清洁费或宠物设施。
 - 测试地点 V20/V21 通过 V22 关联同名真实 POI 的 JSON，保证照片/评分可展示；开发库已直接更新。
 - 备选方案：新增独立详情卡片接口。当前摘要字段足以支撑卡片，且避免额外 DTO/请求，不采用。

@@ -19,7 +19,7 @@ NFR 测试：本期不纳入。地图加载不承诺 SLA；网络不可达时以
 
 | # | 场景（需求来源） | 层 | 对应用例 / 证据 | 依据 |
 |---|---|---|---|---|
-| A1 | 详情返回 `photoUrl`、`rating`、`keytag`、`businessArea`（摘要字段） | API | `detailReturnsMapCardSummaryFields` | 单端点 body 契约 |
+| A1 | 详情返回 `coverPhotoUrl`、`rating`、`keytag`、`businessArea`（前两者复用 REQ-013） | API | `detailReturnsMapCardSummaryFields` | 单端点 body 契约 |
 | A2 | 详情不返回原始 `photos` / `business` / `poi`（反向） | API | 同上 `body.has(...) == false` | JSON absence |
 | A3 | 首张照片优先 `https://`，否则回退首个可用 URL（摘要字段） | API | 同上：`http` + `https` 两张照片时返回 `https` | 字段语义 |
 | A4 | 字段缺失返回 `null`，不报错（缺失字段） | API 审查 | `parseJson` / `text` 对缺失节点返回 `null`；无专门用例 | 代码审查 |

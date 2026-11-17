@@ -13,6 +13,7 @@
 | TD-3 | 补“激活行程切换自动清空锚点”的 E2E | 仅覆盖锚点被移出行程，未覆盖行程切换 | 本地验证报告 W4 | SA/VL | med | REQ-012 |
 | TD-4 | 补 `design.md` D6/D7 的备选方案说明 | consistency lint 记录为 WARNING | `consistency-lint.md` L1/L2 | SA | low | `add-nearby-location-filter` |
 | TD-5 | 评估距离过滤内存计算的性能边界 | 单城单类型数百条可接受，增长后需下推或包围盒 | `design.md` Risks | SA | low | REQ-012 |
+| TD-6 | 双列布局下行程面板遮挡列表卡片底部按钮 | E2E 中“查看详情/添加到行程”被 fixed 面板拦截，测试临时隐藏面板 | E2E 失败记录；`e2e/attraction-pet-rules.spec.ts` `hideTripPanel` | SA | med | REQ-012 |
 
 ## Business backlog
 

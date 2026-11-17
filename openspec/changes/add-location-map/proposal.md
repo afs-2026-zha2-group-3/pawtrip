@@ -11,7 +11,7 @@
 - 地图点位通过现有 `GET /api/locations` 分页拉取（`pageSize=100` 循环取完），不新增后端 schema 或 API。
 - marker 点击后高亮对应列表卡片并打开基础 InfoWindow（名称、类型、地址、距离）；卡片新增“在地图查看”按钮，点击后地图定位到该 marker。
 - InfoWindow 增加“查看详情”：点击后关闭气泡，在地图列内打开详情卡片，展示首张照片、评分、商圈/标签、宠物政策、地址、锚点距离和加入行程操作；缺失字段不伪造。
-- 共享地点详情接口增加可选 `photoUrl`、`rating`、`keytag`、`businessArea` 摘要字段，不返回原始 `photos`/`business`/`poi` JSON。
+- 共享地点详情接口在既有 `coverPhotoUrl`/`rating` 上增加可选 `keytag`、`businessArea` 摘要字段，不返回原始 `photos`/`business`/`poi` JSON。
 - 通过 `VITE_AMAP_JS_KEY` 和 `VITE_AMAP_SECURITY_CODE` 配置高德 JS API 2.0；未配置或加载失败时显示地图占位，列表功能不受影响。
 - 押金/清洁费与宠物设施当前数据库没有对应字段，本期不展示、不伪造；地图样式精修仍不做。
 
@@ -36,6 +36,6 @@
 ## Impact
 
 - **前端**：地点页、地点卡片、新的地图组件与高德加载器、地点查询中的地图点位查询；Vite 环境变量与 E2E 运行器。
-- **后端**：地点详情响应增加 `photoUrl`/`rating`/`keytag`/`businessArea` 摘要字段；从现有 `poi_json`/`business_json` 解析，不新增 schema 列。
+- **后端**：地点详情响应在既有 `coverPhotoUrl`/`rating` 上增加 `keytag`/`businessArea` 摘要字段；从现有 `poi_json`/`business_json` 解析，不新增 schema 列。
 - **数据库**：V22 将珠海测试地点关联真实 POI 的 `poi_json`/`business_json`，用于卡片照片/评分展示；无 schema 变更。
 - **外部依赖**：高德 JS API 2.0，需要 Web端 JS API Key 和安全密钥；需要浏览器访问高德域名并配置域名白名单。E2E 强制不配置 Key，避免依赖外网 SDK。
