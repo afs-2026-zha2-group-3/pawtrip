@@ -85,7 +85,7 @@ cd apps/server
 npm run dev
 ```
 
-- 重置数据库:停止后端,删除 `apps/server/data/pawtrip.db`,重新启动。Flyway 会依次执行所有版本化迁移,只创建/更新 schema 并导入固定行政区数据,不会创建账号。已有 V2 数据升级时,V3 为 `app_user.role` 设置默认 `USER`,保留原账号;若确实遇到旧版 V2 校验失败,先备份后再按需重置数据库。
+- 重置数据库:停止后端,删除 `apps/server/data/pawtrip.db`,重新启动。Flyway 会依次执行所有版本化迁移,创建/更新 schema 并导入固定行政区数据、珠海地点种子数据(V19),不会创建账号。已有同 `poi_id` 的地点保留后台编辑结果;需要重新生成 V19 时,运行 `node scripts/generate-location-seed-migration.mjs`;已应用过旧版 V19 的本地库会因校验和不一致启动失败,重置数据库即可。已有 V2 数据升级时,V3 为 `app_user.role` 设置默认 `USER`,保留原账号;若确实遇到旧版 V2 校验失败,先备份后再按需重置数据库。
 - 注入本地/测试账号:后端首次启动、Flyway 完成迁移后,在根目录运行 `npm run seed:users`。脚本通过 bcrypt 哈希并按用户名幂等 upsert 账号和角色。默认普通账号为 `demo` / `123456`,管理员账号为 `admin` / `123456`。这些凭据仅供本地开发与测试,不得用于其他环境。
 - 指定其他数据库:`npm run seed:users -- <db-path>` 或设置 `SEED_DB` 环境变量。
 - 登录:打开 `http://localhost:3000/` 会跳转到 `/login`;使用种子脚本中的普通或管理员账号登录后进入首页。
