@@ -67,7 +67,7 @@ class LocationQueryApiTest {
 		this.locationRepository.deleteAll();
 		this.locationRepository.saveAll(List.of(
 				locationAt("poi-zhu-a", "情侣路", "attraction", "440402", "110000", 113.5, 22.1, 1, "DOG", 8.5, 40.0,
-						true, false, 1050L, null, "{\"rating\":\"4.6\"}"),
+						true, false, 1050L, null, "{\"rating\":\"4.6\",\"keytag\":\"海滨步道\"}"),
 				location("poi-zhu-b", "珠海渔女", "attraction", "440402", "110000", 0, "DOG", null, null, true, null,
 						null, null),
 				location("poi-zhu-c", "海滨公园", "attraction", "440400", "110000", null, null, null, null, true, null,
@@ -80,10 +80,17 @@ class LocationQueryApiTest {
 						null, null, null, null),
 				locationAt("poi-zhu-hotel-no-policy", "未配置酒店", "hotel", "440402", "100000", 113.5, 22.16, null,
 						null, null, null, null, null, null, null),
-				location("poi-zhu-hospital", "宠物医院", "pet-hospital", "440402", "090700", 1, "DOG", null, null,
-						null, null, null, null),
-				location("poi-zhu-supplies", "宠物用品店", "pet-supplies", "440402", "061211", 1, "DOG", null, null,
-						null, null, null, null),
+				locationAt("poi-zhu-hospital", "宠物医院", "pet-hospital", "440402", "090700", 113.5, 22.11, null,
+						null, null, null, null, null, null, null,
+						"{\"opentime_week\":\"周一至周日 09:00-20:00\",\"opentime_today\":\"09:00-20:00\"}"),
+				locationAt("poi-zhu-supplies", "宠物用品店", "pet-supplies", "440402", "061211", 113.5, 22.12, null,
+						null, null, null, null, null, null, null, "{\"opentime_today\":\"24小时营业\"}"),
+				locationAt("poi-zhu-hospital-far", "远处宠物医院", "pet-hospital", "440402", "090700", 113.6, 22.2,
+						null, null, null, null, null, null, null, null,
+						"{\"opentime_week\":\"周一至周日 10:00-18:00\"}"),
+				locationAt("poi-zhu-supplies-far", "远处宠物用品店", "pet-supplies", "440402", "061211", 113.6, 22.2,
+						null, null, null, null, null, null, null, null,
+						"{\"opentime_week\":\"周一至周日 10:00-18:00\"}"),
 				locationAt("poi-zhu-restaurant", "宠物餐厅", "restaurant", "440402", "050000", 113.5, 22.102, 1, "DOG",
 						null, null, null, null, null, null),
 				locationAt("poi-zhu-restaurant-close", "近距离餐厅", "restaurant", "440402", "050000", 113.5, 22.1005, 0,
@@ -119,6 +126,25 @@ class LocationQueryApiTest {
 		assertThat(poiIds(body)).doesNotContain("poi-zhu-b", "poi-zhu-c", "poi-zhu-d", "poi-zhu-hotel");
 		assertThat(body.path("totalElements").asLong()).isEqualTo(2);
 		assertThat(item(body, "poi-zhu-a").path("maxPetsPerPerson").asInt()).isEqualTo(1);
+		assertThat(item(body, "poi-zhu-a").path("keytag").asString()).isEqualTo("海滨步道");
+		assertThat(item(body, "poi-zhu-e").path("keytag").isNull()).isTrue();
+	}
+
+	@Test
+	void petFriendlyFilterDoesNotHideHospitalsOrSupplyStores() throws Exception {
+		JsonNode hospitals = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "pet-hospital")
+				.param("petFriendlyOnly", "true")
+				.with(user("demo").roles("USER")));
+		JsonNode supplies = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "pet-supplies")
+				.param("petFriendlyOnly", "true")
+				.with(user("demo").roles("USER")));
+
+		assertThat(poiIds(hospitals)).containsExactly("poi-zhu-hospital", "poi-zhu-hospital-far");
+		assertThat(poiIds(supplies)).containsExactly("poi-zhu-supplies", "poi-zhu-supplies-far");
 	}
 
 	@Test
@@ -322,7 +348,7 @@ class LocationQueryApiTest {
 				{"photos":[{"url":"http://example.com/a.jpg"},{"url":"https://example.com/b.jpg","title":"大堂"}]}
 				""",
 				"""
-				{"rating":4.6,"keytag":"宠物友好","business_area":"情侣路"}
+				{"rating":4.6,"keytag":"宠物友好","business_area":"情侣路","opentime_today":"24小时营业","tel":"0756-1234567"}
 				""", null, null);
 		card.updatePetPolicies("CAT,DOG", 1, 15.0, 45.0, true, false, 30000L, false);
 		this.locationRepository.save(card);
@@ -333,6 +359,8 @@ class LocationQueryApiTest {
 		assertThat(body.path("rating").asString()).isEqualTo("4.6");
 		assertThat(body.path("keytag").asString()).isEqualTo("宠物友好");
 		assertThat(body.path("businessArea").asString()).isEqualTo("情侣路");
+		assertThat(body.path("openTime").asString()).isEqualTo("24小时营业");
+		assertThat(body.path("tel").asString()).isEqualTo("0756-1234567");
 		assertThat(body.has("photos")).isFalse();
 		assertThat(body.has("business")).isFalse();
 		assertThat(body.has("poi")).isFalse();
@@ -355,6 +383,39 @@ class LocationQueryApiTest {
 	@Test
 	void unknownPoiIdReturns404() throws Exception {
 		this.mockMvc.perform(get("/api/locations/missing").with(user("demo").roles("USER")))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void nearbyServicesReturnNearestHospitalAndSuppliesWithOpeningHours() throws Exception {
+		JsonNode body = json(get("/api/locations/poi-zhu-a/nearby-services")
+				.with(user("demo").roles("USER")));
+
+		JsonNode hospital = body.path("hospital");
+		assertThat(hospital.path("poiId").asString()).isEqualTo("poi-zhu-hospital");
+		assertThat(hospital.path("name").asString()).isEqualTo("宠物医院");
+		assertThat(hospital.path("address").asString()).isEqualTo("测试地址");
+		assertThat(hospital.path("distanceMeters").asLong()).isCloseTo(1112L, within(5L));
+		assertThat(hospital.path("openingHours").asString()).isEqualTo("周一至周日 09:00-20:00");
+
+		JsonNode supplies = body.path("supplies");
+		assertThat(supplies.path("poiId").asString()).isEqualTo("poi-zhu-supplies");
+		assertThat(supplies.path("distanceMeters").asLong()).isCloseTo(2224L, within(5L));
+		assertThat(supplies.path("openingHours").asString()).isEqualTo("24小时营业");
+	}
+
+	@Test
+	void nearbyServicesReturnNullsWithoutAnchorCoordinates() throws Exception {
+		JsonNode body = json(get("/api/locations/poi-zhu-b/nearby-services")
+				.with(user("demo").roles("USER")));
+
+		assertThat(body.path("hospital").isNull()).isTrue();
+		assertThat(body.path("supplies").isNull()).isTrue();
+	}
+
+	@Test
+	void nearbyServicesForUnknownPoiReturn404() throws Exception {
+		this.mockMvc.perform(get("/api/locations/missing/nearby-services").with(user("demo").roles("USER")))
 				.andExpect(status().isNotFound());
 	}
 
@@ -424,6 +485,25 @@ class LocationQueryApiTest {
 		JsonNode plain = item(body, "poi-zhu-e");
 		assertThat(plain.path("coverPhotoUrl").isNull()).isTrue();
 		assertThat(plain.path("rating").isNull()).isTrue();
+	}
+
+	@Test
+	void listFallsBackToPoiPhotosWhenNoSavedCoverExists() throws Exception {
+		PawtripLocation card = new PawtripLocation("poi-list-fallback", "快照酒店", "100000", "hotel", "情侣路",
+				113.5, 22.1, "440402",
+				"""
+				{"photos":[{"url":"http://example.com/a.jpg"},{"url":"https://example.com/b.jpg","title":"大堂"}]}
+				""", "{}", null, null);
+		this.locationRepository.save(card);
+
+		JsonNode body = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "hotel")
+				.param("petFriendlyOnly", "false")
+				.with(user("demo").roles("USER")));
+
+		assertThat(item(body, "poi-list-fallback").path("coverPhotoUrl").asString())
+				.isEqualTo("https://example.com/b.jpg");
 	}
 
 	@Test

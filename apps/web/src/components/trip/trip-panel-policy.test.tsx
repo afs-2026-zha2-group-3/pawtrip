@@ -21,6 +21,18 @@ vi.mock("@/components/ui/animated-list", () => ({
   ),
 }));
 
+// 面板在测试外没有 Router 上下文；只替换 Link 为普通锚点，其他路由导出保持原样。
+vi.mock("@tanstack/react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@tanstack/react-router")>()),
+  Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
+    <a href={to} {...props}>
+      {children}
+    </a>
+  ),
+  useRouterState: ({ select }: { select: (state: { location: { pathname: string } }) => unknown }) =>
+    select({ location: { pathname: "/trips" } }),
+}));
+
 const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>();
 
 const PET = {

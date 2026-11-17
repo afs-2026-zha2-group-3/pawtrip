@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "@tanstack/react-store";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import {
   DndContext,
   DragOverlay,
@@ -42,6 +42,7 @@ import {
   type TransportSegment,
 } from "@/lib/trip/transport-segments";
 import { TransportSegmentRow } from "@/components/trip/transport-segment";
+import { TransportModePicker } from "@/components/trip/transport-mode-picker";
 import { dayPolicyLines, deriveDayPolicy, sizeWarningLine } from "@/lib/trip/day-policy";
 import { retryTripSave } from "@/lib/trip/save";
 import {
@@ -53,7 +54,6 @@ import {
 } from "@/lib/trip/selectors";
 import { tripActions, tripStore } from "@/lib/trip/store";
 import { MAX_TRIP_DAYS, MIN_TRIP_DAYS } from "@/lib/trip/types";
-import { transportModeLabels } from "@/data/transport-rules";
 import { runViewTransition } from "@/lib/view-transition";
 import { cn } from "@/lib/utils";
 
@@ -105,19 +105,27 @@ const TAG_CLASS =
 const ACTION_BUTTON_CLASS =
   "inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground";
 
-export function TripPanel() {
+export function TripPanel({ embedded = false }: { embedded?: boolean }) {
   const active = useActiveTrip();
   const draft = useDraftTrip();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const onAttractions = pathname === "/attractions" || pathname.startsWith("/attractions/");
+  // 地点浏览页把面板嵌进左侧行程栏（embedded），其余页面保持悬浮面板。
+  if (onAttractions !== embedded) {
+    return null;
+  }
   if (!active && !draft) {
     return null;
   }
-  return <TripPanelContent />;
+  return <TripPanelContent embedded={embedded} />;
 }
 
-function TripPanelContent() {
+function TripPanelContent({ embedded }: { embedded: boolean }) {
   const active = useActiveTrip();
   const draft = useDraftTrip();
   const expanded = usePanelExpanded();
+  const [listOpen, setListOpen] = useState(true);
+  const open = embedded ? listOpen : expanded;
   const city = useTripCity();
   const save = useSaveStatus();
   const locations = useSelector(tripStore, (state) => state.cache.locations);
@@ -332,11 +340,16 @@ function TripPanelContent() {
       data-testid="trip-panel"
       aria-label="行程面板"
       className={cn(
-        "z-50 flex flex-col gap-3 border bg-card text-card-foreground shadow-xl [view-transition-name:trip-panel]",
-        expanded
-          ? "fixed inset-0 overflow-y-auto p-4 lg:inset-y-4 lg:left-4 lg:right-auto lg:w-[364px] lg:rounded-xl"
-          : "fixed bottom-4 left-4 w-[min(92vw,360px)] rounded-xl p-3",
+        "flex flex-col gap-3 border bg-card text-card-foreground",
+        embedded
+          ? "w-full rounded-xl p-3"
+          : "z-50 shadow-xl [view-transition-name:trip-panel]",
+        !embedded &&
+          (open
+            ? "fixed inset-0 overflow-y-auto p-4 lg:top-24 lg:bottom-4 lg:left-4 lg:right-auto lg:w-[364px] lg:rounded-xl"
+            : "fixed bottom-4 left-4 w-[min(92vw,360px)] rounded-xl p-3"),
       )}
+      data-print-hidden
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
@@ -345,11 +358,18 @@ function TripPanelContent() {
               <span className={TAG_CLASS}>{cityName}</span>
               <span className={TAG_CLASS}>{active.totalDays} 天</span>
               <span className={TAG_CLASS}>{activePet?.name ?? `宠物 #${active.petId}`}</span>
-              {active.transportMode ? (
-                <span className={TAG_CLASS} data-testid="transport-mode-tag">
-                  大交通 · {transportModeLabels[active.transportMode]}
-                </span>
-              ) : null}
+              <TransportModePicker
+                value={active.transportMode}
+                pet={activePet}
+                petState={
+                  petsQuery.isPending
+                    ? "loading"
+                    : petsQuery.isError
+                      ? "error"
+                      : "ready"
+                }
+                onChange={(mode) => tripActions.setTransportMode(mode)}
+              />
               <span className={TAG_CLASS} data-testid="save-status" data-status={save.status}>
                 {save.status === "saving"
                   ? "保存中…"
@@ -359,6 +379,13 @@ function TripPanelContent() {
                       ? "保存失败"
                       : "已同步"}
               </span>
+              <Link
+                to="/itinerary"
+                data-testid="itinerary-link"
+                className="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                行程单
+              </Link>
             </>
           ) : draft ? (
             <>
@@ -371,13 +398,17 @@ function TripPanelContent() {
           type="button"
           variant="ghost"
           size="sm"
-          aria-label={expanded ? "收起行程面板" : "展开行程面板"}
+          aria-label={open ? "收起行程面板" : "展开行程面板"}
           data-testid="trip-panel-toggle"
-          onClick={() =>
-            runViewTransition(() => tripActions.setPanelExpanded(!expanded))
-          }
+          onClick={() => {
+            if (embedded) {
+              setListOpen(!open);
+              return;
+            }
+            runViewTransition(() => tripActions.setPanelExpanded(!open));
+          }}
         >
-          {expanded ? "收起" : "展开"}
+          {open ? "收起" : "展开"}
         </Button>
       </div>
 
@@ -477,11 +508,24 @@ function TripPanelContent() {
 
       {active ? (
         <>
+          {(!embedded || open) && (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            autoScroll={
+              embedded
+                ? {
+                    // 嵌入页面流时文档级自动滚动会移动面板导致落点偏移，只允许列表内容器滚动。
+                    canScroll: (element) =>
+                      element instanceof HTMLElement &&
+                      element !== document.body &&
+                      element !== document.documentElement &&
+                      element !== document.scrollingElement,
+                  }
+                : undefined
+            }
           >
             <SortableContext
               items={stopRows.map((row) => row.id)}
@@ -491,14 +535,14 @@ function TripPanelContent() {
                 items={animatedItems}
                 selectOnHover={false}
                 enableArrowNavigation={false}
-                animation="fade"
+                animation={embedded ? "none" : "fade"}
                 theme="light"
                 frame={false}
                 displayScrollbar={false}
                 width="100%"
                 gap={4}
                 radius={10}
-                maxHeight={expanded ? "calc(100vh - 18rem)" : 220}
+                maxHeight={open ? (embedded ? 320 : "calc(100vh - 18rem)") : 220}
                 className="w-full"
                 renderItem={(item) => {
                   const row = rows.find((candidate) => candidate.id === String((item as { id?: string }).id));
@@ -562,6 +606,7 @@ function TripPanelContent() {
               ) : null}
             </DragOverlay>
           </DndContext>
+          )}
           {save.status === "error" ? (
             <div className="flex items-center justify-between gap-2 rounded-lg bg-destructive/10 px-2 py-1.5">
               <span className="text-xs text-destructive">{save.message ?? "保存失败"}</span>

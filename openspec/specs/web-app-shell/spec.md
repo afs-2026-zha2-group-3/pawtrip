@@ -32,7 +32,7 @@
 
 ### Requirement: Tab 与路由同步
 
-导航 Tab 选中状态 SHALL 与当前路由一致；切换 Tab SHALL 导航到对应路由。
+导航 Tab 选中状态 SHALL 与当前路由一致；切换 Tab SHALL 导航到对应路由。`/itinerary` SHALL 使 `Trips` Tab 处于选中状态。
 
 #### Scenario: 进入首页
 
@@ -80,14 +80,21 @@
 - **WHEN** 页面渲染
 - **THEN** `Trips` Tab 处于选中状态
 
+#### Scenario: 直接访问行程单
+
+- **GIVEN** 已登录用户直接访问 `/itinerary`
+- **WHEN** 页面渲染
+- **THEN** `Trips` Tab 处于选中状态
+- **AND** `Home` Tab 不处于选中状态
+
 ### Requirement: 受保护路由与登录跳转
 
-`/`、`/paws`、`/cities`、`/attractions`、`/transport-rules` 与 `/trips` SHALL 位于登录守卫之下。未登录用户访问任一路由时 MUST 跳转 `/login`，且 MUST NOT 展示受保护页面内容。登录成功后 SHALL 回到 `/`；登出前 MUST 通过确认弹窗二次确认，确认且请求成功后 SHALL 回到 `/login`，并 SHALL 清除浏览器端持久化的 `activeTripId` 与行程上下文。路由守卫只负责界面引导，服务端 API 仍独立执行认证。
+`/`、`/paws`、`/cities`、`/attractions`、`/transport-rules`、`/trips` 与 `/itinerary` SHALL 位于登录守卫之下。未登录用户访问任一路由时 MUST 跳转 `/login`，且 MUST NOT 展示受保护页面内容。登录成功后 SHALL 回到 `/`；登出前 MUST 通过确认弹窗二次确认，确认且请求成功后 SHALL 回到 `/login`，并 SHALL 清除浏览器端持久化的 `activeTripId` 与行程上下文。路由守卫只负责界面引导，服务端 API 仍独立执行认证。
 
 #### Scenario: 未登录访问首页
 
 - **GIVEN** 浏览器没有有效登录会话
-- **WHEN** 访问 `/`、`/paws`、`/cities`、`/attractions`、`/transport-rules` 或 `/trips`
+- **WHEN** 访问 `/`、`/paws`、`/cities`、`/attractions`、`/transport-rules`、`/trips` 或 `/itinerary`
 - **THEN** 浏览器地址变为 `/login`
 - **AND** 不展示问候语、Paws、目的地选择、景点、交通规则或行程内容
 

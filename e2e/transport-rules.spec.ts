@@ -34,7 +34,7 @@ test.describe("tab-and-routing", () => {
     await signIn(page);
 
     const labels = await page.getByRole("tab").allTextContents();
-    expect(labels.slice(0, 5)).toEqual(["Home", "Paws", "城市浏览", "地点浏览", "交通规则"]);
+    expect(labels.slice(0, 5)).toEqual(["首页", "我的宠物", "城市浏览", "地点浏览", "交通规则"]);
     await expect(page.getByRole("tab", { name: "地点管理" })).toHaveCount(0);
   });
 
@@ -70,12 +70,12 @@ test.describe("tab-and-routing", () => {
 
     const labels = await page.getByRole("tab").allTextContents();
     expect(labels.slice(0, 8)).toEqual([
-      "Home",
-      "Paws",
+      "首页",
+      "我的宠物",
       "城市浏览",
       "地点浏览",
       "交通规则",
-      "Trips",
+      "我的行程",
       "地点管理",
       "城市管理",
     ]);

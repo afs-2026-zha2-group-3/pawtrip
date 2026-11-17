@@ -193,7 +193,13 @@
 
 ### Requirement: 交通方式单选与临时缓存
 
-系统 SHALL 在「方式」列之前提供单选项列；存在激活行程时，同一时刻只允许选中一种交通方式。选中值 SHALL 保存到当前激活行程的 `transportMode` 字段，并在进入页面时从该行程回显；MUST NOT 使用 `sessionStorage` 单独保存选择。无宠物档案数据时，单选项仍 SHALL 可用。
+系统 SHALL 在「方式」列之前提供单选项列；存在激活行程时，同一时刻只允许选中一种交通方式。选中值 SHALL 保存到当前激活行程的 `transportMode` 字段，并在进入页面时从该行程回显；MUST NOT 使用 `sessionStorage` 单独保存选择。无宠物档案数据时，单选项仍 SHALL 可用。行程面板 SHALL 提供等价的选择入口，两处 MUST 读取并更新同一个激活行程的 `transportMode`。
+
+#### Scenario: 面板选择后规则页回显
+
+- **GIVEN** 用户从行程面板选择了一种交通方式
+- **WHEN** 用户打开交通规则页
+- **THEN** 对应交通方式的单选项处于选中状态
 
 #### Scenario: 选中一种方式
 

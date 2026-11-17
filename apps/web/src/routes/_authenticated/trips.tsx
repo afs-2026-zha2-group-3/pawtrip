@@ -39,6 +39,7 @@ import {
 } from "@/queries/trips";
 import { useActiveTrip, useDraftTrip } from "@/lib/trip/selectors";
 import { tripActions } from "@/lib/trip/store";
+import { TripSectionNav } from "@/components/trip/trip-section-nav";
 import { runViewTransition } from "@/lib/view-transition";
 
 export const Route = createFileRoute("/_authenticated/trips")({
@@ -132,6 +133,7 @@ function TripsPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
+      <TripSectionNav active="trips" />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-medium">我的行程</h1>
         {active ? (
@@ -192,9 +194,20 @@ function TripsPage() {
                 </CardHeader>
                 <CardFooter className="gap-2">
                   {isActive ? (
-                    <Button size="sm" variant="outline" onClick={deactivate}>
-                      取消激活
-                    </Button>
+                    <>
+                      <Button size="sm" variant="outline" onClick={deactivate}>
+                        取消激活
+                      </Button>
+                      <Link
+                        to="/itinerary"
+                        className={buttonVariants({
+                          size: "sm",
+                          variant: "outline",
+                        })}
+                      >
+                        行程单
+                      </Link>
+                    </>
                   ) : (
                     <Button
                       size="sm"

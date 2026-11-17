@@ -69,6 +69,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function AppHeader() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const isClient = typeof window !== "undefined";
   const auth = useQuery({ ...authQueryOptions, enabled: isClient });
@@ -82,7 +83,7 @@ function AppHeader() {
   });
 
   return (
-    <header className="relative flex items-center justify-center px-4 py-4">
+    <header className="relative flex items-center justify-center px-4 pt-9 pb-4 print:hidden">
       <AppTabs />
       {auth.isSuccess ? (
         <AlertDialog
@@ -95,7 +96,11 @@ function AppHeader() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute right-4"
+                className={
+                  pathname === "/paws"
+                    ? "absolute right-4 rounded-full bg-card/90 shadow-sm backdrop-blur-sm"
+                    : "absolute right-4"
+                }
                 disabled={logoutMutation.isPending}
               />
             }
@@ -136,6 +141,9 @@ function AppHeader() {
   );
 }
 
+const navPillClass =
+  "h-auto flex-none rounded-full px-5 py-2.5 text-base text-foreground group-data-horizontal/tabs:h-auto hover:bg-muted data-active:bg-foreground data-active:text-background group-data-[variant=default]/tabs-list:data-active:shadow-[0_3px_1px_0_rgba(0,0,0,0.04),0_3px_8px_0_rgba(0,0,0,0.12)] dark:text-foreground/70 dark:data-active:border-transparent dark:data-active:bg-foreground dark:data-active:text-background";
+
 function AppTabs() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const navigate = useNavigate();
@@ -150,7 +158,7 @@ function AppTabs() {
         ? "cities"
         : pathname === "/transport-rules"
           ? "transport-rules"
-          : pathname === "/trips"
+          : pathname === "/trips" || pathname === "/itinerary"
             ? "trips"
             : pathname === "/admin/locations"
               ? "locations"
@@ -181,17 +189,20 @@ function AppTabs() {
         }
       }}
     >
-      <TabsList aria-label="主导航">
-        <TabsTrigger value="home">Home</TabsTrigger>
-        <TabsTrigger value="paws">Paws</TabsTrigger>
-        <TabsTrigger value="cities">城市浏览</TabsTrigger>
-        <TabsTrigger value="attractions">地点浏览</TabsTrigger>
-        <TabsTrigger value="transport-rules">交通规则</TabsTrigger>
-        <TabsTrigger value="trips">Trips</TabsTrigger>
+      <TabsList
+        aria-label="主导航"
+        className="group-data-horizontal/tabs:h-auto gap-1 rounded-full bg-card p-1.5 shadow-md"
+      >
+        <TabsTrigger value="home" className={navPillClass}>首页</TabsTrigger>
+        <TabsTrigger value="paws" className={navPillClass}>我的宠物</TabsTrigger>
+        <TabsTrigger value="cities" className={navPillClass}>城市浏览</TabsTrigger>
+        <TabsTrigger value="attractions" className={navPillClass}>地点浏览</TabsTrigger>
+        <TabsTrigger value="transport-rules" className={navPillClass}>交通规则</TabsTrigger>
+        <TabsTrigger value="trips" className={navPillClass}>我的行程</TabsTrigger>
         {auth.data?.role === "ADMIN" ? (
           <>
-            <TabsTrigger value="locations">地点管理</TabsTrigger>
-            <TabsTrigger value="admin-cities">城市管理</TabsTrigger>
+            <TabsTrigger value="locations" className={navPillClass}>地点管理</TabsTrigger>
+            <TabsTrigger value="admin-cities" className={navPillClass}>城市管理</TabsTrigger>
           </>
         ) : null}
       </TabsList>
@@ -249,7 +260,13 @@ function RootDocument({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-svh bg-background text-foreground antialiased">
+      <body
+        className={
+          pathname === "/paws" || pathname === "/cities" || pathname === "/transport-rules"
+            ? "bg-pet-pattern min-h-svh text-foreground antialiased"
+            : "min-h-svh bg-background text-foreground antialiased"
+        }
+      >
         {pathname === "/login" ? null : <AppHeader />}
         {children}
         <Scripts />

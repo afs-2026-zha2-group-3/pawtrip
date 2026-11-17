@@ -49,6 +49,7 @@ export interface LocationSummary {
   petPolicies: PetPolicies;
   coverPhotoUrl: string | null;
   rating: string | null;
+  keytag: string | null;
 }
 
 export interface LocationListParams extends PaginationParams {
@@ -70,6 +71,21 @@ export interface LocationBrowseDetail {
   rating: string | null;
   keytag?: string | null;
   businessArea?: string | null;
+  openTime?: string | null;
+  tel?: string | null;
+}
+
+export interface NearbyPetService {
+  poiId: string;
+  name: string;
+  address: string | null;
+  distanceMeters: number;
+  openingHours: string | null;
+}
+
+export interface NearbyPetServices {
+  hospital: NearbyPetService | null;
+  supplies: NearbyPetService | null;
 }
 
 function queryString(params: Record<string, string | number | boolean | undefined>): string {
@@ -121,6 +137,7 @@ export const locationQueryKeys = {
   map: (params: Omit<LocationListParams, "page" | "pageSize">) =>
     ["locations", "map", locationMapKeyParams(params)] as const,
   detail: (poiId: string) => ["locations", "detail", poiId] as const,
+  nearbyServices: (poiId: string) => ["locations", "nearby-services", poiId] as const,
 };
 
 export function locationTypesQueryOptions() {
@@ -167,5 +184,16 @@ export function locationBrowseDetailQueryOptions(poiId: string) {
     queryKey: locationQueryKeys.detail(poiId),
     queryFn: ({ signal }) =>
       request<LocationBrowseDetail>(`/api/locations/${encodeURIComponent(poiId)}`, { signal }),
+  });
+}
+
+export function nearbyPetServicesQueryOptions(poiId: string) {
+  return queryOptions({
+    queryKey: locationQueryKeys.nearbyServices(poiId),
+    queryFn: ({ signal }) =>
+      request<NearbyPetServices>(
+        `/api/locations/${encodeURIComponent(poiId)}/nearby-services`,
+        { signal },
+      ),
   });
 }
