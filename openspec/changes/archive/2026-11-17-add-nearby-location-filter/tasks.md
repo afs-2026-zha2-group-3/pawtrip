@@ -33,4 +33,4 @@
 
 - [x] 5.1 串行运行 `npm run test:e2e -- e2e/attraction-pet-rules.spec.ts e2e/trips-panel.spec.ts --workers=1`，确认锚点、门禁、距离筛选与既有流程端到端通过。
 - [x] 5.2 运行后端 `./mvnw test`、前端 `npm test -w apps/web` 与 `npm run build -w apps/web`，修复本 change 引入的失败并记录验证结果。
-- [ ] 5.3 按仓库流程补全 P3 验证与 G1/G2/G3 记录；P3 文档（`dov-ac-review.md`、`atdd-design.md`、`alignment-self-check.md`）与本地验证报告（`docs/ai4se-plugins/20261117-130447-local-verify-report.md`）已补齐；G1 Pass 已记录（IO=SUKI、SA=RANLE，2026-11-17）；G2/G3 由对应角色签署，不由实现者代签。
+- [x] 5.3 按仓库流程补全 P3 验证与 G1/G2/G3 记录；P3 文档（`dov-ac-review.md`、`atdd-design.md`、`alignment-self-check.md`）与本地验证报告（`docs/ai4se-plugins/20261117-145634-local-verify-report.md`）已补齐；G1 Pass（IO=SUKI、SA=RANLE）、G2 Pass（VL=RANLE）、G3 Pass（SA=RANLE）已记录（2026-11-17）。
