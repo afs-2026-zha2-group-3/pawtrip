@@ -4,21 +4,21 @@
 
 ## 1. 前置：知识库与高德冒烟
 
-- [ ] 1.1 将已核对的高德路线规划 2.0 文档（驾车/步行端点、`show_fields=cost`、`taxi_cost`、坐标 ≤6 位小数、`origin_id`/`destination_id`）补入 `docs/knowledge/external/`，并更新 `docs/knowledge/architecture/README.md` 的端口/适配器说明；验证：文档含参数与返回字段表，`scripts/kb-lint.sh`（Git Bash）通过
-- [ ] 1.2 用真实 `AMAP_API_KEY` 冒烟 `GET /v5/direction/driving` 与 `/v5/direction/walking`（含 `show_fields=cost`），确认 Key 权限与 `taxi_cost` 可用；验证：记录两请求的响应样例（脱敏）于 change 目录，失败则升级用户决策
+- [x] 1.1 将已核对的高德路线规划 2.0 文档（驾车/步行端点、`show_fields=cost`、`taxi_cost`、坐标 ≤6 位小数、`origin_id`/`destination_id`）补入 `docs/knowledge/external/`，并更新 `docs/knowledge/architecture/README.md` 的端口/适配器说明；验证：文档含参数与返回字段表，`scripts/kb-lint.sh`（Git Bash）通过
+- [x] 1.2 用真实 `AMAP_API_KEY` 冒烟 `GET /v5/direction/driving` 与 `/v5/direction/walking`（含 `show_fields=cost`），确认 Key 权限与 `taxi_cost` 可用；验证：记录两请求的响应样例（脱敏）于 change 目录，失败则升级用户决策
 
 ## 2. 服务端：路线规划端口与适配器
 
-- [ ] 2.1 先写适配器单测（fake `AmapTransport`）：驾车/步行参数构造（坐标 ≤6 位、`show_fields=cost`、POI ID）、`taxi_cost`/`duration` 解析、缺失/非数值/上游失败/Key 缺失的类型化异常；验证：测试先红
-- [ ] 2.2 新增 `application.model.maps` 估算请求/结果 record、`application.port.maps.RouteEstimatePort`、`infrastructure.amap.api.AmapRouteEstimateAdapter` 与 `RouteEstimateException`；验证：2.1 测试转绿（`apps/server` 下 `mvnw test`）
-- [ ] 2.3 先写 `GlobalExceptionHandler` 映射单测（`RouteEstimateException` → `UPSTREAM_FAILURE` 502，不泄露 Key/原始报文），再实现映射；验证：映射测试通过
+- [x] 2.1 先写适配器单测（fake `AmapTransport`）：驾车/步行参数构造（坐标 ≤6 位、`show_fields=cost`、POI ID）、`taxi_cost`/`duration` 解析、缺失/非数值/上游失败/Key 缺失的类型化异常；验证：测试先红
+- [x] 2.2 新增 `application.model.maps` 估算请求/结果 record、`application.port.maps.RouteEstimatePort`、`infrastructure.amap.api.AmapRouteEstimateAdapter` 与 `RouteEstimateException`；验证：2.1 测试转绿（`apps/server` 下 `mvnw test`）
+- [x] 2.3 先写 `GlobalExceptionHandler` 映射单测（`RouteEstimateException` → `UPSTREAM_FAILURE` 502，不泄露 Key/原始报文），再实现映射；验证：映射测试通过
 
 ## 3. 服务端：估算端点与换算
 
-- [ ] 3.1 先写 API 验收 `TripRouteEstimateApiTest`（ATDD A1–A4：MockMvc + 独立 SQLite 测试库 + `@MockitoBean RouteEstimatePort`）：未登录 401、非本人 404、缺参/mode 非法/poiId 不存在 400、±20% 区间与分钟向上取整、步行 0/0、上游失败/Key 缺失 502 不泄露 Key、估算后 plan_json 不变；同步先写 `TripRouteEstimateService` 单测（坐标缺失 400、换算边界）；验证：测试先红
-- [ ] 3.2 实现 `TripRouteEstimateService` 与 `TripController` 的 `GET /{tripId}/route-estimate` 端点及响应 record；验证：3.1 测试转绿，`mvnw test` 全量通过（含既有 trip 测试无回归）
-- [ ] 3.3 先写 `TripApiTest` 快照与枚举扩展（ATDD A5/A6/A7：非法快照缺字段/非数值/负值/非整数分钟/low>high → 400；合法快照 PUT→详情往返原样保留；`toNext=self_drive` 合法且往返保留（快照费用 0/0）、枚举外值仍 400；可省略/存量无快照兼容、version 保持 1）与 `TripPlanValidator`/`TripPlan.TripStop` 快照单测；验证：测试先红（当前 validator 丢弃字段且枚举不含 self_drive，roundtrip/枚举必红）
-- [ ] 3.4 扩展 `TripPlan.TripStop` record 与 `TripPlanValidator.parseStops` 解析/校验/序列化（D7），`toNext` 合法枚举扩展 `{walk, drive, transit, self_drive}`（D9）；验证：3.3 测试转绿，`mvnw test` 全量通过
+- [x] 3.1 先写 API 验收 `TripRouteEstimateApiTest`（ATDD A1–A4：MockMvc + 独立 SQLite 测试库 + `@MockitoBean RouteEstimatePort`）：未登录 401、非本人 404、缺参/mode 非法/poiId 不存在 400、±20% 区间与分钟向上取整、步行 0/0、上游失败/Key 缺失 502 不泄露 Key、估算后 plan_json 不变；同步先写 `TripRouteEstimateService` 单测（坐标缺失 400、换算边界）；验证：测试先红
+- [x] 3.2 实现 `TripRouteEstimateService` 与 `TripController` 的 `GET /{tripId}/route-estimate` 端点及响应 record；验证：3.1 测试转绿，`mvnw test` 全量通过（含既有 trip 测试无回归）
+- [x] 3.3 先写 `TripApiTest` 快照与枚举扩展（ATDD A5/A6/A7：非法快照缺字段/非数值/负值/非整数分钟/low>high → 400；合法快照 PUT→详情往返原样保留；`toNext=self_drive` 合法且往返保留（快照费用 0/0）、枚举外值仍 400；可省略/存量无快照兼容、version 保持 1）与 `TripPlanValidator`/`TripPlan.TripStop` 快照单测；验证：测试先红（当前 validator 丢弃字段且枚举不含 self_drive，roundtrip/枚举必红）
+- [x] 3.4 扩展 `TripPlan.TripStop` record 与 `TripPlanValidator.parseStops` 解析/校验/序列化（D7），`toNext` 合法枚举扩展 `{walk, drive, transit, self_drive}`（D9）；验证：3.3 测试转绿，`mvnw test` 全量通过
 
 ## 4. 前端：store 动作与估算查询
 

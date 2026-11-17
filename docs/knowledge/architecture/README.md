@@ -40,15 +40,15 @@ pawtrip/
 ```text
 com.pawtrip.server
 ├─ application/
-│  ├─ model/maps/          内部地点搜索请求、分页元数据及原始 POI JSON
-│  └─ port/maps/           应用功能调用的地点搜索端口
+│  ├─ model/maps/          内部地点搜索请求、分页元数据、原始 POI JSON 及路线估算请求/结果 record（REQ-011）
+│  └─ port/maps/           应用功能调用的地点搜索端口与路线估算端口 RouteEstimatePort（REQ-011）
 └─ infrastructure/amap/
    ├─ config/              高德服务端配置（AMAP_API_KEY 等）
    ├─ transport/           共用同步 HTTP 客户端、凭据注入及安全错误转换
-   └─ api/                 高德具体 API 适配器（当前为 POI 搜索）
+   └─ api/                 高德具体 API 适配器（POI 搜索与路线估算 AmapRouteEstimateAdapter，REQ-011）
 ```
 
-依赖方向为应用功能依赖 `application.port.maps`，`infrastructure.amap.api` 实现该端口并依赖共享传输和配置；应用模型不依赖 Controller、HTTP 响应类型或高德传输。POI 搜索仅是内部能力，本次不增加 Controller、`/api/pois/*` 路由或单独的 `poi` 包。高德凭据只从服务端配置读取，缺失时应用仍可启动，实际调用再以类型化错误失败。
+依赖方向为应用功能依赖 `application.port.maps`，`infrastructure.amap.api` 实现该端口并依赖共享传输和配置；应用模型不依赖 Controller、HTTP 响应类型或高德传输。POI 搜索仅是内部能力，不增加 Controller、`/api/pois/*` 路由或单独的 `poi` 包。路线估算（REQ-011）以独立 `RouteEstimatePort` 接入（不扩展 PlaceSearchPort），适配器只做协议解析，±20% 费用区间/分钟向上取整/步行 ¥0 换算在 `trip.TripRouteEstimateService`，端点 `GET /api/trips/{tripId}/route-estimate` 挂 trip 模块；外部协议见 [高德路线规划 2.0](../external/amap-route-planning.md)。高德凭据只从服务端配置读取，缺失时应用仍可启动，实际调用再以类型化错误失败。
 
 ### 地点查询与管理
 

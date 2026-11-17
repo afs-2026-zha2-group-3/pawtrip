@@ -18,7 +18,7 @@ class TripPlanValidator {
 
 	private static final int VERSION = 1;
 
-	private static final Set<String> TRANSPORT_MODES = Set.of("walk", "drive", "transit");
+	private static final Set<String> TRANSPORT_MODES = Set.of("walk", "drive", "transit", "self_drive");
 
 	private final ObjectMapper objectMapper;
 
@@ -110,9 +110,35 @@ class TripPlanValidator {
 				}
 				toNext = toNextNode.asString();
 			}
-			stops.add(new TripPlan.TripStop(poiId, toNext));
+			JsonNode estimateNode = stopNode.get("toNextEstimate");
+			TripPlan.ToNextEstimate estimate = null;
+			if (estimateNode != null && !estimateNode.isNull()) {
+				estimate = parseEstimate(estimateNode);
+			}
+			stops.add(new TripPlan.TripStop(poiId, toNext, estimate));
 		}
 		return stops;
+	}
+
+	private static TripPlan.ToNextEstimate parseEstimate(JsonNode node) {
+		if (!node.isObject()) {
+			throw invalid();
+		}
+		JsonNode duration = node.get("durationMinutes");
+		JsonNode low = node.get("costLowYuan");
+		JsonNode high = node.get("costHighYuan");
+		if (duration == null || !duration.isInt() || duration.asInt() < 0) {
+			throw invalid();
+		}
+		if (low == null || !low.isNumber() || high == null || !high.isNumber()) {
+			throw invalid();
+		}
+		double lowValue = low.asDouble();
+		double highValue = high.asDouble();
+		if (lowValue < 0 || highValue < 0 || lowValue > highValue) {
+			throw invalid();
+		}
+		return new TripPlan.ToNextEstimate(duration.asInt(), lowValue, highValue);
 	}
 
 	private static List<TripPlan.TripStopRef> parseUnscheduled(JsonNode node) {

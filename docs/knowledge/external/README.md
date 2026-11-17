@@ -36,11 +36,11 @@ Before editing files for a substantial task:
 ### 地图集成：高德 Web 服务与 Spring REST Client
 
 - 高德 POI 2.0：本项目使用 Web 服务 API 的关键词搜索 `/v5/place/text` 与周边搜索 `/v5/place/around`，均为 GET；高德要求服务端 Key，分页每页 1–25 条，同一查询最多获取 200 条。周边搜索未提供关键词和类型时，默认类型为餐饮、生活服务、商务住宅，默认半径为 5000 米。POI 详情的 `photos` 提供照片标题与来源 URL；地点管理后端持久化照片元数据和来源 URL，浏览器直接加载图片，不再由服务器下载或保存图片二进制。图片可用性依赖上游 URL。
-- 高德路线规划 2.0：仅供未来扩展参考，不属于当前实现。接口类型和参数各异；例如驾车路线参数过长时文档要求改用 POST，因此共用传输层不应固化成 POI 专用动态代理。
+- 高德路线规划 2.0：REQ-011 途内交通估算使用驾车 `/v5/direction/driving` 与步行 `/v5/direction/walking`（均 GET，带 `show_fields=cost` 与 `origin_id`/`destination_id`）；驾车取 `route.taxi_cost`（基础字段）与 `paths[0].cost.duration` 秒，步行仅取时长（费用 ¥0 为产品决策）；坐标「经度,纬度」≤6 位小数。驾车参数过长时官方要求改用 POST，因此共用传输层不应固化成 POI 专用动态代理。详细参数/返回字段见 [amap-route-planning.md](amap-route-planning.md)。
 - Spring REST Clients：使用 Spring Framework `RestClient` 作为同步、可复用的 HTTP 客户端，不新增第三方客户端依赖；配置连接/读取超时，并在集成边界屏蔽含凭据 URL 和敏感查询参数的底层异常。
 - 文档：
   - 高德搜索 POI 2.0：https://lbs.amap.com/api/webservice/guide/api-advanced/newpoisearch
-  - 高德路线规划 2.0（未来扩展参考）：https://lbs.amap.com/api/webservice/guide/api/newroute
+  - 高德路线规划 2.0：https://lbs.amap.com/api/webservice/guide/api/newroute（本地核对条目：[amap-route-planning.md](amap-route-planning.md)）
   - Spring Framework REST Clients：https://docs.spring.io/spring-framework/reference/integration/rest-clients.html
   - Spring Boot Externalized Configuration：https://docs.spring.io/spring-boot/reference/features/external-config.html
 
