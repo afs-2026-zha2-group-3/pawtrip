@@ -4,9 +4,9 @@ import {
   csrfHeaders,
   openCities,
   openTrips,
+  openTripDialog,
   pets,
   resetTrips,
-  selectCity,
   signIn,
   tripCard,
 } from "./trip-helpers";
@@ -216,10 +216,11 @@ test("E1 renders n-1 segment rows between stops, none for single/empty/unschedul
   await expect(segments.getByRole("button", { name: /^拖动/ })).toHaveCount(0);
 });
 
-test("E1 draft panel shows no transport segments", async ({ page }) => {
+test("E1 pre-confirmation state shows no transport segments", async ({ page }) => {
   await openCities(page);
-  await selectCity(page, "珠海市");
-  await expect(page.getByTestId("trip-panel")).toContainText("未确认草稿");
+  // main（PR #64/#66）将草稿入口改为行程确认弹窗：确认前状态同样不得渲染段行/公交提示。
+  // 原「未确认草稿」面板分支仍在 trip-panel 中保留，但 UI 已无入口，改验弹窗前置态。
+  await openTripDialog(page, "珠海市");
   await expect(page.getByTestId("transport-segment")).toHaveCount(0);
   await expect(page.getByTestId("transit-pet-notice")).toHaveCount(0);
 });
