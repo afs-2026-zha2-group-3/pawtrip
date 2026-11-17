@@ -1,7 +1,7 @@
 # Change summary — 2026-11-17-restore-policy-entry-and-trip-dialog
 
 - Change id: `2026-11-17-restore-policy-entry-and-trip-dialog`
-- 状态：实现与本地验证完成；PR / CI / 归档待执行
+- 状态：已合并（PR #64，merge `0b59ca5`，2026-11-17）并归档
 - 分支：`feat/city-trip-confirm-dialog`（基于 `origin/main` `15be046`）
 
 ## Intent
@@ -27,18 +27,18 @@
 | 前端单测 | Pass | `npm test -w apps/web`：15 文件 99 用例 |
 | 受影响 E2E | Pass | `CI=1 npm run test:e2e --` 7 个 spec：82 passed / 0 failed |
 | 浏览器结构验证 | Pass | `/cities` 卡片含「查看政策」；「选定」打开创建行程对话框 |
-| 全量 E2E / CI | Pending | 待提交 PR 后确认 |
+| 全量 E2E / CI | Pass | PR #64：Web CI run `44012887605`、E2E CI run `44012887414`（head `f9abc94`）；Server CI 未触发（无后端变更） |
 | OpenSpec validate | Pass | `npx --no-install openspec validate <change> --strict` |
 | G1 | Pass（IO=Kitty Su，SA=HARLAN HUANG，2026-11-17） | `g1-decision.md` |
-| G2 | Pass（VL=SCOTT，2026-11-17；CI 证据待 PR 补录） | `g2-decision.md` |
-| G3 | 待合并归档后签署 | — |
+| G2 | Pass（VL=SCOTT，2026-11-17；CI 证据见本摘要与 tasks） | `g2-decision.md` |
+| G3 | 待实名签署（归档已完成，本记录不代签） | — |
 
 ## Residual risks / follow-ups
 
 1. 起止日期不落库，行程只保存 `totalDays`；需展示日期时另起变更。
 2. 草稿 store 与面板草稿 UI 仍存在但无入口，后续单独清理。
 3. 单城市口径：存在激活行程时需先到 Trips 取消激活，才能选择新城市。
-4. `tasks.md` 4.5（全量 E2E 与 CI）与 G2 的 CI 证据待 PR 后补齐；G3 待合并归档时签署。
+4. `tasks.md` 4.5 已由 PR #64 CI 补齐；G2 记录中的 CI 条件证据见本摘要与 tasks；G3 待实名签署。
 
 ## Links
 

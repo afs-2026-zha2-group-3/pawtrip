@@ -28,4 +28,4 @@
 - [x] 4.2 `npm test -w apps/web`：99 项通过（含新增 3 项日期单测）。
 - [x] 4.3 `CI=1 npm run test:e2e --` 受影响 7 个 spec：82 项通过、0 失败（destination-selection / attraction-pet-rules / trip-duration-input / trips-panel / city-pet-policy / rule-recommendation-and-selection / transport-rules）。
 - [x] 4.4 内置浏览器结构验证：`/cities` 卡片含「查看政策」链接；「选定」打开创建行程对话框并展示城市、日期、携带宠物。
-- [ ] 4.5 全量 E2E 与 CI 三工作流待提交 PR 后确认。
+- [x] 4.5 全量 E2E 与 CI 在 PR #64 确认：Web CI run `44012887605`、E2E CI run `44012887414` 均 success（head `f9abc94`）；Server CI 未触发（无 `apps/server` 变更）。
