@@ -449,12 +449,15 @@ test("restores the single-day view after printing ends", async ({ page }) => {
   await page.goto("/itinerary");
 
   const dayOneTab = page.getByRole("tab", { name: "Day 1" });
+  const policyDetails = page
+    .getByTestId("itinerary-stop")
+    .first()
+    .locator("details")
+    .filter({ hasText: "详细携宠政策" });
   await expect(dayOneTab).toHaveAttribute("aria-selected", "true");
   await page.getByRole("button", { name: "导出 PDF" }).click();
   await expect(page.getByText("12月2日 周三 · 珠海市")).toBeVisible();
-  await expect(
-    page.getByTestId("itinerary-stop").first().locator("details"),
-  ).toHaveJSProperty("open", true);
+  await expect(policyDetails).toHaveJSProperty("open", true);
 
   await page.evaluate(() =>
     (window as unknown as { __finishPrint: () => void }).__finishPrint(),
@@ -463,9 +466,7 @@ test("restores the single-day view after printing ends", async ({ page }) => {
   await expect(page.getByText("12月2日 周三 · 珠海市")).toHaveCount(0);
   await expect(page.getByText("12月1日 周二 · 珠海市")).toBeVisible();
   await expect(page.getByRole("button", { name: "导出 PDF" })).toBeVisible();
-  await expect(
-    page.getByTestId("itinerary-stop").first().locator("details"),
-  ).toHaveJSProperty("open", false);
+  await expect(policyDetails).toHaveJSProperty("open", false);
   await expect(dayOneTab).toHaveAttribute("aria-selected", "true");
 });
 
