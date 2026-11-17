@@ -15,7 +15,7 @@
 | AC-5 打开侧栏卡片不变窄、列表左移 | Pass | E20：1600px 视口下卡片宽度前后差 ≤1px，侧栏 x 坐标在卡片右侧，`main` 为 `max-w-[1408px]`；1200px 下侧栏堆叠在卡片下方 | 已由几何断言替代人工判断 |
 | AC-6 不使用演示数据，来源可读 | Pass（有限口径） | V26 只写入公开摘录；E17 第一页至少 8 城有政策要点、无「演示数据」、每城有来源；E15 展示来源标题与说明 | 政策表无 `source_url`，不宣称逐条可点开原文；公开性依赖人工抽样 |
 | AC-7 卡片移除「查看政策」链接 | Pass | E8/E9：卡片内链接数量为 0，点击卡片改为打开侧栏 | `city-pet-policy` 入口用例同步改为侧栏路径 |
-| 回归：既有候选与匹配行为 | Pass | `destination-selection.spec.ts` 21/21；`city-pet-policy.spec.ts` 15/15；`attraction-pet-rules.spec.ts` 22/22 | 分页后受影响用例统一先 `searchCity` |
+| 回归：既有候选与匹配行为 | Pass | `destination-selection.spec.ts` 21/21；`city-pet-policy.spec.ts` 16/16；`attraction-pet-rules.spec.ts` 22/22 | 合并 main 后重跑；分页后受影响用例统一先 `searchCity` |
 
 ## Definition of Verified
 
@@ -25,12 +25,12 @@
 | DoV-2 歧义已解决 | Pass | `design.md` D1–D7 | 分页大小与重置、侧栏复用、定宽布局、点击守卫、锚点、单条迁移、来源口径均有决策 |
 | DoV-3 残余风险已记录 | Pass | `design.md` Risks | 政策时效、三亚未生效、三沙未收录、来源无 URL、部分名单、客户端分页、断点、本地库重建 |
 | DoV-4 类型检查 | Pass | `npx tsc --noEmit -p apps/web/tsconfig.json` exit 0（2026-11-17） | 本分支 |
-| DoV-5 前端单测 | Pass | `npm test -w apps/web`：30 文件 212 项通过（2026-11-17） | 含 `policy-match`、政策主体与行程相关单测 |
-| DoV-6 受影响 E2E | Pass | destination-selection 21/21（约 1.5m）；city-pet-policy 15/15 + attraction 22/22（合计 37/37，约 2.0m） | 临时库执行合并后的 V26；开发库未被修改 |
+| DoV-5 前端单测 | Pass | `npm test -w apps/web`：29 文件 209 项通过（2026-11-17） | 含 `policy-match`、政策主体与行程相关单测 |
+| DoV-6 受影响 E2E | Pass | destination-selection 21/21（约 1.6m）；city-pet-policy 16/16 + attraction 22/22（合计 38/38，约 2.1m） | 合并 main `966257c` 后重跑；临时库执行 V26；开发库未被修改 |
 | DoV-7 数据迁移 | Pass | 合并为单条 V26；E2E 全新临时库成功执行 26 个版本；E17/E19 校验数据 | 本地开发库因旧 V26 校验和需重建（待用户执行） |
 | DoV-8 规格校验 | Pass（本变更） | `npx --no-install openspec validate 2026-11-17-city-browse-policy-panel --strict`：valid | 主规格 Purpose 待归档时同步 |
 | DoV-9 来源核验 | Pass（有限口径） | 下表：8 城来源标题/说明可读；评审抽查三亚、上饶公开页面存在 | 未保存 URL；不构成逐条在线核验 |
-| DoV-10 CI | 未执行 | 分支本地修改尚未提交/推送，无 PR | 不记为 Pass |
+| DoV-10 CI | 待运行 | PR #78 已创建；合并 main 的冲突解决提交推送后触发 | 不记为 Pass |
 
 ## 来源核验记录（2026-11-17）
 
@@ -56,6 +56,7 @@
 - 上饶仅映射 35 个禁养品种中的 8 个；页面标注部分名单，不能据此推断完整范围。
 - 候选接口 `policyCovered`/`bannedBreeds` 仍为占位值；本变更未改动后端接口。
 - 客户端分页一次加载全部候选；候选数量继续增长时需评估服务端分页。
+- 已合并 `origin/main` `966257c`（UI PR #77）。冲突解决以本变更行为为主：分页、点击开侧栏、关闭后居中、锚点链接均保留；同时沿用 main 的封面卡片、Pick 按钮、「我的行程」标签与政策面板组件。合并后 tsc、209 条单测、21 + 38 条 E2E 全部重跑通过。
 - 合并后的 V26 与本地已执行的旧 V26 校验和不一致，本地开发库需删除重建；E2E 临时库已通过。
 - 主规格 `destination-selection` 的 Purpose 仍描述「政策数据源未定、展示暂缓」，需在归档同步时更新。
 - G1/G2/G3 未签署；本记录不代签。

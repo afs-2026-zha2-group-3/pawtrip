@@ -19,7 +19,7 @@ export async function signIn(page: Page, username = workerUsername()) {
   await page.goto("/");
   // SSR 已输出导航标签，需等客户端脚本完成注水，后续点击才会触发路由。
   await page.waitForLoadState("networkidle");
-  await expect(page.getByRole("tab", { name: "城市浏览" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "城市浏览" }).first()).toBeVisible();
 }
 
 export async function csrfHeaders(page: Page): Promise<Record<string, string>> {
@@ -70,7 +70,7 @@ function isoDate(offsetDays: number): string {
 
 export async function openTripDialog(page: Page, cityName: string) {
   await searchCity(page, cityName);
-  await cityCard(page, cityName).getByRole("button", { name: "选定" }).click();
+  await cityCard(page, cityName).getByRole("button", { name: "Pick" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText(cityName).first()).toBeVisible();
@@ -149,7 +149,7 @@ export async function openTrips(page: Page) {
       new URL(response.url()).pathname === "/api/trips" &&
       response.request().method() === "GET",
   );
-  await page.getByRole("tab", { name: "Trips" }).click();
+  await page.getByRole("tab", { name: "我的行程" }).click();
   await expect(page).toHaveURL(/\/trips$/);
   await list;
 }

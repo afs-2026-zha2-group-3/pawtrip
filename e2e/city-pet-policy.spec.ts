@@ -154,12 +154,26 @@ test("shows source, update month and area scope", async ({ page }) => {
   await expect(page.getByText(/以当地政府最新文件为准/)).toBeVisible();
 });
 
-test("opens the city policy from city browsing", async ({ page }) => {
+test("city policy page remains reachable by direct URL", async ({ page }) => {
+  await page.goto("/cities");
+  await page.getByRole("textbox", { name: "搜索城市" }).fill("珠海");
+  await expect(
+    page.getByRole("link", { name: /查看.*的城市政策/ }),
+  ).toHaveCount(0);
+
+  await page.goto(policyUrl("440400"));
+  await expect(page.getByText("珠海市养宠政策")).toBeVisible();
+});
+
+test("opens the city policy from the city browsing sidebar", async ({ page }) => {
   await page.goto("/cities");
   await page.getByRole("textbox", { name: "搜索城市" }).fill("珠海");
   await expect(page.getByText("共 1 个候选")).toBeVisible();
 
-  await page.getByTestId("city-card").getByText("珠海市", { exact: true }).click();
+  await page
+    .getByTestId("city-card")
+    .getByText("珠海市", { exact: true })
+    .click();
   const panel = page.getByRole("region", { name: "城市宠物管理政策" });
   await panel.getByRole("link", { name: "查看完整政策与来源" }).click();
 

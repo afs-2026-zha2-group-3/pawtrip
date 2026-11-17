@@ -2,7 +2,8 @@
 
 ## Context
 
-- `/cities` 当前一次渲染全部城市级行政区（333 个），卡片仅提供「选定」与「查看政策」链接；政策详情在独立路由 `/destinations/{adcode}/policy`。
+- `/cities` 原先把全部城市级行政区（333 个）平铺在卡片中，卡片只提供「选定」与「查看政策」链接；政策详情在独立路由 `/destinations/{adcode}/policy`。
+- `main` 的 UI PR #77 已把城市页改为封面卡片 + 常驻政策面板，按钮文案为「Pick」，导航标签为「我的行程」；本变更在其基础上重新接入分页、点击开侧栏与关闭。
 - 既有政策能力已提供 `GET /api/cities/{adcode}/pet-policy`、`cityPetPolicyQueryOptions`、`matchCityPolicy` 与 `PolicySubjects`，政策页已展示逐宠物结论、政策要点与来源。
 - 既有多数 E2E 通过 `cityCard(page, "杭州")` 直接定位卡片；平铺改为分页后，目标城市不再保证出现在第一页。
 - 候选接口的 `policyCovered` 与 `bannedBreeds` 仍为占位值（后端 `DestinationController` 固定返回 `false`/空列表），不承载政策正文。
@@ -44,7 +45,7 @@
 
 ### D3：宽屏并排、列表定宽，打开侧栏只左移不缩放
 
-- 未选中城市：`main` 为 `max-w-5xl` 居中。
+- 未选中城市：`main` 为 `max-w-5xl` 居中，候选卡片沿用 main 的封面图、圆角边框与三列网格。
 - 选中城市：`main` 扩为 `max-w-[1408px]`，内容区使用 `grid min-[1408px]:grid-cols-[minmax(0,976px)_360px]`，间距 24px；976 + 24 + 360 + 48（页面左右内边距）≈ 1408px。
 - 列表列固定 976px，因此打开侧栏前后卡片宽度不变，列表整体左移；侧栏 360px，宽屏下 `sticky top-6`。
 - 视口窄于 1408px 时不启用两列，侧栏堆叠在列表下方，仍可查看与关闭。
@@ -52,14 +53,15 @@
 
 替代方案（始终两列留白）会在关闭后留下空列；替代方案（列表自适应剩余宽度）会让卡片在打开侧栏时变窄，均被需求方否决。
 
-### D4：卡片点击与「选定」互不干扰
+### D4：卡片点击与「Pick」互不干扰
 
-卡片设置 `tabIndex=0`，`onClick` 与 `onKeyDown`（Enter/空格）都先判断事件目标是否位于 `button, a` 内；是则直接返回，保证点击「选定」只打开创建行程对话框、不打开侧栏。再次点击其他卡片直接替换 `selectedCity`；选中卡片显示 `ring-2 ring-primary` 与 `data-selected="true"`。
+卡片是带 `tabIndex=0` 的 `role="button"` 元素；点击卡片触发 `onSelect`，聚焦后按 Enter/空格同样打开侧栏。卡片内的「Pick」按钮调用 `event.stopPropagation()` 后只打开创建行程对话框，不触发卡片选择。再次点击其他卡片直接替换 `selectedAdcode`；选中卡片显示橙色边框与 `aria-pressed`。
 
 侧栏以 `key={city.adcode}` 重新挂载，切换城市时重置查询与展开状态。
 
 ### D5：侧栏内容与状态
 
+- 复用 main 的 `CityPolicyMatch`、`BreedExamples` 与政策面板样式，侧栏以 `role="region"`、`aria-label="城市宠物管理政策"` 暴露。
 - 标题「{城市名}宠物管理政策」，有数据时展示「更新于 {updatedMonth}」与「适用范围：{areaScope}」。
 - 政策要点列表来自 `policy.policies`；来源展示 `policy.source.title` 与 `policy.source.note`，说明包含摘录范围或文件时间。
 - 逐宠物结论：不友好为红色提示，未命中为中性提示，无法判定为琥珀色提示；无宠物时引导添加；宠物接口失败展示读取失败。

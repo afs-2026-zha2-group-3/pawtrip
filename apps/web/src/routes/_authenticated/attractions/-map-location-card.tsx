@@ -1,7 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Clock, MapPinned, Phone, Tag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PolicyTags } from "@/components/trip/policy-tags";
 import { petRulesApplyTo } from "@/lib/attraction-pet-rules";
@@ -9,12 +8,14 @@ import { formatDistanceKm } from "@/lib/distance";
 import { matchLocationPolicyForType } from "@/lib/trip/policy-match";
 import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
 import { tripActions } from "@/lib/trip/store";
+import { cn } from "@/lib/utils";
 import {
   locationBrowseDetailQueryOptions,
   type LocationSummary,
   type PetPolicies,
 } from "../../../queries/locations";
 import { DaySelect } from "./-day-select";
+import { LocationRating } from "./-location-rating";
 import { PetFriendlyBadge } from "./-pet-friendly-badge";
 import { PetPolicyFields } from "./-pet-policy-fields";
 
@@ -50,6 +51,21 @@ function policyChips(policies: PetPolicies): string[] {
   return chips;
 }
 
+function visitHoursLabel(point: LocationSummary | null): string | null {
+  if (!point) {
+    return null;
+  }
+  const { minVisitHours, maxVisitHours } = point;
+  if (minVisitHours != null && maxVisitHours != null && minVisitHours !== maxVisitHours) {
+    return `建议游玩 ${minVisitHours}–${maxVisitHours} 小时`;
+  }
+  const hours = maxVisitHours ?? minVisitHours;
+  return hours != null ? `建议游玩 ${hours} 小时` : null;
+}
+
+const TAB_CLASS =
+  "inline-flex h-8 items-center rounded-full px-3 text-sm font-medium transition-colors";
+
 export function MapLocationCard({
   poiId,
   point,
@@ -65,6 +81,7 @@ export function MapLocationCard({
 }) {
   const active = useActiveTrip();
   const subjects = usePolicySubjects();
+  const [tab, setTab] = useState<"detail" | "policy">("detail");
   const detail = useQuery({
     ...locationBrowseDetailQueryOptions(poiId),
     throwOnError: false,
@@ -75,6 +92,10 @@ export function MapLocationCard({
       tripActions.cacheLocation(detail.data);
     }
   }, [detail.data]);
+
+  useEffect(() => {
+    setTab("detail");
+  }, [poiId]);
 
   const location = detail.data;
   const name = location?.name ?? point?.name ?? "地点详情";
@@ -87,13 +108,84 @@ export function MapLocationCard({
       : policies
         ? policyChips(policies)
         : [];
+  const addedDays = active
+    ? active.plan.days
+        .filter((entry) => entry.stops.some((stop) => stop.poiId === poiId))
+        .map((entry) => entry.day)
+    : [];
+  const hoursLabel = visitHoursLabel(point);
+  const infoRows: { icon: typeof Clock; text: string }[] = [];
+  if (location?.openTime) {
+    infoRows.push({ icon: Clock, text: location.openTime });
+  } else if (hoursLabel) {
+    infoRows.push({ icon: Clock, text: hoursLabel });
+  }
+  if (location?.tel) {
+    infoRows.push({ icon: Phone, text: location.tel });
+  }
+  if (location?.businessArea) {
+    infoRows.push({ icon: Tag, text: `商圈 · ${location.businessArea}` });
+  }
+  if (infoRows.length === 0) {
+    infoRows.push({ icon: MapPinned, text: address });
+  }
+
+  const addControls = active ? (
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
+      {addedDays.map((day) => (
+        <span
+          key={day}
+          className="inline-flex h-9 items-center rounded-full border border-[#404040] bg-[#0A0A0A] px-3 text-sm font-medium text-[#FAFAFA]"
+        >
+          第 {day} 天
+        </span>
+      ))}
+      <DaySelect
+        label="添加到行程"
+        totalDays={active.totalDays}
+        onSelectDay={(day) => tripActions.addStop(day, poiId)}
+      />
+      <Button
+        size="sm"
+        variant="outline"
+        className="rounded-full"
+        onClick={() => tripActions.addStop("unscheduled", poiId)}
+      >
+        暂不排期
+      </Button>
+    </div>
+  ) : null;
 
   return (
-    <article className="absolute inset-x-3 bottom-3 z-20 max-h-[72%] overflow-y-auto rounded-2xl border bg-card p-3 shadow-xl">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground">详情</span>
-          {location?.rating ? <Badge variant="secondary">★ {location.rating}</Badge> : null}
+    <article className="paw-scroll paw-rise absolute inset-x-4 bottom-4 z-20 mx-auto max-h-[75%] max-w-[640px] overflow-y-auto rounded-[22px] bg-card p-6 shadow-[0_4px_6px_-4px_rgba(0,0,0,0.1),0_10px_15px_-3px_rgba(0,0,0,0.1)]">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-pressed={tab === "detail"}
+            onClick={() => setTab("detail")}
+            className={cn(
+              TAB_CLASS,
+              tab === "detail"
+                ? "bg-[#171717] text-[#FAFAFA]"
+                : "border border-[#E5E5E5] bg-card text-foreground hover:bg-muted",
+            )}
+          >
+            详情
+          </button>
+          <button
+            type="button"
+            aria-pressed={tab === "policy"}
+            onClick={() => setTab("policy")}
+            className={cn(
+              TAB_CLASS,
+              tab === "policy"
+                ? "bg-[#171717] text-[#FAFAFA]"
+                : "border border-[#E5E5E5] bg-card text-foreground hover:bg-muted",
+            )}
+          >
+            携宠政策
+          </button>
         </div>
         <Button
           type="button"
@@ -106,88 +198,96 @@ export function MapLocationCard({
         </Button>
       </div>
 
-      <div className="mt-1 flex gap-3">
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate text-base font-semibold">{name}</h2>
-          <div className="mt-1 flex flex-wrap gap-1">
-            <Badge variant="outline">{typeLabel}</Badge>
-            {location?.businessArea ? (
-              <Badge variant="outline">{location.businessArea}</Badge>
-            ) : null}
-            {location?.keytag ? <Badge variant="outline">{location.keytag}</Badge> : null}
+      {tab === "detail" ? (
+        <div className="mt-4 flex flex-col gap-4">
+          <div className="flex gap-5">
+            <div className="flex min-w-0 flex-1 flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <MapPinned aria-hidden="true" className="size-6 shrink-0" />
+                <h2 className="text-xl leading-7 font-semibold">{name}</h2>
+                <span className="inline-flex h-[21px] items-center rounded-md bg-[#FFDFB5] px-1.5 text-xs font-medium text-paw-accent-strong">
+                  {location?.keytag ?? typeLabel}
+                </span>
+                <LocationRating rating={location?.rating ?? point?.rating ?? null} />
+              </div>
+              <p className="text-base leading-6 text-foreground">{address}</p>
+              {point?.distanceMeters != null && anchorName ? (
+                <p className="text-xs text-muted-foreground">
+                  距{anchorName}约 {formatDistanceKm(point.distanceMeters)}
+                </p>
+              ) : null}
+            </div>
+            {location?.coverPhotoUrl ? (
+              <img
+                src={location.coverPhotoUrl}
+                alt={name}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                className="h-[169px] w-[180px] shrink-0 rounded-[22px] object-cover"
+              />
+            ) : (
+              <div
+                role="img"
+                aria-label={`${name}暂无图片`}
+                className="flex h-[169px] w-[180px] shrink-0 items-center justify-center rounded-[22px] bg-muted text-xs text-muted-foreground"
+              >
+                {typeLabel}
+              </div>
+            )}
           </div>
-          {point?.distanceMeters != null && anchorName ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              距{anchorName}约 {formatDistanceKm(point.distanceMeters)}
-            </p>
-          ) : null}
+          <div aria-hidden="true" className="h-px bg-[#E8E8E8]" />
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="flex min-w-0 flex-col gap-2.5">
+              {infoRows.map((row) => (
+                <span key={row.text} className="flex items-center gap-3 text-base">
+                  <row.icon aria-hidden="true" className="size-4 shrink-0" />
+                  <span className="truncate">{row.text}</span>
+                </span>
+              ))}
+            </div>
+            {addControls}
+          </div>
+        </div>
+      ) : (
+        <div className="mt-4 flex flex-col gap-3">
           {policies ? (
             <>
-              <div className="mt-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <PetFriendlyBadge
                   typeGroup={typeGroup}
                   maxPetsPerPerson={policies.maxPetsPerPerson}
                 />
+                <PolicyTags
+                  subjects={subjects}
+                  match={(pet) => matchLocationPolicyForType(typeGroup, policies, pet)}
+                />
               </div>
-              <PolicyTags
-                subjects={subjects}
-                match={(pet) => matchLocationPolicyForType(typeGroup, policies, pet)}
-              />
-              <div className="mt-2 flex flex-wrap gap-1">
-                {chips.map((chip) => (
-                  <Badge key={chip} variant="secondary">
-                    {chip}
-                  </Badge>
-                ))}
-              </div>
+              <PetPolicyFields policies={policies} typeGroup={typeGroup} />
+              {chips.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {chips.map((chip) => (
+                    <span
+                      key={chip}
+                      className="inline-flex h-6 items-center rounded-full bg-[#F0F0F0] px-2.5 text-xs text-[#838383]"
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </>
-          ) : null}
+          ) : (
+            <p className="text-sm text-muted-foreground">暂无携宠政策</p>
+          )}
+          {addControls ? <div className="border-t pt-3">{addControls}</div> : null}
         </div>
-        {location?.coverPhotoUrl ? (
-          <img
-            src={location.coverPhotoUrl}
-            alt={name}
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            className="h-24 w-32 shrink-0 rounded-xl object-cover"
-          />
-        ) : null}
-      </div>
-
-      {policies ? (
-        <div className="mt-3">
-          <h3 className="text-xs font-medium text-muted-foreground">携宠政策</h3>
-          <PetPolicyFields policies={policies} typeGroup={typeGroup} />
-        </div>
-      ) : null}
-
-      <div className="mt-3 text-sm">
-        <span className="text-muted-foreground">地址：</span>
-        {address}
-      </div>
+      )}
 
       {detail.isPending ? (
         <p className="mt-2 text-xs text-muted-foreground">正在加载地点详情…</p>
       ) : null}
       {detail.isError ? (
         <p className="mt-2 text-xs text-destructive">加载地点详情失败</p>
-      ) : null}
-
-      {active && policies ? (
-        <div className="mt-3 flex flex-wrap gap-2 border-t pt-3">
-          <DaySelect
-            label="添加到行程"
-            totalDays={active.totalDays}
-            onSelectDay={(day) => tripActions.addStop(day, poiId)}
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => tripActions.addStop("unscheduled", poiId)}
-          >
-            暂不排期
-          </Button>
-        </div>
       ) : null}
     </article>
   );

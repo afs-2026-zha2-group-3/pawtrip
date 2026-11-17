@@ -16,6 +16,7 @@ interface LocationMapProps {
   typeLabel: string;
   anchorName?: string | null;
   focusPoiId?: string | null;
+  showInfoWindow?: boolean;
   onSelect?: (poiId: string) => void;
   onOpenDetail?: (poiId: string) => void;
   loading?: boolean;
@@ -75,6 +76,7 @@ export function LocationMap({
   typeLabel,
   anchorName,
   focusPoiId,
+  showInfoWindow = true,
   onSelect,
   onOpenDetail,
   loading = false,
@@ -90,6 +92,7 @@ export function LocationMap({
   const onOpenDetailRef = useRef(onOpenDetail);
   const typeLabelRef = useRef(typeLabel);
   const anchorNameRef = useRef(anchorName);
+  const showInfoWindowRef = useRef(showInfoWindow);
   const [status, setStatus] = useState<MapStatus>("loading");
 
   pointsRef.current = points;
@@ -97,6 +100,7 @@ export function LocationMap({
   onOpenDetailRef.current = onOpenDetail;
   typeLabelRef.current = typeLabel;
   anchorNameRef.current = anchorName;
+  showInfoWindowRef.current = showInfoWindow;
   const pointsKey = points
     .map((point) => `${point.poiId}:${point.longitude ?? ""}:${point.latitude ?? ""}`)
     .join("|");
@@ -207,9 +211,13 @@ export function LocationMap({
       return;
     }
     map.setZoomAndCenter(15, [point.longitude, point.latitude]);
+    if (!showInfoWindowRef.current) {
+      infoWindow.close();
+      return;
+    }
     infoWindow.setContent(infoHtml(point, typeLabelRef.current, anchorNameRef.current));
     infoWindow.open(map, [point.longitude, point.latitude]);
-  }, [status, focusPoiId, pointsKey, typeLabel, anchorName]);
+  }, [status, focusPoiId, pointsKey, typeLabel, anchorName, showInfoWindow]);
 
   if (status === "missing-key") {
     return (

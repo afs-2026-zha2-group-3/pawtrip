@@ -43,9 +43,9 @@
 ## 7. 验证
 
 - [x] 7.1 `npx tsc --noEmit -p apps/web/tsconfig.json` 通过。
-- [x] 7.2 `npm test -w apps/web`：30 文件 212 项通过。
+- [x] 7.2 `npm test -w apps/web`：29 文件 209 项通过。
 - [x] 7.3 `e2e/destination-selection.spec.ts`：21/21 通过（约 1.5m）。
-- [x] 7.4 `e2e/city-pet-policy.spec.ts` 15/15 与 `e2e/attraction-pet-rules.spec.ts` 22/22，合计 37/37 通过（约 2.0m）。
+- [x] 7.4 `e2e/city-pet-policy.spec.ts` 16/16 与 `e2e/attraction-pet-rules.spec.ts` 22/22，合计 38/38 通过（约 2.1m）。
 - [x] 7.5 `npx --no-install openspec validate 2026-11-17-city-browse-policy-panel --strict`：valid。
 - [x] 7.6 宽窄屏几何、关闭居中、键盘打开与锚点滚动已由 E20/E15 自动化断言覆盖。
 
@@ -66,7 +66,14 @@
 ## 9. 后续
 
 - [ ] 9.1 本地开发库已执行旧 V26，合并后需删除 `apps/server/data/pawtrip.db` 并重建；E2E 临时库已验证不受影响。
-- [ ] 9.2 提交评审修复、推送分支并创建 PR；补跑 CI（Web build 与 Browser E2E）。
+- [x] 9.2 评审修复已提交 `fd050ff`，分支已推送并创建 PR #78。
 - [ ] 9.3 G1/G2/G3 由需求方实名签署；本记录不代签。
 - [ ] 9.4 归档时同步主规格 `destination-selection` 的 Purpose（移除「政策数据源未定、展示暂缓」旧口径）并合并重命名/收窄后的需求。
 - [ ] 9.5 归档顺序：本变更与 `2026-11-17-export-itinerary-pdf` 不涉及同一需求，可按 PR 合并顺序分别归档；`add-intra-city-transport-estimate` 仍为未提交草稿，不参与归档。
+
+## 10. 合并 main（UI PR #77）
+
+- [x] 10.1 合并 `origin/main` `966257c`，解决 `cities.tsx`、`destination-selection.spec.ts`、`city-pet-policy.spec.ts`、`trip-helpers.ts` 冲突。
+- [x] 10.2 以本变更行为为主：分页、点击开侧栏、关闭后居中、锚点链接、来源说明全部保留；沿用 main 的封面卡片、Pick、我的行程与政策面板组件。
+- [x] 10.3 合并后重跑：tsc 通过；29 文件 209 条单测通过；destination-selection 21/21；city-pet-policy 16/16 + attraction 22/22 = 38/38。
+- [ ] 10.4 推送合并提交后等待 CI；通过后合并 PR #78（不删除分支）。

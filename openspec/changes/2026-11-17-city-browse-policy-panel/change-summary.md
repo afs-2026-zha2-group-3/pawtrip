@@ -1,7 +1,7 @@
 # Change summary — 2026-11-17-city-browse-policy-panel
 
 - Change id: `2026-11-17-city-browse-policy-panel`
-- 状态：实现已提交 `bea018d`；评审修复与 SDD 更新在当前工作区，未提交、未推送、未建 PR、未归档
+- 状态：实现 `bea018d`、评审修复 `fd050ff`，已合并 `main` `966257c` 解决冲突；PR #78 已创建，待 CI 与合并
 - 分支：`feat/city-browse-policy-panel`
 
 ## Intent
@@ -11,7 +11,8 @@
 ## What shipped
 
 - 候选列表每页 9 张，展示「第 x / y 页」与上一页/下一页；关键词或筛选变化重置到第 1 页；单页时隐藏分页；首末页按钮禁用。
-- 卡片只保留「选定」；点击卡片非按钮区域（或 Enter/空格）打开右侧政策侧栏，再次点击其他卡片替换内容。
+- 合并 `main` 的 UI PR #77：保留封面卡片、Pick 按钮、「我的行程」标签与政策面板组件，同时把本变更的分页、点击开侧栏、关闭后居中与锚点链接作为主行为接回。
+- 卡片保留「Pick」（选定）；点击卡片非按钮区域（或 Enter/空格）打开右侧政策侧栏，再次点击其他卡片替换内容。
 - 侧栏：标题、更新月份、适用范围、逐宠物结论、政策要点、来源标题与来源说明；「{政策名}禁养犬名单」锚点到 `#banned-breeds`，「查看完整政策与来源」跳完整政策页；未收录展示「暂无当地政策数据」与覆盖范围。
 - 「关闭城市政策」按钮：关闭后侧栏移除、列表回到 `max-w-5xl` 居中。
 - 宽屏（≥1408px）列表定宽 976px + 侧栏 360px 并排，打开侧栏卡片不变窄、列表左移；窄屏堆叠。
@@ -24,9 +25,9 @@
 | 项 | 结果 | 证据 |
 |---|---|---|
 | TypeScript | Pass | `npx tsc --noEmit -p apps/web/tsconfig.json` exit 0 |
-| 前端单测 | Pass | `npm test -w apps/web`：30 文件 212 项通过 |
-| 城市浏览 E2E | Pass | `destination-selection.spec.ts` 21/21（约 1.5m） |
-| 政策与景点 E2E | Pass | `city-pet-policy.spec.ts` 15/15 + `attraction-pet-rules.spec.ts` 22/22 = 37/37（约 2.0m） |
+| 前端单测 | Pass | `npm test -w apps/web`：29 文件 209 项通过 |
+| 城市浏览 E2E | Pass | `destination-selection.spec.ts` 21/21（约 1.6m） |
+| 政策与景点 E2E | Pass | `city-pet-policy.spec.ts` 16/16 + `attraction-pet-rules.spec.ts` 22/22 = 38/38（约 2.1m） |
 | 迁移 | Pass | 单条 V26 在全新临时库执行成功；E17/E19 校验数据；开发库未被修改 |
 | 布局几何 | Pass | E20：1600px 卡片宽度差 ≤1px、侧栏在右；关闭后 `max-w-5xl`；1200px 堆叠 |
 | 公开数据口径 | Pass（有限） | 来源标题与说明可读、无「演示数据」；无 `source_url`，仅人工抽样核验 |
@@ -47,8 +48,8 @@
 - P1 proposal：完成。
 - P2 specs / design / DoV / alignment：完成；G1 未签。
 - P3 ATDD / tasks：完成；ATDD 为回溯记录，不作为 TDD 证据。
-- P4 实现与本地验证：完成；tsc、21 + 37 条 E2E 通过；布局几何已自动化；本地开发库待重建。
-- P5：未提交评审修复、未推送、未建 PR、未跑 CI；G1–G3 未签；未归档。
+- P4 实现与本地验证：完成；合并 main 后 tsc、209 条单测、21 + 38 条 E2E 全部通过；布局几何已自动化；本地开发库待重建。
+- P5：PR #78 已创建；冲突解决提交推送后等待 CI；G1–G3 未签；未归档。
 
 ## Residual risks / follow-ups
 

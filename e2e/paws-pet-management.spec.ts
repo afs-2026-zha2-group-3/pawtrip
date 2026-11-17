@@ -13,7 +13,7 @@ async function signIn(page: Page) {
 }
 
 async function openPaws(page: Page) {
-  await page.getByRole("tab", { name: "Paws" }).click();
+  await page.getByRole("tab", { name: "我的宠物" }).click();
   await expect(page).toHaveURL(/\/paws$/);
 }
 
@@ -21,7 +21,7 @@ test("validates required pet fields before submitting", async ({ page }) => {
   await signIn(page);
   await openPaws(page);
 
-  await page.getByRole("button", { name: "添加宠物", exact: true }).click();
+  await page.getByRole("button", { name: "添加第一只宠物" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
 
@@ -51,7 +51,7 @@ test("validates required pet fields before submitting", async ({ page }) => {
   await expect(dialog).toHaveCount(0);
 });
 
-test("creates, views, edits and deletes a pet", async ({ page }) => {
+test("creates, switches, edits and deletes pets", async ({ page }) => {
   await signIn(page);
   await openPaws(page);
   await expect(page.getByText("还没有宠物")).toBeVisible();
@@ -67,7 +67,7 @@ test("creates, views, edits and deletes a pet", async ({ page }) => {
   await createDialog.getByLabel("肩高（cm）").fill("35");
   await createDialog.getByRole("checkbox", { name: "有牵引绳" }).click();
   await createDialog.getByRole("checkbox", { name: "有免疫证明" }).click();
-  await createDialog.getByLabel("照片").setInputFiles({
+  await createDialog.getByLabel("更换照片").setInputFiles({
     name: "pet.png",
     mimeType: "image/png",
     buffer: onePixelPng,
@@ -78,58 +78,81 @@ test("creates, views, edits and deletes a pet", async ({ page }) => {
   await createDialog.getByRole("button", { name: "创建宠物" }).click();
   await expect(createDialog).toHaveCount(0);
 
-  const card = page.getByRole("button", { name: "Mimi（柯基犬）" });
-  await expect(card).toBeVisible();
-  await expect(card.getByText("柯基犬")).toBeVisible();
   await expect(
-    page.getByRole("img", { name: "Mimi（柯基犬）" }),
+    page.getByRole("button", { name: "Mimi", exact: true }),
   ).toBeVisible();
-
-  await card.click();
-  const detail = page.getByRole("dialog");
-  await expect(detail.getByRole("heading", { name: "Mimi" })).toBeVisible();
-  await expect(detail.getByText("6.5 kg")).toBeVisible();
-  await expect(detail.getByText("35 cm")).toBeVisible();
-  await expect(detail.getByText("柯基犬")).toBeVisible();
-  await expect(detail.getByText("有", { exact: true })).toHaveCount(2);
-
-  await detail.getByRole("button", { name: "编辑" }).click();
+  await expect(page.getByRole("heading", { name: "Mimi的档案" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Mimi的照片" })).toBeVisible();
+  await expect(page.getByText("柯基犬", { exact: true })).toBeVisible();
+  await expect(page.getByText("6.5", { exact: true })).toBeVisible();
+  await expect(page.getByText("35", { exact: true })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "有牵引绳" })).toBeChecked();
   await expect(
-    detail.getByRole("heading", { name: "编辑 Mimi" }),
+    page.getByRole("checkbox", { name: "有免疫证明" }),
+  ).toBeChecked();
+
+  await page.getByRole("button", { name: "添加宠物", exact: true }).click();
+  const secondDialog = page.getByRole("dialog");
+  await secondDialog.getByLabel("名字").fill("Luna");
+  await secondDialog.getByRole("combobox", { name: "宠物类型" }).click();
+  await page.getByRole("option", { name: "猫" }).click();
+  await secondDialog.getByLabel("体重（kg）").fill("4");
+  await secondDialog.getByLabel("肩高（cm）").fill("25");
+  await secondDialog.getByRole("button", { name: "创建宠物" }).click();
+  await expect(secondDialog).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Luna", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Luna的档案" })).toBeVisible();
+  await expect(page.getByText("猫", { exact: true })).toBeVisible();
+  await expect(page.getByText("品种", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Mimi", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Mimi的档案" })).toBeVisible();
+
+  await page.getByRole("button", { name: "编辑", exact: true }).click();
+  const editDialog = page.getByRole("dialog");
+  await expect(
+    editDialog.getByRole("heading", { name: "Mimi的档案" }),
   ).toBeVisible();
-  await detail.getByLabel("名字").fill("Mimi Updated");
-  await detail.getByLabel("体重（kg）").fill("7");
-  await detail.getByRole("combobox", { name: "狗的品种" }).click();
+  await editDialog.getByLabel("名字").fill("Mimi Updated");
+  await editDialog.getByLabel("体重（kg）").fill("7");
+  await editDialog.getByRole("combobox", { name: "狗的品种" }).click();
   await page.getByRole("option", { name: "柴犬" }).click();
-  await detail.getByRole("button", { name: "保存" }).click();
+  await editDialog.getByRole("button", { name: "保存" }).click();
+  await expect(editDialog).toHaveCount(0);
   await expect(
-    detail.getByRole("heading", { name: "Mimi Updated" }),
+    page.getByRole("heading", { name: "Mimi Updated的档案" }),
   ).toBeVisible();
-  await expect(detail.getByText("7 kg")).toBeVisible();
-  await expect(detail.getByText("柴犬")).toBeVisible();
-  await detail.getByRole("button", { name: "关闭", exact: true }).click();
-  await expect(detail).toHaveCount(0);
+  await expect(page.getByText("7", { exact: true })).toBeVisible();
+  await expect(page.getByText("柴犬", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Mimi Updated（柴犬）" }),
+    page.getByRole("button", { name: "Mimi Updated", exact: true }),
   ).toBeVisible();
 
-  const updatedCard = page.getByRole("button", {
-    name: "Mimi Updated（柴犬）",
-  });
-  await updatedCard.click();
-  await page.getByRole("dialog").getByRole("button", { name: "删除" }).click();
+  await page.getByRole("button", { name: "删除 Mimi Updated" }).click();
   const confirm = page.getByRole("alertdialog");
   await expect(confirm.getByText("删除宠物？")).toBeVisible();
   await confirm.getByRole("button", { name: "取消" }).click();
   await expect(confirm).toHaveCount(0);
-  await expect(updatedCard).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Mimi Updated的档案" }),
+  ).toBeVisible();
 
-  await updatedCard.click();
-  await page.getByRole("dialog").getByRole("button", { name: "删除" }).click();
+  await page.getByRole("button", { name: "删除 Mimi Updated" }).click();
   const confirmAgain = page.getByRole("alertdialog");
   await expect(confirmAgain).toBeVisible();
   await confirmAgain.getByRole("button", { name: "删除" }).click();
   await expect(confirmAgain).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Luna", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Luna的档案" })).toBeVisible();
+
+  await page.getByRole("button", { name: "删除 Luna" }).click();
+  const confirmLuna = page.getByRole("alertdialog");
+  await confirmLuna.getByRole("button", { name: "删除" }).click();
+  await expect(confirmLuna).toHaveCount(0);
   await expect(page.getByText("还没有宠物")).toBeVisible();
-  await expect(updatedCard).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Mimi Updated", exact: true }),
+  ).toHaveCount(0);
 });

@@ -202,6 +202,17 @@ export const tripActions = {
         : state,
     );
   },
+  setStartDate(startDate: string | null): void {
+    update((state) =>
+      state.active && state.active.startDate !== startDate
+        ? {
+            ...state,
+            active: { ...state.active, startDate },
+            ...bumpRevision(state),
+          }
+        : state,
+    );
+  },
   setPanelExpanded(expanded: boolean): void {
     update((state) => ({ ...state, panel: { expanded } }));
   },

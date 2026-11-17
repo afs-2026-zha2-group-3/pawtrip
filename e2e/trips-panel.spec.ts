@@ -16,6 +16,9 @@ async function dragHandleTo(page: Page, stopName: string, target: ReturnType<Pag
     .getByTestId("trip-panel")
     .getByRole("button", { name: `拖动${stopName}` })
     .first();
+  // 面板嵌入页面流后可能位于折叠线下方，先滚入视口再取坐标。
+  await handle.scrollIntoViewIfNeeded();
+  await target.first().scrollIntoViewIfNeeded();
   const handleBox = await handle.boundingBox();
   const targetBox = await target.first().boundingBox();
   if (!handleBox || !targetBox) {
@@ -28,8 +31,11 @@ async function dragHandleTo(page: Page, stopName: string, target: ReturnType<Pag
   await page.mouse.move(startX, startY);
   await page.mouse.down();
   await page.mouse.move(startX, startY + 12, { steps: 5 });
-  await page.mouse.move(endX, endY, { steps: 12 });
+  await page.waitForTimeout(150);
+  await page.mouse.move(endX, endY, { steps: 20 });
+  await page.waitForTimeout(150);
   await page.mouse.move(endX, endY + 2, { steps: 3 });
+  await page.waitForTimeout(150);
   await page.mouse.up();
 }
 
@@ -215,6 +221,7 @@ test("drags a stop across days and into unscheduled", async ({ page }) => {
   await createTrip(page, { city: "杭州市", days: 2 });
   await page.getByRole("tab", { name: "地点浏览" }).click();
   await addDayAttraction(page, "西湖", 1);
+  await page.waitForTimeout(600);
 
   await dragHandleTo(
     page,
@@ -259,6 +266,7 @@ test("keeps local edits when saving fails and retries", async ({ page }) => {
 
 test("expands on the left for desktop", async ({ page }) => {
   await createTrip(page, { city: "杭州市", days: 2 });
+  await page.waitForTimeout(600);
   const panel = page.getByTestId("trip-panel");
   await expect(panel.getByText("第 1 天", { exact: true })).toBeVisible();
   await expect(panel.getByText("第 2 天", { exact: true })).toBeVisible();

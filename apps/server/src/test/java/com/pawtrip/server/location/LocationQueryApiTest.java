@@ -67,7 +67,7 @@ class LocationQueryApiTest {
 		this.locationRepository.deleteAll();
 		this.locationRepository.saveAll(List.of(
 				locationAt("poi-zhu-a", "情侣路", "attraction", "440402", "110000", 113.5, 22.1, 1, "DOG", 8.5, 40.0,
-						true, false, 1050L, null, "{\"rating\":\"4.6\"}"),
+						true, false, 1050L, null, "{\"rating\":\"4.6\",\"keytag\":\"海滨步道\"}"),
 				location("poi-zhu-b", "珠海渔女", "attraction", "440402", "110000", 0, "DOG", null, null, true, null,
 						null, null),
 				location("poi-zhu-c", "海滨公园", "attraction", "440400", "110000", null, null, null, null, true, null,
@@ -126,6 +126,8 @@ class LocationQueryApiTest {
 		assertThat(poiIds(body)).doesNotContain("poi-zhu-b", "poi-zhu-c", "poi-zhu-d", "poi-zhu-hotel");
 		assertThat(body.path("totalElements").asLong()).isEqualTo(2);
 		assertThat(item(body, "poi-zhu-a").path("maxPetsPerPerson").asInt()).isEqualTo(1);
+		assertThat(item(body, "poi-zhu-a").path("keytag").asString()).isEqualTo("海滨步道");
+		assertThat(item(body, "poi-zhu-e").path("keytag").isNull()).isTrue();
 	}
 
 	@Test
@@ -346,7 +348,7 @@ class LocationQueryApiTest {
 				{"photos":[{"url":"http://example.com/a.jpg"},{"url":"https://example.com/b.jpg","title":"大堂"}]}
 				""",
 				"""
-				{"rating":4.6,"keytag":"宠物友好","business_area":"情侣路"}
+				{"rating":4.6,"keytag":"宠物友好","business_area":"情侣路","opentime_today":"24小时营业","tel":"0756-1234567"}
 				""", null, null);
 		card.updatePetPolicies("CAT,DOG", 1, 15.0, 45.0, true, false, 30000L, false);
 		this.locationRepository.save(card);
@@ -357,6 +359,8 @@ class LocationQueryApiTest {
 		assertThat(body.path("rating").asString()).isEqualTo("4.6");
 		assertThat(body.path("keytag").asString()).isEqualTo("宠物友好");
 		assertThat(body.path("businessArea").asString()).isEqualTo("情侣路");
+		assertThat(body.path("openTime").asString()).isEqualTo("24小时营业");
+		assertThat(body.path("tel").asString()).isEqualTo("0756-1234567");
 		assertThat(body.has("photos")).isFalse();
 		assertThat(body.has("business")).isFalse();
 		assertThat(body.has("poi")).isFalse();

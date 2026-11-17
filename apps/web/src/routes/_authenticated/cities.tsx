@@ -1,16 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { X } from "lucide-react";
+import { BookOpen, CircleFadingPlus, X } from "lucide-react";
+import cover1 from "@/assets/city-covers/cover-1.png";
+import cover2 from "@/assets/city-covers/cover-2.png";
+import cover3 from "@/assets/city-covers/cover-3.png";
+import cover4 from "@/assets/city-covers/cover-4.png";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Empty,
@@ -20,6 +17,10 @@ import {
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { PolicySubjectNotice, PolicyTags } from "@/components/trip/policy-tags";
+import {
+  BreedExamples,
+  CityPolicyMatch,
+} from "@/components/city/city-policy-details";
 import type { DestinationCandidate } from "@/lib/destination-matching";
 import { matchCityCandidate, matchCityPolicy } from "@/lib/trip/policy-match";
 import type { PolicySubjects } from "@/lib/trip/policy-subjects";
@@ -33,22 +34,21 @@ import { destinationsQueryOptions } from "@/queries/destinations";
 import { petProfileQueryOptions } from "@/queries/pet-profile";
 import { CityTripDialog } from "./-city-trip-dialog";
 
-const PAGE_SIZE = 9;
-
 export const Route = createFileRoute("/_authenticated/cities")({
   component: CitiesPage,
 });
+
+const CITY_COVERS = [cover1, cover2, cover3, cover4];
+const PAGE_SIZE = 9;
 
 function CitiesPage() {
   const isClient = typeof window !== "undefined";
   const [keywordInput, setKeywordInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [friendlyOnly, setFriendlyOnly] = useState(false);
-  const [dialogCity, setDialogCity] = useState<DestinationCandidate | null>(null);
-  const [selectedCity, setSelectedCity] = useState<DestinationCandidate | null>(
-    null,
-  );
+  const [selectedAdcode, setSelectedAdcode] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [dialogCity, setDialogCity] = useState<DestinationCandidate | null>(null);
   const active = useActiveTrip();
   const subjects = usePolicySubjects();
 
@@ -92,122 +92,106 @@ function CitiesPage() {
   const currentPage = Math.min(page, pageCount);
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const visibleCandidates = candidates.slice(pageStart, pageStart + PAGE_SIZE);
+  const selected =
+    candidates.find((candidate) => candidate.adcode === selectedAdcode) ?? null;
 
   return (
     <main
       className={cn(
-        "mx-auto flex w-full flex-col gap-4 p-6",
-        selectedCity ? "max-w-[1408px]" : "max-w-5xl",
+        "mx-auto w-full px-4 py-6 sm:px-6",
+        selected ? "max-w-[1408px]" : "max-w-5xl",
       )}
     >
-      <div className="flex flex-wrap items-center gap-4">
-        <Input
-          aria-label="搜索城市"
-          placeholder="搜索城市或省份"
-          value={keywordInput}
-          onChange={(event) => setKeywordInput(event.target.value)}
-          className="max-w-64"
-        />
-        <label className="flex cursor-pointer items-center gap-2 text-sm">
-          <Checkbox
-            aria-label="宠物友好筛选"
-            checked={friendlyOnly}
-            onCheckedChange={(checked) => setFriendlyOnly(checked)}
-          />
-          宠物友好筛选
-        </label>
-        <span className="text-sm whitespace-nowrap text-muted-foreground">
-          共 {candidates.length} 个候选 · 点击卡片查看政策
-        </span>
-      </div>
-
-      {active ? (
-        <p className="text-sm text-muted-foreground">
-          当前已有激活行程，请先在 Trips 取消激活后再选择新城市。
-        </p>
-      ) : null}
-      {subjects.status === "error" ? <PolicySubjectNotice subjects={subjects} /> : null}
-      {subjects.status === "none" ? (
-        <p className="text-sm text-muted-foreground">
-          尚未添加宠物档案，
-          <Link to="/paws" className="underline underline-offset-2">
-            先去添加宠物
-          </Link>
-          后可查看逐宠物匹配标签。
-        </p>
-      ) : null}
-
       <div
         className={cn(
-          "gap-6",
-          selectedCity &&
-            "grid min-[1408px]:grid-cols-[minmax(0,976px)_360px] min-[1408px]:items-start",
+          "flex flex-col gap-6 rounded-[22px] border-2 border-[#EC9455] bg-card p-6 shadow-md",
+          selected &&
+            "min-[1408px]:grid min-[1408px]:grid-cols-[minmax(0,976px)_360px] min-[1408px]:items-start",
         )}
       >
-        <div className="flex flex-col gap-4">
+        <section className="flex min-w-0 flex-col gap-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-6">
+              <h1 className="text-2xl font-medium leading-8 text-foreground">
+                宠物友好热门城市
+              </h1>
+              <label className="flex h-8 cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-2.5 text-sm text-foreground hover:bg-muted">
+                <Checkbox
+                  aria-label="宠物友好筛选"
+                  checked={friendlyOnly}
+                  onCheckedChange={(checked) => setFriendlyOnly(checked)}
+                />
+                宠物友好
+              </label>
+            </div>
+            <div className="relative">
+              <CircleFadingPlus
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                aria-label="搜索城市"
+                placeholder="搜索..."
+                value={keywordInput}
+                onChange={(event) => setKeywordInput(event.target.value)}
+                className="h-9 w-[210px] rounded-full border-border bg-card pl-9 text-sm shadow-sm"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-sm whitespace-nowrap text-muted-foreground">
+              共 {candidates.length} 个候选 · 点击卡片查看政策
+            </span>
+            {active ? (
+              <p className="text-sm text-muted-foreground">
+                当前已有激活行程，请先在 我的行程 取消激活后再选择新城市。
+              </p>
+            ) : null}
+            {subjects.status === "error" ? (
+              <PolicySubjectNotice subjects={subjects} />
+            ) : null}
+            {subjects.status === "none" ? (
+              <p className="text-sm text-muted-foreground">
+                尚未添加宠物档案，
+                <Link to="/paws" className="underline underline-offset-2">
+                  先去添加宠物
+                </Link>
+                后可查看逐宠物匹配标签。
+              </p>
+            ) : null}
+          </div>
+
           {candidates.length === 0 ? (
             <Empty>
               <EmptyHeader>
                 <EmptyTitle>暂无符合条件的目的地</EmptyTitle>
-                <EmptyDescription>试试更换关键词或关闭宠物友好筛选。</EmptyDescription>
+                <EmptyDescription>
+                  试试更换关键词或关闭宠物友好筛选。
+                </EmptyDescription>
               </EmptyHeader>
             </Empty>
           ) : (
             <>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {visibleCandidates.map((candidate) => (
-                  <Card
+              <div className="grid gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+                {visibleCandidates.map((candidate, index) => (
+                  <CityCard
                     key={candidate.adcode}
-                    data-testid="city-card"
-                    data-adcode={candidate.adcode}
-                    data-selected={
-                      selectedCity?.adcode === candidate.adcode || undefined
+                    candidate={candidate}
+                    cover={
+                      CITY_COVERS[
+                        (pageStart + index) % CITY_COVERS.length
+                      ]
                     }
-                    tabIndex={0}
-                    onClick={(event) => {
-                      if ((event.target as HTMLElement).closest("button, a")) {
-                        return;
-                      }
-                      setSelectedCity(candidate);
+                    selected={selected?.adcode === candidate.adcode}
+                    disabled={Boolean(active)}
+                    subjects={subjects}
+                    onSelect={() => setSelectedAdcode(candidate.adcode)}
+                    onPick={() => {
+                      setSelectedAdcode(candidate.adcode);
+                      setDialogCity(candidate);
                     }}
-                    onKeyDown={(event) => {
-                      if ((event.target as HTMLElement).closest("button, a")) {
-                        return;
-                      }
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setSelectedCity(candidate);
-                      }
-                    }}
-                    className={cn(
-                      "relative cursor-pointer transition-shadow hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-                      selectedCity?.adcode === candidate.adcode &&
-                        "ring-2 ring-primary",
-                    )}
-                  >
-                    <CardHeader>
-                      <CardTitle>{candidate.name}</CardTitle>
-                      <CardDescription>{candidate.province}</CardDescription>
-                      <CardAction>
-                        <Button
-                          size="sm"
-                          disabled={Boolean(active)}
-                          title={
-                            active ? "请先在 Trips 取消激活当前行程" : undefined
-                          }
-                          onClick={() => setDialogCity(candidate)}
-                        >
-                          选定
-                        </Button>
-                      </CardAction>
-                    </CardHeader>
-                    <CardContent>
-                      <PolicyTags
-                        subjects={subjects}
-                        match={(pet) => matchCityCandidate(candidate, pet)}
-                      />
-                    </CardContent>
-                  </Card>
+                  />
                 ))}
               </div>
 
@@ -243,12 +227,14 @@ function CitiesPage() {
               ) : null}
             </>
           )}
-        </div>
+        </section>
 
-        {selectedCity ? (
-          <CityPolicyPanel
-            city={selectedCity}
-            onClose={() => setSelectedCity(null)}
+        {selected ? (
+          <CityPolicyPane
+            key={selected.adcode}
+            adcode={selected.adcode}
+            name={selected.name}
+            onClose={() => setSelectedAdcode(null)}
           />
         ) : null}
       </div>
@@ -263,43 +249,112 @@ function CitiesPage() {
   );
 }
 
-function CityPolicyPanel({
-  city,
-  onClose,
+function CityCard({
+  candidate,
+  cover,
+  selected,
+  disabled,
+  subjects,
+  onSelect,
+  onPick,
 }: {
-  city: DestinationCandidate;
-  onClose: () => void;
+  candidate: DestinationCandidate;
+  cover: string;
+  selected: boolean;
+  disabled: boolean;
+  subjects: PolicySubjects;
+  onSelect: () => void;
+  onPick: () => void;
 }) {
-  return <CityPolicyCard key={city.adcode} city={city} onClose={onClose} />;
+  return (
+    <article
+      data-slot="card"
+      data-testid="city-card"
+      data-adcode={candidate.adcode}
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
+      className={cn(
+        "relative flex cursor-pointer flex-col gap-5 rounded-[22px] border bg-card p-4 shadow-[0_2px_8px_0_rgba(38,31,18,0.04)] outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        selected ? "border-[#EC9455]" : "border-[#E0E0E0]",
+      )}
+    >
+      <img
+        src={cover}
+        alt={`${candidate.name}景观示意图`}
+        className="h-[100px] w-full rounded-[14px] object-cover"
+      />
+      <Button
+        type="button"
+        variant="outline"
+        disabled={disabled}
+        title={disabled ? "请先在 我的行程 取消激活当前行程" : undefined}
+        onClick={(event) => {
+          event.stopPropagation();
+          onPick();
+        }}
+        className={cn(
+          "absolute right-4 top-[106px] h-9 rounded-full px-2.5 text-sm font-medium shadow-sm",
+          selected
+            ? "border-[#404040] bg-[#0A0A0A] text-[#FAFAFA] hover:bg-[#0A0A0A]/90 hover:text-[#FAFAFA]"
+            : "border-[#E5E5E5] bg-card text-foreground hover:bg-muted",
+        )}
+      >
+        Pick
+      </Button>
+      <div className="flex flex-col gap-2">
+        <h2 className="text-xl font-medium leading-7 text-[#262626]">
+          {candidate.name}
+        </h2>
+        <span className="inline-flex h-[21px] w-fit items-center rounded-md bg-[#FFEFD6] px-1.5 text-xs font-medium text-[#F76B15]">
+          {candidate.province}
+        </span>
+        <PolicyTags
+          subjects={subjects}
+          match={(pet) => matchCityCandidate(candidate, pet)}
+          className="gap-2"
+        />
+      </div>
+    </article>
+  );
 }
 
-function CityPolicyCard({
-  city,
+function CityPolicyPane({
+  adcode,
+  name,
   onClose,
 }: {
-  city: DestinationCandidate;
+  adcode: string;
+  name: string;
   onClose: () => void;
 }) {
+  const policyQuery = useQuery(cityPetPolicyQueryOptions(adcode, null));
   const subjects = usePolicySubjects();
-  const { data: policy, isPending, isError } = useQuery(
-    cityPetPolicyQueryOptions(city.adcode, null),
-  );
+  const policy = policyQuery.data;
 
   return (
-    <section
+    <aside
+      role="region"
       aria-label="城市宠物管理政策"
-      className="flex flex-col gap-3 rounded-xl border bg-card p-4 text-sm min-[1408px]:sticky min-[1408px]:top-6"
+      className="paw-scroll flex min-w-0 flex-col gap-4 min-[1408px]:sticky min-[1408px]:top-6 min-[1408px]:max-h-[calc(100vh-3rem)] min-[1408px]:self-start min-[1408px]:overflow-y-auto"
     >
-      <header className="flex items-start justify-between gap-2">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-lg font-semibold">{city.name}宠物管理政策</h2>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col gap-2.5">
+          <h2 className="text-xl font-semibold leading-7 text-foreground">
+            {name}宠物管理政策
+          </h2>
           {policy?.updatedMonth ? (
-            <p className="text-xs text-muted-foreground">
-              更新于 {policy.updatedMonth}
-            </p>
+            <p className="text-sm text-[#8E8C99]">更新于 {policy.updatedMonth}</p>
           ) : null}
           {policy?.areaScope ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-[#8E8C99]">
               适用范围：{policy.areaScope}
             </p>
           ) : null}
@@ -313,110 +368,112 @@ function CityPolicyCard({
         >
           <X aria-hidden="true" />
         </Button>
-      </header>
+      </div>
 
-      {isPending ? (
-        <p role="status" className="text-sm text-muted-foreground">
-          正在加载{city.name}的宠物管理政策…
-        </p>
-      ) : isError || !policy ? (
+      {policyQuery.isPending ? (
+        <div
+          className="h-40 animate-pulse rounded-[14px] bg-muted"
+          aria-busy="true"
+        >
+          <span className="sr-only">正在加载政策…</span>
+        </div>
+      ) : policyQuery.isError ? (
         <p role="alert" className="text-sm text-destructive">
-          暂时无法读取{city.name}的宠物管理政策，请稍后重试。
+          暂时无法读取{name}的宠物管理政策，请稍后重试。
         </p>
-      ) : !policy.covered ? (
-        <div className="flex flex-col gap-1 rounded-lg bg-muted/50 p-3">
-          <p className="font-medium">暂无当地政策数据</p>
-          <p className="text-xs text-muted-foreground">
+      ) : !policy?.covered ? (
+        <div className="rounded-[14px] bg-muted/50 p-4">
+          <p className="text-sm font-medium text-foreground">暂无当地政策数据</p>
+          <p className="mt-1 text-sm text-muted-foreground">
             当前仅覆盖已录入政策的城市；未收录不代表可以携宠进入，请以当地政府最新文件为准。
           </p>
         </div>
       ) : (
-        <CityPolicyContent city={city} policy={policy} subjects={subjects} />
+        <>
+          <PolicyMatchBanner policy={policy} subjects={subjects} cityName={name} />
+          <div className="flex flex-col gap-4">
+            <CityPolicyMatch policy={policy} />
+            <section className="flex flex-col gap-2">
+              <div className="flex items-center gap-4">
+                <BookOpen aria-hidden="true" className="size-6 text-foreground" />
+                <h3 className="text-base font-medium text-foreground">政策要点</h3>
+              </div>
+              <ul className="list-disc space-y-2 pl-10 text-base leading-6 text-foreground">
+                {policy.policies.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+              <div className="pl-10">
+                <BreedExamples
+                  title="禁养犬种名单"
+                  scope={policy.areaScope}
+                  breeds={policy.bannedBreeds}
+                  emptyText="暂未收录禁养犬种名单"
+                  note="仅列出部分示例，完整名单请查阅当地政府通告。"
+                />
+                <BreedExamples
+                  title="可携带犬种"
+                  breeds={policy.allowedBreeds}
+                  emptyText="暂未收录可携带犬种"
+                  note="仅列出部分可选品种；仍需遵守数量、牵引、疫苗等其他规定。"
+                />
+              </div>
+            </section>
+            <section className="flex flex-col gap-1 pl-10">
+              <h3 className="text-base font-medium text-foreground">来源与时效</h3>
+              {policy.source ? (
+                <p className="text-sm font-medium text-foreground">
+                  来源：{policy.source.title}
+                </p>
+              ) : null}
+              {policy.source?.note ? (
+                <p className="text-sm text-[#8E8C99]">{policy.source.note}</p>
+              ) : null}
+              <p className="text-sm text-[#8E8C99]">
+                以上内容为公开文件摘录，仅供参考，以当地政府最新文件为准。
+              </p>
+            </section>
+            <div className="flex flex-col items-start gap-1 pl-10">
+              <Link
+                to="/destinations/$adcode/policy"
+                params={{ adcode }}
+                hash="banned-breeds"
+                className="text-sm underline underline-offset-2"
+              >
+                {name}禁养犬名单
+              </Link>
+              <Link
+                to="/destinations/$adcode/policy"
+                params={{ adcode }}
+                className="text-sm underline underline-offset-2"
+              >
+                查看完整政策与来源
+              </Link>
+            </div>
+          </div>
+        </>
       )}
-    </section>
+    </aside>
   );
 }
 
-function CityPolicyContent({
-  city,
+function PolicyMatchBanner({
   policy,
   subjects,
+  cityName,
 }: {
-  city: DestinationCandidate;
   policy: CityPetPolicy;
   subjects: PolicySubjects;
+  cityName: string;
 }) {
-  return (
-    <>
-      <CityPolicyMatch policy={policy} subjects={subjects} />
-
-      <section className="flex flex-col gap-1">
-        <h3 className="text-sm font-medium">政策要点</h3>
-        <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
-          {policy.policies.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
+  if (subjects.status !== "ready" || subjects.subjects.length === 0) {
+    return (
+      <section className="flex flex-col gap-1 rounded-[14px] bg-[#FFEFD6] p-4">
+        <h3 className="text-lg font-medium text-foreground">基于宠物档案的推荐</h3>
+        <p className="text-sm text-[#8E8C99]">
+          添加宠物档案后，这里会显示是否命中当地禁养名单。
+        </p>
       </section>
-
-      <div className="flex flex-col items-start gap-1">
-        <Link
-          to="/destinations/$adcode/policy"
-          params={{ adcode: city.adcode }}
-          hash="banned-breeds"
-          className="text-sm underline underline-offset-2"
-        >
-          {policy.name}禁养犬名单
-        </Link>
-        <Link
-          to="/destinations/$adcode/policy"
-          params={{ adcode: city.adcode }}
-          className="text-sm underline underline-offset-2"
-        >
-          查看完整政策与来源
-        </Link>
-      </div>
-
-      {policy.source ? (
-        <div className="flex flex-col gap-0.5">
-          <p className="text-xs text-muted-foreground">来源：{policy.source.title}</p>
-          {policy.source.note ? (
-            <p className="text-xs text-muted-foreground">{policy.source.note}</p>
-          ) : null}
-        </div>
-      ) : null}
-    </>
-  );
-}
-
-function CityPolicyMatch({
-  policy,
-  subjects,
-}: {
-  policy: CityPetPolicy;
-  subjects: PolicySubjects;
-}) {
-  if (subjects.status === "error") {
-    return (
-      <p role="alert" className="text-sm text-destructive">
-        暂时无法读取宠物档案，请稍后重试。
-      </p>
-    );
-  }
-  if (subjects.status === "loading") {
-    return (
-      <p className="text-xs text-muted-foreground">正在读取宠物档案…</p>
-    );
-  }
-  if (subjects.status === "none") {
-    return (
-      <p className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-        尚未添加宠物档案，
-        <Link to="/paws" className="underline underline-offset-2">
-          先去添加宠物
-        </Link>
-        后可查看是否命中当地禁养名单。
-      </p>
     );
   }
 
@@ -424,34 +481,32 @@ function CityPolicyMatch({
     pet,
     verdict: matchCityPolicy(policy, pet),
   }));
-  const blocked = verdicts.some(
-    ({ verdict }) => verdict.status === "unfriendly",
-  );
+  const blocked = verdicts.filter(({ verdict }) => verdict.status === "unfriendly");
 
   return (
-    <div className="flex flex-col gap-2">
+    <section className="flex flex-col gap-1 rounded-[14px] bg-[#FFEFD6] p-4">
+      <h3
+        className={cn(
+          "text-lg font-medium",
+          blocked.length > 0 ? "text-destructive" : "text-foreground",
+        )}
+      >
+        {blocked.length > 0 ? "命中禁养名单" : "未命中禁养名单"}
+      </h3>
       {verdicts.map(({ pet, verdict }) => (
-        <p
-          key={pet.id}
-          className={cn(
-            "rounded-lg p-3 text-xs",
-            verdict.status === "unfriendly"
-              ? "bg-destructive/10 text-destructive"
-              : "bg-amber-500/10 text-amber-900",
-          )}
-        >
+        <p key={pet.id} className="text-sm text-[#8E8C99]">
           {verdict.status === "unfriendly"
-            ? `您的宠物「${pet.name}」${verdict.reasons.join("；")}。`
+            ? `${pet.name}：${verdict.reasons.join("；")}。建议更换目的地或提前确认当地最新规定。`
             : verdict.status === "friendly"
-              ? `您的宠物「${pet.name}」未命中${policy.name}禁养犬种名单。`
-              : `您的宠物「${pet.name}」暂无法判定：${verdict.reasons.join("；")}。`}
+              ? `您的宠物${pet.name}不在${cityName}禁养名单中。`
+              : `${pet.name}：${verdict.reasons.join("；")}。`}
         </p>
       ))}
-      {blocked ? null : (
-        <p className="text-xs text-muted-foreground">
+      {blocked.length === 0 ? (
+        <p className="text-sm text-[#8E8C99]">
           仍需遵守当地关于数量、牵引、疫苗等其他规定。
         </p>
-      )}
-    </div>
+      ) : null}
+    </section>
   );
 }
