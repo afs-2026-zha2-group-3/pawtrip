@@ -65,7 +65,7 @@
 
 ### Requirement: 宠物喜好与性格维护
 
-宠物创建与编辑表单 SHALL 提供「喜好」多选（固定 5 项：游泳、爬山、草地奔跑、城市漫步、玩雪）与「性格」单选（固定 3 项：活泼好动、温和平静、胆小敏感，含「未设置」项），两者均可不填且 MUST NOT 成为必填校验。宠物接口 SHALL 支持请求与响应的 `preferences`（键数组，可省略或空数组）与 `personality`（单键或 null）；键 SHALL 使用固定词表（喜好 SWIMMING/HIKING/GRASS_RUNNING/CITY_WALKING/SNOW_PLAY，性格 ENERGETIC/CALM/TIMID）。服务端 SHALL 校验枚举合法性，非法键 MUST 返回 400 且 `code=VALIDATION_ERROR`、不落库。保存 SHALL 持久化并在编辑时回显；未填与旧档案 SHALL 视为未设置。既有必填校验（名字/类型/犬种/体重/肩高）MUST 保持不变。
+宠物创建与编辑表单 SHALL 提供「喜好」多选（固定 5 项：游泳、爬山、草地奔跑、城市漫步、玩雪）与「性格」单选（固定 3 项：活泼好动、温和平静、胆小敏感，含「未设置」项），两者均可不填且 MUST NOT 成为必填校验。宠物接口 SHALL 支持请求与响应的 `preferences`（键数组，可省略或空数组）与 `personality`（单键或 null）；键 SHALL 使用固定词表（喜好 SWIMMING/HIKING/GRASS_RUNNING/CITY_WALKING/SNOW_PLAY，性格 ENERGETIC/CALM/TIMID）。服务端 SHALL 校验枚举合法性，非法键 MUST 返回 400 且 `code=VALIDATION_ERROR`、不落库；重复喜好键 SHALL 去重后存储。保存 SHALL 持久化并在编辑时回显；未填与旧档案 SHALL 视为未设置。既有必填校验（名字/类型/犬种/体重/肩高）MUST 保持不变。
 
 #### Scenario: 创建时勾选喜好并选择性格
 
@@ -108,6 +108,13 @@
 - **WHEN** 服务端处理请求
 - **THEN** 返回 400 且 `code=VALIDATION_ERROR`
 - **AND** 不写入或修改宠物数据
+
+#### Scenario: 重复喜好键去重
+
+- **GIVEN** 创建或更新请求的 `preferences` 含重复键
+- **WHEN** 服务端处理请求
+- **THEN** 保存成功且重复键只保存一次
+- **AND** 响应回显去重后的喜好集合
 
 #### Scenario: 旧客户端不传新字段仍合法
 
