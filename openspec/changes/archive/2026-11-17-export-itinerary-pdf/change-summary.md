@@ -1,8 +1,8 @@
 # Change summary — 2026-11-17-export-itinerary-pdf
 
 - Change id: `2026-11-17-export-itinerary-pdf`
-- 状态：实现、评审修复与本地验证完成；分支已基于 `main` 重建并本地提交 `4b73b9e`；图片导出、SDD 修复与 `anchors.test.ts` 夹具修正待提交；未推送、未建 PR、未归档
-- 分支：`feat/export-itinerary-pdf`（重建自 `main` `ca7f96f`；US-48 已归档）
+- 状态：实现、两次 main 同步、本地+CI 验证完成；PR #93 已合入 main（`bfadb49`）；G2 补记 Conditional Pass（6.8 Waiver，tantine，2026-11-24）；本次 P5 归档
+- 分支：`feat/export-itinerary-pdf`（重建自 `main` `ca7f96f`）→ 并入 `feat/city-personalized-recommendation`（与 REQ-014 同分支交付，PR #93）
 
 ## Intent
 
@@ -27,12 +27,12 @@
 | 前端单测 | Pass | `npm test -w apps/web`：28 文件 202 项 |
 | 受影响 E2E | Pass | `e2e/itinerary.spec.ts`：15 passed / 0 failed（约 60s） |
 | 图片导出 | Pass | E2E：一次下载、PNG 签名、宽度 1080px、高度大于 1080px；失败分支提示并恢复 |
-| 打印媒体结构验证 | Partial（自动化部分） | `emulateMedia({ media: "print" })`：规则卡完整字段、内容完整性与应用外框隐藏 |
-| 浏览器页眉页脚抑制 | Pending（人工） | `@page` 页边距盒（Chrome 131+）；尚未记录真实 Chrome 版本与页眉页脚开关 |
+| 打印媒体结构验证 | Pass（自动化部分） | `emulateMedia({ media: "print" })`：规则卡完整字段、内容完整性与应用外框隐藏 |
+| 浏览器页眉页脚抑制 | Pending（人工，Waiver 覆盖） | `@page` 页边距盒（Chrome 131+）；6.8 真实 Chrome 记录由 tantine 于 2026-11-24 前补齐 |
 | OpenSpec validate | Pass（本变更） | `openspec validate 2026-11-17-export-itinerary-pdf --strict`：valid |
-| 分支基线 | Pass | 已重建自 `main` `ca7f96f`，本地提交 `4b73b9e` |
-| G1 / G2 / G3 | 未签署 | 需需求方明确指示并实名后补记录 |
-| PR CI | 未运行 | 尚未推送与建 PR |
+| 全量回归（第二次 main 同步后） | Pass | build exit 0；后端 243/243；vitest 211/211；E2E 全量 173 passed / 0 failed |
+| G1 / G2 / G3 | G1 未单独落盘（用户直接指示实现）；G2 补记 Conditional Pass（VL=tantine）；G3 见归档目录 | g2-decision.md / g3-decision.md |
+| PR CI | Pass | PR #93 @ `8dbdd40`：Web/Server/E2E 三 workflow success；E1 ✅全绿（ci-report.md） |
 
 ## P1–P5 状态
 
@@ -40,7 +40,7 @@
 - P2 specs / design / DoV / alignment：完成；G1 未签。
 - P3 ATDD / tasks：完成；ATDD 若为补录，仅作对齐记录，不作为 TDD 证据。
 - P4 实现与本地验证：完成；tsc、单测 28/202、E2E 15/15 均通过；页眉页脚真实打印预览仍为 Pending。
-- P5：分支已重建并本地提交 `4b73b9e`；图片导出、SDD 修复与夹具修正尚未提交；未推送、未建 PR、未跑 CI、G1–G3 未签、未归档。
+- P5：PR #93 合入 main（`bfadb49`，含 REQ-014 同分支）；CI 证据 PR #94 合入（`c03f536`）；G2 补记 Conditional Pass；本次归档（G3 Conditional Pass，SA=SUKI）。6.8 人工记录义务随 Waiver 存续至 2026-11-24。
 
 ## Residual risks / follow-ups
 
@@ -48,7 +48,8 @@
 2. 图片导出依赖 `html-to-image` 的 SVG/foreignObject 渲染；超大 DOM 可能受 data URI 限制，当前 7 天内行程可控。
 3. 飞机规则按代表航司展示，实际以承运航司与航线为准。
 4. 天气（US-16）、应急（US-13）、食宿（US-12）与具体时间点未接入，导出内容暂不包含。
-5. 归档顺序：`2026-11-17-add-trip-itinerary` 已归档；本变更待 P5 完成后归档。
+5. 归档顺序：`2026-11-17-add-trip-itinerary` 已归档；本变更与 REQ-014 无 capability 依赖，本次 P5 一并归档。
+6. 6.8 真实 Chrome 打印预览记录：tantine，2026-11-24 前（Waiver 条件，逾期未补需重新评估导出 PDF 验收）。
 
 ## Links
 
@@ -59,3 +60,6 @@
 - DoV: `dov-ac-review.md`
 - Alignment: `alignment-self-check.md`
 - Tasks: `tasks.md`
+- G2: `g2-decision.md`（补记）
+- CI 证据: `ci-report.md`
+- 验证报告：`docs/ai4se-plugins/20261117-223134-local-verify-report.md`、`20261117-230517-pipeline-report.md`
