@@ -16,10 +16,19 @@ export async function signIn(page: Page, username = workerUsername()) {
   });
   expect(response.ok()).toBeTruthy();
 
+  const hydratedAuth = page.waitForResponse(
+    (request) =>
+      new URL(request.url()).pathname === "/api/auth/me" &&
+      request.request().method() === "GET" &&
+      request.ok(),
+  );
   await page.goto("/");
-  // SSR 已输出导航标签，需等客户端脚本完成注水，后续点击才会触发路由。
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByRole("tab", { name: "城市浏览" }).first()).toBeVisible();
+  // 以客户端 auth 查询完成作为注水完成信号，不依赖 networkidle。
+  // 页面会持续发起 React Query 请求，networkidle 在并发 E2E 下并不稳定。
+  await hydratedAuth;
+  await expect(page.getByRole("tab", { name: "城市浏览" }).first()).toBeVisible({
+    timeout: 15_000,
+  });
 }
 
 export async function csrfHeaders(page: Page): Promise<Record<string, string>> {
