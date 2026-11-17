@@ -12,7 +12,7 @@ import {
 import { PolicyTags } from "@/components/trip/policy-tags";
 import { policyNoteParts, restrictionFeeParts } from "@/lib/location-summary";
 import { formatDistanceKm } from "@/lib/distance";
-import { matchLocationPolicy } from "@/lib/trip/policy-match";
+import { matchLocationPolicyForType } from "@/lib/trip/policy-match";
 import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
 import { cn } from "@/lib/utils";
 import type { LocationSummary } from "../../../queries/locations";
@@ -75,10 +75,15 @@ export function LocationCard({
               </p>
             ) : null}
             <Badge variant="outline">{typeLabel}</Badge>
-                        <PetFriendlyBadge maxPetsPerPerson={location.petPolicies.maxPetsPerPerson} />
+            <PetFriendlyBadge
+              typeGroup={location.typeGroup}
+              maxPetsPerPerson={location.petPolicies.maxPetsPerPerson}
+            />
             <PolicyTags
               subjects={subjects}
-              match={(pet) => matchLocationPolicy(location.petPolicies, pet)}
+              match={(pet) =>
+                matchLocationPolicyForType(location.typeGroup, location.petPolicies, pet)
+              }
             />
           </div>
           {addedDays.length > 0 ? (

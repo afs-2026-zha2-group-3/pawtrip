@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PolicySubjectNotice, PolicyTags } from "@/components/trip/policy-tags";
-import { matchLocationPolicy } from "@/lib/trip/policy-match";
+import { matchLocationPolicyForType } from "@/lib/trip/policy-match";
 import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
 import { tripActions } from "@/lib/trip/store";
 import { locationBrowseDetailQueryOptions } from "../../../queries/locations";
@@ -75,13 +75,18 @@ export function LocationDetailDialog({
 
         {location ? (
           <div className="flex flex-col gap-4">
-            <PetFriendlyBadge maxPetsPerPerson={location.petPolicies.maxPetsPerPerson} />
+            <PetFriendlyBadge
+              typeGroup={location.typeGroup}
+              maxPetsPerPerson={location.petPolicies.maxPetsPerPerson}
+            />
             <PolicySubjectNotice subjects={subjects} />
             <PolicyTags
               subjects={subjects}
-              match={(pet) => matchLocationPolicy(location.petPolicies, pet)}
+              match={(pet) =>
+                matchLocationPolicyForType(location.typeGroup, location.petPolicies, pet)
+              }
             />
-            <PetPolicyFields policies={location.petPolicies} />
+            <PetPolicyFields policies={location.petPolicies} typeGroup={location.typeGroup} />
             {active ? (
               <div className="flex flex-wrap gap-2 border-t pt-3">
                 <DaySelect

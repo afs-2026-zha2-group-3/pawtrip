@@ -1,4 +1,8 @@
-import type { AttractionPetPolicies } from "@/lib/attraction-pet-rules";
+import {
+  isPetPolicyConfigured,
+  petRulesApplyTo,
+  type AttractionPetPolicies,
+} from "@/lib/attraction-pet-rules";
 import type { DestinationCandidate } from "@/lib/destination-matching";
 import type { CityPetPolicy } from "@/queries/city-pet-policy";
 import type { Pet } from "@/queries/pets";
@@ -78,14 +82,7 @@ export function matchLocationPolicy(
   policies: AttractionPetPolicies,
   pet: Pet,
 ): PolicyVerdict {
-  const configured =
-    policies.allowedPetTypes != null ||
-    policies.maxPetsPerPerson != null ||
-    policies.maxSinglePetWeightKg != null ||
-    policies.maxSinglePetShoulderHeightCm != null ||
-    policies.leashRequired != null ||
-    policies.vaccinationProofRequired != null;
-  if (!configured) {
+  if (!isPetPolicyConfigured(policies)) {
     return verdict("unconfigured", ["该地点暂未配置携宠政策"]);
   }
 
@@ -119,4 +116,15 @@ export function matchLocationPolicy(
     reasons.push("该地点要求疫苗证明，宠物档案未记录疫苗证明");
   }
   return reasons.length > 0 ? verdict("unfriendly", reasons) : verdict("friendly");
+}
+
+export function matchLocationPolicyForType(
+  typeGroup: string,
+  policies: AttractionPetPolicies,
+  pet: Pet,
+): PolicyVerdict {
+  if (!petRulesApplyTo(typeGroup) && !isPetPolicyConfigured(policies)) {
+    return verdict("friendly");
+  }
+  return matchLocationPolicy(policies, pet);
 }

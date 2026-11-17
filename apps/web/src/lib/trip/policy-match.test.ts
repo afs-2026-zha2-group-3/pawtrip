@@ -5,6 +5,7 @@ import type { CityPetPolicy } from "@/queries/city-pet-policy";
 import type { Pet } from "@/queries/pets";
 import {
   matchLocationPolicy,
+  matchLocationPolicyForType,
   matchCityCandidate,
   matchCityPolicy,
 } from "./policy-match";
@@ -176,5 +177,27 @@ describe("location policy matching", () => {
         dog,
       ).status,
     ).toBe("unconfigured");
+  });
+
+  it("treats unconfigured hospitals and supply stores as pet friendly", () => {
+    expect(matchLocationPolicyForType("pet-hospital", emptyPolicies, dog).status).toBe(
+      "friendly",
+    );
+    expect(matchLocationPolicyForType("pet-supplies", emptyPolicies, cat).status).toBe(
+      "friendly",
+    );
+    expect(matchLocationPolicyForType("attraction", emptyPolicies, dog).status).toBe(
+      "unconfigured",
+    );
+  });
+
+  it("still evaluates configured policies for exempt location types", () => {
+    expect(
+      matchLocationPolicyForType(
+        "pet-supplies",
+        { ...emptyPolicies, maxPetsPerPerson: 0 },
+        dog,
+      ).status,
+    ).toBe("unfriendly");
   });
 });

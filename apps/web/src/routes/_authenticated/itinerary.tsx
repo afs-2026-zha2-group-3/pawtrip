@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/empty";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { transportModeLabels } from "@/data/transport-rules";
+import { NearbyPetServices } from "@/components/trip/nearby-pet-services";
 import { petPolicyFields } from "@/lib/attraction-pet-rules";
 import { TripSectionNav } from "@/components/trip/trip-section-nav";
 import {
@@ -283,6 +284,10 @@ function DayDetail({
                         </summary>
                         <PolicyList policy={entry.policy} />
                       </details>
+                      <NearbyPetServices
+                        poiId={entry.poiId}
+                        attractionName={entry.name}
+                      />
                     </CardContent>
                   </Card>
                 ) : (

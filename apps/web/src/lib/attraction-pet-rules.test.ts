@@ -3,9 +3,11 @@ import {
   formatAllowedPetTypes,
   formatBooleanRequirement,
   formatFee,
+  isPetPolicyConfigured,
   petFriendlyLabel,
   petFriendlyStatus,
   petPolicyFields,
+  petRulesApplyTo,
   type AttractionPetPolicies,
 } from "./attraction-pet-rules";
 
@@ -32,6 +34,30 @@ describe("attraction pet rules", () => {
     expect(petFriendlyLabel(1)).toBe("宠物友好");
     expect(petFriendlyLabel(0)).toBe("禁止携带");
     expect(petFriendlyLabel(null)).toBe("未配置");
+  });
+
+  it("exempts pet hospitals and supply stores from pet rules", () => {
+    expect(petRulesApplyTo("pet-hospital")).toBe(false);
+    expect(petRulesApplyTo("pet-supplies")).toBe(false);
+    expect(petRulesApplyTo("attraction")).toBe(true);
+    expect(petRulesApplyTo("hotel")).toBe(true);
+    expect(petRulesApplyTo("restaurant")).toBe(true);
+  });
+
+  it("detects whether any pet policy field is configured", () => {
+    expect(
+      isPetPolicyConfigured({
+        allowedPetTypes: null,
+        maxPetsPerPerson: null,
+        maxSinglePetWeightKg: null,
+        maxSinglePetShoulderHeightCm: null,
+        leashRequired: null,
+        vaccinationProofRequired: null,
+        extraFeeCents: null,
+        reservationRequired: null,
+      }),
+    ).toBe(false);
+    expect(isPetPolicyConfigured(fullPolicies)).toBe(true);
   });
 
   it("formats allowed pet types", () => {
