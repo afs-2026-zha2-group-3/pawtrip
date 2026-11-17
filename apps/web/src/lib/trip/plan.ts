@@ -1,10 +1,23 @@
-import type { TripPlan } from "./types";
+import type { TransportMode } from "@/data/transport-rules";
+import type { ToNextMode, TripPlan, TripStop } from "./types";
 
 export type StopContainer = number | "unscheduled";
 
 export interface StopRef {
   container: StopContainer;
   index: number;
+}
+
+export type DisplayToNextMode = Exclude<ToNextMode, "transit">;
+
+export function displayToNext(
+  stop: TripStop,
+  transportMode: TransportMode | null,
+): DisplayToNextMode {
+  if (stop.toNext === "walk" || stop.toNext === "drive" || stop.toNext === "self_drive") {
+    return stop.toNext;
+  }
+  return transportMode === "drive" ? "self_drive" : "drive";
 }
 
 export function createEmptyPlan(totalDays: number): TripPlan {

@@ -22,8 +22,8 @@
 
 ## 4. 前端：store 动作与估算查询
 
-- [ ] 4.1 先写 vitest：`setStopTransport(ref, toNext, estimate)` 同时写入 `toNext`（含 `self_drive`）与 `toNextEstimate` 并递增 `saveRevision`、estimate=null 仅存方式、非法 ref 不变、`backfillStopEstimate` 仅在 toNext 已设且快照为空时写入、`moveStop`/`takeStop`/`insertStop` 透传快照、默认展示态 `toNext ?? (transportMode==="drive" ? "self_drive" : "drive")` 不写回、存量 `transit` 不改写、切换 `transportMode` 不改写已存 toNext/快照；验证：测试先红
-- [ ] 4.2 `types.ts` 增加 `ToNextEstimate` 类型与 `toNext` 枚举 `self_drive`；实现 `tripActions.setStopTransport` 与 `backfillStopEstimate`；新增 `routeEstimateQueryOptions`（key=景点对+方式，统一 request 层，低重试，有快照/samePoi 时 enabled=false，驾车 self_drive 复用 mode=drive 仅取时长、落库快照费用 0/0，成功后条件回填）；验证：4.1 测试转绿，`apps/web` vitest 全量通过。注：回填快照行为由本组 UT + 1.2 本地真实 Key 冒烟覆盖（CI 无 Key，E2E 不可行，ATDD §6）
+- [x] 4.1 先写 vitest：`setStopTransport(ref, toNext, estimate)` 同时写入 `toNext`（含 `self_drive`）与 `toNextEstimate` 并递增 `saveRevision`、estimate=null 仅存方式、非法 ref 不变、`backfillStopEstimate` 仅在 toNext 已设且快照为空时写入、`moveStop`/`takeStop`/`insertStop` 透传快照、默认展示态 `toNext ?? (transportMode==="drive" ? "self_drive" : "drive")` 不写回、存量 `transit` 不改写、切换 `transportMode` 不改写已存 toNext/快照；验证：测试先红
+- [x] 4.2 `types.ts` 增加 `ToNextEstimate` 类型与 `toNext` 枚举 `self_drive`；实现 `tripActions.setStopTransport` 与 `backfillStopEstimate`；新增 `routeEstimateQueryOptions`（key=景点对+方式，统一 request 层，低重试，有快照/samePoi 时 enabled=false，驾车 self_drive 复用 mode=drive 仅取时长、落库快照费用 0/0，成功后条件回填）；验证：4.1 测试转绿，`apps/web` vitest 全量通过。注：回填快照行为由本组 UT + 1.2 本地真实 Key 冒烟覆盖（CI 无 Key，E2E 不可行，ATDD §6）
 
 ## 5. 前端：面板段行与提示
 

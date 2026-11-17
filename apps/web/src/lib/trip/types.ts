@@ -2,12 +2,23 @@ import type { TransportMode } from "@/data/transport-rules";
 import type { LocationBrowseDetail } from "@/queries/locations";
 import type { Pet } from "@/queries/pets";
 
+export type { TransportMode };
+
 export const MIN_TRIP_DAYS = 1;
 export const MAX_TRIP_DAYS = 7;
 
+export type ToNextMode = "walk" | "drive" | "transit" | "self_drive";
+
+export interface ToNextEstimate {
+  durationMinutes: number;
+  costLowYuan: number;
+  costHighYuan: number;
+}
+
 export interface TripStop {
   poiId: string;
-  toNext?: string | null;
+  toNext?: ToNextMode | null;
+  toNextEstimate?: ToNextEstimate | null;
 }
 
 export interface TripDay {

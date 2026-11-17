@@ -12,9 +12,18 @@ export interface TripSummary {
   updatedAt: string;
 }
 
+export interface RouteEstimateResponse {
+  mode: "walk" | "drive";
+  durationMinutes: number;
+  costLowYuan: number;
+  costHighYuan: number;
+}
+
 export const tripQueryKeys = {
   all: ["trips"] as const,
   detail: (id: number) => ["trips", "detail", id] as const,
+  routeEstimate: (tripId: number, fromPoiId: string, toPoiId: string, mode: "walk" | "drive") =>
+    ["trips", "route-estimate", tripId, fromPoiId, toPoiId, mode] as const,
 };
 
 export function tripsQueryOptions() {
@@ -28,6 +37,26 @@ export function tripDetailQueryOptions(id: number) {
   return queryOptions({
     queryKey: tripQueryKeys.detail(id),
     queryFn: ({ signal }) => request<Trip>(`/api/trips/${id}`, { signal }),
+  });
+}
+
+export function routeEstimateQueryOptions(
+  tripId: number,
+  fromPoiId: string,
+  toPoiId: string,
+  mode: "walk" | "drive",
+  options: { enabled?: boolean } = {},
+) {
+  return queryOptions({
+    queryKey: tripQueryKeys.routeEstimate(tripId, fromPoiId, toPoiId, mode),
+    queryFn: ({ signal }) =>
+      request<RouteEstimateResponse>(
+        `/api/trips/${tripId}/route-estimate?fromPoiId=${encodeURIComponent(fromPoiId)}&toPoiId=${encodeURIComponent(toPoiId)}&mode=${mode}`,
+        { signal },
+      ),
+    retry: 1,
+    staleTime: 300_000,
+    enabled: options.enabled ?? true,
   });
 }
 
