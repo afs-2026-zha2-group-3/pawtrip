@@ -12,6 +12,7 @@ import {
   AGENT_DEFAULT_MODEL,
 } from "./constants";
 import { buildSystemPrompt, sanitizeAgentContext } from "./context";
+import { loadAgentEnv } from "./env";
 import { AGENT_TOOL_DEFINITIONS, isAllowedAgentToolName } from "./tools";
 
 export interface AgentServerEnv {
@@ -30,6 +31,12 @@ export async function handleAgentRequest(
   request: Request,
   deps: AgentServerDeps = {},
 ): Promise<Response> {
+  if (deps.env == null && import.meta.env.DEV) {
+    const loaded = loadAgentEnv();
+    if (loaded.length > 0) {
+      console.info(`[agent] loaded env from ${loaded.join(", ")}`);
+    }
+  }
   const env = deps.env ?? (process.env as AgentServerEnv);
   const fetchFn = deps.fetch ?? fetch;
   const provider = env.PAWTRIP_AGENT_PROVIDER ?? "bigmodel";
