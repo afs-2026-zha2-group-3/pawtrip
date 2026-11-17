@@ -101,14 +101,16 @@ com.pawtrip.server
 - **自动保存**（`save.ts`）：地点编辑与交通方式选择先乐观更新 store，再由 `_authenticated` 布局监听 `saveRevision` 触发约 600ms 防抖 `PUT`，请求体为 `{name, totalDays, plan, transportMode}`。版本号守卫只允许最新响应改写状态；失败保留本地并提供重试；`400 VALIDATION_ERROR` 时重新拉取详情并以服务端数据为准。保存状态（保存中/已保存/保存失败）展示在面板标签行。
 - **统一政策匹配主体**（`policy-subjects.ts` / `policy-match.ts`）：存在激活行程且已绑定宠物时只匹配该宠物，否则匹配全部宠物；宠物加载失败展示“暂时无法读取宠物”而非“无宠物”。结论统一为 `friendly | unfriendly | unjudgeable | unconfigured`，以“宠物名 · 结论”tag 展示，覆盖城市候选、城市政策页、地点列表/详情与交通规则推荐列。
 - **旧状态清理**：已删除 `lib/selected-destination.ts` 与 `lib/trip-duration.ts`；启动/登录后清理 `pawtrip.selectedDestination`、`pawtrip.tripDuration` 残留键；顶栏目的地 chip 移除。交通方式改存 active trip，`pawtrip:selected-transport-mode` 不再读写，旧值不参与业务。
+- **途内交通段行与政策提醒（REQ-011）**：面板每天相邻景点间插入交通段行（`lib/trip/transport-segments.ts` 派生 + `components/trip/transport-segment.tsx` 渲染，n 景点→n−1 段，同 POI 仅小字提醒，段行不可拖拽）；展示快照优先（`stop.toNextEstimate`），无快照时经 `routeEstimateQueryOptions` 查估算（有快照/同 POI 时 enabled=false，成功后条件回填 `backfillStopEstimate`）；默认展示态由 `displayToNext` 派生不写库，显式选择任一方式经 `setStopTransport` 写库并走既有防抖 PUT；估算失败行内兜底「估算暂不可用」（该查询显式 `throwOnError:false`，不命中全局错误边界），仍可仅存方式。大交通自驾（`transportMode=drive`）时段行默认驾车仅时长，下拉可显式选打车/步行/驾车（选驾车写 `self_drive` + 费用 0/0 快照），隐藏每天公交提示；切换大交通不改写已存选择/快照。每天首景点行前渲染宠物政策对比提醒（`lib/trip/day-policy.ts` 纯函数：牵引绳聚合 + 严格超限警示，复用地点缓存与激活宠物，无新增请求不写库）。
 
 ### 服务端行程规划（trip-planning）
 
 - `com.pawtrip.server.trip` 新增 `Trip` 实体、`TripRepository`、`TripService`、`TripController`；Flyway **V17** 创建 `trip` 表：`user_id`、`name`、`city_adcode`、`pet_id`、`total_days`、`plan_json`、`created_at`、`updated_at`，索引 `(user_id, id)`；**V18** 增加可空 `transport_mode`，CHECK 仅允许 `flight` / `high_speed_rail` / `train` / `drive`。
 - 城市与宠物在创建后不可变：`city_adcode` 必须为城市级 `administrative_region`，`pet_id` 必须属于当前用户；更新接口只接收 `name`、`totalDays`、`plan`、`transportMode`。
-- `plan_json` v1：`{"version":1,"days":[{"day":1,"stops":[{"poiId":"...","toNext":"walk"}]}],"unscheduled":[{"poiId":"..."}]}`。`toNext` 仅 `walk` / `drive` / `transit`，全部可选且不做下一天引用校验；`days`、`stops`、`unscheduled` 均可为空，空计划合法并作为新建默认值。`unscheduled` 按 `poiId` 去重，已排期地点从池中移除；同一 `poiId` 可在 `days` 重复。
+- `plan_json` v1：`{"version":1,"days":[{"day":1,"stops":[{"poiId":"...","toNext":"walk","toNextEstimate":{"durationMinutes":12,"costLowYuan":40,"costHighYuan":60}}]}],"unscheduled":[{"poiId":"..."}]}`。`toNext` 仅 `walk` / `drive` / `transit` / `self_drive`（REQ-011 扩展），全部可选且不做下一天引用校验；可选 `toNextEstimate` 快照（REQ-011）三字段均必填：`durationMinutes` 非负整数分钟、`costLowYuan`/`costHighYuan` 非负数值且 low≤high，非法返回 `400 VALIDATION_ERROR`，合法快照 PUT→详情往返原样保留；`days`、`stops`、`unscheduled` 均可为空，空计划合法并作为新建默认值。`unscheduled` 按 `poiId` 去重，已排期地点从池中移除；同一 `poiId` 可在 `days` 重复。
 - `poiId` 只校验存在于 `pawtrip_location`（不校验城市归属）；`day` 唯一且在 `1..totalDays`；`totalDays` 调小到低于计划最大 `day` 返回 `400 VALIDATION_ERROR`。
 - API：`GET/POST /api/trips`、`GET/PUT/DELETE /api/trips/{id}`；均需登录且只能访问本人 trip，列表返回摘要不含 `plan` 与 `transportMode`，详情/创建/更新返回完整计划；未找到返回 `404 TRIP_NOT_FOUND`。
+- 途内交通估算（REQ-011）：`GET /api/trips/{tripId}/route-estimate?fromPoiId&toPoiId&mode`，`mode ∈ {walk, drive}`；需登录且仅限本人 trip（否则 `404 TRIP_NOT_FOUND`），缺参/非法 mode/poiId 不存在或坐标缺失 `400 VALIDATION_ERROR`，上游失败/Key 缺失 `502 UPSTREAM_FAILURE`（不泄露 Key 与原始报文）；响应 `{mode, durationMinutes, costLowYuan, costHighYuan}`：驾车费用为 `taxi_cost` ±20%、时长分钟向上取整，步行费用 0/0；只读估算，不修改 `plan_json`（快照由前端经既有防抖 PUT 落库）。换算在 `TripRouteEstimateService`，外部协议见 [高德路线规划 2.0](../external/amap-route-planning.md)。
 - `transportMode`：可空；创建/更新请求可携带，非法值返回 `400 VALIDATION_ERROR`；详情与创建/更新响应返回该字段。交通方式选择在规则页触发 `tripActions.setTransportMode`，并走同一防抖保存链路。
 - 宠物删除：`trip.pet_id` 外键为 `ON DELETE RESTRICT`；删除被 trip 引用的宠物返回 `409 PET_IN_USE`，未被引用的宠物保持 `204`。
 - 前端已按 trip-context 接入本接口：草稿确认调用 `POST /api/trips`，Trips 页激活调用 `GET /api/trips/{id}`，计划编辑与交通方式选择以防抖 `PUT` 保存；不修改后端契约，也不新增迁移。
@@ -194,7 +196,7 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 - 所有接口调用经过 `apps/web/src/lib/http/request.ts`：统一 JSON headers、超时与 `AbortSignal`、Problem Details 解析，并把非 2xx 响应转换为 typed `ApiError`。页面与 query 函数不直接调用 `fetch`。
 - `ApiError` 暴露 `status`、稳定 `code`、`detail`、`instance` 与 `isRetryable`；网络错误与超时映射为可重试错误。
 - QueryClient 默认 `staleTime=30s`；仅对可重试错误（网络错误与 5xx）重试，最多 2 次；4xx 不重试。
-- 首次加载失败通过 `throwOnError` 进入根路由 `errorComponent`，展示 `ApiError.detail` 并提供重试；后台刷新失败保留缓存数据，仅由 `QueryCache`/`MutationCache` 的 `onError` 记录日志，不替换页面。
+- 首次加载失败通过 `throwOnError` 进入根路由 `errorComponent`，展示 `ApiError.detail` 并提供重试；后台刷新失败保留缓存数据，仅由 `QueryCache`/`MutationCache` 的 `onError` 记录日志，不替换页面。例外：途内交通估算查询（REQ-011）显式 `throwOnError:false`，失败必须在段行内兜底，不得拖垮整页。
 - 未匹配路由由根路由 `notFoundComponent` 呈现；不引入 toast、成功响应 envelope 或 `detail` 到中文文案的 i18n 映射。
 
 ## 测试与验证

@@ -39,8 +39,8 @@
 
 ## 7. 文档收尾
 
-- [ ] 7.1 更新 `docs/knowledge/architecture/README.md`（估算端点与 `RouteEstimatePort`/适配器落地）并复核 external 文档与实现一致；验证：kb-lint 通过
-- [ ] 7.2 `openspec validate add-intra-city-transport-estimate --strict` 通过；核对 delta 与实现行为一致（含快照落库/优先展示/回填、同 POI 提醒、每天一条提示（非自驾时）、打车携宠提示显隐、政策提醒位置（首个景点行前）与触发规则、默认不写库、大交通自驾联动（默认驾车/下拉切换/显式选驾车写库/公交提示隐藏/切换不改写）与 self_drive 枚举）
+- [x] 7.1 更新 `docs/knowledge/architecture/README.md`（估算端点与 `RouteEstimatePort`/适配器落地）并复核 external 文档与实现一致；验证：kb-lint 通过。执行记录（2026-11-17）：README 已补途内交通段行/政策提醒（trip-context）、估算端点语义与 plan_json 快照/self_drive 契约（trip-planning，durationMinutes 非负整数与 validator 一致）、throwOnError 例外说明；地图集成分层已于 1.1 落地；external/amap-route-planning.md 与适配器/换算实现逐项核对一致；kb-lint 输出 SKIP（项目未配置，与 1.1 时一致）
+- [x] 7.2 `openspec validate add-intra-city-transport-estimate --strict` 通过；核对 delta 与实现行为一致（含快照落库/优先展示/回填、同 POI 提醒、每天一条提示（非自驾时）、打车携宠提示显隐、政策提醒位置（首个景点行前）与触发规则、默认不写库、大交通自驾联动（默认驾车/下拉切换/显式选驾车写库/公交提示隐藏/切换不改写）与 self_drive 枚举）。执行记录（2026-11-17）：strict 校验输出 "Change 'add-intra-city-transport-estimate' is valid"；三份 delta 逐项对照测试证据：trip-route-estimate 3 需求→A1–A4 API 验收+适配器 UT+1.2 真实 Key 冒烟；trip-planning 快照/self_drive→A5–A7（213 后端绿）；trip-context 8 需求→前端 164 UT + E2E E1–E13（119/120，E10 见 6.1 注），其中「估算失败兜底 MUST NOT 弹出全局错误」由 throwOnError:false 修复直接落实（d35205c）
 
 ## Workflow follow-up
 
