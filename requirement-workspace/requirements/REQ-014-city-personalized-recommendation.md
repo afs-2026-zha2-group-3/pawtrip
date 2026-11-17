@@ -229,3 +229,12 @@ adcode 已逐一核对 `V5__seed_administrative_regions.sql` city 级条目。�
 | 610100 | 西安市 | CITY_PARK |
 
 说明：直辖市（北京/上海/天津/重庆）在 V5 中为 province 级，不在 city 级候选内，故不含；其余未列出城市特征标签为空（得分 0）。
+
+## 修订记录
+
+### 2026-11-17 修订：系统推荐徽标政策门禁（需求方指示）
+
+- 原口径：得分 >0 即展示徽标。新口径：**得分 >0 且（城市政策匹配首宠档案 或 无法判定）**才展示徽标；仅明确违反政策时隐藏（需求方 2026-11-17 二次指示）。
+- 判定复用 `matchCityCandidate`（与卡片逐宠物政策标签同函数）：类型不允许、已填犬种的狗不在允许名单/肩高超限 → unfriendly 隐藏；猫、未填犬种的狗 → unjudgeable 保留；允许犬种名单为空、肩高 null → 放行；城市允许类型 null → 不允许。徽标取第一只宠物（与打分同口径；不用 subjects，因激活行程会替换为行程宠物）。
+- 排序不受政策影响（命中城市位次不变）；无新增接口（复用 /api/pets 缓存）。
+- 同步：Living Spec `destination-selection` 系统推荐徽标需求（+4 场景）、`docs/knowledge/domain/city-feature-tags.md`、E2E `city-personalized-recommendation.spec.ts`（+5 政策门禁用例）。按 REQ-014 修订交付，不新建 change（需求方 2026-11-17 决定）。
