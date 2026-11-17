@@ -1,18 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
+import { csrfHeaders, signIn as signInWithApi } from "./trip-helpers";
 
 const username = "admin";
-const password = "123456";
 
 async function signIn(page: Page, user = username) {
-  const authResponse = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/auth/me",
-  );
-  await page.goto("/login");
-  await authResponse;
-  await page.getByLabel("Username").fill(user);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL("/");
+  await signInWithApi(page, user);
 }
 
 function policyUrl(adcode: string) {
@@ -30,19 +22,6 @@ function dogInput(breedId: number) {
     photo: null,
     dogBreedId: breedId,
   };
-}
-
-async function csrfHeaders(page: Page) {
-  let token = (await page.context().cookies()).find(
-    (cookie) => cookie.name === "XSRF-TOKEN",
-  )?.value;
-  if (!token) {
-    await page.request.get("/api/auth/me");
-    token = (await page.context().cookies()).find(
-      (cookie) => cookie.name === "XSRF-TOKEN",
-    )?.value;
-  }
-  return token ? { "X-XSRF-TOKEN": token } : {};
 }
 
 async function clearPets(page: Page) {
@@ -98,8 +77,7 @@ test("warns when the pet breed is on the banned list", async ({ page }) => {
 
   await expect(page.getByText(/禁养犬种提醒/)).toBeVisible();
   await expect(page.getByText(/豆豆/).first()).toBeVisible();
-  await expect(page.getByText(/比特犬/).first()).toBeVisible();
-  await expect(page.getByText(/不支持您带这只宠物来旅游/)).toBeVisible();
+  await expect(page.getByText(/比特犬属于当地禁养犬种/)).toBeVisible();
   await expect(page.getByText(/禁养犬种名单/)).toBeVisible();
 });
 
@@ -125,9 +103,7 @@ test("does not judge when the breed is neither banned nor allowed", async ({
   await resetPets(page, 12);
   await page.goto(policyUrl("440400"));
 
-  await expect(
-    page.getByRole("heading", { name: "暂时无法判断" }),
-  ).toBeVisible();
+  await expect(page.getByText("豆豆 · 无法判定")).toBeVisible();
   await expect(page.getByText(/禁养犬种名单/)).toBeVisible();
   await expect(page.getByText(/以当地政府最新文件为准/)).toBeVisible();
 });
@@ -136,11 +112,8 @@ test("confirms when the pet breed is on the allowed list", async ({ page }) => {
   await resetPets(page, 10);
   await page.goto(policyUrl("440400"));
 
-  await expect(
-    page.getByRole("heading", { name: "未命中禁养名单" }),
-  ).toBeVisible();
+  await expect(page.getByText("豆豆 · 友好")).toBeVisible();
   await expect(page.getByText(/柯基犬/).first()).toBeVisible();
-  await expect(page.getByText(/可携带犬种名单中/)).toBeVisible();
 });
 
 test("does not judge when no pet profile is available", async ({ page }) => {
@@ -154,8 +127,7 @@ test("does not judge a pet without a dog breed", async ({ page }) => {
   await resetPets(page, null);
   await page.goto(policyUrl("440400"));
 
-  await expect(page.getByText(/暂无犬种信息/)).toBeVisible();
-  await expect(page.getByText(/暂时无法判断/)).toBeVisible();
+  await expect(page.getByText("咪咪 · 无法判定")).toBeVisible();
 });
 
 test("shows an empty state for a city without policy", async ({ page }) => {
@@ -185,10 +157,13 @@ test("shows source, update month and area scope", async ({ page }) => {
 test("opens the city policy from city browsing", async ({ page }) => {
   await page.goto("/cities");
   await page.getByRole("textbox", { name: "搜索城市" }).fill("珠海");
+  await page
+    .locator('[data-slot="card"]')
+    .filter({ hasText: "珠海市" })
+    .getByRole("button", { name: "选定" })
+    .click();
 
-  const policyLink = page.getByRole("link", {
-    name: "查看珠海市的城市政策",
-  });
+  const policyLink = page.getByRole("link", { name: "查看完整城市政策" });
   await expect(policyLink).toBeVisible();
   await policyLink.click();
 
@@ -261,6 +236,7 @@ async function removeZhuhaiAllowedBreed(breedId: number | undefined) {
   const { DatabaseSync } = await import("node:sqlite");
   const db = new DatabaseSync(dbPath);
   try {
+    db.exec("PRAGMA busy_timeout = 10000");
     db.prepare(
       "DELETE FROM city_allowed_dog_breed WHERE adcode = ? AND dog_breed_id = ?",
     ).run("440400", breedId);
@@ -283,17 +259,15 @@ test("admin configures allowed breeds and the policy page reflects it", async ({
 
     await resetPets(page, samoyed.id);
     await page.goto(policyUrl("440400"));
-    await expect(
-      page.getByRole("heading", { name: "未命中禁养名单" }),
-    ).toBeVisible();
+    await expect(page.getByText("珠海市养宠政策")).toBeVisible();
+    await expect(page.getByText("豆豆 · 友好")).toBeVisible();
     await expect(page.getByText(/萨摩耶犬/).first()).toBeVisible();
 
     await editZhuhaiAllowedBreeds(page, samoyed.name, false);
 
     await page.goto(policyUrl("440400"));
-    await expect(
-      page.getByRole("heading", { name: "暂时无法判断" }),
-    ).toBeVisible();
+    await expect(page.getByText("珠海市养宠政策")).toBeVisible();
+    await expect(page.getByText("豆豆 · 无法判定")).toBeVisible();
   } finally {
     await removeZhuhaiAllowedBreed(samoyed.id);
   }

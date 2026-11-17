@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
+  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
@@ -19,26 +19,46 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
-import type { DestinationCandidate } from "../../lib/destination-matching";
-import { matchesCityPetPolicy } from "../../lib/destination-matching";
+import { PolicyTags, PolicySubjectNotice } from "@/components/trip/policy-tags";
+import { formatAllowedPetTypes } from "@/lib/attraction-pet-rules";
+import type { DestinationCandidate } from "@/lib/destination-matching";
+import { matchCityCandidate } from "@/lib/trip/policy-match";
 import {
-  selectedDestinationStore,
-  useSelectedDestination,
-} from "../../lib/selected-destination";
-import { destinationsQueryOptions } from "../../queries/destinations";
-import { petProfileQueryOptions } from "../../queries/pet-profile";
+  useActiveTrip,
+  useDraftTrip,
+  usePolicySubjects,
+  useTripCity,
+} from "@/lib/trip/selectors";
+import { tripActions } from "@/lib/trip/store";
+import { runViewTransition } from "@/lib/view-transition";
+import { locationsQueryOptions } from "@/queries/locations";
+import { cityPetPolicyQueryOptions } from "@/queries/city-pet-policy";
+import { destinationsQueryOptions } from "@/queries/destinations";
+import { petProfileQueryOptions } from "@/queries/pet-profile";
+import { petsQueryOptions } from "@/queries/pets";
 
 export const Route = createFileRoute("/_authenticated/cities")({
   component: CitiesPage,
 });
 
 function CitiesPage() {
+  const active = useActiveTrip();
+  const draft = useDraftTrip();
+  const contextAdcode = active?.cityAdcode ?? draft?.cityAdcode ?? null;
+
+  if (contextAdcode) {
+    return <CityDetailView adcode={contextAdcode} mode={active ? "active" : "draft"} />;
+  }
+  return <CityCandidates />;
+}
+
+function CityCandidates() {
   const isClient = typeof window !== "undefined";
-  const navigate = useNavigate();
   const [keywordInput, setKeywordInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [friendlyOnly, setFriendlyOnly] = useState(false);
-  const selected = useSelectedDestination();
+  const subjects = usePolicySubjects();
+  const petsQuery = useQuery({ ...petsQueryOptions(), throwOnError: false });
 
   useEffect(() => {
     const timer = setTimeout(() => setKeyword(keywordInput), 300);
@@ -46,7 +66,6 @@ function CitiesPage() {
   }, [keywordInput]);
 
   const profile = useQuery({ ...petProfileQueryOptions, enabled: isClient });
-
   const destinations = useQuery({
     ...destinationsQueryOptions({
       keyword,
@@ -59,6 +78,17 @@ function CitiesPage() {
     throwOnError: true,
     placeholderData: keepPreviousData,
   });
+
+  const handleSelect = (candidate: DestinationCandidate) => {
+    runViewTransition(() => {
+      tripActions.cacheCity({
+        adcode: candidate.adcode,
+        name: candidate.name,
+        province: candidate.province,
+      });
+      tripActions.startDraft(candidate.adcode, 1, petsQuery.data?.[0]?.id ?? null);
+    });
+  };
 
   if (!destinations.data) {
     return (
@@ -73,19 +103,6 @@ function CitiesPage() {
   }
 
   const candidates = destinations.data;
-
-  const handleSelect = (candidate: DestinationCandidate) => {
-    if (selected?.adcode === candidate.adcode) {
-      selectedDestinationStore.clear();
-      return;
-    }
-    selectedDestinationStore.select({
-      adcode: candidate.adcode,
-      cityName: candidate.name,
-      province: candidate.province,
-    });
-    void navigate({ to: "/attractions" });
-  };
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
@@ -110,15 +127,16 @@ function CitiesPage() {
         </span>
       </div>
 
-      {selected ? (
-        <Alert>
-          <AlertTitle>目的地已选定：{selected.cityName}</AlertTitle>
-          <AlertDescription>
-            后续政策查看、交通规则对比与行程规划将使用{selected.cityName}。
-          </AlertDescription>
-        </Alert>
+      {subjects.status === "error" ? <PolicySubjectNotice subjects={subjects} /> : null}
+      {subjects.status === "none" ? (
+        <p className="text-sm text-muted-foreground">
+          尚未添加宠物档案，
+          <Link to="/paws" className="underline underline-offset-2">
+            先去添加宠物
+          </Link>
+          后可查看逐宠物匹配标签。
+        </p>
       ) : null}
-      {/* TODO: 档案品种禁养提醒——政策收录与禁养数据源确定后恢复（breedHitsBanList） */}
 
       {candidates.length === 0 ? (
         <Empty>
@@ -129,52 +147,147 @@ function CitiesPage() {
         </Empty>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {candidates.map((candidate) => {
-            const isSelected = selected?.adcode === candidate.adcode;
-            const isMatch = profile.data
-              ? matchesCityPetPolicy(candidate, profile.data)
-              : null;
-            return (
-              <Card key={candidate.adcode} className="relative">
-                {isMatch != null ? (
-                  <Badge
-                    variant={isMatch ? "outline" : "destructive"}
-                    className={
-                      isMatch
-                        ? "absolute right-3 top-3 border-transparent bg-green-600 text-white"
-                        : "absolute right-3 top-3"
-                    }
-                  >
-                    {isMatch ? "匹配" : "不匹配"}
-                  </Badge>
-                ) : null}
-                <CardHeader>
-                  <CardTitle>{candidate.name}</CardTitle>
-                  <CardDescription>{candidate.province}</CardDescription>
-                </CardHeader>
-                {/* TODO: 政策收录 Badge 与档案品种禁养 Badge——数据源确定后恢复 */}
-                <CardFooter className="gap-2">
-                  <Button
-                    size="sm"
-                    title={isSelected ? "点击取消选定" : undefined}
-                    onClick={() => handleSelect(candidate)}
-                  >
-                    {isSelected ? "已选定" : "选定"}
-                  </Button>
-                  <Link
-                    to="/destinations/$adcode/policy"
-                    params={{ adcode: candidate.adcode }}
-                    aria-label={`查看${candidate.name}的城市政策`}
-                    className={buttonVariants({ variant: "outline", size: "sm" })}
-                  >
-                    查看政策
-                  </Link>
-                </CardFooter>
-              </Card>
-            );
-          })}
+          {candidates.map((candidate) => (
+            <Card key={candidate.adcode} className="relative">
+              <CardHeader>
+                <CardTitle>{candidate.name}</CardTitle>
+                <CardDescription>{candidate.province}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PolicyTags
+                  subjects={subjects}
+                  match={(pet) => matchCityCandidate(candidate, pet)}
+                />
+              </CardContent>
+              <CardFooter className="gap-2">
+                <Button size="sm" onClick={() => handleSelect(candidate)}>
+                  选定
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
         </div>
       )}
     </main>
+  );
+}
+
+function CityDetailView({ adcode, mode }: { adcode: string; mode: "active" | "draft" }) {
+  const cache = useTripCity();
+  const destinations = useQuery(destinationsQueryOptions({}));
+  const policy = useQuery(cityPetPolicyQueryOptions(adcode, null));
+  const attractions = useQuery(
+    locationsQueryOptions({
+      regionCode: adcode,
+      typeGroup: "attraction",
+      petFriendlyOnly: false,
+      page: 1,
+      pageSize: 1,
+    }),
+  );
+
+  const candidate = destinations.data?.find((city) => city.adcode === adcode) ?? null;
+  const city =
+    candidate ??
+    (cache?.adcode === adcode
+      ? { adcode: cache.adcode, name: cache.name, province: cache.province }
+      : null);
+  const cityName = city?.name ?? adcode;
+
+  return (
+    <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-semibold">{cityName}</h1>
+          <p className="text-sm text-muted-foreground">
+            {city?.province ?? "省份未收录"}
+            {mode === "draft" ? " · 草稿未确认" : " · 行程已激活"}
+          </p>
+        </div>
+        {mode === "draft" ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => runViewTransition(() => tripActions.discardDraft())}
+          >
+            放弃草稿
+          </Button>
+        ) : null}
+      </header>
+
+      {mode === "draft" ? (
+        <Alert>
+          <AlertTitle>行程草稿待确认</AlertTitle>
+          <AlertDescription>
+            在左下角行程面板选择天数（1–7）与宠物后确认，即可开始排期。
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>城市携宠条件</CardTitle>
+          <CardDescription>
+            {policy.data?.covered ? "已收录当地政策要点" : "暂无当地政策数据"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <DetailItem
+              label="允许宠物类型"
+              value={formatAllowedPetTypes(candidate?.allowedPetTypes ?? null) ?? "暂未配置"}
+            />
+            <DetailItem
+              label="肩高上限"
+              value={
+                candidate?.maxSinglePetShoulderHeightCm == null
+                  ? "不限制"
+                  : `${candidate.maxSinglePetShoulderHeightCm} cm`
+              }
+            />
+            <DetailItem
+              label="可携带犬种"
+              value={
+                policy.data && policy.data.allowedBreeds.length > 0
+                  ? policy.data.allowedBreeds.slice(0, 6).join("、")
+                  : "暂未收录"
+              }
+            />
+            <DetailItem
+              label="已保存景点"
+              value={attractions.data ? `${attractions.data.totalElements} 个` : "加载中…"}
+            />
+          </dl>
+
+          {policy.data?.policies.length ? (
+            <div>
+              <h2 className="text-sm font-medium">政策要点</h2>
+              <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                {policy.data.policies.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <Link
+            to="/destinations/$adcode/policy"
+            params={{ adcode }}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            查看完整城市政策
+          </Link>
+        </CardContent>
+      </Card>
+    </main>
+  );
+}
+
+function DetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className="text-sm font-medium">{value}</dd>
+    </div>
   );
 }

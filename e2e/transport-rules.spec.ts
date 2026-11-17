@@ -1,32 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
+import { createTrip, resetTrips, signIn } from "./trip-helpers";
 
-const password = "123456";
-// petowner 由 seed-users.mjs 预置两只档案，用于验证推荐列；admin 无档案，用于验证隐藏列。
-// demo 保持无档案，供 /paws 的空档案流程（#40）使用，这里不占用。
-const petOwner = "petowner";
+// 每个 Playwright worker 由 seed-users.mjs 预置独立的 petowner-wN 账号（各两只档案），
+// 用于验证推荐列；admin 无档案，用于验证隐藏列。demo 保持无档案，供 /paws 的空档案流程使用。
 const tableName = "交通携宠规则对比";
 const modeLabels = ["飞机", "高铁", "火车", "自驾"] as const;
 
-async function openLogin(page: Page) {
-  const authResponse = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/auth/me",
-  );
-  await page.goto("/login");
-  await authResponse;
-}
-
-async function signIn(page: Page, username = petOwner) {
-  await openLogin(page);
-  const usernameInput = page.getByLabel("Username");
-  await usernameInput.fill(username);
-  await expect(usernameInput).toHaveValue(username);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("tab", { name: "城市浏览" })).toBeVisible();
-}
-
 async function openTransportRules(page: Page) {
   await signIn(page);
+  await resetTrips(page);
+  await createTrip(page, { city: "杭州市", days: 1, pet: "豆豆" });
   await page.getByRole("tab", { name: "交通规则" }).click();
   await expect(page.getByRole("table", { name: tableName })).toBeVisible();
 }
@@ -51,7 +34,7 @@ test.describe("tab-and-routing", () => {
     await signIn(page);
 
     const labels = await page.getByRole("tab").allTextContents();
-    expect(labels.slice(0, 5)).toEqual(["Home", "Paws", "城市浏览", "景区浏览", "交通规则"]);
+    expect(labels.slice(0, 5)).toEqual(["Home", "Paws", "城市浏览", "地点浏览", "交通规则"]);
     await expect(page.getByRole("tab", { name: "地点管理" })).toHaveCount(0);
   });
 
@@ -86,22 +69,44 @@ test.describe("tab-and-routing", () => {
     await signIn(page, "admin");
 
     const labels = await page.getByRole("tab").allTextContents();
-    expect(labels.slice(0, 7)).toEqual([
+    expect(labels.slice(0, 8)).toEqual([
       "Home",
       "Paws",
       "城市浏览",
-      "景区浏览",
+      "地点浏览",
       "交通规则",
+      "Trips",
       "地点管理",
       "城市管理",
     ]);
   });
 });
 
+test.describe("no-active-trip", () => {
+  test("prompts users to create or activate a trip instead of showing the rules", async ({
+    page,
+  }) => {
+    await signIn(page);
+    await resetTrips(page);
+    await page.getByRole("tab", { name: "交通规则" }).click();
+
+    await expect(page.getByText("先创建或激活行程")).toBeVisible();
+    await expect(page.getByRole("table", { name: tableName })).toHaveCount(0);
+    await expect(page.getByRole("radio")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "去创建行程" }).click();
+    await expect(page).toHaveURL("/cities");
+    await page.goto("/transport-rules");
+    await expect(page.getByText("先创建或激活行程")).toBeVisible();
+    await page.getByRole("button", { name: "查看我的行程" }).click();
+    await expect(page).toHaveURL("/trips");
+  });
+});
+
 test.describe("comparison-table", () => {
   test.beforeEach(async ({ page }) => {
     await openTransportRules(page);
-    // petowner 账号有宠物档案：等待推荐列出现，避免档案请求未完成时列数不稳定
+    // worker 账号有宠物档案：等待推荐列出现，避免档案请求未完成时列数不稳定
     await expect(
       page.getByRole("columnheader", { name: "是否推荐" }),
     ).toBeVisible();
@@ -230,24 +235,26 @@ test.describe("comparison-table", () => {
   });
 });
 
-test.describe("no-pet-profile", () => {
-  test("hides the recommendation column and sends the profile entry to /paws", async ({
+test.describe("unavailable-pet-data", () => {
+  test("keeps the active-trip rules table and mode selector when pet data fails", async ({
     page,
   }) => {
-    await signIn(page, "admin");
-    await page.getByRole("tab", { name: "交通规则" }).click();
-    await expect(page.getByRole("table", { name: tableName })).toBeVisible();
+    await openTransportRules(page);
+    await page.route("**/api/pets**", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/problem+json",
+        body: JSON.stringify({ status: 500, code: "INTERNAL_ERROR" }),
+      }),
+    );
+    await page.reload();
 
+    await expect(page.getByRole("table", { name: tableName })).toBeVisible();
     await expect(
       page.getByRole("columnheader", { name: "是否推荐" }),
     ).toHaveCount(0);
-    const entry = page.getByRole("button", { name: "新增宠物档案" });
-    await expect(entry).toBeVisible();
-    await expect(entry).toBeEnabled();
-
-    await entry.click();
-    await expect(page).toHaveURL(/\/paws$/);
-    await expect(page.getByRole("table", { name: tableName })).toHaveCount(0);
+    await expect(page.getByText("宠物档案加载失败，请刷新重试。")).toBeVisible();
+    await expect(page.getByRole("radio", { name: "选择自驾" })).toBeEnabled();
   });
 });
 

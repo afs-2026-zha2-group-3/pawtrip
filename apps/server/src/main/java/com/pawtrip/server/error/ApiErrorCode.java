@@ -10,7 +10,9 @@ public enum ApiErrorCode {
 	LOCATION_CONFLICT(HttpStatus.CONFLICT, "Location conflict"),
 	REGION_NOT_FOUND(HttpStatus.NOT_FOUND, "Region not found"),
 	PET_NOT_FOUND(HttpStatus.NOT_FOUND, "Pet not found"),
+	PET_IN_USE(HttpStatus.CONFLICT, "Pet is referenced by a trip"),
 	CITY_NOT_FOUND(HttpStatus.NOT_FOUND, "City not found"),
+	TRIP_NOT_FOUND(HttpStatus.NOT_FOUND, "Trip not found"),
 
 	VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Validation failed"),
 	UPSTREAM_FAILURE(HttpStatus.BAD_GATEWAY, "Upstream service failure"),

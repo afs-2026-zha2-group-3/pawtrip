@@ -1,6 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import {
   Select,
   SelectContent,
@@ -26,8 +26,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import {
+  useActiveTrip,
+  useHydrationStatus,
+  usePolicySubjects,
+} from "../../lib/trip/selectors";
+import { tripActions } from "../../lib/trip/store";
 import { evaluateRuleForPet } from "../../data/transport-rule-match";
-import { petsQueryOptions } from "../../queries/pets";
 import {
   allowanceStatusLabels,
   getFlightRules,
@@ -57,46 +62,19 @@ const allowanceStatusClasses: Record<AllowanceStatus, string> = {
   not_allowed: "bg-muted text-muted-foreground",
 };
 
-/** 临时缓存键：选中的交通方式，供后续生成行程单读取 */
-const SELECTED_MODE_STORAGE_KEY = "pawtrip:selected-transport-mode";
-
-function readSelectedMode(): TransportMode | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    const stored = window.sessionStorage.getItem(SELECTED_MODE_STORAGE_KEY);
-    return transportRuleRowModes.find((mode) => mode === stored) ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function persistSelectedMode(mode: TransportMode) {
-  try {
-    window.sessionStorage.setItem(SELECTED_MODE_STORAGE_KEY, mode);
-  } catch {
-    // 缓存不可用（如隐私模式）时静默降级：页面仍可单选，只是不持久
-  }
-}
-
 function TransportRulesPage() {
+  const isClient = typeof window !== "undefined";
   const flightRules = getFlightRules();
   const [carrierCode, setCarrierCode] = useState<string>(
     flightRules[0]?.carrierCode ?? "",
   );
   const navigate = useNavigate();
-  const [selectedMode, setSelectedMode] = useState<TransportMode | null>(null);
-  const petsQuery = useQuery(petsQueryOptions());
-  const pets = petsQuery.data ?? [];
-  const showRecommendation =
-    !petsQuery.isPending && !petsQuery.isError && pets.length > 0;
+  const active = useActiveTrip();
+  const hydration = useHydrationStatus();
+  const subjects = usePolicySubjects();
+  const pets = subjects.subjects;
+  const showRecommendation = subjects.status === "ready" && pets.length > 0;
 
-  // 在挂载后读取缓存，避免服务端渲染与客户端首帧不一致
-  useEffect(() => {
-    setSelectedMode(readSelectedMode());
-  }, []);
 
   const selectedFlightRule =
     flightRules.find((rule) => rule.carrierCode === carrierCode) ?? null;
@@ -136,11 +114,8 @@ function TransportRulesPage() {
             name="transport-mode"
             className="size-4 accent-primary"
             aria-label={`选择${transportModeLabels[rule.mode]}`}
-            checked={selectedMode === rule.mode}
-            onChange={() => {
-              setSelectedMode(rule.mode);
-              persistSelectedMode(rule.mode);
-            }}
+            checked={active?.transportMode === rule.mode}
+            onChange={() => tripActions.setTransportMode(rule.mode)}
           />
         </label>
       ),
@@ -293,6 +268,43 @@ function TransportRulesPage() {
     },
   ];
 
+  if (!isClient) {
+    return null;
+  }
+
+  if (!active && hydration !== "ready" && hydration !== "missing") {
+    return (
+      <main className="mx-auto w-full max-w-3xl p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>正在恢复激活行程…</CardTitle>
+          </CardHeader>
+        </Card>
+      </main>
+    );
+  }
+
+  if (!active) {
+    return (
+      <main className="mx-auto w-full max-w-3xl p-6">
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>先创建或激活行程</EmptyTitle>
+            <EmptyDescription>
+              交通规则选择需要关联激活行程；请先在「城市浏览」创建行程或在「Trips」激活已有行程。
+            </EmptyDescription>
+          </EmptyHeader>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button onClick={() => void navigate({ to: "/cities" })}>去创建行程</Button>
+            <Button variant="outline" onClick={() => void navigate({ to: "/trips" })}>
+              查看我的行程
+            </Button>
+          </div>
+        </Empty>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto w-full max-w-5xl p-6">
       <Card>
@@ -362,7 +374,7 @@ function TransportRulesPage() {
             <p>PawTrip 不提供站内订票，请通过官方或第三方渠道预订。</p>
           </section>
 
-          {petsQuery.isError ? (
+          {subjects.status === "error" ? (
             <section className="rounded-lg border border-border p-3">
               <p className="text-sm text-destructive">
                 宠物档案加载失败，请刷新重试。
@@ -370,7 +382,15 @@ function TransportRulesPage() {
             </section>
           ) : null}
 
-          {!petsQuery.isPending && !petsQuery.isError && pets.length === 0 ? (
+          {subjects.status === "loading" && active ? (
+            <section className="rounded-lg border border-border p-3">
+              <p className="text-sm text-muted-foreground">
+                正在读取激活行程绑定的宠物档案…
+              </p>
+            </section>
+          ) : null}
+
+          {subjects.status === "none" ? (
             <section className="flex flex-col gap-2 rounded-lg border border-border p-3">
               <p className="text-sm">还没有宠物档案，暂时无法给出推荐。</p>
               <Button

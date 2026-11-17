@@ -13,6 +13,7 @@ import com.pawtrip.server.error.ApiErrorCode;
 import com.pawtrip.server.error.ApiException;
 import com.pawtrip.server.error.UnauthenticatedException;
 
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -80,7 +81,29 @@ class PetService {
 
 	@Transactional
 	void delete(String username, long petId) {
-		this.petRepository.delete(findOwnedPet(userId(username), petId));
+		Pet pet = findOwnedPet(userId(username), petId);
+		try {
+			this.petRepository.delete(pet);
+			this.petRepository.flush();
+		}
+		catch (DataAccessException exception) {
+			if (isForeignKeyViolation(exception)) {
+				throw new PetInUseException(exception);
+			}
+			throw exception;
+		}
+	}
+
+	private static boolean isForeignKeyViolation(Throwable exception) {
+		Throwable cause = exception;
+		while (cause != null) {
+			String message = cause.getMessage();
+			if (message != null && message.contains("FOREIGN KEY constraint failed")) {
+				return true;
+			}
+			cause = cause.getCause();
+		}
+		return false;
 	}
 
 	private Pet findOwnedPet(Long userId, long petId) {

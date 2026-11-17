@@ -1,7 +1,20 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TripPanel } from "../components/trip/trip-panel";
+import { hydrateTripContext, retryTripHydration } from "../lib/trip/hydrate";
+import { readPersistedActiveTripId } from "../lib/trip/persistence";
+import { scheduleTripSave } from "../lib/trip/save";
+import {
+  useActiveTrip,
+  useDraftTrip,
+  useHydrationStatus,
+  usePanelExpanded,
+  useSaveRevision,
+} from "../lib/trip/selectors";
+import { cn } from "../lib/utils";
 import { authQueryOptions } from "../queries/auth";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -23,7 +36,57 @@ function AuthenticatedLayout() {
     return <AuthLoading />;
   }
 
-  return <Outlet />;
+  return <AuthenticatedShell />;
+}
+
+function AuthenticatedShell() {
+  const queryClient = useQueryClient();
+  const expanded = usePanelExpanded();
+  const activeId = useActiveTrip()?.id ?? null;
+  const draft = useDraftTrip();
+  const panelVisible = activeId != null || draft != null;
+  const revision = useSaveRevision();
+  const hydration = useHydrationStatus();
+  const [hasPersistedTrip, setHasPersistedTrip] = useState(false);
+
+  useEffect(() => {
+    void hydrateTripContext(queryClient);
+  }, [queryClient]);
+
+  useEffect(() => {
+    if (activeId != null && revision > 0) {
+      scheduleTripSave();
+    }
+  }, [activeId, revision]);
+
+  useEffect(() => {
+    setHasPersistedTrip(readPersistedActiveTripId() != null);
+  }, [hydration]);
+
+  return (
+    <>
+      <div
+        className={cn(
+          "min-h-svh [view-transition-name:app-content]",
+          expanded && panelVisible && "lg:pl-[380px]",
+        )}
+      >
+        <Outlet />
+      </div>
+      <TripPanel />
+      {hydration === "idle" && hasPersistedTrip ? (
+        <div
+          role="alert"
+          className="fixed top-16 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-lg border bg-card px-3 py-2 text-sm shadow-lg"
+        >
+          恢复激活行程失败
+          <Button size="sm" variant="outline" onClick={() => void retryTripHydration(queryClient)}>
+            重试
+          </Button>
+        </div>
+      ) : null}
+    </>
+  );
 }
 
 function AuthLoading() {

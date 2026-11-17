@@ -18,17 +18,17 @@
 
 ## 4. 前端景点页（ATDD 先行）
 
-- [x] 4.1 先写 `e2e/attraction-pet-rules.spec.ts`（E1–E12）：选定城市自动进入景区 Tab、默认 `maxPetsPerPerson >= 1`、全部模式三态、详情、城市切换、未选城市、空态、景区 Tab 选中、反向 Non-goals、登出清除、城市浏览页无景点入口。验证：测试先红，失败原因与未实现路由/页面一致。
+- [x] 4.1 先写 `e2e/attraction-pet-rules.spec.ts`（E1–E12）：激活行程城市展示景点、默认 `maxPetsPerPerson >= 1`、全部模式三态、弹窗详情、无行程空态、切换城市需先取消激活、景区 Tab 选中、反向 Non-goals、登出清除、城市浏览页无景点入口。验证：测试先红，失败原因与未实现路由/页面一致。
 - [x] 4.2 新增 `queries/attractions.ts`（列表/详情 queryOptions，query key 含 `adcode`、`includeWithoutRules`、`page`、`pageSize`、`poiId`）与展示纯函数（`maxPetsPerPerson` 三态、字段格式化）。验证：`npm test -w apps/web -- src/lib/attraction-pet-rules.test.ts` 通过。
-- [x] 4.3 新增 `/attractions` 列表路由与局部组件（`-attraction-card.tsx`、`-pet-friendly-badge.tsx`）：读取 `useSelectedDestination()`，无城市不发请求，默认仅 `>=1`，切换全部，分页与空态。验证：E2E E1/E2/E6/E8/E9 转绿；`npm run build` 通过。
-- [x] 4.4 新增 `/attractions/$poiId` 详情路由与字段组件：三态状态、8 个非空政策字段、`暂无携宠政策`，无编辑入口；404 交给现有根错误组件。验证：E2E E3/E4/E5/E10 转绿。
-- [x] 4.5 新增顶部“景区浏览”Tab；在 `/cities` 选定城市后自动跳转 `/attractions`；移除城市浏览页的“查看景点”按钮；在 `__root.tsx` 将 `/attractions` 与 `/attractions/*` 映射到 `attractions` Tab。验证：E2E E1/E5/E7/E11/E12 转绿。
-- [x] 4.6 更新 `docs/knowledge/architecture/README.md`：记录 `/attractions`、`/attractions/$poiId`、入口与 Tab 选中规则。验证：文档路由与实际 `routeTree` 一致。
+- [x] 4.3 新增 `/attractions` 列表路由与局部组件（`-attraction-card.tsx`、`-pet-friendly-badge.tsx`）：读取 `useActiveTrip()` 与 `useTripCity()`，无激活行程不发请求并展示空态，默认仅 `>=1`，切换全部，分页与空态。验证：E2E E1/E2/E6/E8/E9 转绿；`npm run build` 通过。
+- [x] 4.4 新增景点详情弹窗（`-attraction-detail-dialog.tsx`）与字段组件：三态状态、8 个非空政策字段、`暂无携宠政策`，无编辑入口；关闭后保留列表筛选与分页，不新增 `/attractions/$poiId` 路由。验证：E2E E3/E4/E5/E10 转绿。
+- [x] 4.5 新增顶部“景区浏览”Tab；`/cities` 选定城市后创建草稿并停留在城市详情，不自动跳转；移除城市浏览页的“查看景点”按钮；在 `__root.tsx` 将 `/attractions` 与 `/attractions/*` 映射到 `attractions` Tab。验证：E2E E1/E5/E7/E11/E12 转绿。
+- [x] 4.6 更新 `docs/knowledge/architecture/README.md`：记录 `/attractions`、详情弹窗、激活行程入口与 Tab 选中规则。验证：文档路由与实际 `routeTree` 一致。
 
 ## 5. 集成与回归
 
 - [x] 5.1 运行后端全量测试：`cd apps/server && ./mvnw test`，确认既有 `AdminLocationApiTest`、`DestinationApiTest`、迁移/仓库测试与新 API 测试全绿。
 - [x] 5.2 运行前端单测、类型检查与构建：`npm test -w apps/web`、`npx tsc --noEmit -p apps/web/tsconfig.json`、`npm run build`，全部通过。
 - [x] 5.3 运行 E2E：`npm run test:e2e`，确认 `attraction-pet-rules`、`destination-selection`、`authentication`、`admin-location-management` 全绿，且未修改 `apps/server/data/pawtrip.db`。
-- [x] 5.4 定向验证非目标：公开 API 无写入端点，管理 API 不含 `entryPolicy`/`entryNote`，公开详情不含照片/business，列表不含非景点，页面无城市选择/类型筛选/行程入口，城市浏览页无景点入口。验证：API 用例与 E2E 反向断言全绿。
+- [x] 5.4 定向验证非目标：公开 API 无写入端点，管理 API 不含 `entryPolicy`/`entryNote`，公开详情不含照片/business，列表不含非景点，页面无城市选择/类型筛选/天数 Tabs，城市浏览页无景点入口（逐宠物 tag 与「添加到行程」由 trip-context 变更提供，不属本变更验收）。验证：API 用例与 E2E 反向断言全绿。
 - [x] 5.5 代码审查确认：无新增 Flyway 迁移、`PawtripLocation` 无新增字段、无三档枚举/说明列。验证：`git diff` 与迁移目录审查。

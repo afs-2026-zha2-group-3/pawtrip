@@ -12,7 +12,8 @@
   - Merge: PR #50 已合入 main；REQ 编号从 REQ-008 改为 REQ-009（main 已占用 REQ-008）。
   - Conflicts: 合并 main 时解决导航、cities import、routeTree、registry/handoff 与 E2E 顺序冲突；采用 main PR #52 的 E2E admin 宠物隔离修复。
   - Archive completeness: 完整；change 已移入 archive；`attraction-pet-rules` 与 `web-app-shell` 的 delta 已合并。
-  - Validation: 本 change 涉及的两个 capability 有效；`openspec validate --all --strict` 的 2 个 auth Purpose 占位 WARNING 为既有基线，不由本变更引入。
+  - Living Spec evolution: main 后续 PR #60 `feat/unify-location-browsing` 已将 `attraction-pet-rules` 更新为“激活行程 + 弹窗详情”语义，并把导航扩展为 6 个 Tab；本归档保留历史工件，Living Spec 以 main 最新为准。
+  - Validation: 本 change 的归档工件有效；`openspec validate --all --strict` 另有 5 个既有 Purpose WARNING 与 main 的 active change `unify-location-browsing` 的 `trip-attractions` delta ERROR（非本变更引入，交由该 change 处理）。
   - Harness / Rules evolve needed?: 无立即项；后续建议见 AO 附件。
   - KB update: `Skipped (not configured)`（按 `scripts/README.md` 基线约定）；不声称 KB 校验通过。
 - Decision: **Pass**

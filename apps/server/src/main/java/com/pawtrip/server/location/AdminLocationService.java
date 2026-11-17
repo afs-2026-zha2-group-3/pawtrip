@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.data.domain.PageRequest;
+
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -27,18 +27,8 @@ class AdminLocationService {
 	private static final int AMAP_MAX_PAGE = 100;
 	private static final int AMAP_MAX_RESULTS = 200;
 	private static final int AMAP_UPSTREAM_PAGE_SIZE = 25;
-	private static final int DATABASE_MAX_PAGE_SIZE = 100;
-	private static final String ATTRACTION_TYPE_GROUP = "attraction";
-	private static final List<AdminLocationResponses.LocationTypeOption> LOCATION_TYPES = List.of(
-			new AdminLocationResponses.LocationTypeOption(ATTRACTION_TYPE_GROUP, "景点", List.of("110000")),
-			new AdminLocationResponses.LocationTypeOption("hotel", "住宿", List.of("100000")),
-			new AdminLocationResponses.LocationTypeOption("pet-hospital", "宠物医院", List.of("090700")),
-			new AdminLocationResponses.LocationTypeOption("pet-supplies", "宠物用品店", List.of("061211")),
-			new AdminLocationResponses.LocationTypeOption("restaurant", "餐厅", List.of("050000")));
-	private static final Map<String, List<String>> TYPE_CODES_BY_GROUP = LOCATION_TYPES.stream()
-			.collect(Collectors.toUnmodifiableMap(
-					AdminLocationResponses.LocationTypeOption::key,
-					AdminLocationResponses.LocationTypeOption::typeCodes));
+
+
 
 	private final AdministrativeRegionRepository regionRepository;
 	private final PawtripLocationRepository locationRepository;
@@ -47,9 +37,9 @@ class AdminLocationService {
 	private final PlaceSearchPort placeSearchPort;
 	private final ObjectMapper objectMapper;
 
-AdminLocationService(AdministrativeRegionRepository regionRepository,
-		PawtripLocationRepository locationRepository, LocationPhotoRepository photoRepository,
-		LocationWriteService locationWriteService, PlaceSearchPort placeSearchPort, ObjectMapper objectMapper) {
+	AdminLocationService(AdministrativeRegionRepository regionRepository,
+			PawtripLocationRepository locationRepository, LocationPhotoRepository photoRepository,
+			LocationWriteService locationWriteService, PlaceSearchPort placeSearchPort, ObjectMapper objectMapper) {
 		this.regionRepository = regionRepository;
 		this.locationRepository = locationRepository;
 		this.photoRepository = photoRepository;
@@ -77,9 +67,6 @@ AdminLocationService(AdministrativeRegionRepository regionRepository,
 		return List.copyOf(result);
 	}
 
-	List<AdminLocationResponses.LocationTypeOption> locationTypes() {
-		return LOCATION_TYPES;
-	}
 
 	private static AdminLocationResponses.RegionOption regionOption(AdministrativeRegion region) {
 		return new AdminLocationResponses.RegionOption(
@@ -157,27 +144,6 @@ AdminLocationService(AdministrativeRegionRepository regionRepository,
 		return new ScanResult(matched, !exhausted && rawFetched < AMAP_MAX_RESULTS);
 	}
 
-	AdminLocationResponses.Page<AdminLocationResponses.SavedLocation> savedLocations(
-			String regionCode, String typeGroup, Integer requestedPage, Integer requestedPageSize) {
-		ValidatedRegion region = validateRegion(regionCode);
-		if (typeGroup != null) {
-			typeCodesForGroup(typeGroup);
-		}
-		PageParameters page = validatePage(requestedPage, requestedPageSize, DATABASE_MAX_PAGE_SIZE, Integer.MAX_VALUE);
-		var locations = this.locationRepository.findAdminPage(
-				region == null ? null : region.code(),
-				region == null ? null : region.level(),
-				typeGroup,
-				PageRequest.of(page.page() - 1, page.pageSize()));
-		return new AdminLocationResponses.Page<>(
-				locations.getNumber() + 1,
-				locations.getSize(),
-				locations.getTotalElements(),
-				locations.getTotalPages(),
-				locations.hasNext(),
-				locations.hasPrevious(),
-				locations.getContent().stream().map(AdminLocationResponses.SavedLocation::from).toList());
-	}
 
 	AdminLocationResponses.LocationDetail locationDetail(String requestedPoiId) {
 		String poiId = validatePoiId(requestedPoiId);
@@ -246,7 +212,7 @@ AdminLocationService(AdministrativeRegionRepository regionRepository,
 		validateVisitHours(request.minVisitHours(), request.maxVisitHours());
 		PetPolicyRules.validate(request.petPolicies());
 		PawtripLocation existing = findLocation(poiId);
-		if (!ATTRACTION_TYPE_GROUP.equals(existing.getTypeGroup())
+		if (!LocationTypeCatalog.ATTRACTION_KEY.equals(existing.getTypeGroup())
 				&& (request.minVisitHours() != null || request.maxVisitHours() != null)) {
 			throw invalidQuery();
 		}
@@ -428,7 +394,7 @@ AdminLocationService(AdministrativeRegionRepository regionRepository,
 		if (typeGroup == null || typeGroup.isBlank()) {
 			throw invalidQuery();
 		}
-		List<String> typeCodes = TYPE_CODES_BY_GROUP.get(typeGroup);
+		List<String> typeCodes = LocationTypeCatalog.typeCodesForGroup(typeGroup);
 		if (typeCodes == null) {
 			throw invalidQuery();
 		}

@@ -21,6 +21,7 @@ import java.util.UUID;
 
 import com.pawtrip.server.auth.AppUser;
 import com.pawtrip.server.auth.AppUserRepository;
+import com.pawtrip.server.trip.TripRepository;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,12 +71,16 @@ class PetApiTest {
 	@Autowired
 	DogBreedRepository dogBreedRepository;
 
+	@Autowired
+	TripRepository tripRepository;
+
 	private String username;
 
 	private String otherUsername;
 
 	@BeforeEach
 	void setUp() {
+		this.tripRepository.deleteAll();
 		this.petRepository.deleteAll();
 		this.dogBreedRepository.deleteAll();
 		this.username = "pet-user-" + UUID.randomUUID();
@@ -260,12 +265,49 @@ class PetApiTest {
 	}
 
 	@Test
+	void refusesToDeletePetReferencedByTrip() throws Exception {
+		long petId = createPet(this.username, "Mimi");
+		createTripForPet(petId);
+
+		this.mockMvc.perform(delete("/api/pets/{petId}", petId)
+					.with(user(this.username))
+					.with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("PET_IN_USE"));
+
+		this.mockMvc.perform(get("/api/pets/{petId}", petId).with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value("Mimi"));
+	}
+
+	@Test
+	void deletesPetNotReferencedByTrip() throws Exception {
+		long petId = createPet(this.username, "Mimi");
+
+		this.mockMvc.perform(delete("/api/pets/{petId}", petId)
+					.with(user(this.username))
+					.with(csrf()))
+			.andExpect(status().isNoContent());
+	}
+
+	@Test
 	void requiresAuthenticationForPetEndpoints() throws Exception {
 		this.mockMvc.perform(get("/api/pets"))
 			.andExpect(status().isUnauthorized())
 			.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
 		this.mockMvc.perform(get("/api/pets/1"))
 			.andExpect(status().isUnauthorized());
+	}
+
+	private void createTripForPet(long petId) throws Exception {
+		this.mockMvc.perform(post("/api/trips")
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"带宠物行程","cityAdcode":"330100","petId":%d,"totalDays":1}
+							""".formatted(petId)))
+			.andExpect(status().isCreated());
 	}
 
 	private long createPet(String owner, String name) throws Exception {

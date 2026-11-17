@@ -1,5 +1,7 @@
 package com.pawtrip.server.location;
 
+import java.util.List;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,13 +18,26 @@ class LocationQueryController {
 		this.locationQueryService = locationQueryService;
 	}
 
-	@GetMapping("/attractions")
-	LocationQueryResponses.Page<LocationQueryResponses.AttractionSummary> attractions(
-			@RequestParam String regionCode,
-			@RequestParam(defaultValue = "false") boolean includeWithoutRules,
+	@GetMapping("/types")
+	List<LocationQueryResponses.LocationTypeOption> locationTypes() {
+		return LocationTypeCatalog.options();
+	}
+
+	@GetMapping
+	LocationQueryResponses.Page<LocationQueryResponses.LocationSummary> locations(
+			@RequestParam(required = false) String regionCode,
+			@RequestParam(required = false) String typeGroup,
+			@RequestParam(defaultValue = "false") boolean petFriendlyOnly,
 			@RequestParam(required = false) Integer page,
-			@RequestParam(required = false) Integer pageSize) {
-		return this.locationQueryService.attractions(regionCode, includeWithoutRules, page, pageSize);
+			@RequestParam(required = false) Integer pageSize,
+			Authentication authentication) {
+		return this.locationQueryService.locations(
+				regionCode, typeGroup, petFriendlyOnly, page, pageSize, isAdministrator(authentication));
+	}
+
+	private static boolean isAdministrator(Authentication authentication) {
+		return authentication != null && authentication.getAuthorities().stream()
+				.anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
 	}
 
 	@GetMapping("/{poiId}")

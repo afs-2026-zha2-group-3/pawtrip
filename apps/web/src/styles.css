@@ -121,3 +121,25 @@
     @apply bg-background text-foreground;
   }
 }
+
+::view-transition-group(app-content),
+::view-transition-group(trip-panel) {
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(app-content),
+::view-transition-new(app-content),
+::view-transition-old(trip-panel),
+::view-transition-new(trip-panel) {
+  animation-duration: 200ms;
+  animation-timing-function: ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

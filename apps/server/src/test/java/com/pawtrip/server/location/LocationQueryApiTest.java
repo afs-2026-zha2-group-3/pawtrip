@@ -77,15 +77,27 @@ class LocationQueryApiTest {
 						0L, false),
 				location("poi-zhu-hotel", "某酒店", "hotel", "440402", "100000", 1, "DOG", null, null, null, null, null,
 						null),
+				location("poi-zhu-hotel-no-policy", "未配置酒店", "hotel", "440402", "100000", null, null, null, null,
+						null, null, null, null),
+				location("poi-zhu-hospital", "宠物医院", "pet-hospital", "440402", "090700", 1, "DOG", null, null,
+						null, null, null, null),
+				location("poi-zhu-supplies", "宠物用品店", "pet-supplies", "440402", "061211", 1, "DOG", null, null,
+						null, null, null, null),
+				location("poi-zhu-restaurant", "宠物餐厅", "restaurant", "440402", "050000", 1, "DOG", null, null,
+						null, null, null, null),
 				location("poi-hz-a", "西湖", "attraction", "330106", "110000", 1, "DOG", null, null, null, null, null,
-						null)));
+						null),
+				location("poi-hz-hotel", "杭州酒店", "hotel", "330106", "100000", 1, "DOG", null, null, null, null,
+						null, null)));
 		this.locationRepository.flush();
 	}
 
 	@Test
 	void defaultListReturnsOnlyFriendlyAttractionsInCity() throws Exception {
-		JsonNode body = json(get("/api/locations/attractions")
+		JsonNode body = json(get("/api/locations")
 				.param("regionCode", "440400")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "true")
 				.with(user("demo").roles("USER")));
 
 		assertThat(poiIds(body)).containsExactly("poi-zhu-a", "poi-zhu-e");
@@ -96,9 +108,10 @@ class LocationQueryApiTest {
 
 	@Test
 	void includeWithoutRulesReturnsAllSavedAttractions() throws Exception {
-		JsonNode body = json(get("/api/locations/attractions")
+		JsonNode body = json(get("/api/locations")
 				.param("regionCode", "440400")
-				.param("includeWithoutRules", "true")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "false")
 				.with(user("demo").roles("USER")));
 
 		assertThat(poiIds(body)).containsExactly(
@@ -109,9 +122,58 @@ class LocationQueryApiTest {
 	}
 
 	@Test
-	void regionPrefixMatchesDistrictRegionCodes() throws Exception {
-		JsonNode body = json(get("/api/locations/attractions")
+	void listItemsCarryFullPetPoliciesAndKeepExistingFields() throws Exception {
+		JsonNode body = json(get("/api/locations")
 				.param("regionCode", "440400")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "false")
+				.with(user("demo").roles("USER")));
+
+		JsonNode friendly = item(body, "poi-zhu-a");
+		assertThat(friendly.path("poiId").asString()).isEqualTo("poi-zhu-a");
+		assertThat(friendly.path("name").asString()).isEqualTo("情侣路");
+		assertThat(friendly.path("address").asString()).isEqualTo("测试地址");
+		assertThat(friendly.path("maxPetsPerPerson").asInt()).isEqualTo(1);
+		assertThat(friendly.path("petPolicies").path("allowedPetTypes").asString()).isEqualTo("DOG");
+		assertThat(friendly.path("petPolicies").path("maxPetsPerPerson").asInt()).isEqualTo(1);
+		assertThat(friendly.path("petPolicies").path("maxSinglePetWeightKg").asDouble()).isEqualTo(8.5);
+		assertThat(friendly.path("petPolicies").path("maxSinglePetShoulderHeightCm").asDouble()).isEqualTo(40.0);
+		assertThat(friendly.path("petPolicies").path("leashRequired").asBoolean()).isTrue();
+		assertThat(friendly.path("petPolicies").path("vaccinationProofRequired").asBoolean()).isFalse();
+		assertThat(friendly.path("petPolicies").path("extraFeeCents").asLong()).isEqualTo(1050L);
+		assertThat(isNullOrMissing(friendly.path("petPolicies").path("reservationRequired"))).isTrue();
+
+		JsonNode unconfigured = item(body, "poi-zhu-d");
+		assertThat(unconfigured.path("petPolicies").isObject()).isTrue();
+		assertThat(isNullOrMissing(unconfigured.path("petPolicies").path("maxPetsPerPerson"))).isTrue();
+		assertThat(isNullOrMissing(unconfigured.path("petPolicies").path("allowedPetTypes"))).isTrue();
+		assertThat(isNullOrMissing(unconfigured.path("petPolicies").path("leashRequired"))).isTrue();
+
+		assertThat(body.path("page").asInt()).isEqualTo(1);
+		assertThat(body.path("totalElements").asLong()).isEqualTo(5);
+	}
+
+	@Test
+	void defaultListItemsAlsoCarryPetPolicies() throws Exception {
+		JsonNode body = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "true")
+				.with(user("demo").roles("USER")));
+
+		assertThat(item(body, "poi-zhu-a").path("petPolicies").path("maxSinglePetWeightKg").asDouble())
+			.isEqualTo(8.5);
+		assertThat(item(body, "poi-zhu-e").path("petPolicies").path("allowedPetTypes").asString())
+			.isEqualTo("CAT,DOG");
+		assertThat(item(body, "poi-zhu-e").path("petPolicies").path("extraFeeCents").asLong()).isZero();
+	}
+
+	@Test
+	void regionPrefixMatchesDistrictRegionCodes() throws Exception {
+		JsonNode body = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "true")
 				.with(user("demo").roles("USER")));
 
 		assertThat(item(body, "poi-zhu-a").path("regionCode").asString()).isEqualTo("440402");
@@ -120,13 +182,17 @@ class LocationQueryApiTest {
 
 	@Test
 	void paginatesInIdOrder() throws Exception {
-		JsonNode first = json(get("/api/locations/attractions")
+		JsonNode first = json(get("/api/locations")
 				.param("regionCode", "440400")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "true")
 				.param("page", "1")
 				.param("pageSize", "1")
 				.with(user("demo").roles("USER")));
-		JsonNode second = json(get("/api/locations/attractions")
+		JsonNode second = json(get("/api/locations")
 				.param("regionCode", "440400")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "true")
 				.param("page", "2")
 				.param("pageSize", "1")
 				.with(user("demo").roles("USER")));
@@ -135,6 +201,75 @@ class LocationQueryApiTest {
 		assertThat(first.path("hasNext").asBoolean()).isTrue();
 		assertThat(poiIds(second)).containsExactly("poi-zhu-e");
 		assertThat(first.path("totalElements").asLong()).isEqualTo(2);
+	}
+
+	@Test
+	void sharedListFiltersEveryLocationTypeAndPreservesTheUnifiedSummary() throws Exception {
+		for (String typeGroup : List.of("attraction", "hotel", "pet-hospital", "pet-supplies", "restaurant")) {
+			JsonNode body = json(get("/api/locations")
+					.param("regionCode", "440400")
+					.param("typeGroup", typeGroup)
+					.with(user("demo").roles("USER")));
+
+			assertThat(poiIds(body)).isNotEmpty();
+			for (JsonNode location : body.path("items")) {
+				assertThat(location.path("typeGroup").asString()).isEqualTo(typeGroup);
+			}
+		}
+
+		JsonNode summary = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "attraction")
+				.with(user("demo").roles("USER")));
+		JsonNode first = item(summary, "poi-zhu-a");
+		assertThat(first.has("longitude")).isTrue();
+		assertThat(first.has("latitude")).isTrue();
+		assertThat(first.has("minVisitHours")).isTrue();
+		assertThat(first.has("maxVisitHours")).isTrue();
+		assertThat(first.path("petPolicies").path("allowedPetTypes").asString()).isEqualTo("DOG");
+	}
+
+	@Test
+	void sharedListSupportsProvinceCityFriendlyFiltersAndPaging() throws Exception {
+		JsonNode provinceHotels = json(get("/api/locations")
+				.param("regionCode", "440000")
+				.param("typeGroup", "hotel")
+				.with(user("demo").roles("USER")));
+		JsonNode cityHotels = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "hotel")
+				.with(user("demo").roles("USER")));
+		JsonNode friendlyHotels = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "hotel")
+				.param("petFriendlyOnly", "true")
+				.with(user("demo").roles("USER")));
+		JsonNode firstPage = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "true")
+				.param("page", "1")
+				.param("pageSize", "1")
+				.with(user("demo").roles("USER")));
+		JsonNode secondPage = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "true")
+				.param("page", "2")
+				.param("pageSize", "1")
+				.with(user("demo").roles("USER")));
+
+		assertThat(poiIds(provinceHotels)).containsExactly("poi-zhu-hotel", "poi-zhu-hotel-no-policy");
+		assertThat(poiIds(cityHotels)).containsExactly("poi-zhu-hotel", "poi-zhu-hotel-no-policy");
+		assertThat(poiIds(friendlyHotels)).containsExactly("poi-zhu-hotel");
+		assertThat(poiIds(firstPage)).containsExactly("poi-zhu-a");
+		assertThat(poiIds(secondPage)).containsExactly("poi-zhu-e");
+		assertThat(firstPage.path("hasNext").asBoolean()).isTrue();
+		assertThat(firstPage.path("totalElements").asLong()).isEqualTo(2);
+
+		JsonNode allAdminLocations = json(get("/api/locations").with(user("admin").roles("ADMIN")));
+		assertThat(poiIds(allAdminLocations)).contains("poi-zhu-a", "poi-zhu-hotel", "poi-zhu-hospital",
+				"poi-zhu-supplies", "poi-zhu-restaurant", "poi-hz-hotel");
 	}
 
 	@Test
@@ -166,8 +301,16 @@ class LocationQueryApiTest {
 
 	@Test
 	void unauthenticatedRequestsReturn401() throws Exception {
-		this.mockMvc.perform(get("/api/locations/attractions").param("regionCode", "440400"))
+		this.mockMvc.perform(get("/api/locations").param("regionCode", "440400"))
 				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void dedicatedAttractionListRouteIsRemoved() throws Exception {
+		this.mockMvc.perform(get("/api/locations/attractions")
+					.param("regionCode", "440400")
+					.with(user("demo").roles("USER")))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test
@@ -179,11 +322,12 @@ class LocationQueryApiTest {
 	@Test
 	void invalidRegionAndPagingReturn400() throws Exception {
 		for (MockHttpServletRequestBuilder request : List.of(
-				get("/api/locations/attractions"),
-				get("/api/locations/attractions").param("regionCode", "abc"),
-				get("/api/locations/attractions").param("regionCode", "999999"),
-				get("/api/locations/attractions").param("regionCode", "440400").param("page", "0"),
-				get("/api/locations/attractions").param("regionCode", "440400").param("pageSize", "101"))) {
+				get("/api/locations"),
+				get("/api/locations").param("regionCode", "abc"),
+				get("/api/locations").param("regionCode", "999999"),
+				get("/api/locations").param("regionCode", "440400").param("page", "0"),
+				get("/api/locations").param("regionCode", "440400").param("pageSize", "101"),
+				get("/api/locations").param("regionCode", "440400").param("typeGroup", "unknown"))) {
 			this.mockMvc.perform(request.with(user("demo").roles("USER")))
 					.andExpect(status().isBadRequest());
 		}
@@ -191,7 +335,15 @@ class LocationQueryApiTest {
 
 	@Test
 	void readsOnlyDatabaseWithoutCallingAmap() throws Exception {
-		json(get("/api/locations/attractions").param("regionCode", "440400").with(user("demo").roles("USER")));
+		json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "true")
+				.with(user("demo").roles("USER")));
+		json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "hotel")
+				.with(user("demo").roles("USER")));
 		json(get("/api/locations/poi-zhu-a").with(user("demo").roles("USER")));
 
 		verifyNoInteractions(this.placeSearchPort);
@@ -207,7 +359,7 @@ class LocationQueryApiTest {
 
 	@Test
 	void publicEndpointsAreReadOnly() throws Exception {
-		this.mockMvc.perform(post("/api/locations/attractions")
+		this.mockMvc.perform(post("/api/locations")
 						.with(user("demo").roles("USER"))
 						.with(csrf()))
 				.andExpect(status().isMethodNotAllowed());

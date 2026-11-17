@@ -12,6 +12,7 @@ US-25 / REQ-009 的 AC-1：让已登录用户在已选目的地城市下查看�
 - 不新增数据库迁移/实体字段；管理端弹窗不变；公开页不调用高德。
 - 新增 E2E 夹具与 12 条景点用例；目的地 E2E 更新为选城后自动进入景区 Tab；交通 Tab 顺序断言适配四个普通 Tab。
 - Living Spec：新建 `attraction-pet-rules`（6 个 Requirement）；`web-app-shell` 增加“景区浏览导航 Tab”（共 11 个 Requirement）。
+- Living Spec 后续演进：main 的 PR #60 `feat/unify-location-browsing` 已将 `attraction-pet-rules` 更新为“激活行程 + 弹窗详情”语义，并把导航扩展为 6 个 Tab；本归档保留本 change 在 `070c881` 合并时的历史工件，不覆盖 PR #60 的新 Living Spec。
 - 变更包已归档到 `openspec/changes/archive/2026-11-17-add-location-pet-rule-display/`。
 - 编号说明：原登记 REQ-008，因 main 已将 REQ-008 用于规则页推荐，合并时改编号为 **REQ-009**。
 

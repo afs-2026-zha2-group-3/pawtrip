@@ -6,13 +6,27 @@ import { fileURLToPath } from "node:url";
 import bcrypt from "bcryptjs";
 
 // Local/test accounts only. Do not reuse these credentials outside development.
-const accounts = [
+const baseAccounts = [
 	{ username: "demo", password: "123456", enabled: true, role: "USER" },
 	{ username: "admin", password: "123456", enabled: true, role: "ADMIN" },
 	{ username: "petowner", password: "123456", enabled: true, role: "USER" },
 ];
 
-// 验收用宠物档案：petowner 两只（一只全部满足、一只超重超高缺证）。
+// E2E 并行时每个 Playwright worker 使用独立账号，避免共享行程/宠物互相覆盖。
+const workerCount = Number(process.env.SEED_E2E_WORKERS ?? "0");
+if (!Number.isInteger(workerCount) || workerCount < 0 || workerCount > 16) {
+	console.error("SEED_E2E_WORKERS must be an integer between 0 and 16.");
+	process.exit(1);
+}
+const workerAccounts = Array.from({ length: workerCount }, (_, index) => ({
+	username: `petowner-w${index}`,
+	password: "123456",
+	enabled: true,
+	role: "USER",
+}));
+const accounts = [...baseAccounts, ...workerAccounts];
+
+// 验收用宠物档案：petowner 与各 E2E worker 账号各两只（一只全部满足、一只超重超高缺证）。
 // demo 与 admin 保持无档案，避免与已有的「空档案 → 新建」流程相冲突。
 const petOwnerPets = [
 	{
@@ -34,10 +48,16 @@ const petOwnerPets = [
 ];
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const defaultDatabasePath = resolve(repoRoot, "apps/server/data/pawtrip.db");
 const databasePath = resolve(
 	repoRoot,
 	process.argv[2] ?? process.env.SEED_DB ?? "apps/server/data/pawtrip.db",
 );
+
+if (workerCount > 0 && databasePath === defaultDatabasePath) {
+	console.error("Refusing to seed E2E worker accounts into the development database.");
+	process.exit(1);
+}
 
 if (!existsSync(databasePath)) {
 	console.error(`Database not found: ${databasePath}`);
@@ -77,19 +97,27 @@ const insertPet = db.prepare(`
 
 db.exec("BEGIN");
 try {
+	const passwordHashes = new Map();
 	for (const { username, password, enabled, role } of accounts) {
-		const passwordHash = bcrypt.hashSync(password, 10);
-		upsert.run(username, passwordHash, enabled ? 1 : 0, role);
-		console.log(`Seeded ${username} (enabled=${enabled}, role=${role})`);
+		if (!passwordHashes.has(password)) {
+			passwordHashes.set(password, bcrypt.hashSync(password, 10));
+		}
+		upsert.run(username, passwordHashes.get(password), enabled ? 1 : 0, role);
 	}
 
 	if (hasPetTable) {
-		const petOwner = findUserId.get("petowner");
-		if (petOwner) {
-			deletePets.run(petOwner.id);
+		const petOwnerUsernames = new Set([
+			"petowner",
+			...workerAccounts.map(({ username }) => username),
+		]);
+		for (const { username } of accounts) {
+			if (!petOwnerUsernames.has(username)) continue;
+			const owner = findUserId.get(username);
+			if (!owner) continue;
+			deletePets.run(owner.id);
 			for (const pet of petOwnerPets) {
 				insertPet.run(
-					petOwner.id,
+					owner.id,
 					pet.name,
 					pet.petType,
 					pet.weightKg,
@@ -98,8 +126,10 @@ try {
 					pet.hasVaccinationProof,
 				);
 			}
-			console.log(`Seeded ${petOwnerPets.length} pet(s) for petowner`);
 		}
+		console.log(
+			`Seeded ${petOwnerPets.length} pet(s) for ${petOwnerUsernames.size} pet owner account(s)`,
+		);
 	}
 
 	db.exec("COMMIT");

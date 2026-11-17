@@ -50,9 +50,21 @@ com.pawtrip.server
 
 依赖方向为应用功能依赖 `application.port.maps`，`infrastructure.amap.api` 实现该端口并依赖共享传输和配置；应用模型不依赖 Controller、HTTP 响应类型或高德传输。POI 搜索仅是内部能力，本次不增加 Controller、`/api/pois/*` 路由或单独的 `poi` 包。高德凭据只从服务端配置读取，缺失时应用仍可启动，实际调用再以类型化错误失败。
 
-### 地点管理功能模块
+### 地点查询与管理
 
-`com.pawtrip.server.location` 是地点管理功能模块，包含管理员 API、应用服务、地点/行政区/照片持久化实体及 Spring Data 仓库。`AdminLocationController` 只依赖地点管理应用服务；应用服务依赖仓库和 `application.port.maps.PlaceSearchPort`，不得直接依赖 `infrastructure.amap` 实现。管理 API 位于 `/api/admin/**`，由 Spring Security 在服务端要求 `ADMIN`。高德候选查询调用地图端口；已保存地点查询只访问数据库。地点详情与创建/更新请求通过可选 `petPolicies` 对象维护 6 项宠物政策；管理端“保存地点”和“pawtrip地点”两个现有弹窗提供编辑入口，地点列表响应不包含政策。
+`com.pawtrip.server.location` 是地点查询与管理功能模块，包含共享只读查询、管理员 API、应用服务、地点/行政区/照片持久化实体及 Spring Data 仓库。管理 API 位于 `/api/admin/**`，由 Spring Security 在服务端要求 `ADMIN`；高德候选查询调用 `application.port.maps.PlaceSearchPort`，不得直接依赖 `infrastructure.amap` 实现。
+
+- `GET /api/locations/types`：所有登录用户可读，返回共享地点类型目录及高德 typecode 映射；管理端 AMap 搜索与用户/管理端筛选复用同一目录。
+- `GET /api/locations`：所有登录用户可读，按数据库分页查询已保存地点，不调用高德。支持可选 `regionCode`、`typeGroup`、`petFriendlyOnly`、`page`、`pageSize`；普通用户必须传区域，管理员可省略区域查询全部。区域支持省或城市级行政区并匹配其下级地区；`petFriendlyOnly=true` 时只返回 `max_pets_per_person >= 1` 的地点。分页默认第 1 页、每页 20 条，按地点 ID 升序。
+- 共用列表项包含 `poiId`、名称、类型、地址、经纬度、区域、游玩时间、`maxPetsPerPerson` 与完整 `petPolicies`。列表不得返回原始 POI、`business` 或照片详情。
+- `GET /api/locations/{poiId}`：登录用户可读的地点浏览详情，返回基础信息与 8 项政策字段，不返回照片、`business` 或原始 POI JSON；不存在返回 `404 LOCATION_NOT_FOUND`。
+- 管理员专属操作仍位于 `/api/admin/**`：`GET /api/admin/regions` 读取区域树；`GET /api/admin/locations/amap` 搜索高德候选；`GET /api/admin/locations/{poiId}` 读取管理编辑详情；`POST /api/admin/locations` 与 `PATCH /api/admin/locations/{poiId}` 创建或更新地点。地点详情与创建/更新请求通过可选 `petPolicies` 对象维护政策。
+
+### 用户端地点浏览与行程规划（REQ-009）
+
+用户端 `/attractions` 页面展示为“地点浏览”，保留既有路由。存在激活行程时，页面固定以 `active.cityAdcode` 查询共享 `GET /api/locations`，默认类型为“景点”；不提供城市选择。无激活行程（含仅有草稿）时展示“先创建或激活行程”空态且不请求地点列表。地点类型切换重置为第一页；默认宠物友好筛选传 `petFriendlyOnly=true`，开启“显示全部地点”传 `false`。所有类型地点详情均可展示逐宠物政策，并提供“添加到行程”和“暂不排期”操作。页面不展示天数 Tabs；添加选择器由 `active.totalDays` 生成“第 1 天”至“第 N 天”。详情在列表页内打开，关闭后保留筛选与分页；不提供 `/attractions/$poiId` 独立路由。
+
+地点浏览不新增数据库迁移；E2E 夹具由 `scripts/seed-e2e-attractions.mjs` 写入临时 E2E 库，不触碰 `apps/server/data/pawtrip.db`。
 
 ### 目的地候选功能模块
 
@@ -60,24 +72,32 @@ com.pawtrip.server
 
 - `GET /api/destinations`：需登录（沿用 `/api/**` 认证链，未登录 `401 UNAUTHENTICATED`）；返回全部城市级行政区候选数组（`level='city'`，按名称排序，`@EntityGraph` 一次性抓取允许品种），每项含 `adcode`、`name`、`province`（父级省名）、`policyCovered`、`bannedBreeds[]`、`allowedPetTypes`（string|null）、`allowedDogBreedIds`（number[]）、`maxSinglePetShoulderHeightCm`（number|null）。可选查询参数：`keyword`（服务端按城市名/省份 trim 后 contains 过滤）、`petFriendly=true`（服务端叠加筛选：每人限养数 `max_pets_per_person` 为 null 或 >=1，且传 `petType`（CAT/DOG，非法 400）时 `allowed_pet_types` **须非 null 且含该类型（null=不允许）**，且 `petType=DOG` 传 `breedId` 时城市允许品种列表为空（未配置）或含该 id，且传 `shoulderHeightCm` 时城市肩高上限为 null（不限制）或 >= 该值；未传档案参数退化为仅限养数规则）。后端不引用宠物档案模块，匹配输入由前端传参。
 - 政策数据暂缓（2026-11-16 需求方移除原 V14 政策种子迁移）：`policyCovered` 占位恒为 `false`、`bannedBreeds` 占位恒为空数组；收录状态与禁养名单的数据源确定后恢复（判断点在 `DestinationController` 留 TODO）。原摘录稿存档于 `openspec/changes/destination-selection/seed-data.md`。**例外**：V16 按需求方指定为**全部城市级行政区**注入 `allowed_pet_types='CAT,DOG'` 与 7 个非烈性允许品种（柯基犬/贵宾犬/金毛寻回犬/拉布拉多寻回犬/比熊犬/博美犬/哈士奇，`city_allowed_dog_breed`，词表同 `dog_breed`）；肩高上限未配置（null=不限制）。
-- 禁养匹配纯函数 `breedHitsBanList`（档案品种 × 名单，精确匹配）保留于前端 `lib/destination-matching.ts`；Badge/提醒展示暂缓（TODO）。后端不引用宠物档案模块（档案由外部 US-01 change 交付）；选定目的地不做服务端持久化。
+- 禁养匹配纯函数 `breedHitsBanList`（档案品种 × 名单，精确匹配）保留于前端 `lib/destination-matching.ts`；Badge/提醒展示暂缓（TODO）。后端不引用宠物档案模块（档案由外部 US-01 change 交付）；选定城市只创建前端草稿，确认后由 trip-context 调用 `POST /api/trips` 持久化。
 - 迁移版本号约定：宠物档案系列占用 V8–V14（PR #33–#36、#41）；V15 空缺（原在途 PR #43 由 PR #47 取代，#47 复用既有列无迁移）；本模块全城市种子为 **V16**（2026-11-16 需求方确认）；PR #47 新增城市政策管理 API（/api/admin/cities）可维护类型/品种/肩高 ；后续政策数据迁移交付时需复核 main 最新版本号。
 
-### 用户端景点查询与展示（REQ-009）
 
-- `com.pawtrip.server.location` 新增用户端只读查询：`LocationQueryController` 暴露 `GET /api/locations/attractions` 与 `GET /api/locations/{poiId}`；两者仅要求登录（不要求 `ADMIN`），只读取数据库，不调用高德。
-- `GET /api/locations/attractions`：按已选目的地 `regionCode` 过滤 `type_group='attraction'`；默认只返回 `max_pets_per_person >= 1` 的景点，`includeWithoutRules=true` 返回该城市全部已保存景点；摘要含 `maxPetsPerPerson`，前端派生“宠物友好 / 禁止携带 / 未配置”。
-- `GET /api/locations/{poiId}`：返回已保存地点基础信息与现有 8 个政策字段 `petPolicies`；不返回照片、business 或原始 POI JSON；不存在返回 `404 LOCATION_NOT_FOUND`。
-- 前端 `/attractions` 与 `/attractions/$poiId` 读取 `useSelectedDestination()`；`/cities` 选定目的地后自动进入 `/attractions`；顶部导航提供“景区浏览”Tab，城市浏览页不内嵌景点列表或入口按钮。
-- 本能力不新增数据库迁移或字段；E2E 夹具由 `scripts/seed-e2e-attractions.mjs` 写入临时 E2E 库，不触碰 `apps/server/data/pawtrip.db`。
+### 前端行程上下文（trip-context）
 
-前端选定状态约定（`apps/web/src/lib/selected-destination.ts`）：
+前端以服务端 trip 为唯一规划载体，`apps/web/src/lib/trip/` 与 `queries/trips.ts` 组成运行时上下文：
 
-- 已选目的地仅存浏览器 sessionStorage（会话级，关标签页即失效），键 `pawtrip.selectedDestination`，值为 JSON `{adcode, cityName, province, selectedAt}`；读取时校验四字段均为字符串，损坏/缺失一律视为未选。
-- 状态经 `createSelectedDestinationStore` + `useSyncExternalStore` 订阅（`useSelectedDestination()`），无全局状态库；重选直接覆盖，同标签页内刷新/重进页面保留。
-- 确认登出（`__root.tsx` logout mutation `onSuccess`）在 `queryClient.clear()` 之外调用 `selectedDestinationStore.clear()` 清除该键。
-- 顶栏目的地 chip 与 `/cities` 确认提示同源于该 store：已选显示城市名，未选显示「目的地未选」；chip 仅在登录成功后渲染。
-- 档案经 `queries/pet-profile.ts` 只读 adapter 消费外部 US-01 接口 `GET /api/pets`（PR #41 后含 `dogBreed`），取第一只宠物（需求方确认单宠口径）暴露 `petType`/`breedId`/`breedName`/`shoulderHeightCm`，任何失败/无档案退化为 null。`/cities` 卡片右上角按 `matchesCityPetPolicy`（lib/destination-matching.ts，与服务端筛选同语义：类型 null=不允许，品种空列表/肩高 null=未配置放行）显示绿色「匹配」/红色「不匹配」Badge，无档案不显示，标签独立于筛选开关；已选定卡片按钮再次点击取消选定（store.clear）。
+- **store 形状**（`lib/trip/types.ts` / `store.ts`）：TanStack Store 单例 `tripStore`，`TripState = { draft, active, cache, panel, save, hydration, saveRevision }`。`active` 与 DB 字段同构（`id`、`name`、`cityAdcode`、`petId`、`totalDays`、`plan`、`createdAt`、`updatedAt`），不附加视图字段；`plan` 为 v1 `{version, days, unscheduled}`；`cache` 仅存内存中的城市、宠物与地点详情，供面板与匹配使用。
+- **生命周期**：`/cities` 无行程时展示候选；点击“选定”调用 `startDraft` 创建仅内存草稿并展开左下角面板，页面切到城市详情，不调用 `POST /api/trips`。面板在草稿期可改天数（1–7）与单只宠物；确认时自动生成 `{城市名} · {totalDays}天 · {宠物名}` 并 `POST /api/trips`，成功后 `setActive` 并写入 `activeTripId`；“放弃草稿”回到候选列表。刷新会丢失未确认草稿。
+- **持久化与 hydrate**（`persistence.ts` / `hydrate.ts`）：localStorage 只写 `pawtrip.activeTripId`；登录后的客户端挂载读取该 id 并 `GET /api/trips/{id}`。成功写入 `active` 并补全城市/宠物缓存；`404`/`401` 清除 id 与本地状态；网络失败保留 id，`hydration = idle` 并展示重试入口。SSR 阶段 store 为空且不读取存储。登出执行 `clearTripContext()` 清除 id、草稿、行程与缓存，再调用 `queryClient.clear()`。
+- **Trips 页**（`/trips`）：列出本人行程（后端按 id 升序），join 城市名与宠物名；支持激活、取消激活、删除。同一时间最多一个激活行程；存在激活行程时创建入口不可用；存在草稿时禁止激活其他行程；删除激活中的行程先取消激活再 `DELETE`，失败恢复原状态。
+- **行程面板**（`components/trip/trip-panel.tsx`）：基于 vendored `components/ui/animated-list.tsx`（移除了默认项与 hugeicons，增加不可选中的分组表头），按 `active.totalDays` 渲染每天表头 + stops + “未排期”分组。展开态在桌面端固定左侧约 364px 并使页面内容在剩余区域居中，移动端为全屏面板；`/login` 不渲染。拖拽使用 `@dnd-kit/core` + `@dnd-kit/sortable`，每天与未排期作为可放置容器，支持同日排序、跨天移动、拖入/拖出未排期；同日允许重复 `poiId`，视图 key 由 `container:index:poiId` 派生。
+- **自动保存**（`save.ts`）：地点编辑先乐观更新 store，再由 `_authenticated` 布局监听 `saveRevision` 触发约 600ms 防抖 `PUT`，请求体为 `{name, totalDays, plan}`。版本号守卫只允许最新响应改写状态；失败保留本地并提供重试；`400 VALIDATION_ERROR` 时重新拉取详情并以服务端数据为准。保存状态（保存中/已保存/保存失败）展示在面板标签行。
+- **统一政策匹配主体**（`policy-subjects.ts` / `policy-match.ts`）：存在激活行程且已绑定宠物时只匹配该宠物，否则匹配全部宠物；宠物加载失败展示“暂时无法读取宠物”而非“无宠物”。结论统一为 `friendly | unfriendly | unjudgeable | unconfigured`，以“宠物名 · 结论”tag 展示，覆盖城市候选、城市政策页、景点列表/详情与交通规则推荐列。
+- **旧状态清理**：已删除 `lib/selected-destination.ts` 与 `lib/trip-duration.ts`；启动/登录后清理 `pawtrip.selectedDestination`、`pawtrip.tripDuration` 残留键；顶栏目的地 chip 移除。保留 `pawtrip:selected-transport-mode`。
+
+### 服务端行程规划（trip-planning）
+
+- `com.pawtrip.server.trip` 新增 `Trip` 实体、`TripRepository`、`TripService`、`TripController`；Flyway **V17** 创建 `trip` 表：`user_id`、`name`、`city_adcode`、`pet_id`、`total_days`、`plan_json`、`created_at`、`updated_at`，索引 `(user_id, id)`。
+- 城市与宠物在创建后不可变：`city_adcode` 必须为城市级 `administrative_region`，`pet_id` 必须属于当前用户；更新接口只接收 `name`、`totalDays`、`plan`。
+- `plan_json` v1：`{"version":1,"days":[{"day":1,"stops":[{"poiId":"...","toNext":"walk"}]}],"unscheduled":[{"poiId":"..."}]}`。`toNext` 仅 `walk` / `drive` / `transit`，全部可选且不做下一天引用校验；`days`、`stops`、`unscheduled` 均可为空，空计划合法并作为新建默认值。`unscheduled` 按 `poiId` 去重，已排期地点从池中移除；同一 `poiId` 可在 `days` 重复。
+- `poiId` 只校验存在于 `pawtrip_location`（不校验城市归属）；`day` 唯一且在 `1..totalDays`；`totalDays` 调小到低于计划最大 `day` 返回 `400 VALIDATION_ERROR`。
+- API：`GET/POST /api/trips`、`GET/PUT/DELETE /api/trips/{id}`；均需登录且只能访问本人 trip，列表返回摘要不含 `plan`，详情/创建/更新返回完整计划；未找到返回 `404 TRIP_NOT_FOUND`。
+- 宠物删除：`trip.pet_id` 外键为 `ON DELETE RESTRICT`；删除被 trip 引用的宠物返回 `409 PET_IN_USE`，未被引用的宠物保持 `204`。
+- 前端已按 trip-context 接入本接口：草稿确认调用 `POST /api/trips`，Trips 页激活调用 `GET /api/trips/{id}`，计划编辑以防抖 `PUT` 保存；不修改后端契约，也不新增迁移。`pawtrip:selected-transport-mode` 仍由交通规则页独立维护。
 
 ## 运行拓扑
 
@@ -146,7 +166,7 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 - UI 组件统一来自 `apps/web/src/components/ui/`，使用 shadcn/ui 的 Base UI 版本；不引入 Radix 版本或其他 UI 组件库。
 - 宠物卡片使用 React Bits Tilted Card 的 TS + Tailwind 变体，以源码形式纳入 `apps/web/src/components/ui/tilted-card.tsx`，不新增运行时依赖，也不引入自定义 CSS 类。
 - 页面结构与交互只通过组件库组合和 Tailwind 布局工具类表达；`apps/web/src/styles.css` 仅保留 Tailwind、`shadcn/tailwind.css` 与主题令牌，不新增自定义类。
-- 应用外壳位于 `apps/web/src/routes/__root.tsx`：顶部居中的 `Home` / `Paws` / `城市浏览` / `景区浏览` 四个 Tab 与真实路由 `/`、`/paws`、`/cities`、`/attractions` 同步；`/attractions` 与 `/attractions/$poiId` 归入“景区浏览”Tab 选中态；`/` 展示问候语，`/paws` 展示当前用户的宠物画廊并支持查看、编辑、新增与删除；狗类型在表单中必须从 `GET /api/dog-breeds` 选择品种，卡片右下角优先显示狗品种，无品种时回退显示猫/狗类型。
+- 应用外壳位于 `apps/web/src/routes/__root.tsx`：顶部居中的 `Home` / `Paws` / `城市浏览` / `地点浏览` / `交通规则` / `Trips` 六个 Tab 与真实路由 `/`、`/paws`、`/cities`、`/attractions`、`/transport-rules`、`/trips` 同步；`/attractions` 与 `/attractions/$poiId` 归入“景区浏览”Tab 选中态；`/` 展示问候语，`/paws` 展示当前用户的宠物画廊并支持查看、编辑、新增与删除；狗类型在表单中必须从 `GET /api/dog-breeds` 选择品种，卡片右下角优先显示狗品种，无品种时回退显示猫/狗类型。`_authenticated` 布局负责行程 hydrate、自动保存与全局行程面板，`/login` 不渲染面板。
 
 ### 前端服务端状态
 
@@ -168,4 +188,3 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 - 后端：`cd apps/server && ./mvnw test`，包含使用临时 SQLite 文件的接口验收测试与错误路径测试。认证 E2E 前先运行根目录 `npm run seed:users` 注入本地测试账号。
 - 前端：根目录 `npm run build`；类型检查 `npx tsc --noEmit -p apps/web/tsconfig.json`。
 - 端到端：冷启动后端后确认数据库文件与接口，再启动前端验证登录/登出、受保护路由跳转、`/` 问候语、`/paws`、Tab 切换、前进后退、404 与首页首次加载失败；CORS 不在当前范围。
-- 

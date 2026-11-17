@@ -137,10 +137,10 @@ class LocationRepositoryTest {
 				location("poi-hotel", "330106", "hotel")));
 		this.locationRepository.flush();
 
-		var cityPage = this.locationRepository.findAdminPage(
-				"330100", "city", "attraction", PageRequest.of(0, 10));
-		var provincePage = this.locationRepository.findAdminPage(
-				"330000", "province", "attraction", PageRequest.of(0, 10));
+		var cityPage = this.locationRepository.findLocationPage(
+				"330100", "city", "attraction", 0, PageRequest.of(0, 10));
+		var provincePage = this.locationRepository.findLocationPage(
+				"330000", "province", "attraction", 0, PageRequest.of(0, 10));
 
 		assertThat(cityPage.getContent()).extracting(PawtripLocation::getPoiId).containsExactly("poi-hangzhou");
 		assertThat(provincePage.getContent()).extracting(PawtripLocation::getPoiId)
@@ -157,8 +157,8 @@ class LocationRepositoryTest {
 				location("poi-2", null, "attraction"),
 				location("poi-3", null, "attraction")));
 
-		var firstPage = this.locationRepository.findAdminPage(null, null, null, PageRequest.of(0, 2));
-		var secondPage = this.locationRepository.findAdminPage(null, null, null, PageRequest.of(1, 2));
+		var firstPage = this.locationRepository.findLocationPage(null, null, null, 0, PageRequest.of(0, 2));
+		var secondPage = this.locationRepository.findLocationPage(null, null, null, 0, PageRequest.of(1, 2));
 
 		assertThat(firstPage.getTotalElements()).isEqualTo(3);
 		assertThat(firstPage.getContent()).extracting(PawtripLocation::getPoiId)
@@ -167,7 +167,7 @@ class LocationRepositoryTest {
 	}
 
 	@Test
-	void filtersAttractionPagesByFriendlyPolicyAndRegion() {
+	void filtersSharedLocationPagesByFriendlyPolicyAndRegion() {
 		var friendly = location("poi-friendly", "330106", "attraction");
 		friendly.updatePetPolicies("DOG", 1, 8.5, 40.0, true, false, 0L, null);
 		var forbidden = location("poi-forbidden", "330106", "attraction");
@@ -178,12 +178,12 @@ class LocationRepositoryTest {
 		hotel.updatePetPolicies("DOG", 1, null, null, null, null, null, null);
 		this.locationRepository.saveAllAndFlush(List.of(friendly, forbidden, unconfigured, hotel));
 
-		var defaultPage = this.locationRepository.findAttractionPage(
-				"330100", "city", 0, PageRequest.of(0, 10));
-		var allPage = this.locationRepository.findAttractionPage(
-				"330100", "city", 1, PageRequest.of(0, 10));
-		var provincePage = this.locationRepository.findAttractionPage(
-				"330000", "province", 0, PageRequest.of(0, 10));
+		var defaultPage = this.locationRepository.findLocationPage(
+				"330100", "city", "attraction", 1, PageRequest.of(0, 10));
+		var allPage = this.locationRepository.findLocationPage(
+				"330100", "city", "attraction", 0, PageRequest.of(0, 10));
+		var provincePage = this.locationRepository.findLocationPage(
+				"330000", "province", "attraction", 1, PageRequest.of(0, 10));
 
 		assertThat(defaultPage.getContent()).extracting(PawtripLocation::getPoiId)
 			.containsExactly("poi-friendly");

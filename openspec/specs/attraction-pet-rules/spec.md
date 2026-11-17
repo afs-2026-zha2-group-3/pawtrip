@@ -1,40 +1,47 @@
 # attraction-pet-rules Specification
 
 ## Purpose
-定义已选目的地城市下景点列表、景点详情与现有携宠政策字段的公开只读契约，包括 `maxPetsPerPerson` 三态、字段展示语义与数据库查询边界，使用户在到访前判断能否带宠物进入。
+
+定义激活行程城市下景点列表、景点详情与现有携宠政策字段的公开只读契约，包括 `maxPetsPerPerson` 三态、字段展示语义与数据库查询边界，使用户在到访前判断能否带宠物进入。
 
 ## Requirements
 
-### Requirement: 已选城市下的景点列表
+### Requirement: 激活行程下的景点列表
 
-系统 SHALL 为已登录用户提供 `/attractions` 页面，读取用户已选定的目的地城市并展示该城市已保存的景点。页面 MUST NOT 提供城市选择控件。未选定目的地时，页面 MUST 提示先选择目的地并提供前往 `/cities` 的入口，且 MUST NOT 请求景点列表。列表 MUST 只包含 `type_group='attraction'` 的已保存地点，MUST 只读取数据库，MUST NOT 调用高德 API。
+系统 SHALL 为已登录用户提供 `/attractions` 页面，以当前激活行程的城市为唯一查询上下文并展示该城市已保存的景点。页面 MUST NOT 提供城市选择控件。无激活行程（含仅有未确认草稿）时，页面 MUST 展示“先创建或激活行程”空态并提供前往 `/cities` 与 `/trips` 的入口，且 MUST NOT 请求景点列表。列表 MUST 只包含 `type_group='attraction'` 的已保存地点，MUST 只读取数据库，MUST NOT 调用高德 API。
 
-#### Scenario: 已选城市展示景点
+#### Scenario: 激活行程展示景点
 
-- **GIVEN** 用户已在 `/cities` 选定珠海
+- **GIVEN** 用户存在城市为珠海的激活行程
 - **WHEN** 用户打开 `/attractions`
 - **THEN** 页面显示珠海范围内的已保存景点
 - **AND** 不显示其他城市的景点
 
-#### Scenario: 未选择目的地
+#### Scenario: 无激活行程
 
-- **GIVEN** 用户未选定目的地
+- **GIVEN** 用户没有激活行程或仅有未确认草稿
 - **WHEN** 用户打开 `/attractions`
-- **THEN** 页面提示先选择目的地
-- **AND** 提供前往 `/cities` 的入口
+- **THEN** 页面提示“先创建或激活行程”
+- **AND** 提供前往 `/cities` 与 `/trips` 的入口
 - **AND** 不发起景点列表请求
 
 #### Scenario: 非景点类型不进入列表
 
-- **GIVEN** 已选城市存在酒店、餐厅、宠物医院或宠物用品店
+- **GIVEN** 激活行程城市存在酒店、餐厅、宠物医院或宠物用品店
 - **WHEN** 用户打开 `/attractions`
 - **THEN** 这些非景点地点不出现
 
 #### Scenario: 城市无已保存景点
 
-- **GIVEN** 已选城市没有已保存景点
+- **GIVEN** 激活行程城市没有已保存景点
 - **WHEN** 用户打开 `/attractions`
 - **THEN** 页面显示“该城市暂无已保存景点”
+
+#### Scenario: 切换城市需先取消激活
+- **GIVEN** 用户存在激活行程
+- **WHEN** 用户尝试切换到其他城市
+- **THEN** 系统要求先在 `/trips` 取消激活当前行程
+- **AND** 景点页不提供页面内城市选择控件
 
 #### Scenario: 只读数据库
 
@@ -49,7 +56,7 @@
 
 #### Scenario: 默认只显示宠物友好景点
 
-- **GIVEN** 已选城市有景点 A（`maxPetsPerPerson=1`）与景点 B（`maxPetsPerPerson=0`）
+- **GIVEN** 激活行程城市有景点 A（`maxPetsPerPerson=1`）与景点 B（`maxPetsPerPerson=0`）
 - **WHEN** 用户打开 `/attractions`
 - **THEN** 列表显示 A 与“宠物友好”
 - **AND** 不显示 B
@@ -68,39 +75,46 @@
 
 #### Scenario: 无友好景点空态
 
-- **GIVEN** 已选城市有已保存景点，但没有 `maxPetsPerPerson >= 1` 的景点
+- **GIVEN** 激活行程城市有已保存景点，但没有 `maxPetsPerPerson >= 1` 的景点
 - **WHEN** 用户以默认口径打开 `/attractions`
 - **THEN** 页面显示“该城市暂无宠物友好的已保存景点”
 - **AND** 提示可切换显示全部景点
 
-### Requirement: 景点详情与携宠政策展示
+### Requirement: 景点详情以弹窗展示
 
-系统 SHALL 在 `/attractions/{poiId}` 展示已保存景点的名称、类型、地址、`maxPetsPerPerson` 三态与所有非空政策字段。全部政策字段为空时 MUST 展示“暂无携宠政策”。页面 MUST NOT 提供编辑、保存或删除入口。
+景点详情 MUST 在 `/attractions` 列表页内以模态弹窗展示。点击卡片「查看详情」MUST 打开弹窗，MUST NOT 跳转独立路由或改变页面 URL。弹窗 SHALL 展示已保存景点的名称、地址、`maxPetsPerPerson` 三态与所有非空政策字段；全部政策字段为空时 MUST 展示“暂无携宠政策”。弹窗 MUST 支持关闭按钮、Esc 键与点击遮罩关闭；关闭后列表的筛选状态、分页位置与内容 MUST 保持不变。页面 MUST NOT 提供编辑、保存或删除入口，也 MUST NOT 再提供 `/attractions/{poiId}` 独立详情路由。
 
 #### Scenario: 展示三态与字段
 
 - **GIVEN** 景点已配置 `maxPetsPerPerson` 与部分政策字段
-- **WHEN** 用户打开景点详情
-- **THEN** 页面显示对应的“宠物友好/禁止携带/未配置”状态
+- **WHEN** 用户点击该景点的「查看详情」
+- **THEN** 弹窗显示对应的“宠物友好/禁止携带/未配置”状态
 - **AND** 显示所有非空政策字段
+- **AND** 页面 URL 仍为 `/attractions`
 
 #### Scenario: 只展示非空字段
 
 - **GIVEN** 景点的体重、费用与布尔字段均为 `NULL`
-- **WHEN** 用户打开景点详情
+- **WHEN** 用户打开景点详情弹窗
 - **THEN** 对应字段不展示
 - **AND** 不显示空标签或“null”
 
 #### Scenario: 无政策景点详情
 
 - **GIVEN** 景点的全部政策字段均为空
-- **WHEN** 用户打开景点详情
-- **THEN** 页面显示“暂无携宠政策”
+- **WHEN** 用户打开景点详情弹窗
+- **THEN** 弹窗显示“暂无携宠政策”
+
+#### Scenario: 关闭后保留列表状态
+
+- **GIVEN** 用户已勾选“显示全部景点”并翻到第 2 页
+- **WHEN** 用户打开并关闭某景点详情弹窗
+- **THEN** 列表仍处于第 2 页且“显示全部景点”仍保持勾选
 
 #### Scenario: 不提供编辑入口
 
-- **GIVEN** 用户打开景点详情
-- **WHEN** 页面渲染
+- **GIVEN** 用户打开景点详情弹窗
+- **WHEN** 弹窗渲染
 - **THEN** 不显示编辑、保存或删除操作
 
 ### Requirement: 政策字段的展示语义
@@ -182,28 +196,32 @@
 - **THEN** 正常返回数据
 - **AND** 不要求 `ADMIN` 角色
 
-### Requirement: 景点页入口与自动跳转
+### Requirement: 景区浏览入口与激活行程
 
-`/cities` 页面在用户选定目的地后 SHALL 更新已选目的地并自动进入 `/attractions`。城市浏览页 MUST NOT 内嵌景点列表或提供额外的“查看景点”入口按钮；景点浏览入口为顶部“景区浏览”Tab（详见 `web-app-shell` delta）。
+`/cities` 页面在用户选定城市后 SHALL 创建行程草稿并展示该城市详情视图，MUST NOT 自动进入 `/attractions`。景点浏览入口 SHALL 为顶部“景区浏览”Tab（详见 `web-app-shell` 主 spec）；进入该页要求存在激活行程。城市浏览页 MUST NOT 内嵌景点列表或提供额外的“查看景点”入口按钮。
 
-#### Scenario: 选定城市后自动进入景区浏览
-
-- **GIVEN** 用户位于 `/cities`
+#### Scenario: 选定城市后停留在城市详情
+- **GIVEN** 用户位于 `/cities` 且没有激活行程或草稿
 - **WHEN** 用户选定珠海
+- **THEN** 页面切换到珠海城市详情视图并展开行程草稿面板
+- **AND** 浏览器地址仍为 `/cities`
+- **AND** 不自动进入 `/attractions`
+
+#### Scenario: 通过 Tab 进入景区浏览
+- **GIVEN** 用户存在激活行程
+- **WHEN** 用户点击顶部“景区浏览”Tab
 - **THEN** 浏览器地址变为 `/attractions`
-- **AND** 顶部“景区浏览”Tab 处于选中状态
-- **AND** 页面展示珠海市景点
+- **AND** “景区浏览”Tab 处于选中状态
+- **AND** 页面展示激活行程城市的景点
 
 #### Scenario: 城市浏览页不内嵌景点入口
-
 - **GIVEN** 用户位于 `/cities`
 - **WHEN** 页面渲染
 - **THEN** 页面不展示景点列表
 - **AND** 不展示“查看{城市}景点”按钮
 
-#### Scenario: 未选定目的地打开景区浏览
-
-- **GIVEN** 用户尚未选定目的地
+#### Scenario: 无激活行程打开景区浏览
+- **GIVEN** 用户尚未创建或激活行程
 - **WHEN** 用户打开 `/attractions`
-- **THEN** 页面提示先选择目的地
-- **AND** 提供前往 `/cities` 的入口
+- **THEN** 页面提示“先创建或激活行程”
+- **AND** 提供前往 `/cities` 与 `/trips` 的入口

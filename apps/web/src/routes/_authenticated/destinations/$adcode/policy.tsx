@@ -10,11 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { PolicyTags } from "@/components/trip/policy-tags";
+import { matchCityPolicy } from "@/lib/trip/policy-match";
+import { usePolicySubjects } from "@/lib/trip/selectors";
 import {
   cityPetPolicyQueryOptions,
   type CityPetPolicy,
 } from "@/queries/city-pet-policy";
-import { petsQueryOptions, type Pet } from "@/queries/pets";
 
 export const Route = createFileRoute(
   "/_authenticated/destinations/$adcode/policy",
@@ -24,13 +26,9 @@ export const Route = createFileRoute(
 
 function CityPetPolicyPage() {
   const { adcode } = Route.useParams();
-  const petsQuery = useQuery(petsQueryOptions());
-  const pet = petsQuery.data?.find((candidate) => candidate.dogBreed) ?? null;
-  const { data: policy, isPending } = useQuery(
-    cityPetPolicyQueryOptions(adcode, pet?.dogBreed?.id ?? null),
-  );
+  const { data: policy, isPending } = useQuery(cityPetPolicyQueryOptions(adcode, null));
 
-  if (petsQuery.isPending || isPending || !policy) {
+  if (isPending || !policy) {
     return (
       <PageFrame>
         <Card>
@@ -76,11 +74,7 @@ function CityPetPolicyPage() {
         ) : null}
       </header>
 
-      <MatchNotice
-        policy={policy}
-        pets={petsQuery.data}
-        petsFailed={petsQuery.isError}
-      />
+      <CityPolicyMatch policy={policy} />
 
       <Card>
         <CardHeader>
@@ -130,51 +124,10 @@ function CityPetPolicyPage() {
   );
 }
 
-function MatchNotice({
-  policy,
-  pets,
-  petsFailed,
-}: {
-  policy: CityPetPolicy;
-  pets: Pet[] | undefined;
-  petsFailed: boolean;
-}) {
-  const pet = pets?.find((candidate) => candidate.dogBreed) ?? null;
+function CityPolicyMatch({ policy }: { policy: CityPetPolicy }) {
+  const subjects = usePolicySubjects();
 
-  if (policy.match?.matched) {
-    return (
-      <section
-        className="rounded-xl border border-destructive/40 bg-destructive/5 p-4"
-        role="alert"
-      >
-        <h2 className="font-semibold text-destructive">禁养犬种提醒</h2>
-        <p className="mt-1">
-          您的宠物“{pet?.name}”属于{policy.match.breedName}，在{policy.name}
-          的禁养名单中。
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          该城市的政策不支持您带这只宠物来旅游，建议更换目的地或提前确认当地最新规定。
-        </p>
-      </section>
-    );
-  }
-
-  if (policy.match?.allowed) {
-    return (
-      <section className="rounded-xl border border-emerald-600/40 bg-emerald-50 p-4">
-        <h2 className="font-semibold text-emerald-800">未命中禁养名单</h2>
-        <p className="mt-1">
-          您的宠物“{pet?.name}”属于{policy.match.breedName}，在{policy.name}
-          的可携带犬种名单中，未出现在禁养犬种名单内。
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          仍需遵守当地关于数量、牵引、疫苗等其他规定。
-        </p>
-      </section>
-    );
-  }
-
-  if (petsFailed) {
+  if (subjects.status === "error") {
     return (
       <Notice
         title="暂时无法读取宠物档案"
@@ -182,8 +135,15 @@ function MatchNotice({
       />
     );
   }
-
-  if (!pets?.length) {
+  if (subjects.status === "loading") {
+    return (
+      <Notice
+        title="正在读取宠物档案"
+        description="宠物档案加载完成后将按统一匹配主体给出结论。"
+      />
+    );
+  }
+  if (subjects.status === "none") {
     return (
       <Notice
         title="尚未填写宠物档案"
@@ -192,20 +152,31 @@ function MatchNotice({
     );
   }
 
-  if (!pet) {
-    return (
-      <Notice
-        title="暂无犬种信息"
-        description="本页展示的是当地养犬政策；当前宠物没有填写犬种，暂时无法判断是否属于禁养范围。"
-      />
-    );
-  }
+  const verdicts = subjects.subjects.map((pet) => ({
+    pet,
+    verdict: matchCityPolicy(policy, pet),
+  }));
+  const blocked = verdicts.filter(({ verdict }) => verdict.status === "unfriendly");
 
   return (
-    <Notice
-      title="暂时无法判断"
-      description="该品种暂未列入当地的可携带犬种名单，或城市暂未配置可携带犬种。请以当地政府最新规定为准，出行前可向当地主管部门确认。"
-    />
+    <section className="flex flex-col gap-2 rounded-xl border bg-muted/30 p-4">
+      <h2 className="text-sm font-semibold">携宠匹配结论</h2>
+      <PolicyTags subjects={subjects} match={(pet) => matchCityPolicy(policy, pet)} />
+      {blocked.length > 0 ? (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3" role="alert">
+          <p className="text-sm font-medium text-destructive">禁养犬种提醒</p>
+          {blocked.map(({ pet, verdict }) => (
+            <p key={pet.id} className="mt-1 text-sm">
+              {pet.name}：{verdict.reasons.join("；")}。建议更换目的地或提前确认当地最新规定。
+            </p>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          仍需遵守当地关于数量、牵引、疫苗等其他规定。
+        </p>
+      )}
+    </section>
   );
 }
 
