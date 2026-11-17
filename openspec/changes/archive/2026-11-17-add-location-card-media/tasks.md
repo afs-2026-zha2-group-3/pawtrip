@@ -30,7 +30,7 @@
 
 ## Workflow follow-up
 
-- G1 评审（IO/SA 签署 `g1-decision.md`）后进入 P4 实现合并流程；PR 合并、CI 全绿后按 G2/G3 门禁归档并合并 Living Spec（`trip-attractions` +3、`location-management` +1）。
+- G1 Pass（IO=Kitty、SA=Leo，`g1-decision.md`）；PR #65 已合并、CI 全绿；G2 Pass（VL=Scott，`g2-decision.md`）；G3 Pass（SA=Leo，`g3-decision.md`）。Living Spec 已同步（`trip-attractions` +3、`location-management` +1），change 已归档。
 
 ## P4 执行记录（2026-11-17，/sdd-atdd-apply）
 
@@ -41,4 +41,12 @@
 - CI 修正（PR #65 首轮 Browser E2E 红）：media E6 原误以渔女为"全空"夹具，但其 `leashRequired=1` 按规格应生成牵引短语；改用真正全空的无名景点，并为 absence 断言加卡片可见守卫、showAll 后断言 checked，消除空过假绿；本地全量 108 绿 + media 子集 repeat-each 2 共 18 绿后推送。
 - 验证结果：`apps/server ./mvnw test` 177 绿；`apps/web npm run build` 绿 + vitest 114 绿；`npm run test:e2e` 全量 109 绿（含管理端回归 E10）；390×844 窄屏单列、弹窗层叠、无横向溢出、控制台无错误（临时 spec/config 验证后已删除）；`openspec validate "add-location-card-media" --strict` 通过。
 - 遗留观察（非本 change 引入，不修）：390px 下行程面板默认展开为全屏抽屉需点"收起"；主导航 tabs 与 Log out 间距偏紧。
-- G1 未签署（用户指示直接 apply）；PR、G2/G3 未做，下一步 `/sdd:local-verify-report`。
+- PR #65 已开并于 `791e90f` CI 全绿（Browser E2E 7m25s / Server 1m28s / Web build 33s）。
+
+## 门禁补录（2026-11-17）
+
+- P1–P3 工件复核齐全，补录 `alignment-self-check.md`（Pass，计划层）；`openspec validate "add-location-card-media" --strict` 通过。
+- G1 Pass 补录于 `g1-decision.md`（IO=Kitty、SA=Leo）。
+- 本地复验（HEAD `3907a64`）：`apps/server ./mvnw test` 177 绿；`npm run build` + `npx tsc --noEmit` exit 0；vitest 17 文件 117 绿；`npm run test:e2e` 全量 108 passed / 0 failed（media E1–E9 全绿、管理端回归绿）；报告 `docs/ai4se-plugins/20261117-132353-local-verify-report.md`（Overall Pass）。
+- PR #65 已合并入 main（`fe472ab`，2026-11-17T04:53:21Z），CI 三条工作流全 SUCCESS。
+- G2 Pass 签署于 `g2-decision.md`（VL=Scott）；无阻塞条件。G3 Pass 签署于 `g3-decision.md`（SA=Leo）；Living Spec 已内联合并（`trip-attractions` +3、`location-management` +1，同步后结构核验通过），change 归档至 `openspec/changes/archive/2026-11-17-add-location-card-media/`。
