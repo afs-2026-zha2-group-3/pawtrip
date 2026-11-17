@@ -89,7 +89,7 @@ function CitiesPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1662px] px-4 py-6 sm:px-6">
-      <div className="grid grid-cols-1 gap-6 rounded-[22px] border-2 border-[#EC9455] bg-card p-6 shadow-md xl:grid-cols-[minmax(0,1fr)_minmax(340px,42%)]">
+      <div className="grid grid-cols-1 gap-6 rounded-[22px] border-2 border-[#EC9455] bg-card p-6 shadow-md lg:grid-cols-[minmax(0,1fr)_minmax(300px,36%)]">
         <section className="flex min-w-0 flex-col gap-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-6">
@@ -153,7 +153,7 @@ function CitiesPage() {
               </EmptyHeader>
             </Empty>
           ) : (
-            <div className="grid gap-x-10 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="paw-scroll grid max-h-[65vh] gap-x-6 gap-y-9 overflow-y-auto pr-1 sm:grid-cols-2 lg:max-h-none lg:grid-cols-3 lg:overflow-visible lg:pr-0">
               {candidates.map((candidate, index) => (
                 <CityCard
                   key={candidate.adcode}
@@ -273,7 +273,7 @@ function CityPolicyPane({ adcode, name }: { adcode: string; name: string }) {
   const policy = policyQuery.data;
 
   return (
-    <aside className="flex min-w-0 flex-col gap-4">
+    <aside className="paw-scroll flex min-w-0 flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto">
       <div className="flex flex-col gap-2.5">
         <h2 className="text-xl font-semibold leading-7 text-foreground">
           {name}宠物管理政策

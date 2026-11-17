@@ -262,11 +262,9 @@ function RootDocument({ children }: { children: ReactNode }) {
       </head>
       <body
         className={
-          pathname === "/paws"
+          pathname === "/paws" || pathname === "/cities" || pathname === "/transport-rules"
             ? "bg-pet-pattern min-h-svh text-foreground antialiased"
-            : pathname === "/cities" || pathname === "/transport-rules"
-              ? "bg-pet-pattern-dense min-h-svh text-foreground antialiased"
-              : "min-h-svh bg-background text-foreground antialiased"
+            : "min-h-svh bg-background text-foreground antialiased"
         }
       >
         {pathname === "/login" ? null : <AppHeader />}
