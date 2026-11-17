@@ -19,6 +19,9 @@ function summary(poiId: string, name: string, address: string | null = null): Lo
     minVisitHours: null,
     maxVisitHours: null,
     maxPetsPerPerson: 1,
+    distanceMeters: null,
+    coverPhotoUrl: null,
+    rating: null,
     petPolicies: {
       allowedPetTypes: "DOG",
       maxPetsPerPerson: 1,

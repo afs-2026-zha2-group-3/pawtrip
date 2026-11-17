@@ -21,6 +21,7 @@ const activeTrip = (petId: number): Trip => ({
   cityAdcode: "330100",
   petId,
   totalDays: 2,
+  startDate: null,
   transportMode: null,
   plan: { version: 1, days: [], unscheduled: [] },
   createdAt: "2026-11-16T00:00:00Z",

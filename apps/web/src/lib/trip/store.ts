@@ -17,11 +17,13 @@ import type {
   DraftTrip,
   HydrationStatus,
   SaveStatus,
+  ToNextEstimate,
   Trip,
   TripCache,
   TripCity,
   TripPlan,
   TripState,
+  TripStop,
 } from "./types";
 
 const initialCache: TripCache = { city: null, pets: {}, locations: {} };
@@ -127,7 +129,7 @@ export const tripActions = {
       if (from.container === to.container && from.index < to.index) {
         targetIndex -= 1;
       }
-      const next = insertStop(stop.plan, to.container, stop.stop.poiId, stop.stop.toNext, targetIndex);
+      const next = insertStop(stop.plan, to.container, stop.stop, targetIndex);
       return {
         ...state,
         active: { ...state.active, plan: next },
@@ -153,6 +155,42 @@ export const tripActions = {
       return {
         ...state,
         active: { ...state.active, transportMode },
+        ...bumpRevision(state),
+      };
+    });
+  },
+  setStopTransport(
+    ref: StopRef,
+    toNext: "walk" | "drive" | "self_drive",
+    estimate: ToNextEstimate | null,
+  ): void {
+    update((state) => {
+      if (!state.active) return state;
+      const plan = state.active.plan;
+      const stop = scheduledStop(plan, ref);
+      if (!stop) return state;
+      return {
+        ...state,
+        active: {
+          ...state.active,
+          plan: replaceStop(plan, ref, { ...stop, toNext, toNextEstimate: estimate }),
+        },
+        ...bumpRevision(state),
+      };
+    });
+  },
+  backfillStopEstimate(ref: StopRef, estimate: ToNextEstimate): void {
+    update((state) => {
+      if (!state.active) return state;
+      const plan = state.active.plan;
+      const stop = scheduledStop(plan, ref);
+      if (!stop || !stop.toNext || stop.toNextEstimate) return state;
+      return {
+        ...state,
+        active: {
+          ...state.active,
+          plan: replaceStop(plan, ref, { ...stop, toNextEstimate: estimate }),
+        },
         ...bumpRevision(state),
       };
     });
@@ -211,10 +249,27 @@ export const tripActions = {
   },
 };
 
-function takeStop(
-  plan: TripPlan,
-  ref: StopRef,
-): { plan: TripPlan; stop: { poiId: string; toNext?: string | null } } | null {
+function scheduledStop(plan: TripPlan, ref: StopRef): TripStop | null {
+  if (ref.container === "unscheduled") return null;
+  const day = plan.days.find((entry) => entry.day === ref.container);
+  return day?.stops[ref.index] ?? null;
+}
+
+function replaceStop(plan: TripPlan, ref: StopRef, stop: TripStop): TripPlan {
+  return {
+    ...plan,
+    days: plan.days.map((entry) =>
+      entry.day === ref.container
+        ? {
+            ...entry,
+            stops: entry.stops.map((existing, index) => (index === ref.index ? stop : existing)),
+          }
+        : entry,
+    ),
+  };
+}
+
+function takeStop(plan: TripPlan, ref: StopRef): { plan: TripPlan; stop: TripStop } | null {
   if (ref.container === "unscheduled") {
     const stop = plan.unscheduled[ref.index];
     if (!stop) return null;
@@ -238,17 +293,17 @@ function takeStop(
           : entry,
       ),
     },
-    stop: { poiId: stop.poiId, toNext: stop.toNext },
+    stop: { poiId: stop.poiId, toNext: stop.toNext, toNextEstimate: stop.toNextEstimate },
   };
 }
 
 function insertStop(
   plan: TripPlan,
   container: StopContainer,
-  poiId: string,
-  toNext: string | null | undefined,
+  stop: TripStop,
   index: number,
 ): TripPlan {
+  const poiId = stop.poiId;
   if (container === "unscheduled") {
     if (stoppablePoiIds(plan).has(poiId)) {
       return plan;
@@ -270,7 +325,10 @@ function insertStop(
     if (entry.day !== container) return entry;
     const stops = [...entry.stops];
     const clamped = Math.max(0, Math.min(index, stops.length));
-    stops.splice(clamped, 0, toNext === undefined ? { poiId } : { poiId, toNext });
+    const inserted: TripStop = { poiId };
+    if (stop.toNext !== undefined) inserted.toNext = stop.toNext;
+    if (stop.toNextEstimate !== undefined) inserted.toNextEstimate = stop.toNextEstimate;
+    stops.splice(clamped, 0, inserted);
     return { ...entry, stops };
   });
   return {

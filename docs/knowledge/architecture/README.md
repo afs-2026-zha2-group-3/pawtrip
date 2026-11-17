@@ -40,22 +40,22 @@ pawtrip/
 ```text
 com.pawtrip.server
 ├─ application/
-│  ├─ model/maps/          内部地点搜索请求、分页元数据及原始 POI JSON
-│  └─ port/maps/           应用功能调用的地点搜索端口
+│  ├─ model/maps/          内部地点搜索请求、分页元数据、原始 POI JSON 及路线估算请求/结果 record（REQ-011）
+│  └─ port/maps/           应用功能调用的地点搜索端口与路线估算端口 RouteEstimatePort（REQ-011）
 └─ infrastructure/amap/
    ├─ config/              高德服务端配置（AMAP_API_KEY 等）
    ├─ transport/           共用同步 HTTP 客户端、凭据注入及安全错误转换
-   └─ api/                 高德具体 API 适配器（当前为 POI 搜索）
+   └─ api/                 高德具体 API 适配器（POI 搜索与路线估算 AmapRouteEstimateAdapter，REQ-011）
 ```
 
-依赖方向为应用功能依赖 `application.port.maps`，`infrastructure.amap.api` 实现该端口并依赖共享传输和配置；应用模型不依赖 Controller、HTTP 响应类型或高德传输。POI 搜索仅是内部能力，本次不增加 Controller、`/api/pois/*` 路由或单独的 `poi` 包。高德凭据只从服务端配置读取，缺失时应用仍可启动，实际调用再以类型化错误失败。
+依赖方向为应用功能依赖 `application.port.maps`，`infrastructure.amap.api` 实现该端口并依赖共享传输和配置；应用模型不依赖 Controller、HTTP 响应类型或高德传输。POI 搜索仅是内部能力，不增加 Controller、`/api/pois/*` 路由或单独的 `poi` 包。路线估算（REQ-011）以独立 `RouteEstimatePort` 接入（不扩展 PlaceSearchPort），适配器只做协议解析，±20% 费用区间/分钟向上取整/步行 ¥0 换算在 `trip.TripRouteEstimateService`，端点 `GET /api/trips/{tripId}/route-estimate` 挂 trip 模块；外部协议见 [高德路线规划 2.0](../external/amap-route-planning.md)。高德凭据只从服务端配置读取，缺失时应用仍可启动，实际调用再以类型化错误失败。
 
 ### 地点查询与管理
 
 `com.pawtrip.server.location` 是地点查询与管理功能模块，包含共享只读查询、管理员地点与城市 API、应用服务、地点/行政区/照片持久化实体及 Spring Data 仓库。管理 API 位于 `/api/admin/**`，由 Spring Security 在服务端要求 `ADMIN`；高德候选查询调用 `application.port.maps.PlaceSearchPort`，不得直接依赖 `infrastructure.amap` 实现。
 
 - `GET /api/locations/types`：所有登录用户可读，返回共享地点类型目录及高德 typecode 映射；管理端 AMap 搜索与用户/管理端筛选复用同一目录。
-- `GET /api/locations`：所有登录用户可读，按数据库分页查询已保存地点，不调用高德。支持可选 `regionCode`、`typeGroup`、`petFriendlyOnly`、`page`、`pageSize`；普通用户必须传区域，管理员可省略区域查询全部。区域支持省或城市级行政区并匹配其下级地区；`petFriendlyOnly=true` 时只返回 `max_pets_per_person >= 1` 的地点。分页默认第 1 页、每页 20 条，按地点 ID 升序。
+- `GET /api/locations`：所有登录用户可读，按数据库分页查询已保存地点，不调用高德。支持可选 `regionCode`、`typeGroup`、`petFriendlyOnly`、`nearPoiId`、`page`、`pageSize`；普通用户必须传区域，管理员可省略区域查询全部。区域支持省或城市级行政区并匹配其下级地区；`petFriendlyOnly=true` 时只返回 `max_pets_per_person >= 1` 的地点。`nearPoiId` 必须指向 `typeGroup='attraction'` 且经纬度非空的已保存地点，否则返回 `400 VALIDATION_ERROR`；提供时后端用 Haversine 只保留锚点 5km 内且坐标非空的地点，按距离升序返回并在每项附带 `distanceMeters`，分页基于过滤后结果；未提供时保持按地点 ID 升序、每页 20 条。
 - 共用列表项包含 `poiId`、名称、类型、地址、经纬度、区域、游玩时间、`maxPetsPerPerson` 与完整 `petPolicies`。列表不得返回原始 POI、`business` 或照片详情。
 - `GET /api/locations/{poiId}`：登录用户可读的地点浏览详情，返回基础信息与 8 项政策字段，不返回照片、`business` 或原始 POI JSON；不存在返回 `404 LOCATION_NOT_FOUND`。
 - 管理员专属操作仍位于 `/api/admin/**`：`GET /api/admin/regions` 读取区域树；`GET /api/admin/locations/amap` 搜索高德候选；`GET /api/admin/locations/{poiId}` 读取管理编辑详情；`POST /api/admin/locations` 与 `PATCH /api/admin/locations/{poiId}` 创建或更新地点。地点详情与创建/更新请求通过可选 `petPolicies` 对象维护政策。
@@ -75,7 +75,9 @@ com.pawtrip.server
 
 ### 用户端地点浏览与行程规划（REQ-009）
 
-用户端 `/attractions` 页面展示为“地点浏览”，保留既有路由。存在激活行程时，页面固定以 `active.cityAdcode` 查询共享 `GET /api/locations`，默认类型为“景点”；不提供城市选择。无激活行程（含仅有草稿）时展示“先创建或激活行程”空态且不请求地点列表。地点类型切换重置为第一页；默认宠物友好筛选传 `petFriendlyOnly=true`，开启“显示全部地点”传 `false`。所有类型地点详情均可展示逐宠物政策，并提供“添加到行程”和“暂不排期”操作。页面不展示天数 Tabs；添加选择器由 `active.totalDays` 生成“第 1 天”至“第 N 天”。详情在列表页内打开，关闭后保留筛选与分页；不提供 `/attractions/$poiId` 独立路由。
+用户端 `/attractions` 页面展示为“地点浏览”，保留既有路由。存在激活行程时，页面固定以 `active.cityAdcode` 查询共享 `GET /api/locations`，默认类型为“景点”；不提供城市选择。无激活行程（含仅有草稿）时展示“先创建或激活行程”空态且不请求地点列表。地点类型切换重置为第一页；默认宠物友好筛选传 `petFriendlyOnly=true`，开启“显示全部地点”传 `false`。页面在“酒店”类型下默认展示该城市已保存酒店，并提供“离景点最近”下拉；在“景点”类型下保留“行程景点锚点”选择器供餐厅筛选使用。两者共用同一锚点，候选只来自激活行程已按天排期的景点（`plan.days[].stops`，按 `poiId` 去重，不含 `unscheduled`）；选择后请求携带 `nearPoiId` 并按 5km 距离筛选，卡片显示“距{锚点名}约 X.Xkm”。未选锚点时餐厅显示门禁空态且不请求列表，酒店保持默认列表；锚点景点被移出行程或切换激活行程后自动清空，酒店恢复默认列表、餐厅恢复门禁。
+
+地点页桌面端为左列表右地图布局，地图使用高德 JS API 2.0，显示当前筛选下的全部点位；marker 点击高亮列表卡片并打开基础信息窗口，卡片“在地图查看”定位 marker。地图 Key 通过 `VITE_AMAP_JS_KEY` / `VITE_AMAP_SECURITY_CODE` 配置；未配置或 SDK 加载失败时地图显示占位，列表与筛选不受影响。E2E 强制空 Key，不依赖高德外网 SDK。所有类型地点详情均可展示逐宠物政策，并提供“添加到行程”和“暂不排期”操作。页面不展示天数 Tabs；添加选择器由 `active.totalDays` 生成“第 1 天”至“第 N 天”。详情在列表页内打开，关闭后保留筛选与分页；不提供 `/attractions/$poiId` 独立路由。
 
 地点浏览不新增数据库迁移；E2E 夹具由 `scripts/seed-e2e-attractions.mjs` 写入临时 E2E 库，不触碰 `apps/server/data/pawtrip.db`。
 
@@ -101,6 +103,7 @@ com.pawtrip.server
 - **自动保存**（`save.ts`）：地点编辑与交通方式选择先乐观更新 store，再由 `_authenticated` 布局监听 `saveRevision` 触发约 600ms 防抖 `PUT`，请求体为 `{name, totalDays, plan, transportMode}`。版本号守卫只允许最新响应改写状态；失败保留本地并提供重试；`400 VALIDATION_ERROR` 时重新拉取详情并以服务端数据为准。保存状态（保存中/已保存/保存失败）展示在面板标签行。
 - **统一政策匹配主体**（`policy-subjects.ts` / `policy-match.ts`）：存在激活行程且已绑定宠物时只匹配该宠物，否则匹配全部宠物；宠物加载失败展示“暂时无法读取宠物”而非“无宠物”。结论统一为 `friendly | unfriendly | unjudgeable | unconfigured`，以“宠物名 · 结论”tag 展示，覆盖城市候选、城市政策页、地点列表/详情与交通规则推荐列。
 - **旧状态清理**：已删除 `lib/selected-destination.ts` 与 `lib/trip-duration.ts`；启动/登录后清理 `pawtrip.selectedDestination`、`pawtrip.tripDuration` 残留键；顶栏目的地 chip 移除。交通方式改存 active trip，`pawtrip:selected-transport-mode` 不再读写，旧值不参与业务。
+- **途内交通段行与政策提醒（REQ-011）**：面板每天相邻景点间插入交通段行（`lib/trip/transport-segments.ts` 派生 + `components/trip/transport-segment.tsx` 渲染，n 景点→n−1 段，同 POI 仅小字提醒，段行不可拖拽）；展示快照优先（`stop.toNextEstimate`），无快照时经 `routeEstimateQueryOptions` 查估算（有快照/同 POI 时 enabled=false，成功后条件回填 `backfillStopEstimate`）；默认展示态由 `displayToNext` 派生不写库，显式选择任一方式经 `setStopTransport` 写库并走既有防抖 PUT；估算失败行内兜底「估算暂不可用」（该查询显式 `throwOnError:false`，不命中全局错误边界），仍可仅存方式。大交通自驾（`transportMode=drive`）时段行默认驾车仅时长，下拉可显式选打车/步行/驾车（选驾车写 `self_drive` + 费用 0/0 快照），隐藏每天公交提示；切换大交通不改写已存选择/快照。每天首景点行前渲染宠物政策对比提醒（`lib/trip/day-policy.ts` 纯函数：牵引绳聚合 + 严格超限警示，复用地点缓存与激活宠物，无新增请求不写库）。
 
 ### 行程规划 Agent（trip-planning-agent）
 
@@ -120,9 +123,10 @@ com.pawtrip.server
 
 - `com.pawtrip.server.trip` 新增 `Trip` 实体、`TripRepository`、`TripService`、`TripController`；Flyway **V17** 创建 `trip` 表：`user_id`、`name`、`city_adcode`、`pet_id`、`total_days`、`plan_json`、`created_at`、`updated_at`，索引 `(user_id, id)`；**V18** 增加可空 `transport_mode`，CHECK 仅允许 `flight` / `high_speed_rail` / `train` / `drive`。
 - 城市与宠物在创建后不可变：`city_adcode` 必须为城市级 `administrative_region`，`pet_id` 必须属于当前用户；更新接口只接收 `name`、`totalDays`、`plan`、`transportMode`。
-- `plan_json` v1：`{"version":1,"days":[{"day":1,"stops":[{"poiId":"...","toNext":"walk"}]}],"unscheduled":[{"poiId":"..."}]}`。`toNext` 仅 `walk` / `drive` / `transit`，全部可选且不做下一天引用校验；`days`、`stops`、`unscheduled` 均可为空，空计划合法并作为新建默认值。`unscheduled` 按 `poiId` 去重，已排期地点从池中移除；同一 `poiId` 可在 `days` 重复。
+- `plan_json` v1：`{"version":1,"days":[{"day":1,"stops":[{"poiId":"...","toNext":"walk","toNextEstimate":{"durationMinutes":12,"costLowYuan":40,"costHighYuan":60}}]}],"unscheduled":[{"poiId":"..."}]}`。`toNext` 仅 `walk` / `drive` / `transit` / `self_drive`（REQ-011 扩展），全部可选且不做下一天引用校验；可选 `toNextEstimate` 快照（REQ-011）三字段均必填：`durationMinutes` 非负整数分钟、`costLowYuan`/`costHighYuan` 非负数值且 low≤high，非法返回 `400 VALIDATION_ERROR`，合法快照 PUT→详情往返原样保留；`days`、`stops`、`unscheduled` 均可为空，空计划合法并作为新建默认值。`unscheduled` 按 `poiId` 去重，已排期地点从池中移除；同一 `poiId` 可在 `days` 重复。
 - `poiId` 只校验存在于 `pawtrip_location`（不校验城市归属）；`day` 唯一且在 `1..totalDays`；`totalDays` 调小到低于计划最大 `day` 返回 `400 VALIDATION_ERROR`。
 - API：`GET/POST /api/trips`、`GET/PUT/DELETE /api/trips/{id}`；均需登录且只能访问本人 trip，列表返回摘要不含 `plan` 与 `transportMode`，详情/创建/更新返回完整计划；未找到返回 `404 TRIP_NOT_FOUND`。
+- 途内交通估算（REQ-011）：`GET /api/trips/{tripId}/route-estimate?fromPoiId&toPoiId&mode`，`mode ∈ {walk, drive}`；需登录且仅限本人 trip（否则 `404 TRIP_NOT_FOUND`），缺参/非法 mode/poiId 不存在或坐标缺失 `400 VALIDATION_ERROR`，上游失败/Key 缺失 `502 UPSTREAM_FAILURE`（不泄露 Key 与原始报文）；响应 `{mode, durationMinutes, costLowYuan, costHighYuan}`：驾车费用为 `taxi_cost` ±20%、时长分钟向上取整，步行费用 0/0；只读估算，不修改 `plan_json`（快照由前端经既有防抖 PUT 落库）。换算在 `TripRouteEstimateService`，外部协议见 [高德路线规划 2.0](../external/amap-route-planning.md)。
 - `transportMode`：可空；创建/更新请求可携带，非法值返回 `400 VALIDATION_ERROR`；详情与创建/更新响应返回该字段。交通方式选择在规则页触发 `tripActions.setTransportMode`，并走同一防抖保存链路。
 - 宠物删除：`trip.pet_id` 外键为 `ON DELETE RESTRICT`；删除被 trip 引用的宠物返回 `409 PET_IN_USE`，未被引用的宠物保持 `204`。
 - 前端已按 trip-context 接入本接口：草稿确认调用 `POST /api/trips`，Trips 页激活调用 `GET /api/trips/{id}`，计划编辑与交通方式选择以防抖 `PUT` 保存；不修改后端契约，也不新增迁移。
@@ -208,7 +212,7 @@ Vite dev server ── /api proxy ──▶ Spring Boot (http://localhost:8080)
 - 所有接口调用经过 `apps/web/src/lib/http/request.ts`：统一 JSON headers、超时与 `AbortSignal`、Problem Details 解析，并把非 2xx 响应转换为 typed `ApiError`。页面与 query 函数不直接调用 `fetch`。
 - `ApiError` 暴露 `status`、稳定 `code`、`detail`、`instance` 与 `isRetryable`；网络错误与超时映射为可重试错误。
 - QueryClient 默认 `staleTime=30s`；仅对可重试错误（网络错误与 5xx）重试，最多 2 次；4xx 不重试。
-- 首次加载失败通过 `throwOnError` 进入根路由 `errorComponent`，展示 `ApiError.detail` 并提供重试；后台刷新失败保留缓存数据，仅由 `QueryCache`/`MutationCache` 的 `onError` 记录日志，不替换页面。
+- 首次加载失败通过 `throwOnError` 进入根路由 `errorComponent`，展示 `ApiError.detail` 并提供重试；后台刷新失败保留缓存数据，仅由 `QueryCache`/`MutationCache` 的 `onError` 记录日志，不替换页面。例外：途内交通估算查询（REQ-011）显式 `throwOnError:false`，失败必须在段行内兜底，不得拖垮整页。
 - 未匹配路由由根路由 `notFoundComponent` 呈现；不引入 toast、成功响应 envelope 或 `detail` 到中文文案的 i18n 映射。
 
 ## 测试与验证

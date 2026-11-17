@@ -1,7 +1,8 @@
 # frontend-authentication Specification
 
 ## Purpose
-TBD - created by archiving change add-user-login. Update Purpose after archive.
+
+本能力定义前端认证体验：公开 `/login` 页面、未登录路由守卫、认证状态查询与缓存、顶部导航登出、全局 401 认证失效处理，以及前端用户角色状态。
 ## Requirements
 ### Requirement: 登录页面
 

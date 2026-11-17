@@ -24,9 +24,11 @@ final class LocationQueryResponses {
 
 	record LocationSummary(String poiId, String name, String typeCode, String typeGroup, String address,
 			Double longitude, Double latitude, String regionCode, Integer minVisitHours, Integer maxVisitHours,
-			Integer maxPetsPerPerson, PetPolicies petPolicies) {
+			Integer maxPetsPerPerson, PetPolicies petPolicies, String coverPhotoUrl, String rating,
+			Long distanceMeters) {
 
-		static LocationSummary from(PawtripLocation location) {
+		static LocationSummary from(PawtripLocation location, String coverPhotoUrl, String rating,
+				Long distanceMeters) {
 			return new LocationSummary(
 					location.getPoiId(),
 					location.getName(),
@@ -39,7 +41,10 @@ final class LocationQueryResponses {
 					location.getMinVisitHours(),
 					location.getMaxVisitHours(),
 					location.getMaxPetsPerPerson(),
-					PetPolicies.from(location));
+					PetPolicies.from(location),
+					coverPhotoUrl,
+					rating,
+					distanceMeters);
 		}
 	}
 
@@ -60,10 +65,19 @@ final class LocationQueryResponses {
 		}
 	}
 
-	record LocationDetail(String poiId, String name, String typeCode, String typeGroup, String address,
-			String regionCode, PetPolicies petPolicies) {
+	record NearbyServices(NearbyService hospital, NearbyService supplies) {
+	}
 
-		static LocationDetail from(PawtripLocation location) {
+	record NearbyService(String poiId, String name, String address, Long distanceMeters,
+			String openingHours) {
+	}
+
+	record LocationDetail(String poiId, String name, String typeCode, String typeGroup, String address,
+			String regionCode, PetPolicies petPolicies, String coverPhotoUrl, String rating, String keytag,
+			String businessArea) {
+
+		static LocationDetail from(PawtripLocation location, String coverPhotoUrl, String rating, String keytag,
+				String businessArea) {
 			return new LocationDetail(
 					location.getPoiId(),
 					location.getName(),
@@ -71,7 +85,11 @@ final class LocationQueryResponses {
 					location.getTypeGroup(),
 					location.getAddress(),
 					location.getRegionCode(),
-					PetPolicies.from(location));
+					PetPolicies.from(location),
+					coverPhotoUrl,
+					rating,
+					keytag,
+					businessArea);
 		}
 	}
 

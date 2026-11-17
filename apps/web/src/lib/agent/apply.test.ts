@@ -21,13 +21,14 @@ const proposal: AgentProposal = {
   createdAt: "2026-01-01T00:00:00Z",
 };
 
-function trip(overrides: Partial<Trip> = {}): Trip {
+function trip(overrides: Partial<Omit<Trip, "startDate">> = {}): Trip {
   return {
     id: 7,
     name: "珠海两日",
     cityAdcode: "440400",
     petId: 3,
     totalDays: 1,
+    startDate: null,
     transportMode: "drive",
     plan: { version: 1, days: [{ day: 1, stops: [] }], unscheduled: [] },
     createdAt: "2026-01-01T00:00:00Z",

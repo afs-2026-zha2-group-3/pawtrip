@@ -1,8 +1,6 @@
 import { normalizePlan } from "@/lib/trip/plan";
-import type { TripPlan } from "@/lib/trip/types";
+import type { ToNextMode, TripPlan } from "@/lib/trip/types";
 import type { UpdateTripPlanInput } from "./types";
-
-const TO_NEXT_VALUES = new Set(["walk", "drive", "transit"]);
 
 export interface PlanEditValidationOptions {
   tripId: number;
@@ -146,10 +144,10 @@ export function validatePlanEdits(
   };
 }
 
-function normalizeToNext(value: unknown): string | null | false {
+function normalizeToNext(value: unknown): ToNextMode | null | false {
   if (value == null || value === "") return null;
-  if (typeof value !== "string" || !TO_NEXT_VALUES.has(value)) return false;
-  return value;
+  if (value === "walk" || value === "drive" || value === "transit") return value;
+  return false;
 }
 
 function collectPlanPoiIds(plan: TripPlan): string[] {

@@ -70,10 +70,38 @@ export async function openTripDialog(page: Page, cityName: string) {
   return dialog;
 }
 
-export async function setTripDates(page: Page, days: number) {
-  const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("开始日期").fill(isoDate(1));
-  await dialog.getByLabel("结束日期").fill(isoDate(days));
+export async function pickCalendarDate(page: Page, iso: string) {
+  const calendar = page
+    .getByRole("dialog")
+    .locator('[data-slot="calendar-range"]');
+  const targetMonth = iso.slice(0, 7);
+  for (let step = 0; step < 36; step++) {
+    const visibleMonth = await calendar.getAttribute("data-month");
+    if (visibleMonth === targetMonth) break;
+    const label = visibleMonth && visibleMonth < targetMonth ? "下个月" : "上个月";
+    await calendar.getByRole("button", { name: label }).click();
+  }
+  await expect(calendar).toHaveAttribute("data-month", targetMonth);
+  await calendar.locator(`[data-date="${iso}"]`).click();
+}
+
+export async function setTripDates(page: Page, days: number): Promise<string> {
+  const startDate = isoDate(1);
+  await pickCalendarDate(page, startDate);
+  await pickCalendarDate(page, isoDate(days));
+  return startDate;
+}
+
+export async function activeTripDetail(page: Page) {
+  const tripId = await page.evaluate(() =>
+    window.localStorage.getItem("pawtrip.activeTripId"),
+  );
+  const response = await page.request.get(`/api/trips/${tripId}`);
+  expect(response.ok()).toBeTruthy();
+  return (await response.json()) as {
+    startDate: string | null;
+    totalDays: number;
+  };
 }
 
 export async function confirmTripDialog(page: Page) {
@@ -130,6 +158,7 @@ export async function createTripViaApi(
     cityAdcode: string;
     petId: number;
     totalDays: number;
+startDate?: string | null;
     plan?: { version: 1; days: unknown[]; unscheduled: unknown[] };
   },
 ) {
@@ -150,4 +179,17 @@ export async function pets(page: Page) {
     id: number;
     name: string;
   }[];
+}
+
+export async function withTripPanelNotBlocking(page: Page, action: () => Promise<void>) {
+  await page.getByTestId("trip-panel").evaluate((panel) => {
+    (panel as HTMLElement).style.pointerEvents = "none";
+  });
+  try {
+    await action();
+  } finally {
+    await page.getByTestId("trip-panel").evaluate((panel) => {
+      (panel as HTMLElement).style.pointerEvents = "";
+    });
+  }
 }

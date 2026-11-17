@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { CalendarRange } from "@/components/ui/calendar-range";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -65,12 +65,8 @@ export function CityTripDialog({
     event.preventDefault();
     setError(null);
 
-    if (!startDate || !endDate) {
+    if (!startDate || !endDate || days == null) {
       setError("请选择开始和结束日期。");
-      return;
-    }
-    if (days == null) {
-      setError("结束日期不能早于开始日期。");
       return;
     }
     if (!rangeValid) {
@@ -93,7 +89,8 @@ export function CityTripDialog({
         cityAdcode: city.adcode,
         petId: pet.id,
         totalDays: days,
-        city,
+city,
+        startDate,
       });
       if (navigateOnCreate) {
         onClose();
@@ -131,40 +128,27 @@ export function CityTripDialog({
             </span>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field>
-              <FieldLabel htmlFor="trip-start-date">开始日期</FieldLabel>
-              <Input
-                id="trip-start-date"
-                type="date"
-                value={startDate}
-                onChange={(event) => {
-                  setStartDate(event.target.value);
-                  setError(null);
-                }}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="trip-end-date">结束日期</FieldLabel>
-              <Input
-                id="trip-end-date"
-                type="date"
-                value={endDate}
-                onChange={(event) => {
-                  setEndDate(event.target.value);
-                  setError(null);
-                }}
-              />
-            </Field>
-          </div>
-
-          <p className="text-sm text-muted-foreground">
-            {days == null
-              ? "选择开始与结束日期后自动计算行程天数。"
-              : rangeValid
-                ? `行程共 ${days} 天。`
-                : `行程需为 ${MIN_TRIP_DAYS}–${MAX_TRIP_DAYS} 天，请调整日期。`}
-          </p>
+          <Field>
+            <FieldLabel>出行日期</FieldLabel>
+            <CalendarRange
+              startDate={startDate}
+              endDate={endDate}
+              onSelect={(start, end) => {
+                setStartDate(start);
+                setEndDate(end);
+                setError(null);
+              }}
+            />
+            <p className="text-sm text-muted-foreground">
+              {days != null
+                ? rangeValid
+                  ? `行程共 ${days} 天（${startDate} 至 ${endDate}）。`
+                  : `行程需为 ${MIN_TRIP_DAYS}–${MAX_TRIP_DAYS} 天，请调整日期。`
+                : startDate
+                  ? `已选择 ${startDate} 开始，请再选择结束日期。`
+                  : "在日历上依次选择开始与结束日期。"}
+            </p>
+          </Field>
 
           <Field>
             <FieldLabel>携带宠物</FieldLabel>

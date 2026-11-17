@@ -28,11 +28,12 @@ class LocationQueryController {
 			@RequestParam(required = false) String regionCode,
 			@RequestParam(required = false) String typeGroup,
 			@RequestParam(defaultValue = "false") boolean petFriendlyOnly,
+			@RequestParam(required = false) String nearPoiId,
 			@RequestParam(required = false) Integer page,
 			@RequestParam(required = false) Integer pageSize,
 			Authentication authentication) {
 		return this.locationQueryService.locations(
-				regionCode, typeGroup, petFriendlyOnly, page, pageSize, isAdministrator(authentication));
+				regionCode, typeGroup, petFriendlyOnly, nearPoiId, page, pageSize, isAdministrator(authentication));
 	}
 
 	private static boolean isAdministrator(Authentication authentication) {
@@ -43,6 +44,11 @@ class LocationQueryController {
 	@GetMapping("/{poiId}")
 	LocationQueryResponses.LocationDetail detail(@PathVariable String poiId) {
 		return this.locationQueryService.detail(poiId);
+	}
+
+	@GetMapping("/{poiId}/nearby-services")
+	LocationQueryResponses.NearbyServices nearbyServices(@PathVariable String poiId) {
+		return this.locationQueryService.nearbyServices(poiId);
 	}
 
 }

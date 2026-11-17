@@ -1,0 +1,91 @@
+export interface AMapMap {
+  setFitView(overlays?: unknown[]): void;
+  setZoomAndCenter(zoom: number, center: [number, number]): void;
+  destroy(): void;
+}
+
+export interface AMapMarker {
+  on(event: "click", handler: () => void): void;
+  setMap(map: AMapMap | null): void;
+}
+
+export interface AMapInfoWindow {
+  setContent(content: string): void;
+  open(map: AMapMap, position: [number, number]): void;
+  close(): void;
+}
+
+export interface AMapNamespace {
+  Map: new (container: HTMLElement, options?: Record<string, unknown>) => AMapMap;
+  Marker: new (options: Record<string, unknown>) => AMapMarker;
+  InfoWindow: new (options?: Record<string, unknown>) => AMapInfoWindow;
+  Pixel: new (x: number, y: number) => unknown;
+}
+
+declare global {
+  interface Window {
+    AMap?: AMapNamespace;
+    _AMapSecurityConfig?: { securityJsCode?: string };
+  }
+}
+
+let loading: Promise<AMapNamespace> | null = null;
+
+export function amapJsKey(): string | undefined {
+  return import.meta.env.VITE_AMAP_JS_KEY as string | undefined;
+}
+
+export function loadAmap(): Promise<AMapNamespace> {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("amap-ssr"));
+  }
+  if (window.AMap) {
+    return Promise.resolve(window.AMap);
+  }
+  if (loading) {
+    return loading;
+  }
+  const key = amapJsKey();
+  if (!key) {
+    return Promise.reject(new Error("amap-missing-key"));
+  }
+  const securityCode = import.meta.env.VITE_AMAP_SECURITY_CODE as string | undefined;
+  if (securityCode) {
+    window._AMapSecurityConfig = { securityJsCode: securityCode };
+  }
+  loading = new Promise<AMapNamespace>((resolve, reject) => {
+    const existing = document.getElementById("amap-jsapi-script");
+    if (existing) {
+      existing.addEventListener("load", () => {
+        if (window.AMap) {
+          resolve(window.AMap);
+        } else {
+          reject(new Error("amap-unavailable"));
+        }
+      });
+      existing.addEventListener("error", () => reject(new Error("amap-load-failed")));
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "amap-jsapi-script";
+    script.async = true;
+    script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(key)}`;
+    script.onload = () => {
+      if (window.AMap) {
+        resolve(window.AMap);
+      } else {
+        script.remove();
+        reject(new Error("amap-unavailable"));
+      }
+    };
+    script.onerror = () => {
+      script.remove();
+      reject(new Error("amap-load-failed"));
+    };
+    document.head.appendChild(script);
+  }).catch((error: unknown) => {
+    loading = null;
+    throw error;
+  });
+  return loading;
+}

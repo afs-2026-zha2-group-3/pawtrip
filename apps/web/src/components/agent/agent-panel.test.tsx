@@ -48,6 +48,7 @@ const trip = {
   cityAdcode: "440400",
   petId: 1,
   totalDays: 2,
+  startDate: null,
   transportMode: null,
   plan: { version: 1 as const, days: [], unscheduled: [] },
   createdAt: "2026-01-01T00:00:00Z",
@@ -160,7 +161,7 @@ describe("AgentPanel", () => {
 
     renderPanel();
 
-    const card = await screen.findByTestId("agent-proposal");
+    await screen.findByTestId("agent-proposal");
     fireEvent.click(screen.getByRole("button", { name: "确认应用" }));
 
     await waitFor(() => {

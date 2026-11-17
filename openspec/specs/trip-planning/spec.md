@@ -67,11 +67,12 @@ API SHALL 以 JSON 对象承载计划，结构为 `{version, days, unscheduled}`
 
 - `version` MUST 为 `1`；
 - `days` MUST 为数组，元素为 `{day, stops}`；`day` MUST 为整数，`stops` MUST 为数组；
-- `stops` 元素为 `{poiId, toNext?}`，数组顺序即当日游玩顺序，MUST NOT 依赖额外顺序字段；
-- `toNext` MAY 省略或为 `null`；有值 MUST 为 `walk`、`drive` 或 `transit`；
+- `stops` 元素为 `{poiId, toNext?, toNextEstimate?}`，数组顺序即当日游玩顺序，MUST NOT 依赖额外顺序字段；
+- `toNext` MAY 省略或为 `null`；有值 MUST 为 `walk`、`drive`、`transit` 或 `self_drive`（`self_drive`=驾车，本次新增枚举值，与 `drive`=打车区分）；
+- `toNextEstimate` MAY 省略或为 `null`；有值 MUST 为对象 `{durationMinutes, costLowYuan, costHighYuan}`，三字段 MUST 齐全且为数值：`durationMinutes` MUST 为 ≥0 的整数，`costLowYuan`/`costHighYuan` MUST ≥0 且 `costLowYuan` MUST ≤ `costHighYuan`；非法值 MUST 返回 `400 VALIDATION_ERROR`；
 - `unscheduled` MUST 为数组，元素为 `{poiId}`。
 
-`days`、`stops`、`unscheduled` MAY 为空；整个计划为空 MUST 合法，并作为新建 trip 未提供计划时的默认值。同一 `poiId` MAY 在 `days` 中重复出现。`unscheduled` MUST 按 `poiId` 去重；服务端 SHALL 将同时出现在 `days` 与 `unscheduled` 的 `poiId` 从 `unscheduled` 中移除。
+`toNextEstimate` 为本次增量扩展的可选估算快照字段（交通方式对应的预计时长与参考费用区间；步行与驾车快照费用为 0/0，驾车费用仅存不展示），`self_drive` 为本次增量新增的 `toNext` 枚举值，`version` 保持 `1`；不含该字段/枚举值的存量计划 MUST 继续合法，服务端 SHALL 原样保留合法快照（解析与序列化 MUST NOT 丢弃该字段）。`days`、`stops`、`unscheduled` MAY 为空；整个计划为空 MUST 合法，并作为新建 trip 未提供计划时的默认值。同一 `poiId` MAY 在 `days` 中重复出现。`unscheduled` MUST 按 `poiId` 去重；服务端 SHALL 将同时出现在 `days` 与 `unscheduled` 的 `poiId` 从 `unscheduled` 中移除。
 
 #### Scenario: 空计划合法
 
@@ -97,8 +98,35 @@ API SHALL 以 JSON 对象承载计划，结构为 `{version, days, unscheduled}`
 #### Scenario: 非法交通方式
 
 - **GIVEN** 已登录用户
-- **WHEN** 提交 `toNext` 为 `walk`、`drive`、`transit` 之外的值
+- **WHEN** 提交 `toNext` 为 `walk`、`drive`、`transit`、`self_drive` 之外的值
 - **THEN** 返回 `400` 与 `code=VALIDATION_ERROR`
+
+#### Scenario: toNextEstimate 可省略
+
+- **GIVEN** 已登录用户
+- **WHEN** 提交的 stop 含 `toNext` 但不含 `toNextEstimate`（含存量数据）
+- **THEN** 请求成功
+- **AND** 服务端不要求估算快照，响应中该 stop 不含伪造快照
+
+#### Scenario: 非法估算快照拒绝
+
+- **GIVEN** 已登录用户
+- **WHEN** 提交 `toNextEstimate` 缺少任一字段、含非数值、负值、`durationMinutes` 非整数或 `costLowYuan` > `costHighYuan`
+- **THEN** 返回 `400` 与 `code=VALIDATION_ERROR`
+
+#### Scenario: 估算快照往返保留
+
+- **GIVEN** 已登录用户
+- **WHEN** 更新 trip 时某 stop 携带合法 `toNext=drive` 与 `toNextEstimate {durationMinutes: 25, costLowYuan: 40, costHighYuan: 60}`
+- **THEN** 请求成功
+- **AND** 详情接口返回的该 stop 原样保留 `toNext` 与 `toNextEstimate` 全部字段值
+
+#### Scenario: self_drive 枚举合法且往返保留
+
+- **GIVEN** 已登录用户
+- **WHEN** 更新 trip 时某 stop 携带 `toNext=self_drive` 与 `toNextEstimate {durationMinutes: 25, costLowYuan: 0, costHighYuan: 0}`
+- **THEN** 请求成功
+- **AND** 详情接口返回的该 stop 原样保留 `toNext=self_drive` 与快照全部字段值
 
 #### Scenario: unscheduled 去重
 
@@ -154,10 +182,10 @@ API SHALL 以 JSON 对象承载计划，结构为 `{version, days, unscheduled}`
 
 系统 SHALL 提供以下接口：
 
-- `POST /api/trips`：创建 trip，成功返回 `201`、`Location: /api/trips/{id}` 与包含 `plan` 的详情；`plan` MAY 省略，省略时使用空计划；
-- `GET /api/trips`：按 `id` 升序返回当前用户的 trip 摘要，摘要 MUST 包含 `id`、`name`、`cityAdcode`、`petId`、`totalDays`、`createdAt`、`updatedAt`，MUST NOT 包含 `plan`；
+- `POST /api/trips`：创建 trip，成功返回 `201`、`Location: /api/trips/{id}` 与包含 `plan` 的详情；`plan` MAY 省略，省略时使用空计划；`startDate` MAY 省略或为 `null`；
+- `GET /api/trips`：按 `id` 升序返回当前用户的 trip 摘要，摘要 MUST 包含 `id`、`name`、`cityAdcode`、`petId`、`totalDays`、`startDate`、`createdAt`、`updatedAt`，MUST NOT 包含 `plan`；
 - `GET /api/trips/{id}`：返回本人 trip 详情，详情 MUST 包含摘要字段与 `plan`；
-- `PUT /api/trips/{id}`：整量更新 `name`、`totalDays`、`plan`，三者 MUST 提供，返回更新后的详情；
+- `PUT /api/trips/{id}`：整量更新 `name`、`totalDays`、`plan`，三者 MUST 提供；`startDate` MAY 提供，省略或为 `null` 时保存为 `null`；返回更新后的详情；
 - `DELETE /api/trips/{id}`：删除本人 trip，成功返回 `204`。
 
 不存在的 trip MUST 返回 `404 TRIP_NOT_FOUND`；校验失败 MUST 返回 `400 VALIDATION_ERROR`。
@@ -176,6 +204,12 @@ API SHALL 以 JSON 对象承载计划，结构为 `{version, days, unscheduled}`
 - **THEN** 返回两条摘要，按 `id` 升序
 - **AND** 每条摘要不含 `plan` 字段
 
+#### Scenario: 摘要与详情包含开始日期
+
+- **GIVEN** 用户创建了一个 `startDate=2026-12-01` 的 trip
+- **WHEN** 请求 `GET /api/trips` 与 `GET /api/trips/{id}`
+- **THEN** 摘要与详情均包含 `startDate=2026-12-01`
+
 #### Scenario: 详情包含计划
 
 - **GIVEN** 用户已创建一个带计划的 trip
@@ -186,9 +220,9 @@ API SHALL 以 JSON 对象承载计划，结构为 `{version, days, unscheduled}`
 #### Scenario: 更新可编辑字段
 
 - **GIVEN** 已存在一个 trip
-- **WHEN** 使用新的 `name`、`totalDays` 与 `plan` 调用 `PUT /api/trips/{id}`
+- **WHEN** 使用新的 `name`、`totalDays`、`plan` 与 `startDate` 调用 `PUT /api/trips/{id}`
 - **THEN** 返回 `200`
-- **AND** 详情反映新的名称、总天数与计划
+- **AND** 详情反映新的名称、总天数、计划与开始日期
 
 #### Scenario: 删除后不可访问
 
@@ -245,3 +279,43 @@ API SHALL 以 JSON 对象承载计划，结构为 `{version, days, unscheduled}`
 - **WHEN** 数据库 migration 完成且请求该 trip 详情
 - **THEN** 该 trip 的 `transportMode` 为空
 - **AND** 详情响应包含 `transportMode: null`
+
+### Requirement: 开始日期持久化
+
+trip SHALL 可选保存 `start_date`，取值 MUST 为合法的 `yyyy-MM-dd` 日历日期；创建或更新时省略或传 `null` MUST 合法。结束日期 MUST 由 `startDate` 与 `totalDays` 派生（`startDate + totalDays - 1`），MUST NOT 存储 `end_date` 字段。`startDate` 非空但格式非法或不是真实日期时，请求 MUST 返回 `400 VALIDATION_ERROR`。
+
+#### Scenario: 创建带开始日期的行程
+
+- **GIVEN** 已登录用户
+- **WHEN** 创建 trip 时提交 `startDate=2026-12-01` 与 `totalDays=3`
+- **THEN** 创建成功
+- **AND** 详情返回 `startDate=2026-12-01`
+- **AND** 结束日期按派生规则为 `2026-12-03`，服务端不单独存储
+
+#### Scenario: 创建不带开始日期
+
+- **GIVEN** 已登录用户
+- **WHEN** 创建 trip 时省略 `startDate` 或传 `null`
+- **THEN** 创建成功
+- **AND** 详情返回 `startDate=null`
+
+#### Scenario: 非法开始日期
+
+- **GIVEN** 已登录用户
+- **WHEN** 创建或更新 trip 时提交 `startDate=2026-02-30` 或 `2026/12/01`
+- **THEN** 返回 `400 VALIDATION_ERROR`
+- **AND** 不创建或更新 trip
+
+#### Scenario: 更新开始日期
+
+- **GIVEN** 已存在一个 `startDate=2026-12-01` 的 trip
+- **WHEN** 使用 `startDate=2026-12-05` 调用 `PUT /api/trips/{id}`
+- **THEN** 更新成功
+- **AND** 详情返回 `startDate=2026-12-05`
+
+#### Scenario: 整量更新省略开始日期
+
+- **GIVEN** 已存在一个带 `startDate` 的 trip
+- **WHEN** 调用 `PUT /api/trips/{id}` 时省略 `startDate`
+- **THEN** 更新成功
+- **AND** 该 trip 的 `startDate` 变为 `null`

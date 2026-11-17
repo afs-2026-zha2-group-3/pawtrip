@@ -1,0 +1,438 @@
+npm warn Unknown user config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> test:e2e
+> node scripts/run-e2e.mjs
+
+[e2e] 临时数据库: C:\Users\HUANGH~1\AppData\Local\Temp\pawtrip-e2e-mnoNUx\pawtrip-e2e.db
+[e2e] Playwright workers: 4
+(node:32516) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+npm warn Unknown env config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> dev:e2e
+> vite dev --host 127.0.0.1 --port 3100 --strictPort
+
+
+  [32m[1mVITE[22m v8.3.8[39m  [2mready in [0m[1m1651[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m3100[22m/[39m
+[2m13:24:56[22m [36m[1m[vite][22m[39m [34m[2m(ssr)[22m[39m connected.
+[INFO] Scanning for projects...
+Error: aborted
+    at abortIncoming (node:_http_server:921:17)
+    at socketOnClose (node:_http_server:914:3)
+    at Socket.emit (node:events:526:24)
+    at TCP.<anonymous> (node:net:362:12) {
+  code: 'ECONNRESET'
+}
+[INFO] Loaded 24515 auto-discovered prefixes for remote repository maven-central (prefixes-maven-central.txt)
+[WARNING] Not using credentials of server 'central' for repository https://repo.maven.apache.org/maven2: the origins declared for this id are [https://artifact.oocl.com]. Add 'https://repo.maven.apache.org' to <repositoryOrigins> of that server in settings if these credentials belong there, or set maven.repository.credentialScope=id to restore legacy id-only credential matching.
+[INFO] Loaded 24515 auto-discovered prefixes for remote repository maven-central-plugins (prefixes-maven-central-plugins.txt)
+[INFO] 
+[INFO] ---------------------< com.pawtrip:pawtrip-server >---------------------
+[INFO] Building pawtrip-server 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:4.1.2:run (default-cli) > test-compile @ pawtrip-server >>>
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ pawtrip-server ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 19 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.15.0:compile (default-compile) @ pawtrip-server ---
+[INFO] Loaded 64 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ pawtrip-server ---
+[INFO] Copying 2 resources from src\test\resources to target\test-classes
+[INFO] 
+[INFO] --- compiler:3.15.0:testCompile (default-testCompile) @ pawtrip-server ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] <<< spring-boot:4.1.2:run (default-cli) < test-compile @ pawtrip-server <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:4.1.2:run (default-cli) @ pawtrip-server ---
+[INFO] Loaded 50 auto-discovered prefixes for remote repository ow2-snapshot (prefixes-ow2-snapshot.txt)
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.2)
+
+2026-11-17T13:25:03.176+08:00  INFO 55724 --- [pawtrip-server] [           main] com.pawtrip.server.ServerApplication     : Starting ServerApplication using Java 21.0.11 with PID 55724 (D:\code\pawtrip\apps\server\target\classes started by huangha11 in D:\code\pawtrip\apps\server)
+2026-11-17T13:25:03.180+08:00  INFO 55724 --- [pawtrip-server] [           main] com.pawtrip.server.ServerApplication     : No active profile set, falling back to 1 default profile: "default"
+2026-11-17T13:25:03.691+08:00  INFO 55724 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-11-17T13:25:03.761+08:00  INFO 55724 --- [pawtrip-server] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 64 ms. Found 9 JPA repository interfaces.
+2026-11-17T13:25:04.151+08:00  INFO 55724 --- [pawtrip-server] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 18080 (http)
+2026-11-17T13:25:04.163+08:00  INFO 55724 --- [pawtrip-server] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-11-17T13:25:04.163+08:00  INFO 55724 --- [pawtrip-server] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.27]
+2026-11-17T13:25:04.233+08:00  INFO 55724 --- [pawtrip-server] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1021 ms
+2026-11-17T13:25:04.392+08:00  INFO 55724 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-11-17T13:25:04.516+08:00  INFO 55724 --- [pawtrip-server] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.sqlite.jdbc4.JDBC4Connection@203e705e
+2026-11-17T13:25:04.517+08:00  INFO 55724 --- [pawtrip-server] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-17T13:25:04.525+08:00  INFO 55724 --- [pawtrip-server] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:sqlite:C:\Users\HUANGH~1\AppData\Local\Temp\pawtrip-e2e-mnoNUx\pawtrip-e2e.db?foreign_keys=on&busy_timeout=10000 (SQLite 3.53)
+2026-11-17T13:25:04.582+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "main"."flyway_schema_history" does not exist yet
+2026-11-17T13:25:04.584+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 19 migrations (execution time 00:00.033s)
+2026-11-17T13:25:04.587+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "main"."flyway_schema_history" ...
+2026-11-17T13:25:04.608+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "main": << Empty Schema >>
+2026-11-17T13:25:04.611+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "1 - create greeting"
+2026-11-17T13:25:04.624+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "2 - create app user"
+2026-11-17T13:25:04.630+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "3 - add app user role"
+2026-11-17T13:25:04.632+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.640+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "4 - create location management tables"
+2026-11-17T13:25:04.654+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "5 - seed administrative regions"
+2026-11-17T13:25:04.663+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "6 - remove location photo binary content"
+2026-11-17T13:25:04.672+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "7 - add pet entry policies"
+2026-11-17T13:25:04.673+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.674+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.674+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.674+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.675+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.675+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.676+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.676+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.676+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.676+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.677+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.677+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.682+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "8 - create pet"
+2026-11-17T13:25:04.689+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "9 - add allowed pet types"
+2026-11-17T13:25:04.690+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.691+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.696+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "10 - add pet name and shoulder height"
+2026-11-17T13:25:04.697+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.698+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.704+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "11 - add dog breed and pet limits"
+2026-11-17T13:25:04.706+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.707+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:04.713+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "12 - add pet photo"
+2026-11-17T13:25:04.719+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "13 - seed dog breeds"
+2026-11-17T13:25:04.727+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "14 - add pet dog breed"
+2026-11-17T13:25:04.734+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "15 - create city pet policy"
+2026-11-17T13:25:04.741+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "16 - seed city allowed pet types and breeds"
+2026-11-17T13:25:04.751+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "17 - create trip"
+2026-11-17T13:25:04.758+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "18 - add trip transport mode"
+2026-11-17T13:25:04.759+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') ELSE raise(ABORT,'NOT NULL constraint failed') END |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| No rows returned                                                                                                                                                                                                        |
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+2026-11-17T13:25:05.015+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "main" to version "19 - seed zhuha locations"
+2026-11-17T13:25:05.071+08:00  INFO 55724 --- [pawtrip-server] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 19 migrations to schema "main", now at version v19 (execution time 00:00.081s)
+2026-11-17T13:25:05.134+08:00  INFO 55724 --- [pawtrip-server] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-11-17T13:25:05.163+08:00  INFO 55724 --- [pawtrip-server] [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.4.13.Final
+2026-11-17T13:25:05.395+08:00  INFO 55724 --- [pawtrip-server] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-11-17T13:25:05.434+08:00  INFO 55724 --- [pawtrip-server] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:sqlite:C:\Users\HUANGH~1\AppData\Local\Temp\pawtrip-e2e-mnoNUx\pawtrip-e2e.db?foreign_keys=on&busy_timeout=10000]
+	Database driver: SQLite JDBC
+	Database dialect: SQLiteDialect
+	Database version: 3.53.4
+	Default catalog/schema: undefined/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: SERIALIZABLE [default SERIALIZABLE]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-11-17T13:25:06.052+08:00  INFO 55724 --- [pawtrip-server] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-11-17T13:25:06.057+08:00  INFO 55724 --- [pawtrip-server] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-11-17T13:25:06.100+08:00  INFO 55724 --- [pawtrip-server] [           main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-11-17T13:25:06.534+08:00  INFO 55724 --- [pawtrip-server] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name appUserDetailsService
+2026-11-17T13:25:06.763+08:00  INFO 55724 --- [pawtrip-server] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 18080 (http) with context path '/'
+2026-11-17T13:25:06.766+08:00  INFO 55724 --- [pawtrip-server] [           main] com.pawtrip.server.ServerApplication     : Started ServerApplication in 3.898 seconds (process running for 4.448)
+2026-11-17T13:25:06.993+08:00  INFO 55724 --- [pawtrip-server] [io-18080-exec-2] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-11-17T13:25:06.993+08:00  INFO 55724 --- [pawtrip-server] [io-18080-exec-2] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-11-17T13:25:06.995+08:00  INFO 55724 --- [pawtrip-server] [io-18080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+Seeded 2 pet(s) for 5 pet owner account(s)
+Seeded 7 account(s) into C:\Users\HUANGH~1\AppData\Local\Temp\pawtrip-e2e-mnoNUx\pawtrip-e2e.db
+Seeded 9 E2E attraction fixture(s) into C:\Users\HUANGH~1\AppData\Local\Temp\pawtrip-e2e-mnoNUx\pawtrip-e2e.db
+npm warn Unknown env config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "email". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown user config "always-auth". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> test:e2e:playwright
+> playwright test
+
+
+Running 108 tests using 4 workers
+
+  ok   3 [chromium] › e2e\authentication.spec.ts:23:1 › redirects a guest away from the protected home page (4.8s)
+2026-11-17T13:25:16.839+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-9] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok   4 [chromium] › e2e\admin-city-management.spec.ts:127:1 › lists cities and province leaves, filters and paginates (6.1s)
+  ok   1 [chromium] › e2e\admin-location-management.spec.ts:241:1 › ADMIN sees the location tab and can filter and paginate both server tables (6.3s)
+2026-11-17T13:25:17.475+08:00  INFO 55724 --- [pawtrip-server] [io-18080-exec-5] c.p.s.a.JsonAuthenticationFailureHandler : Authentication failed for /api/auth/login
+  ok   5 [chromium] › e2e\authentication.spec.ts:31:1 › shows a generic error for invalid credentials (1.9s)
+  ok   2 [chromium] › e2e\attraction-pet-rules.spec.ts:32:1 › E1 trip city shows pet-friendly attractions (8.1s)
+  ok   7 [chromium] › e2e\admin-location-management.spec.ts:316:1 › Amap pagination continues when the API count only reflects a full current page (2.7s)
+  ok   6 [chromium] › e2e\admin-city-management.spec.ts:170:1 › edits city policies and allowed dog breeds without calling Amap (3.0s)
+  ok   8 [chromium] › e2e\authentication.spec.ts:45:1 › keeps the session after a successful sign-in and page refresh (2.6s)
+2026-11-17T13:25:21.625+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-9] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  11 [chromium] › e2e\admin-city-management.spec.ts:253:1 › USER is redirected away from the admin city route (2.0s)
+  ok  12 [chromium] › e2e\authentication.spec.ts:59:1 › requires sign-in again after logging out (2.8s)
+  ok   9 [chromium] › e2e\attraction-pet-rules.spec.ts:43:1 › E2 toggles all saved attractions and shows forbidden/unconfigured states (4.7s)
+  ok  10 [chromium] › e2e\admin-location-management.spec.ts:365:1 › saving an Amap candidate validates visit hours and updates the current row without refetching (3.9s)
+  ok  13 [chromium] › e2e\admin-city-management.spec.ts:261:1 › anonymous visitors are redirected to login from the admin city route (2.2s)
+  ok  14 [chromium] › e2e\city-pet-policy.spec.ts:74:1 › warns when the pet breed is on the banned list (3.1s)
+2026-11-17T13:25:26.165+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-1] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:25:26.694+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-4] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  17 [chromium] › e2e\destination-selection.spec.ts:23:1 › E1 shows city candidates with Trips tab and without duration input (3.1s)
+  ok  16 [chromium] › e2e\admin-location-management.spec.ts:490:1 › saved location details use direct photo URLs and preserve the current list page (3.8s)
+  ok  15 [chromium] › e2e\attraction-pet-rules.spec.ts:59:1 › E2b can filter, inspect and add a hotel location (4.7s)
+  ok  18 [chromium] › e2e\city-pet-policy.spec.ts:84:1 › renders only a few banned breed examples (3.0s)
+  ok  20 [chromium] › e2e\admin-location-management.spec.ts:639:1 › non-attraction saved locations still expose pet policy editing (2.4s)
+  ok  23 [chromium] › e2e\admin-location-management.spec.ts:729:1 › USER is redirected away from the admin location route (1.9s)
+  ok  22 [chromium] › e2e\city-pet-policy.spec.ts:100:1 › does not judge when the breed is neither banned nor allowed (2.9s)
+  ok  21 [chromium] › e2e\attraction-pet-rules.spec.ts:80:1 › E3 shows pet policy fields in location detail (4.1s)
+  ok  19 [chromium] › e2e\destination-selection.spec.ts:34:1 › E2 searches by city or province keyword and shows empty state (5.2s)
+  ok  24 [chromium] › e2e\admin-location-management.spec.ts:775:1 › anonymous visitors are redirected to login from the admin location route (1.9s)
+  ok  25 [chromium] › e2e\city-pet-policy.spec.ts:111:1 › confirms when the pet breed is on the allowed list (2.7s)
+2026-11-17T13:25:35.085+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-5] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:25:35.140+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-1] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  27 [chromium] › e2e\destination-selection.spec.ts:52:1 › E3 pet-friendly filter keeps eligible candidates (3.6s)
+  ok  28 [chromium] › e2e\paws-pet-management.spec.ts:20:1 › validates required pet fields before submitting (3.4s)
+  ok  26 [chromium] › e2e\attraction-pet-rules.spec.ts:99:1 › E4 shows forbidden detail and empty policy detail (4.8s)
+  ok  29 [chromium] › e2e\city-pet-policy.spec.ts:119:1 › does not judge when no pet profile is available (3.0s)
+2026-11-17T13:25:38.751+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-7] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  30 [chromium] › e2e\destination-selection.spec.ts:63:1 › E4 candidate cards show one tag per pet (3.1s)
+  ok  33 [chromium] › e2e\city-pet-policy.spec.ts:126:1 › does not judge a pet without a dog breed (3.0s)
+2026-11-17T13:25:41.914+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-4] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  31 [chromium] › e2e\paws-pet-management.spec.ts:54:1 › creates, views, edits and deletes a pet (4.9s)
+  ok  34 [chromium] › e2e\destination-selection.spec.ts:71:1 › E5 selecting a city opens the trip dialog without POSTing a trip (3.7s)
+  ok  32 [chromium] › e2e\attraction-pet-rules.spec.ts:118:1 › E5 switching city requires deactivating the current trip (6.0s)
+  ok  35 [chromium] › e2e\city-pet-policy.spec.ts:133:1 › shows an empty state for a city without policy (3.0s)
+2026-11-17T13:25:44.606+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-4] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:25:45.397+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-9] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  36 [chromium] › e2e\rule-recommendation-and-selection.spec.ts:23:3 › rule recommendation › evaluates only the active-trip pet and explains its rule failures (4.5s)
+  ok  39 [chromium] › e2e\city-pet-policy.spec.ts:140:1 › shows an error for an unknown city (3.1s)
+  ok  38 [chromium] › e2e\attraction-pet-rules.spec.ts:137:1 › E6 prompts to create or activate a trip without an active trip (4.1s)
+  ok  37 [chromium] › e2e\destination-selection.spec.ts:93:1 › E6 confirming the dialog creates a trip and opens attraction browsing (4.7s)
+2026-11-17T13:25:49.205+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-2] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  41 [chromium] › e2e\city-pet-policy.spec.ts:147:1 › shows source, update month and area scope (3.0s)
+2026-11-17T13:25:49.916+08:00  WARN 55724 --- [pawtrip-server] [o-18080-exec-10] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:25:50.288+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-4] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  40 [chromium] › e2e\rule-recommendation-and-selection.spec.ts:49:3 › rule recommendation › recomputes the flight row when another airline is selected (4.6s)
+  ok  43 [chromium] › e2e\destination-selection.spec.ts:114:1 › E7 rejects invalid date ranges without creating a trip (3.8s)
+  ok  42 [chromium] › e2e\attraction-pet-rules.spec.ts:157:1 › E7 keeps the location tab selected on list and detail (4.5s)
+  ok  44 [chromium] › e2e\city-pet-policy.spec.ts:157:1 › opens the city policy from city browsing (3.8s)
+2026-11-17T13:25:53.670+08:00  WARN 55724 --- [pawtrip-server] [o-18080-exec-10] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:25:53.831+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-3] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:25:54.318+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-4] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  46 [chromium] › e2e\destination-selection.spec.ts:142:1 › E8 city cards expose policy only through the policy link (3.0s)
+  ok  47 [chromium] › e2e\attraction-pet-rules.spec.ts:181:1 › E8 shows an empty city state (4.1s)
+  ok  45 [chromium] › e2e\rule-recommendation-and-selection.spec.ts:66:3 › mode selection › saves one selected mode to the active trip and restores it after reload (5.4s)
+  ok  48 [chromium] › e2e\city-pet-policy.spec.ts:169:1 › does not render a destination list or filter (3.0s)
+2026-11-17T13:25:57.050+08:00  WARN 55724 --- [pawtrip-server] [o-18080-exec-10] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:25:58.493+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-1] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  49 [chromium] › e2e\destination-selection.spec.ts:156:1 › E9 active trip keeps candidates but blocks selecting another city (4.3s)
+2026-11-17T13:25:59.037+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-6] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  52 [chromium] › e2e\city-pet-policy.spec.ts:178:1 › does not render a pet profile form (2.9s)
+  ok  50 [chromium] › e2e\attraction-pet-rules.spec.ts:187:1 › E9 shows no friendly state and toggles all for a city with only forbidden/unconfigured (4.5s)
+  ok  51 [chromium] › e2e\rule-recommendation-and-selection.spec.ts:105:3 › mode selection › keeps mode selection available when pet data is unavailable (5.3s)
+  ok  53 [chromium] › e2e\destination-selection.spec.ts:172:1 › E10 cleans legacy session storage keys on startup (3.1s)
+2026-11-17T13:26:03.208+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-4] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  56 [chromium] › e2e\transport-rules.spec.ts:22:3 › anonymous › sends guests from the rules route to the login page (1.9s)
+  ok  54 [chromium] › e2e\city-pet-policy.spec.ts:186:1 › does not expose the admin policy endpoint (4.9s)
+  ok  57 [chromium] › e2e\destination-selection.spec.ts:190:1 › E11 keeps Trips tab selected on direct access (2.6s)
+  ok  55 [chromium] › e2e\attraction-pet-rules.spec.ts:198:1 › E10 exposes no city selector or admin controls but offers add actions (4.6s)
+  ok  58 [chromium] › e2e\transport-rules.spec.ts:31:3 › tab-and-routing › shows the rules tab after the cities tab for a standard user (2.3s)
+  ok  60 [chromium] › e2e\destination-selection.spec.ts:199:1 › E12 renders friendly and unfriendly tags per pet (2.5s)
+  ok  59 [chromium] › e2e\city-pet-policy.spec.ts:202:1 › does not render a booking entry (3.0s)
+  ok  62 [chromium] › e2e\transport-rules.spec.ts:41:3 › tab-and-routing › navigates to the rules route when the tab is selected (2.5s)
+2026-11-17T13:26:09.722+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-3] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  63 [chromium] › e2e\destination-selection.spec.ts:251:1 › E13 prompts for a pet profile when the user has none (3.1s)
+2026-11-17T13:26:10.438+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-3] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  65 [chromium] › e2e\transport-rules.spec.ts:52:3 › tab-and-routing › keeps only the rules tab selected on a direct visit (2.8s)
+  ok  61 [chromium] › e2e\attraction-pet-rules.spec.ts:217:1 › E11 clears the active trip on logout (6.6s)
+2026-11-17T13:26:12.495+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-7] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  67 [chromium] › e2e\transport-rules.spec.ts:66:3 › tab-and-routing › keeps admin tabs ordered after the rules tab for administrators (2.4s)
+  ok  66 [chromium] › e2e\destination-selection.spec.ts:260:1 › E14 reports a pet API failure instead of an empty pet list (3.7s)
+  ok  64 [chromium] › e2e\city-pet-policy.spec.ts:243:1 › admin configures allowed breeds and the policy page reflects it (6.7s)
+  ok  68 [chromium] › e2e\attraction-pet-rules.spec.ts:235:1 › E12 shows no scenic entry inside city browsing (3.2s)
+  ok  69 [chromium] › e2e\transport-rules.spec.ts:86:3 › no-active-trip › prompts users to create or activate a trip instead of showing the rules (3.1s)
+  ok  70 [chromium] › e2e\destination-selection.spec.ts:270:1 › E15 policy content stays on the policy page (3.2s)
+2026-11-17T13:26:17.097+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-9] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:17.214+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-8] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:17.214+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-4] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:17.498+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-1] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  71 [chromium] › e2e\trip-duration-input.spec.ts:16:1 › defaults to a one-day trip when start and end are the same day (4.7s)
+  ok  72 [chromium] › e2e\attraction-pet-rules.spec.ts:269:1 › media E1 card shows first cover photo and rating (4.8s)
+2026-11-17T13:26:19.858+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-5] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  74 [chromium] › e2e\trips-panel.spec.ts:52:1 › shows an empty state without trips (3.2s)
+2026-11-17T13:26:20.382+08:00  WARN 55724 --- [pawtrip-server] [o-18080-exec-10] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:20.390+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-4] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  73 [chromium] › e2e\transport-rules.spec.ts:115:3 › comparison-table › renders four modes with the base columns in a stable order (5.2s)
+2026-11-17T13:26:22.482+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-6] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:23.098+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-6] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:23.820+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-3] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  75 [chromium] › e2e\trip-duration-input.spec.ts:34:1 › derives the duration from the selected date range (5.9s)
+2026-11-17T13:26:26.179+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-1] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  76 [chromium] › e2e\attraction-pet-rules.spec.ts:289:1 › media E2 card without photo shows neutral placeholder (6.9s)
+  ok  77 [chromium] › e2e\trips-panel.spec.ts:58:1 › lists trips in id order and supports activate, deactivate and delete (6.2s)
+  ok  78 [chromium] › e2e\transport-rules.spec.ts:134:3 › comparison-table › appends the extension column after the base columns for every row (6.0s)
+2026-11-17T13:26:28.486+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-8] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  79 [chromium] › e2e\trip-duration-input.spec.ts:50:1 › rejects ranges longer than seven days (4.8s)
+  ok  81 [chromium] › e2e\trips-panel.spec.ts:113:1 › reports a missing trip when activation returns 404 (3.2s)
+2026-11-17T13:26:29.688+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-6] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:31.134+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-8] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  80 [chromium] › e2e\attraction-pet-rules.spec.ts:303:1 › media E3 failed image falls back to placeholder without retry (5.4s)
+2026-11-17T13:26:32.470+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-2] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:32.677+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-4] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  82 [chromium] › e2e\transport-rules.spec.ts:153:3 › comparison-table › renders the status badge and note from rule data (4.5s)
+  ok  83 [chromium] › e2e\trip-duration-input.spec.ts:73:1 › rejects an end date before the start date (3.9s)
+  ok  84 [chromium] › e2e\trips-panel.spec.ts:130:1 › evaluates transport rules only for the active trip pet (4.8s)
+2026-11-17T13:26:34.491+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-2] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  85 [chromium] › e2e\attraction-pet-rules.spec.ts:314:1 › media E4 hides rating when snapshot missing (4.3s)
+  ok  86 [chromium] › e2e\transport-rules.spec.ts:159:3 › comparison-table › shows no unified weight limit for driving (4.0s)
+2026-11-17T13:26:37.012+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-9] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  87 [chromium] › e2e\trips-panel.spec.ts:139:1 › requires a created trip before browsing attractions (4.1s)
+2026-11-17T13:26:38.591+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-8] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:39.158+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-1] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  88 [chromium] › e2e\attraction-pet-rules.spec.ts:323:1 › media E5 restriction and fee row renders values or hides (4.5s)
+  ok  89 [chromium] › e2e\transport-rules.spec.ts:166:3 › comparison-table › shows a review state for every row (3.9s)
+2026-11-17T13:26:41.055+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-8] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:43.351+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-3] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:43.472+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-7] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  90 [chromium] › e2e\trips-panel.spec.ts:159:1 › adds stops to the selected day and to unscheduled with debounced saving (6.1s)
+  ok  92 [chromium] › e2e\transport-rules.spec.ts:172:3 › comparison-table › defaults to the first airline without leaving empty cells (4.5s)
+  ok  91 [chromium] › e2e\attraction-pet-rules.spec.ts:345:1 › media E6 policy note row renders generated phrases or hides (5.0s)
+2026-11-17T13:26:47.325+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-2] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:47.567+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-9] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  94 [chromium] › e2e\transport-rules.spec.ts:187:3 › comparison-table › switches only the flight row when another airline is selected (4.0s)
+  ok  93 [chromium] › e2e\trips-panel.spec.ts:196:1 › allows duplicate stops on the same day (5.4s)
+  ok  95 [chromium] › e2e\attraction-pet-rules.spec.ts:366:1 › media E7 detail dialog carries cover and rating with fallback (4.7s)
+2026-11-17T13:26:52.050+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-8] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:52.979+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-6] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:26:53.155+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-7] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  96 [chromium] › e2e\transport-rules.spec.ts:204:3 › comparison-table › shows the airline disclaimer inside the flight row (4.2s)
+  ok  98 [chromium] › e2e\attraction-pet-rules.spec.ts:386:1 › media E8 type switch keeps card structure and add actions (5.2s)
+  ok  97 [chromium] › e2e\trips-panel.spec.ts:207:1 › drags a stop across days and into unscheduled (5.8s)
+2026-11-17T13:26:55.946+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-7] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok  99 [chromium] › e2e\transport-rules.spec.ts:208:3 › comparison-table › renders sources, review state, disclaimer and booking note in the footer (3.9s)
+2026-11-17T13:26:58.550+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-8] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok 100 [chromium] › e2e\attraction-pet-rules.spec.ts:405:1 › media E9 no deposit/cleaning fee copy or rating controls (4.2s)
+2026-11-17T13:26:59.994+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-7] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok 101 [chromium] › e2e\trips-panel.spec.ts:227:1 › keeps local edits when saving fails and retries (5.0s)
+  ok 102 [chromium] › e2e\transport-rules.spec.ts:221:3 › comparison-table › shows no booking action on the page (4.1s)
+2026-11-17T13:27:03.278+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-5] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:27:03.734+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-8] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok 103 [chromium] › e2e\trips-panel.spec.ts:251:1 › expands on the left for desktop (3.5s)
+  ok 104 [chromium] › e2e\transport-rules.spec.ts:227:3 › comparison-table › keeps the cities page available without a transport rules entry (3.9s)
+2026-11-17T13:27:06.941+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-9] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+2026-11-17T13:27:07.704+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-4] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok 105 [chromium] › e2e\trips-panel.spec.ts:264:1 › does not render the panel on the login page (4.1s)
+  ok 106 [chromium] › e2e\transport-rules.spec.ts:239:3 › unavailable-pet-data › keeps the active-trip rules table and mode selector when pet data fails (5.6s)
+2026-11-17T13:27:11.149+08:00  WARN 55724 --- [pawtrip-server] [o-18080-exec-10] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok 107 [chromium] › e2e\trips-panel.spec.ts:274:1 › shows active-pet location policy tags (4.0s)
+2026-11-17T13:27:13.401+08:00  WARN 55724 --- [pawtrip-server] [io-18080-exec-1] c.p.server.error.GlobalExceptionHandler  : Response already committed. Ignoring: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: 你的主机中的软件中止了一个已建立的连接。
+  ok 108 [chromium] › e2e\transport-rules.spec.ts:262:3 › no-backend-coupling › loads and switches airlines without rule API requests (4.5s)
+
+  108 passed (2.1m)
+[e2e] apps/server/data/pawtrip.db 未被修改。

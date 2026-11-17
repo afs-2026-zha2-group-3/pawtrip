@@ -41,13 +41,25 @@ Before editing files for a substantial task:
 ### 地图集成：高德 Web 服务与 Spring REST Client
 
 - 高德 POI 2.0：本项目使用 Web 服务 API 的关键词搜索 `/v5/place/text` 与周边搜索 `/v5/place/around`，均为 GET；高德要求服务端 Key，分页每页 1–25 条，同一查询最多获取 200 条。周边搜索未提供关键词和类型时，默认类型为餐饮、生活服务、商务住宅，默认半径为 5000 米。POI 详情的 `photos` 提供照片标题与来源 URL；地点管理后端持久化照片元数据和来源 URL，浏览器直接加载图片，不再由服务器下载或保存图片二进制。图片可用性依赖上游 URL。
-- 高德路线规划 2.0：仅供未来扩展参考，不属于当前实现。接口类型和参数各异；例如驾车路线参数过长时文档要求改用 POST，因此共用传输层不应固化成 POI 专用动态代理。
+- 高德路线规划 2.0：REQ-011 途内交通估算使用驾车 `/v5/direction/driving` 与步行 `/v5/direction/walking`（均 GET，带 `show_fields=cost` 与 `origin_id`/`destination_id`）；驾车取 `route.taxi_cost`（基础字段）与 `paths[0].cost.duration` 秒，步行仅取时长（费用 ¥0 为产品决策）；坐标「经度,纬度」≤6 位小数。驾车参数过长时官方要求改用 POST，因此共用传输层不应固化成 POI 专用动态代理。详细参数/返回字段见 [amap-route-planning.md](amap-route-planning.md)。
 - Spring REST Clients：使用 Spring Framework `RestClient` 作为同步、可复用的 HTTP 客户端，不新增第三方客户端依赖；配置连接/读取超时，并在集成边界屏蔽含凭据 URL 和敏感查询参数的底层异常。
 - 文档：
   - 高德搜索 POI 2.0：https://lbs.amap.com/api/webservice/guide/api-advanced/newpoisearch
-  - 高德路线规划 2.0（未来扩展参考）：https://lbs.amap.com/api/webservice/guide/api/newroute
+  - 高德路线规划 2.0：https://lbs.amap.com/api/webservice/guide/api/newroute（本地核对条目：[amap-route-planning.md](amap-route-planning.md)）
   - Spring Framework REST Clients：https://docs.spring.io/spring-framework/reference/integration/rest-clients.html
   - Spring Boot Externalized Configuration：https://docs.spring.io/spring-boot/reference/features/external-config.html
+
+### 前端地图：高德 JS API 2.0
+
+- 地点页右侧地图使用高德 JS API 2.0；需要 **Web端 JS API Key**（与服务端 Web 服务 Key 不同），2021-12 之后申请的 Key 必须配合安全密钥 `securityJsCode`。
+- 本项目通过根目录 `.env` 的 `VITE_AMAP_JS_KEY` / `VITE_AMAP_SECURITY_CODE` 配置，Vite 通过 `envDir` 读取根目录 `.env`，只暴露 `VITE_` 前缀；未配置时地图显示占位，列表不受影响。
+- 直连安全密钥会进入前端 bundle，生产环境建议使用代理方案（`serviceHost`）并通过 Nginx 转发，同时配置域名白名单。
+- 地图组件使用 `webapi.amap.com/maps?v=2.0` 脚本加载器，marker/InfoWindow 只展示基础信息；E2E 不依赖外网 SDK，强制空 Key 验证占位与列表回归。
+- 文档：
+  - 高德 JS API 加载：https://lbs.amap.com/api/javascript-api-v2/guide/abc/load
+  - 高德 JS API 安全密钥：https://lbs.amap.com/api/javascript-api-v2/guide/abc/security
+  - 高德 JS API Marker：https://lbs.amap.com/api/javascript-api-v2/documentation#marker
+  - 高德 JS API InfoWindow：https://lbs.amap.com/api/javascript-api-v2/documentation#infowindow
 
 ### Spring Data JPA / Hibernate / Flyway / SQLite
 

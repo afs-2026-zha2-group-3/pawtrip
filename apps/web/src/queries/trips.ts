@@ -8,13 +8,23 @@ export interface TripSummary {
   cityAdcode: string;
   petId: number;
   totalDays: number;
+  startDate: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RouteEstimateResponse {
+  mode: "walk" | "drive";
+  durationMinutes: number;
+  costLowYuan: number;
+  costHighYuan: number;
 }
 
 export const tripQueryKeys = {
   all: ["trips"] as const,
   detail: (id: number) => ["trips", "detail", id] as const,
+  routeEstimate: (tripId: number, fromPoiId: string, toPoiId: string, mode: "walk" | "drive") =>
+    ["trips", "route-estimate", tripId, fromPoiId, toPoiId, mode] as const,
 };
 
 export function tripsQueryOptions() {
@@ -31,11 +41,34 @@ export function tripDetailQueryOptions(id: number) {
   });
 }
 
+export function routeEstimateQueryOptions(
+  tripId: number,
+  fromPoiId: string,
+  toPoiId: string,
+  mode: "walk" | "drive",
+  options: { enabled?: boolean } = {},
+) {
+  return queryOptions({
+    queryKey: tripQueryKeys.routeEstimate(tripId, fromPoiId, toPoiId, mode),
+    queryFn: ({ signal }) =>
+      request<RouteEstimateResponse>(
+        `/api/trips/${tripId}/route-estimate?fromPoiId=${encodeURIComponent(fromPoiId)}&toPoiId=${encodeURIComponent(toPoiId)}&mode=${mode}`,
+        { signal },
+      ),
+    retry: 1,
+    staleTime: 300_000,
+    // 估算失败必须在段行内兜底（「估算暂不可用」），不能命中全局 throwOnError 默认策略拖垮整页。
+    throwOnError: false,
+    enabled: options.enabled ?? true,
+  });
+}
+
 export function createTrip(input: {
   name: string;
   cityAdcode: string;
   petId: number;
   totalDays: number;
+  startDate?: string | null;
   plan: TripPlan;
 }): Promise<Trip> {
   return request<Trip>("/api/trips", {
@@ -45,6 +78,7 @@ export function createTrip(input: {
       cityAdcode: input.cityAdcode,
       petId: input.petId,
       totalDays: input.totalDays,
+      startDate: input.startDate ?? null,
       plan: input.plan,
     },
   });
@@ -56,6 +90,7 @@ export function updateTrip(id: number, input: SaveTripInput): Promise<Trip> {
     body: {
       name: input.name,
       totalDays: input.totalDays,
+      startDate: input.startDate,
       plan: input.plan,
       transportMode: input.transportMode,
     },

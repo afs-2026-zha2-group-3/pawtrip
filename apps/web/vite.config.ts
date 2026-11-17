@@ -6,6 +6,7 @@ import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 const config = defineConfig({
+  envDir: "../..",
   resolve: { tsconfigPaths: true },
   server: {
     proxy: {

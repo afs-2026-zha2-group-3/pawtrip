@@ -10,6 +10,7 @@ export interface CreateTripInput {
   cityAdcode: string;
   petId: number;
   totalDays: number;
+  startDate?: string | null;
   city?: Pick<DestinationCandidate, "adcode" | "name" | "province">;
 }
 
@@ -22,6 +23,7 @@ export async function createTripAndActivate(
     cityAdcode: input.cityAdcode,
     petId: input.petId,
     totalDays: input.totalDays,
+    startDate: input.startDate,
     plan: createEmptyPlan(input.totalDays),
   });
   if (input.city) {
