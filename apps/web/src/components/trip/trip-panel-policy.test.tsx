@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TripPanel } from "./trip-panel";
 import { tripActions, tripStore } from "@/lib/trip/store";
@@ -113,8 +114,10 @@ function renderPanel(options: {
   locations?: LocationBrowseDetail[];
   transportMode?: TransportMode | null;
   plan?: TripPlan;
+  expanded?: boolean;
 }) {
   tripActions.setActive(tripWith(options.plan ?? twoStopPlan(), options.transportMode ?? null));
+  tripActions.setPanelExpanded(options.expanded ?? true);
   for (const detail of options.locations ?? [
     location("poi-a", "景点A", { leashRequired: true }),
     location("poi-b", "景点B"),
@@ -150,6 +153,19 @@ afterEach(() => {
 });
 
 describe("day policy reminder placement", () => {
+  it("hides the stop list while collapsed and restores it after expanding", async () => {
+    renderPanel({ expanded: false });
+    await screen.findByText("毛毛");
+
+    expect(screen.getByRole("button", { name: "展开行程面板" })).toBeTruthy();
+    expect(screen.queryByTestId("animated-list")).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: "展开行程面板" }));
+
+    expect(screen.getByRole("button", { name: "收起行程面板" })).toBeTruthy();
+    expect(screen.getByTestId("animated-list")).toBeTruthy();
+  });
+
   it("renders the reminder after the day header and transit notice, before the first stop row", async () => {
     const { container } = renderPanel({});
     await screen.findByText("毛毛");

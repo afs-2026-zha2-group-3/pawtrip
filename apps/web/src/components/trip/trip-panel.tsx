@@ -524,7 +524,7 @@ function TripPanelContent({ embedded, timeline }: { embedded: boolean; timeline:
 
       {active ? (
         <>
-          {(!embedded || open) && (
+          {open && (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
