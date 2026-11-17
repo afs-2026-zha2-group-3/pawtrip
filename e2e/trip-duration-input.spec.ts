@@ -8,6 +8,7 @@ import {
   resetTrips,
   setTripDates,
   signIn,
+  withTripPanelNotBlocking,
 } from "./trip-helpers";
 
 test.beforeEach(async ({ page }) => {
@@ -28,7 +29,9 @@ test("defaults to a one-day trip when start and end are the same day", async ({
   const panel = page.getByTestId("trip-panel");
   await expect(panel).toContainText("1 天");
 
-  await page.getByRole("combobox", { name: "添加到行程" }).first().click();
+  await withTripPanelNotBlocking(page, async () => {
+    await page.getByRole("combobox", { name: "添加到行程" }).first().click();
+  });
   await expect(page.getByRole("option", { name: "第 1 天" })).toBeVisible();
   await expect(page.getByRole("option", { name: "第 2 天" })).toHaveCount(0);
 });
@@ -46,7 +49,9 @@ test("derives the duration from the selected date range", async ({ page }) => {
   const panel = page.getByTestId("trip-panel");
   await expect(panel).toContainText("3 天");
 
-  await page.getByRole("combobox", { name: "添加到行程" }).first().click();
+  await withTripPanelNotBlocking(page, async () => {
+    await page.getByRole("combobox", { name: "添加到行程" }).first().click();
+  });
   await expect(page.getByRole("option", { name: "第 1 天" })).toBeVisible();
   await expect(page.getByRole("option", { name: "第 2 天" })).toBeVisible();
   await expect(page.getByRole("option", { name: "第 3 天" })).toBeVisible();

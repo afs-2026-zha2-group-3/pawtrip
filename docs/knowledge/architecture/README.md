@@ -55,7 +55,7 @@ com.pawtrip.server
 `com.pawtrip.server.location` 是地点查询与管理功能模块，包含共享只读查询、管理员地点与城市 API、应用服务、地点/行政区/照片持久化实体及 Spring Data 仓库。管理 API 位于 `/api/admin/**`，由 Spring Security 在服务端要求 `ADMIN`；高德候选查询调用 `application.port.maps.PlaceSearchPort`，不得直接依赖 `infrastructure.amap` 实现。
 
 - `GET /api/locations/types`：所有登录用户可读，返回共享地点类型目录及高德 typecode 映射；管理端 AMap 搜索与用户/管理端筛选复用同一目录。
-- `GET /api/locations`：所有登录用户可读，按数据库分页查询已保存地点，不调用高德。支持可选 `regionCode`、`typeGroup`、`petFriendlyOnly`、`page`、`pageSize`；普通用户必须传区域，管理员可省略区域查询全部。区域支持省或城市级行政区并匹配其下级地区；`petFriendlyOnly=true` 时只返回 `max_pets_per_person >= 1` 的地点。分页默认第 1 页、每页 20 条，按地点 ID 升序。
+- `GET /api/locations`：所有登录用户可读，按数据库分页查询已保存地点，不调用高德。支持可选 `regionCode`、`typeGroup`、`petFriendlyOnly`、`nearPoiId`、`page`、`pageSize`；普通用户必须传区域，管理员可省略区域查询全部。区域支持省或城市级行政区并匹配其下级地区；`petFriendlyOnly=true` 时只返回 `max_pets_per_person >= 1` 的地点。`nearPoiId` 必须指向 `typeGroup='attraction'` 且经纬度非空的已保存地点，否则返回 `400 VALIDATION_ERROR`；提供时后端用 Haversine 只保留锚点 5km 内且坐标非空的地点，按距离升序返回并在每项附带 `distanceMeters`，分页基于过滤后结果；未提供时保持按地点 ID 升序、每页 20 条。
 - 共用列表项包含 `poiId`、名称、类型、地址、经纬度、区域、游玩时间、`maxPetsPerPerson` 与完整 `petPolicies`。列表不得返回原始 POI、`business` 或照片详情。
 - `GET /api/locations/{poiId}`：登录用户可读的地点浏览详情，返回基础信息与 8 项政策字段，不返回照片、`business` 或原始 POI JSON；不存在返回 `404 LOCATION_NOT_FOUND`。
 - 管理员专属操作仍位于 `/api/admin/**`：`GET /api/admin/regions` 读取区域树；`GET /api/admin/locations/amap` 搜索高德候选；`GET /api/admin/locations/{poiId}` 读取管理编辑详情；`POST /api/admin/locations` 与 `PATCH /api/admin/locations/{poiId}` 创建或更新地点。地点详情与创建/更新请求通过可选 `petPolicies` 对象维护政策。
@@ -75,7 +75,9 @@ com.pawtrip.server
 
 ### 用户端地点浏览与行程规划（REQ-009）
 
-用户端 `/attractions` 页面展示为“地点浏览”，保留既有路由。存在激活行程时，页面固定以 `active.cityAdcode` 查询共享 `GET /api/locations`，默认类型为“景点”；不提供城市选择。无激活行程（含仅有草稿）时展示“先创建或激活行程”空态且不请求地点列表。地点类型切换重置为第一页；默认宠物友好筛选传 `petFriendlyOnly=true`，开启“显示全部地点”传 `false`。所有类型地点详情均可展示逐宠物政策，并提供“添加到行程”和“暂不排期”操作。页面不展示天数 Tabs；添加选择器由 `active.totalDays` 生成“第 1 天”至“第 N 天”。详情在列表页内打开，关闭后保留筛选与分页；不提供 `/attractions/$poiId` 独立路由。
+用户端 `/attractions` 页面展示为“地点浏览”，保留既有路由。存在激活行程时，页面固定以 `active.cityAdcode` 查询共享 `GET /api/locations`，默认类型为“景点”；不提供城市选择。无激活行程（含仅有草稿）时展示“先创建或激活行程”空态且不请求地点列表。地点类型切换重置为第一页；默认宠物友好筛选传 `petFriendlyOnly=true`，开启“显示全部地点”传 `false`。页面在“酒店”类型下默认展示该城市已保存酒店，并提供“离景点最近”下拉；在“景点”类型下保留“行程景点锚点”选择器供餐厅筛选使用。两者共用同一锚点，候选只来自激活行程已按天排期的景点（`plan.days[].stops`，按 `poiId` 去重，不含 `unscheduled`）；选择后请求携带 `nearPoiId` 并按 5km 距离筛选，卡片显示“距{锚点名}约 X.Xkm”。未选锚点时餐厅显示门禁空态且不请求列表，酒店保持默认列表；锚点景点被移出行程或切换激活行程后自动清空，酒店恢复默认列表、餐厅恢复门禁。
+
+地点页桌面端为左列表右地图布局，地图使用高德 JS API 2.0，显示当前筛选下的全部点位；marker 点击高亮列表卡片并打开基础信息窗口，卡片“在地图查看”定位 marker。地图 Key 通过 `VITE_AMAP_JS_KEY` / `VITE_AMAP_SECURITY_CODE` 配置；未配置或 SDK 加载失败时地图显示占位，列表与筛选不受影响。E2E 强制空 Key，不依赖高德外网 SDK。所有类型地点详情均可展示逐宠物政策，并提供“添加到行程”和“暂不排期”操作。页面不展示天数 Tabs；添加选择器由 `active.totalDays` 生成“第 1 天”至“第 N 天”。详情在列表页内打开，关闭后保留筛选与分页；不提供 `/attractions/$poiId` 独立路由。
 
 地点浏览不新增数据库迁移；E2E 夹具由 `scripts/seed-e2e-attractions.mjs` 写入临时 E2E 库，不触碰 `apps/server/data/pawtrip.db`。
 

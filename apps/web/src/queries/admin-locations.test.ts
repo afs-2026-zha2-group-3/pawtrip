@@ -64,6 +64,7 @@ describe("admin location queries", () => {
         regionCode: "310100",
         typeGroup: "attraction",
         petFriendlyOnly: false,
+        nearPoiId: null,
         page: 2,
         pageSize: 10,
       },

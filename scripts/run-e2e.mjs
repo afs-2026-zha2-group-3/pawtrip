@@ -284,6 +284,9 @@ async function main() {
         env: {
           ...process.env,
           PAWTRIP_API_PROXY_TARGET: `http://127.0.0.1:${backendPort}`,
+          // E2E 不依赖高德外网 SDK；强制空 Key，地图显示占位。
+          VITE_AMAP_JS_KEY: "",
+          VITE_AMAP_SECURITY_CODE: "",
         },
         shell: process.platform === "win32",
       },

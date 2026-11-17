@@ -173,3 +173,16 @@ export async function pets(page: Page) {
     name: string;
   }[];
 }
+
+export async function withTripPanelNotBlocking(page: Page, action: () => Promise<void>) {
+  await page.getByTestId("trip-panel").evaluate((panel) => {
+    (panel as HTMLElement).style.pointerEvents = "none";
+  });
+  try {
+    await action();
+  } finally {
+    await page.getByTestId("trip-panel").evaluate((panel) => {
+      (panel as HTMLElement).style.pointerEvents = "";
+    });
+  }
+}

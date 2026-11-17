@@ -24,9 +24,11 @@ final class LocationQueryResponses {
 
 	record LocationSummary(String poiId, String name, String typeCode, String typeGroup, String address,
 			Double longitude, Double latitude, String regionCode, Integer minVisitHours, Integer maxVisitHours,
-			Integer maxPetsPerPerson, PetPolicies petPolicies, String coverPhotoUrl, String rating) {
+			Integer maxPetsPerPerson, PetPolicies petPolicies, String coverPhotoUrl, String rating,
+			Long distanceMeters) {
 
-		static LocationSummary from(PawtripLocation location, String coverPhotoUrl, String rating) {
+		static LocationSummary from(PawtripLocation location, String coverPhotoUrl, String rating,
+				Long distanceMeters) {
 			return new LocationSummary(
 					location.getPoiId(),
 					location.getName(),
@@ -41,7 +43,8 @@ final class LocationQueryResponses {
 					location.getMaxPetsPerPerson(),
 					PetPolicies.from(location),
 					coverPhotoUrl,
-					rating);
+					rating,
+					distanceMeters);
 		}
 	}
 
@@ -63,9 +66,11 @@ final class LocationQueryResponses {
 	}
 
 	record LocationDetail(String poiId, String name, String typeCode, String typeGroup, String address,
-			String regionCode, PetPolicies petPolicies, String coverPhotoUrl, String rating) {
+			String regionCode, PetPolicies petPolicies, String coverPhotoUrl, String rating, String keytag,
+			String businessArea) {
 
-		static LocationDetail from(PawtripLocation location, String coverPhotoUrl, String rating) {
+		static LocationDetail from(PawtripLocation location, String coverPhotoUrl, String rating, String keytag,
+				String businessArea) {
 			return new LocationDetail(
 					location.getPoiId(),
 					location.getName(),
@@ -75,7 +80,9 @@ final class LocationQueryResponses {
 					location.getRegionCode(),
 					PetPolicies.from(location),
 					coverPhotoUrl,
-					rating);
+					rating,
+					keytag,
+					businessArea);
 		}
 	}
 
