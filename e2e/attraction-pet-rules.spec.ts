@@ -20,9 +20,23 @@ async function openAttractions(page: Page) {
   await expect(page).toHaveURL(/\/attractions$/);
 }
 
+async function hideTripPanel(page: Page) {
+  await page.getByTestId("trip-panel").evaluate((panel) => {
+    (panel as HTMLElement).style.display = "none";
+  });
+}
+
+async function showTripPanel(page: Page) {
+  await page.getByTestId("trip-panel").evaluate((panel) => {
+    (panel as HTMLElement).style.display = "";
+  });
+}
+
 async function tripTo(page: Page, city: string) {
   await createTrip(page, { city, days: 1, pet: "豆豆" });
   await openAttractions(page);
+  // 双列布局下固定的行程面板会遮挡左列卡片底部按钮；本套件专注列表/详情行为。
+  await hideTripPanel(page);
 }
 
 async function scheduleAttractionAndSelectAnchor(page: Page, name: string) {
@@ -92,6 +106,7 @@ test("E2b can select an anchor, filter, inspect and add a hotel location", async
   await expect(dialog.getByRole("button", { name: "暂不排期" })).toBeVisible();
   await dialog.getByRole("combobox", { name: "添加到行程" }).click();
   await page.getByRole("option", { name: "第 1 天" }).click();
+  await showTripPanel(page);
   await expect(page.getByTestId("trip-panel")).toContainText("珠海某酒店");
   await expect(
     page.locator('[data-stop-id^="d1:"]').filter({ hasText: "珠海某酒店" }),
