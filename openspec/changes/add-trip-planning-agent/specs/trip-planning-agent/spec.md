@@ -180,6 +180,12 @@ Agent 对当前激活行程的规划修改 SHALL 先形成可审核的方案；�
 - **THEN** 方案通过从第 1 天移除 A 并插入第 2 天表达
 - **AND** 应用后 A 只出现在第 2 天
 
+#### Scenario: Proposal stays in the review card
+- **GIVEN** Agent 已生成待审核方案
+- **WHEN** Agent 回复用户
+- **THEN** Agent 只提示用户在下方方案卡片中确认或拒绝
+- **AND** 不在对话中复述或总结逐日安排与地点清单
+
 #### Scenario: Reject a proposed edit
 - **GIVEN** Agent 已展示当前激活行程的变更方案
 - **WHEN** 用户拒绝或放弃该方案

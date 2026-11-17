@@ -44,3 +44,4 @@
 ## 7. 扩展地点详情推荐信息
 
 - [x] 7.1 扩展 `get_location_detail`：后端地点详情从 `poi_json` 解析自然语言类型（`type`）与行政区（`pname`/`cityname`/`adname`），并返回周营业时间；Agent 工具输出评分、自然语言类型、行政区、标签、商圈与营业时间，移除 `typeGroup` 等无自然语义代码和原始政策字段。补充后端详情与浏览器工具测试，验证 `cd apps/server && ./mvnw test`、`cd apps/web && npm test` 通过。
+- [x] 7.2 调整系统提示词：`update_trip_plan` 生成方案后只提示用户在下方方案卡片中确认或拒绝，不在对话中复述或总结逐日安排与地点清单；同步 spec 场景。
