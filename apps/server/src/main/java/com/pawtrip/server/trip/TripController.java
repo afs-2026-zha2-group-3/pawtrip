@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -20,8 +21,11 @@ class TripController {
 
 	private final TripService tripService;
 
-	TripController(TripService tripService) {
+	private final TripRouteEstimateService routeEstimateService;
+
+	TripController(TripService tripService, TripRouteEstimateService routeEstimateService) {
 		this.tripService = tripService;
+		this.routeEstimateService = routeEstimateService;
 	}
 
 	@GetMapping
@@ -32,6 +36,15 @@ class TripController {
 	@GetMapping("/{tripId}")
 	TripResponses.TripDetail trip(@PathVariable Long tripId, Authentication authentication) {
 		return this.tripService.trip(authentication.getName(), tripId);
+	}
+
+	@GetMapping("/{tripId}/route-estimate")
+	TripResponses.RouteEstimate routeEstimate(@PathVariable Long tripId,
+			@RequestParam(required = false) String fromPoiId,
+			@RequestParam(required = false) String toPoiId,
+			@RequestParam(required = false) String mode,
+			Authentication authentication) {
+		return this.routeEstimateService.estimate(authentication.getName(), tripId, fromPoiId, toPoiId, mode);
 	}
 
 	@PostMapping

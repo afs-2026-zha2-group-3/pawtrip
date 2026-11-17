@@ -19,7 +19,10 @@ public record TripPlan(int version, List<TripDay> days, List<TripStopRef> unsche
 
 	}
 
-	public record TripStop(String poiId, String toNext) {
+	public record TripStop(String poiId, String toNext, ToNextEstimate toNextEstimate) {
+	}
+
+	public record ToNextEstimate(int durationMinutes, double costLowYuan, double costHighYuan) {
 	}
 
 	public record TripStopRef(String poiId) {

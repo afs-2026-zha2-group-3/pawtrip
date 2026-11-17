@@ -1,6 +1,7 @@
 package com.pawtrip.server.error;
 
 import com.pawtrip.server.application.model.maps.PlaceSearchException;
+import com.pawtrip.server.application.model.maps.RouteEstimateException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 			case MISSING_CONFIGURATION, UPSTREAM_FAILURE -> "Map service request failed";
 		};
 		ProblemDetail problem = problem(code, detail, request);
+		return ResponseEntity.status(code.getStatus())
+				.contentType(MediaType.APPLICATION_PROBLEM_JSON)
+				.body(problem);
+	}
+
+	@ExceptionHandler(RouteEstimateException.class)
+	ResponseEntity<ProblemDetail> handleRouteEstimateException(RouteEstimateException exception,
+			HttpServletRequest request) {
+		ApiErrorCode code = switch (exception.code()) {
+			case MISSING_CONFIGURATION, UPSTREAM_FAILURE -> ApiErrorCode.UPSTREAM_FAILURE;
+		};
+		ProblemDetail problem = problem(code, "Map service request failed", request);
 		return ResponseEntity.status(code.getStatus())
 				.contentType(MediaType.APPLICATION_PROBLEM_JSON)
 				.body(problem);

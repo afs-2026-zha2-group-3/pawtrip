@@ -1,0 +1,101 @@
+# REQ-011 Impact Brief：途内交通推荐（打车/步行）
+
+## 1. Requirement set
+
+- `requirement-workspace/requirements/REQ-011-intra-city-transport.md`
+- `requirement-workspace/intents/REQ-011-intra-city-transport.md`
+- `requirement-workspace/analysis/REQ-011/deep-dive.md`
+
+## 2. As-is asset inventory（证据路径）
+
+**Knowledge base**
+
+- `docs/knowledge/architecture/README.md`：高德基础设施分层（`application.port.maps` 端口 ← `infrastructure.amap.api` 适配器 ← 共享 `transport`/`config`）；Key 仅服务端、缺失可启动、调用以类型化错误失败；地点模块查询契约。
+- `docs/knowledge/external/README.md`：高德 POI 2.0 已落地；**路线规划 2.0 明确为"仅供未来扩展参考，不属于当前实现"**，并提示驾车参数过长需 POST、共享传输层不应固化为 POI 专用——本次落地需遵循该告诫（现有 `AmapTransport.getJson(path, params)` 为通用 GET，可直接复用）。
+- `docs/knowledge/rules/process/spec-first.md`：生产代码前需稳定变更规格。
+- 高德路线规划 2.0 官方文档（2026-11-17 核对，知识库暂无详细条目，需补入）：驾车 `GET /v5/direction/driving` 返回 `route.taxi_cost`（元，字符串，基础字段）；驾车/步行时长需 `show_fields=cost` → `paths[].cost.duration`（秒）；步行 `GET /v5/direction/walking` 返回 `paths[].distance`（米）；坐标「经度,纬度」小数 ≤6 位；可传 `origin_id`/`destination_id`（POI ID）。
+
+**Living Spec**
+
+- `openspec/specs/trip-planning/spec.md`：Plan JSON v1 已定义 `stops` 元素 `{poiId, toNext?}`，`toNext ∈ {walk, drive, transit}` 可省略/为 null；同一 poiId MAY 同日重复；`/api/trips` 登录 + 归属校验、`400 VALIDATION_ERROR` / `404 TRIP_NOT_FOUND` 口径。**本次 MODIFIED**：`stops` 元素增量新增可选 `toNextEstimate` 快照字段（version 保持 1，旧数据兼容）。
+- `openspec/specs/trip-context/spec.md`：左下角行程面板按天分组渲染、拖拽排序/跨天移动、乐观更新 + 约 600ms 防抖整量 `PUT`、保存状态与失败重试、大交通 tag。
+- `openspec/specs/backend-amap-poi-search/spec.md`：POI 搜索适配器与共享传输层既有行为（本次复用不改）。
+- `openspec/specs/backend-error-handling/spec.md`：Problem Details 错误码体系（估算接口的错误响应沿用）。
+- `openspec/specs/frontend-api-request/spec.md`、`openspec/specs/frontend-data-fetching/spec.md`：统一 request 层与 TanStack Query 约定（估算查询沿用）。
+
+**Post-archive SDD assets**
+
+- `openspec/changes/archive/2026-11-16-transport-pet-rules-comparison/`、`.../2026-11-16-add-rule-recommendation-and-selection/`：交通规则前端常量与大交通选择模式（本次不改交通规则页；公共交通静态提示可参考其前端常量模式）。
+- `openspec/changes/archive/2026-11-17-add-location-pet-rule-display/`（REQ-009，已归档，PR #50）：景点携宠规则展示，不触碰行程面板段行。
+- `openspec/changes/unify-location-browsing/`（active，PR #60 已合并、Living Spec 已同步）：统一地点浏览，将 attraction 查询/类型更名为 locations（`locationBrowseDetailQueryOptions`/`LocationBrowseDetail`），对 `trip-panel.tsx`/`store.ts`/`types.ts` 仅更名级改动；与交通段行无能力冲突，合并时注意面板文件潜在文本冲突（低概率）。
+
+**当前实现**
+
+- `apps/web/src/components/trip/trip-panel.tsx`：按天 header + stop 行渲染（`rows` useMemo），无交通段行；已按 poiId 懒加载并缓存景点详情（`tripStore.cache.locations`，含 `petPolicies`），已派生行程绑定宠物 `activePet`（`petsQueryOptions` + `active.petId`）——每天政策对比提醒可纯前端派生，无需新后端接口。
+- `apps/web/src/lib/trip/store.ts`、`plan.ts`、`types.ts`：`toNext` 已在移动/插入时透传保留，但无设置 action、无 UI。
+- `apps/server/.../trip/TripPlanValidator.java`、`TripService.java`、`Trip.java`：`toNext` 校验与 `plan_json` 持久化已就绪；注意 `parseStops` 当前仅读 `poiId`/`toNext`、**丢弃未知字段**，快照落库需扩展 `TripPlan.TripStop` 与解析/序列化。
+- `apps/server/.../infrastructure/amap/`：`AmapTransport`（通用 GET + Key）、`AmapProperties`、`AmapPlaceSearchAdapter`（POI 专用）。
+- `apps/server/.../location/`：`pawtrip_location` 含 `longitude`/`latitude`/`poiId`，可按 poiId 批量查坐标。
+- `apps/server/src/main/resources/application.yml`：`amap.api-key=${AMAP_API_KEY:}`、`base-url=https://restapi.amap.com`。
+
+## 3. As-is → proposed delta
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| `apps/web/src/components/trip/trip-panel.tsx` | 按天 header + stop 行，无交通信息；已展示大交通 tag（`active.transportMode`） | 相邻 stop 间插入交通段行（方式选择 + 估算展示 + 加载/不可用态）；估算展示快照优先、无快照时查询；**大交通自驾联动（第 5 轮修订）**：`transportMode=drive` 时默认驾车（仅时长、无费用、派生不写库）+ 「选择其他途内交通方式」下拉（打车/步行）与可显式选回的驾车，自驾模式隐藏每天公交提示；每个打车段行内携宠小字提示（跟随段实际方式，驾车/步行段不展示）；每天第一个景点行前政策对比小字提醒（牵引绳聚合+档案对比、体型超限警示，未超限不提示）；相邻同一 POI 段不调用高德，仅在景点行下方展示小字提醒；每天标题下一条公共交通静态提示（该天有段且大交通非自驾时）；段行不可拖拽，不改变既有拖拽行为 |
+| `apps/web/src/lib/trip/`（新纯函数模块） | 无政策聚合逻辑 | 新增每天政策对比纯函数（当天 stops × 政策缓存 × 绑定档案 → 牵引绳项 + 超限警示列表；poiId 去重、严格大于、缺失不警示），可独立单测 |
+| `apps/web/src/lib/trip/store.ts`、`types.ts` | `toNext` 仅透传，无 setter；`TripStop` 无估算字段；`setTransportMode` 已存在（大交通选择落库） | `TripStop` 新增可选 `toNextEstimate`，`toNext` 类型扩展 `self_drive`；新增设置某 stop `toNext` + 快照的 action 与快照补写 action（乐观更新 + saveRevision 递增，复用防抖保存）；默认展示态按 `active.transportMode` 派生（自驾→驾车，否则→打车），不写回 store；不改 `setTransportMode` 既有行为 |
+| `apps/web/src/queries/`（trips 或新模块） | 无估算查询 | 新增 route-estimate 查询（key=景点对+方式），走统一 request 层；仅有需要时（无快照且非 samePoi）enabled |
+| `apps/server` trip 模块 | 仅 CRUD | 新增估算端点（建议 `GET /api/trips/{tripId}/route-estimate?fromPoiId&toPoiId&mode`）：登录 + trip 归属校验、mode ∈ {walk, drive}、poiId 存在性校验、坐标读取、调用端口 |
+| `application.port.maps` | 仅 `PlaceSearchPort` | 新增路线规划端口（步行/驾车估算） |
+| `infrastructure.amap.api` | 仅 POI 适配器 | 新增路线规划适配器：driving（`taxi_cost` + `show_fields=cost`）/ walking（`show_fields=cost`）；坐标格式化 ≤6 位小数；复用 `AmapTransport`/`AmapProperties`，不改 POI 适配器 |
+| `TripPlanValidator` / `TripPlan.TripStop` / Plan JSON v1 | `toNext ∈ {walk, drive, transit}`；parseStops 丢弃未知字段 | **MODIFIED**：`stops` 元素增量新增可选 `toNextEstimate {durationMinutes, costLowYuan, costHighYuan}`（数值 ≥0、时长整数，非法 → 400）；`toNext` 新增枚举值 `self_drive`（驾车，第 5 轮修订）；扩展解析/序列化；version 保持 1，旧数据兼容；UI 非自驾模式仅暴露 walk/drive（`drive`=打车），自驾模式暴露 self_drive/drive/walk |
+| `openspec/specs/trip-context/spec.md` | 面板渲染与保存契约 | MODIFIED：新增交通段行、方式选择 + 快照写入 `toNext`/`toNextEstimate`、快照优先展示与补写、大交通自驾联动（默认驾车/下拉切换/显式选驾车写库/公交提示隐藏/切换不改写）、公共交通每天一条提示（非自驾时）、打车段行内携宠小字提示（跟随段方式）、每天政策对比提醒（牵引绳/体型超限）、估算展示与失败态（仅存方式）、同 POI 段小字提醒（不算路） |
+| `openspec/specs/trip-planning/spec.md` | Plan JSON v1 结构 | MODIFIED：`stops` 元素新增可选 `toNextEstimate` 快照字段与校验口径、`toNext` 新增枚举值 `self_drive`（增量、向后兼容） |
+| 新 capability `trip-route-estimate` | 不存在 | ADDED：估算 API 契约（参数/归属/错误码/响应字段）+ 高德路线规划适配行为；API 本身不写库（快照由前端随 trip PUT 写入） |
+| `docs/knowledge/external/README.md` | 路线规划 2.0 为"未来扩展参考" | 更新为已落地，并补入路线规划 2.0 参数/返回字段文档条目 |
+| 测试 | 前端 vitest / 后端 JUnit / Playwright 基线 | 新增：适配器与服务端估算单测、校验器快照解析/序列化/非法值单测、store/段行渲染单测（含快照优先与补写）、途内交通 E2E（含失败兜底与快照恢复）；不引入新测试框架 |
+
+**Checked, no impact**：`backend-amap-poi-search`（POI 行为不变）、`attraction-pet-rules`（只读复用 petPolicies 字段，展示/查询行为不变）、`paws-page`（只读复用档案字段，CRUD 不变）、`web-app-shell`（不新增 Tab/路由）、大交通选择与交通规则页行为（第 5 轮修订后仅**只读复用** `active.transportMode` 做途内联动判定，`setTransportMode`/规则页/大交通 tag 行为不变）、数据库 schema（无迁移，快照存于既有 `plan_json` JSON 列）、Spring Security 放行名单。
+
+## 4. Blast radius
+
+- **直接受影响**：`apps/web` 行程面板 + trip store + 查询层；`apps/server` trip 模块 + 高德基础设施（新端口/适配器）。
+- **外部依赖**：高德 Web 服务新增路线规划调用量（每天视图 n−1 段 × 方式切换）；受 Key 配额与权限约束。
+- **不受影响**：数据库 schema、认证 API、地点/城市管理 API、交通规则页、导航结构、部署拓扑。
+- **运行时**：无新服务/进程；服务端新增出站到 `restapi.amap.com` 的既有域名调用。
+
+## 5. Artifact impact
+
+- **Specs**：ADDED `trip-route-estimate`；MODIFIED `trip-context`、`trip-planning`（Plan JSON v1 增量快照字段）。
+- **Tests**：后端（适配器解析/服务校验/错误映射/校验器快照与 self_drive 枚举）、前端（store action、段行渲染、默认方式（含大交通派生）、失败态、快照优先/补写、同 POI 小字提醒、打车携宠提示显隐、自驾联动（默认驾车/下拉切换/显式选驾车写库/公交提示隐藏/切换不改写）、每天政策对比纯函数与首个景点行前提醒渲染）、E2E（选择-保存-恢复、每天提示、兜底、同 POI 提醒、打车提示、政策提醒、快照恢复不调高德、自驾联动）。
+- **Docs / KB**：`docs/knowledge/external/` 补路线规划 2.0 文档；`docs/knowledge/architecture/README.md` 补端口/适配器与估算端点说明。
+- **No impact**：Flyway 迁移（快照存于既有 JSON 列）、既有错误码定义（新增码沿用 Problem Details 体系）。
+
+## 6. Dual-track notes
+
+- **OpenSpec**：建议 1 个 change 覆盖「服务端估算 + 前端段行 + 选择持久化」完整垂直切片；capability 为 `trip-route-estimate`（ADDED）+ `trip-context`（MODIFIED）。
+- **Agile**：可拆 3 个实现故事——① 服务端估算 API 与适配器；② 面板段行与估算展示；③ 方式选择持久化与公共交通提示——但用户价值在面板闭环，不建议拆成多个 Change。
+
+## 7. Risks & blockers
+
+| 风险 | 影响 | 缓解 |
+|---|---|---|
+| 高德 Key 权限/配额不足（驾车算路或 `taxi_cost` 字段不可用） | 打车估算失败 | P3 前用真实 Key 冒烟验证两个端点；失败走 S6「估算暂不可用」兜底，不阻塞主流程 |
+| `taxi_cost`/`duration` 为字符串且可能缺失或非数值 | 解析异常、展示错误 | 适配器做类型化解析与校验，异常映射为上游失败错误码 |
+| 每天多段并发调用高德 | 延迟与配额压力 | 前端按「景点对+方式」缓存；并发/限流细节 P3 设计（非阻塞 OQ 已 deferred） |
+| 坐标精度 >6 位小数 | 高德拒绝请求 | 适配器统一格式化 ≤6 位 |
+| 与 `unify-location-browsing` active change 并行 | 合并冲突（低概率，面板仅更名级交集） | 合并 main 后复验面板渲染与 E2E |
+| 既有数据 `toNext=transit`（契约允许但 UI 不提供） | 选择器无对应选项 | 显示按默认打车处理，不主动改写存量值；用户显式选择后覆盖（deep-dive ② 已枚举） |
+| 校验器扩展影响既有 plan 解析/序列化 | 既有 trip 保存回归 | TDD 先补既有行为基线测试再扩展；旧数据无 `toNextEstimate` 仍合法（增量可选字段） |
+| 快照为选择时点参考值，可能与实时行情偏离 | 展示值不是最新 | 用户已决快照优先（省配额、可离线查看）；切换方式即重算更新；文案保留「约/参考」语义 |
+| 回滚后旧 validator 拒绝 `self_drive` 枚举值 | 含已存驾车段的计划回滚后下一次 PUT 返回 400，前端恢复服务端数据 | 新增枚举值为增量扩展的已知代价（design Migration 已登记）；重新部署新版或重选方式即恢复；无数据损坏 |
+
+**Critical blockers**：无。
+
+## 8. Suggested split boundaries
+
+- 建议 **1 个 Change**：`add-intra-city-transport-estimate`。
+- 用户可见目标：查看每天行程时，相邻景点间可选打车/步行并看到参考费用区间与时长，公共交通明确不可携宠，选择随行程保存。
+- 依赖 DAG：`trip-planning` / `trip-context`（已归档基线）→ 本 change；与 REQ-009（已归档）及 `unify-location-browsing` 无能力依赖，可并行。
+- 不建议单独拆「高德路线规划基础设施」Change：无独立用户价值，且规模小，随本 change 一并交付。

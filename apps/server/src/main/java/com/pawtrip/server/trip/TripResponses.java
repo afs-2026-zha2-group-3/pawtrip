@@ -24,6 +24,9 @@ public final class TripResponses {
 
 	}
 
+	public record RouteEstimate(String mode, int durationMinutes, double costLowYuan, double costHighYuan) {
+	}
+
 	public record TripDetail(Long id, String name, String cityAdcode, Long petId, int totalDays, String startDate,
 			String transportMode, String createdAt, String updatedAt, JsonNode plan) {
 

@@ -320,6 +320,99 @@ class TripApiTest {
 	}
 
 	@Test
+	void rejectsInvalidToNextEstimateSnapshots() throws Exception {
+		assertInvalidCreateWithEstimate("{\"costLowYuan\":40,\"costHighYuan\":60}");
+		assertInvalidCreateWithEstimate("{\"durationMinutes\":25,\"costHighYuan\":60}");
+		assertInvalidCreateWithEstimate("{\"durationMinutes\":25,\"costLowYuan\":40}");
+		assertInvalidCreateWithEstimate("{\"durationMinutes\":\"25\",\"costLowYuan\":40,\"costHighYuan\":60}");
+		assertInvalidCreateWithEstimate("{\"durationMinutes\":25,\"costLowYuan\":40,\"costHighYuan\":\"60\"}");
+		assertInvalidCreateWithEstimate("{\"durationMinutes\":-1,\"costLowYuan\":40,\"costHighYuan\":60}");
+		assertInvalidCreateWithEstimate("{\"durationMinutes\":25,\"costLowYuan\":-1,\"costHighYuan\":60}");
+		assertInvalidCreateWithEstimate("{\"durationMinutes\":25,\"costLowYuan\":40,\"costHighYuan\":-60}");
+		assertInvalidCreateWithEstimate("{\"durationMinutes\":2.5,\"costLowYuan\":40,\"costHighYuan\":60}");
+		assertInvalidCreateWithEstimate("{\"durationMinutes\":25,\"costLowYuan\":61,\"costHighYuan\":60}");
+		assertInvalidCreateWithEstimate("[]");
+	}
+
+	@Test
+	void preservesValidSnapshotRoundtripAndKeepsVersionOne() throws Exception {
+		String plan = """
+				{"version":1,"days":[{"day":1,"stops":[
+					{"poiId":"poi-trip-one","toNext":"drive","toNextEstimate":{"durationMinutes":25,"costLowYuan":40,"costHighYuan":60}},
+					{"poiId":"poi-trip-two","toNext":"walk","toNextEstimate":{"durationMinutes":10,"costLowYuan":0,"costHighYuan":0}},
+					{"poiId":"poi-trip-one","toNext":"transit"}
+				]}],"unscheduled":[]}
+				""";
+		long tripId = createTrip(this.username, "快照行程", CITY_ADCODE, this.petId, 1, plan);
+
+		this.mockMvc.perform(get("/api/trips/{tripId}", tripId).with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.plan.version").value(1))
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNext").value("drive"))
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNextEstimate.durationMinutes").value(25))
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNextEstimate.costLowYuan").value(40.0))
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNextEstimate.costHighYuan").value(60.0))
+			.andExpect(jsonPath("$.plan.days[0].stops[1].toNextEstimate.durationMinutes").value(10))
+			.andExpect(jsonPath("$.plan.days[0].stops[1].toNextEstimate.costLowYuan").value(0.0))
+			.andExpect(jsonPath("$.plan.days[0].stops[1].toNextEstimate.costHighYuan").value(0.0))
+			.andExpect(jsonPath("$.plan.days[0].stops[2].toNext").value("transit"))
+			.andExpect(jsonPath("$.plan.days[0].stops[2].toNextEstimate").value(nullValue()));
+
+		this.mockMvc.perform(put("/api/trips/{tripId}", tripId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"快照行程","totalDays":1,"plan":%s}
+							""".formatted(plan)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.plan.version").value(1))
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNextEstimate.durationMinutes").value(25))
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNextEstimate.costLowYuan").value(40.0))
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNextEstimate.costHighYuan").value(60.0));
+
+		this.mockMvc.perform(get("/api/trips/{tripId}", tripId).with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNextEstimate.durationMinutes").value(25))
+			.andExpect(jsonPath("$.plan.days[0].stops[1].toNextEstimate.costHighYuan").value(0.0));
+	}
+
+	@Test
+	void acceptsSelfDriveWithZeroCostSnapshotAndStillRejectsUnknownModes() throws Exception {
+		String plan = """
+				{"version":1,"days":[{"day":1,"stops":[
+					{"poiId":"poi-trip-one","toNext":"self_drive","toNextEstimate":{"durationMinutes":47,"costLowYuan":0,"costHighYuan":0}},
+					{"poiId":"poi-trip-two"}
+				]}],"unscheduled":[]}
+				""";
+		long tripId = createTrip(this.username, "自驾行程", CITY_ADCODE, this.petId, 1, plan);
+
+		this.mockMvc.perform(get("/api/trips/{tripId}", tripId).with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.plan.version").value(1))
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNext").value("self_drive"))
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNextEstimate.durationMinutes").value(47))
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNextEstimate.costLowYuan").value(0.0))
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNextEstimate.costHighYuan").value(0.0));
+
+		this.mockMvc.perform(put("/api/trips/{tripId}", tripId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"自驾行程","totalDays":1,"plan":%s}
+							""".formatted(plan)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNext").value("self_drive"))
+			.andExpect(jsonPath("$.plan.days[0].stops[0].toNextEstimate.durationMinutes").value(47));
+
+		assertInvalidCreate("""
+				{"name":"非法枚举","cityAdcode":"%s","petId":%d,"totalDays":1,
+				 "plan":{"version":1,"days":[{"day":1,"stops":[{"poiId":"%s","toNext":"self-drive"}]}],"unscheduled":[]}}
+				""".formatted(CITY_ADCODE, this.petId, POI_ONE));
+	}
+
+	@Test
 	void rejectsInvalidBindingReferencesAndPlanValues() throws Exception {
 		assertInvalidCreate("""
 				{"name":"省份","cityAdcode":"330000","petId":%d,"totalDays":1}
@@ -504,6 +597,13 @@ class TripApiTest {
 		long tripId = response.path("id").asLong();
 		assertThat(result.getResponse().getHeader("Location")).isEqualTo("/api/trips/" + tripId);
 		return tripId;
+	}
+
+	private void assertInvalidCreateWithEstimate(String estimateJson) throws Exception {
+		assertInvalidCreate("""
+				{"name":"非法快照","cityAdcode":"%s","petId":%d,"totalDays":1,
+				 "plan":{"version":1,"days":[{"day":1,"stops":[{"poiId":"%s","toNext":"drive","toNextEstimate":%s}]}],"unscheduled":[]}}
+				""".formatted(CITY_ADCODE, this.petId, POI_ONE, estimateJson));
 	}
 
 	private void assertInvalidCreate(String body) throws Exception {
