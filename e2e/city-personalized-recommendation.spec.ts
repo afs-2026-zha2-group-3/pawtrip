@@ -462,8 +462,22 @@ test("policy gate: shoulder height cap hides badge for recommended city", async 
 });
 
 test("policy gate: unjudgeable dog keeps badge even over shoulder height cap", async ({ page }) => {
-  // 未填犬种的狗 → 无法判定：即使珠海肩高上限 20cm 低于宠物 25cm，徽标仍保留
-  await createPetViaApi(page, { name: "泳泳", petType: "DOG", preferences: ["SWIMMING"] });
+  // 未填犬种的狗 → 无法判定：即使珠海肩高上限 20cm 低于宠物 25cm，徽标仍保留。
+  // API 强制狗必填犬种（PetService.resolveBreed），遗留数据直改临时库置空模拟。
+  const corgi = await breedIdByName(page, "柯基犬");
+  const pet = await createPetViaApi(page, {
+    name: "泳泳",
+    petType: "DOG",
+    preferences: ["SWIMMING"],
+    dogBreedId: corgi,
+  });
+  const dbPath = process.env.PAWTRIP_E2E_DB_PATH;
+  if (!dbPath) test.skip();
+  const { DatabaseSync } = await import("node:sqlite");
+  const db = new DatabaseSync(dbPath!);
+  db.exec("PRAGMA busy_timeout = 10000");
+  db.prepare("UPDATE pet SET dog_breed_id = NULL WHERE id = ?").run(pet.id);
+  db.close();
   await withCityPolicyOverride("440400", { max_single_pet_shoulder_height_cm: 20 }, async () => {
     await openCities(page);
     await expectRecommendedOrder(page, swimmingHits);
