@@ -171,6 +171,31 @@ describe("AgentPanel", () => {
     expect(tripStore.state.active?.plan.days[0].stops).toEqual([{ poiId: "a" }]);
   });
 
+  it("shows only the final reply, not intermediate tool narration", async () => {
+    agentActions.setOpen(true);
+    chat.state.messages = [
+      { id: "u1", role: "user", parts: [{ type: "text", content: "帮我安排住宿" }] },
+      {
+        id: "a1",
+        role: "assistant",
+        parts: [
+          { type: "text", content: "我先读取当前行程计划。" },
+          { type: "tool-call", id: "c1", name: "get_trip_plan", state: "input-complete" },
+        ],
+      },
+      {
+        id: "a2",
+        role: "assistant",
+        parts: [{ type: "text", content: "方案已生成，请在下方确认。" }],
+      },
+    ];
+
+    renderPanel();
+
+    expect(await screen.findByText("方案已生成，请在下方确认。")).toBeTruthy();
+    expect(screen.queryByText("我先读取当前行程计划。")).toBeNull();
+  });
+
   it("asks before deactivating the current trip for a new trip", async () => {
     tripActions.setActive(trip);
     agentActions.setOpen(true);

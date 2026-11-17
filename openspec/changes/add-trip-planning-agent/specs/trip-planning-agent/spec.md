@@ -42,6 +42,12 @@
 - **AND** 状态使用用户可理解的动作文案（如正在规划行程、正在搜集景点、正在编辑行程）
 - **AND** 已结束的步骤折叠，不逐条展开
 
+#### Scenario: Intermediate narration is not displayed
+- **GIVEN** Agent 在工具调用之间输出了过程说明
+- **WHEN** 面板渲染对话
+- **THEN** 面板不显示这些过程说明
+- **AND** 仅显示用户消息与每轮最终回复
+
 #### Scenario: Panel state is not persisted
 - **GIVEN** 用户展开了 Agent 面板并有待审核方案
 - **WHEN** 用户刷新页面

@@ -13,6 +13,7 @@ import { CityTripDialog } from "@/routes/_authenticated/-city-trip-dialog";
 import { applyProposal } from "@/lib/agent/apply";
 import { createAgentClientTools } from "@/lib/agent/client-tools";
 import { buildAgentContext } from "@/lib/agent/context";
+import { visibleAgentMessages } from "@/lib/agent/messages";
 import { agentActions } from "@/lib/agent/store";
 import {
   resolveAgentStatus,
@@ -111,7 +112,7 @@ export function AgentPanel() {
   });
 
   const messages = chat.messages as unknown as ReadonlyArray<AgentMessageLike>;
-  const visibleMessages = messages.filter(hasRenderableText);
+  const visibleMessages = visibleAgentMessages(messages);
   const statusView = resolveAgentStatus(messages, chat.isLoading);
 
   async function send() {
@@ -334,12 +335,6 @@ export function AgentPanel() {
         </SheetContent>
       </Sheet>
     </>
-  );
-}
-
-function hasRenderableText(message: AgentMessageLike): boolean {
-  return (message.parts ?? []).some(
-    (part) => part.type === "text" && (part.content ?? "").trim() !== "",
   );
 }
 
