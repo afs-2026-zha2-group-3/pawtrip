@@ -484,9 +484,6 @@ export function PetDialog({
                     </div>
                   ))}
                 </div>
-                <FieldDescription>
-                  用于城市个性化推荐，可不填。
-                </FieldDescription>
               </Field>
 
               <Field>
