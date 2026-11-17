@@ -58,7 +58,7 @@ export function deriveDayPolicy(
   return { leash, sizeWarnings };
 }
 
-// 当天汇总行仅保留牵引绳提醒；体型超限警示改在对应景点行上方展示（2026-11-17 修订）
+// 当天汇总行仅保留牵引绳提醒；体型超限警示改在对应景点行下方展示（2026-11-17 修订）
 export function dayPolicyLines(reminder: DayPolicyReminder): string[] {
   const lines: string[] = [];
   if (reminder.leash === "required") {

@@ -157,7 +157,7 @@ describe("day policy reminder placement", () => {
     ).toBeTruthy();
   });
 
-  it("names the pet and limits in a warning directly above the exceeded stop", async () => {
+  it("names the pet and limits in a warning directly below the exceeded stop", async () => {
     const { container } = renderPanel({
       locations: [
         location("poi-a", "景点A", { leashRequired: true, maxSinglePetWeightKg: 8.5, maxSinglePetShoulderHeightCm: 40 }),
@@ -166,12 +166,12 @@ describe("day policy reminder placement", () => {
     });
     await screen.findByText("毛毛");
 
-    // 体型警示点名宠物，位于对应景点行上方；未超限景点无警示
+    // 体型警示点名宠物，位于对应景点行下方；未超限景点无警示
     const warning = await screen.findByTestId("stop-size-warning");
     expect(warning.textContent).toBe("您的宠物「毛毛」超出景点 景点A 限制（≤8.5kg/≤40cm）");
     const stopA = container.querySelector('[data-stop-id="d1:0:poi-a"]')!;
     expect(
-      warning.compareDocumentPosition(stopA) & Node.DOCUMENT_POSITION_FOLLOWING,
+      stopA.compareDocumentPosition(warning) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(screen.getAllByTestId("stop-size-warning")).toHaveLength(1);
 

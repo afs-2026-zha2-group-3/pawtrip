@@ -381,7 +381,7 @@ test("E6 self-drive segment shows no taxi hint", async ({ page }) => {
   await expect(page.getByText(TAXI_PET_HINT)).toHaveCount(0);
 });
 
-test("E7 policy reminder keeps leash line; size warning names the pet above its own stop", async ({
+test("E7 policy reminder keeps leash line; size warning names the pet below its own stop", async ({
   page,
 }) => {
   const id = await presetTrip(page, {
@@ -395,10 +395,10 @@ test("E7 policy reminder keeps leash line; size warning names the pet above its 
 
   const reminder = page.getByTestId("day-policy-reminder");
   await expect(reminder.getByText(LEASH_LINE, { exact: true })).toBeVisible();
-  // 体型警示点名宠物，位于对应景点行上方（2026-11-17 修订）
+  // 体型警示点名宠物，位于对应景点行下方（2026-11-17 修订）
   const sizeWarning = page.getByTestId("stop-size-warning");
   await expect(sizeWarning).toHaveText(SIZE_LINE_ZHU_A);
-  await expectBefore(sizeWarning, page.locator('[data-stop-id="d1:0:e2e-zhu-a"]'));
+  await expectBefore(page.locator('[data-stop-id="d1:0:e2e-zhu-a"]'), sizeWarning);
   await expect(reminder).not.toContainText("超出景点");
   // 位置：公交提示之后、当天首个景点行之前。
   await expectBefore(page.getByTestId("transit-pet-notice").first(), reminder);

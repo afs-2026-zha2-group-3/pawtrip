@@ -141,7 +141,7 @@ describe("dayPolicyLines", () => {
     ]);
   });
 
-  it("keeps only the leash line; size warnings render above their own stop", () => {
+  it("keeps only the leash line; size warnings render below their own stop", () => {
     expect(
       dayPolicyLines({
         leash: "required",

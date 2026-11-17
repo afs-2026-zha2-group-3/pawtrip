@@ -73,7 +73,7 @@ interface StopRow {
   index: number;
   poiId: string;
   name: string;
-  /** 体型超限警示：展示在该景点行上方（2026-11-17 修订） */
+  /** 体型超限警示：展示在该景点行下方（2026-11-17 修订） */
   sizeWarning: string | null;
 }
 
@@ -537,9 +537,10 @@ function TripPanelContent() {
                       />
                     );
                   }
-                  // 行容器为横向 flex：纵向包裹使警示独占景点上方一行
+                  // 行容器为横向 flex：纵向包裹使警示独占景点下方一行
                   return (
                     <div className="flex w-full min-w-0 flex-col gap-1">
+                      <SortableStop row={row} onRemove={() => removeStop(row)} />
                       {row.sizeWarning ? (
                         <p
                           data-testid="stop-size-warning"
@@ -548,7 +549,6 @@ function TripPanelContent() {
                           {row.sizeWarning}
                         </p>
                       ) : null}
-                      <SortableStop row={row} onRemove={() => removeStop(row)} />
                     </div>
                   );
                 }}
