@@ -20,8 +20,9 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
   workers,
-  timeout: 30_000,
-  expect: { timeout: 5_000 },
+  // CI runner 冷启动 vite transform 可达 9s+，5s 断言窗口会在应用启动期误报；仅放宽 CI 容忍度。
+  timeout: process.env.CI ? 60_000 : 30_000,
+  expect: { timeout: process.env.CI ? 15_000 : 5_000 },
   reporter: [
     ["list"],
     ["html", { outputFolder: "playwright-report", open: "never" }],

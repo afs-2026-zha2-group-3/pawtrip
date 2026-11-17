@@ -29,6 +29,8 @@ vi.mock("@tanstack/react-router", async (importOriginal) => ({
       {children}
     </a>
   ),
+  useRouterState: ({ select }: { select: (state: { location: { pathname: string } }) => unknown }) =>
+    select({ location: { pathname: "/trips" } }),
 }));
 
 const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>();

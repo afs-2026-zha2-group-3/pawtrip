@@ -132,7 +132,7 @@ test("shows an empty state without an active trip", async ({ page }) => {
   await expect(page.getByText("还没有可查看的行程单")).toBeVisible();
   await expect(page.getByRole("link", { name: "去创建行程" })).toBeVisible();
   await expect(page.getByRole("link", { name: "查看我的行程" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "Trips" })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: "我的行程" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -156,7 +156,7 @@ test("summarizes the active trip by day from the panel entry", async ({
 
   await expect(page).toHaveURL(/\/itinerary$/);
   await expect(page.getByRole("heading", { name: "行程单" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "Trips" })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: "我的行程" })).toHaveAttribute(
     "aria-selected",
     "true",
   );

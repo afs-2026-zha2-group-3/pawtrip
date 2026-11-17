@@ -37,6 +37,13 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-paw-accent: var(--paw-accent);
+  --color-paw-accent-strong: var(--paw-accent-strong);
+  --color-paw-accent-soft: var(--paw-accent-soft);
+  --color-paw-accent-softer: var(--paw-accent-softer);
+  --color-paw-rating: var(--paw-rating);
+  --color-paw-ink: var(--paw-ink);
+  --color-paw-line: var(--paw-line);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -76,6 +83,13 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --paw-accent: #ec9455;
+  --paw-accent-strong: #f76b15;
+  --paw-accent-soft: #ffefd6;
+  --paw-accent-softer: #fff7ed;
+  --paw-rating: #ff9d02;
+  --paw-ink: #262626;
+  --paw-line: #e0e0e0;
 }
 
 .dark {
@@ -119,6 +133,126 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+.bg-paw-pattern {
+  background-color: #fffdf2;
+  background-image: url("./assets/paw-pattern.png");
+  background-repeat: repeat;
+  background-size: 636px 636px;
+}
+
+.dark .bg-paw-pattern {
+  background-color: var(--background);
+  background-image: none;
+}
+
+.bg-pet-pattern {
+  background-color: #faf9f5;
+  background-image: url("./assets/pet-heads-pattern.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.dark .bg-pet-pattern {
+  background-color: var(--background);
+  background-image: none;
+}
+
+.paw-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--paw-line, #e0e0e0) transparent;
+}
+
+.paw-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.paw-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.paw-scroll::-webkit-scrollbar-thumb {
+  background: var(--paw-line, #e0e0e0);
+  border-radius: 9999px;
+}
+
+.paw-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--paw-accent, #ec9455);
+}
+
+.shadow-pet-card {
+  box-shadow:
+    9px 18px 30px 19px rgba(194, 109, 39, 0.1),
+    2px 4px 4px 2px rgba(194, 109, 39, 0.25);
+}
+
+.paw-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--paw-line) transparent;
+}
+
+.paw-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.paw-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.paw-scroll::-webkit-scrollbar-thumb {
+  background: var(--paw-line);
+  border-radius: 9999px;
+}
+
+.paw-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--paw-accent);
+}
+
+@keyframes paw-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.paw-rise {
+  animation: paw-rise 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.paw-grid > * {
+  animation: paw-rise 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.paw-grid > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+
+.paw-grid > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+
+.paw-grid > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+
+.paw-grid > *:nth-child(n + 5) {
+  animation-delay: 160ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paw-rise,
+  .paw-grid > * {
+    animation: none;
   }
 }
 
