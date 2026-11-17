@@ -53,7 +53,7 @@ Start server route 运行在 Node 运行时，不能依赖浏览器的 Vite dev 
 
 规划工作区维护目标类型、目标 trip 快照和待审核方案，不把未激活 trip 写入 `tripStore.active`；除用户确认创建新行程外，不因 Agent 操作改变 `activeTripId`。
 
-- 新行程：分两阶段。第一阶段通过现有 `startDraft`/`updateDraft` 协助用户完成城市、天数与宠物草稿；草稿仍只存在于内存，用户确认后经现有确认流程创建空计划行程并激活。现有确认逻辑内嵌在 TripPanel，实施时抽出共享的创建动作（名称生成、宠物校验、激活与查询刷新），供手动流程与 Agent 共用；Agent 启动草稿前必须缓存城市名称，避免名称退化为 adcode。第二阶段在激活行程上继续搜索与编排地点：方案留在规划工作区预览，用户确认后通过批量动作整体替换 `plan` 并 bump revision，触发现有防抖保存。存在激活行程时，创建前必须完成待发送保存；保存失败不得取消激活或创建新行程。保存成功后确认取消激活；未确认草稿须经用户确认后放弃或替换再继续创建，创建失败时提示可恢复原行程激活。
+- 新行程：分两阶段。第一阶段通过现有创建行程确认弹窗（`-city-trip-dialog.tsx`）协助用户完成城市、起止日期与宠物配置：天数由 `daysBetween` 含首尾计算且 MUST 为 1–7；用户在弹窗中确认后创建空计划行程并激活。实施时从弹窗抽出共享的创建动作（名称生成、宠物校验、`cacheCity`、激活与查询刷新）供手动流程与 Agent 共用；Agent 通过客户端工具打开同一弹窗并预填配置，提交仍由用户点击「确定」完成，不新增创建入口。第二阶段在激活行程上继续搜索与编排地点：方案留在规划工作区预览，用户确认后通过批量动作整体替换 `plan` 并 bump revision，触发现有防抖保存。存在激活行程时，`/cities` 的选定入口不可用，创建前必须完成待发送保存；保存失败不得取消激活或创建新行程。保存成功后确认取消激活再创建，创建失败时提示可恢复原行程激活。
 - 激活行程：应用前先完成待发送的本地自动保存，保存失败则中止应用；重新读取目标行程详情并比较 `updatedAt`。确认后通过一个前端批量应用动作整体替换 `plan`，保持 `name`、`totalDays`、`transportMode` 不变，并增加保存 revision 以触发现有防抖自动保存。现有 `setPlan` 不增加 revision，不应直接作为 Agent 批量提交的唯一动作。保存返回 400 时保留待审核方案并明确提示方案未生效，不把服务端回滚误报为应用成功。
 - 未激活已有行程：应用前重新读取目标行程详情，以详情中的 `name`、`totalDays`、`transportMode` 与审核后的 `plan` 调用现有 `updateTrip`，并刷新对应查询数据；不激活该行程。目标返回 `404` 时终止并告知用户；`updatedAt` 与预览时不同时要求重新审核。
 
@@ -63,12 +63,12 @@ Start server route 运行在 Node 运行时，不能依赖浏览器的 Vite dev 
 
 Agent 以“全局浮动入口 + 可展开面板”呈现，挂在登录后的全局布局（`AuthenticatedShell` 内，与 TripPanel 同级），不随页面路由切换销毁。实现原则：AI 渲染与对话能力尽量复用现成组件——shadcn AI Elements 模式负责渲染、TanStack AI 负责对话状态与流式、shadcn Sheet 负责容器（详见 `docs/knowledge/external/ai-elements.md`）；自研仅限 Pawtrip 业务特有部分（parts 映射层、方案卡片/差异预览、业务确认流程），不重造消息布局、滚动跟随、流式渲染或工具卡片：
 
-- 入口：右下角固定圆形按钮（`data-testid="agent-fab"`，带 aria-label），所有登录后页面可见，不依赖激活行程或草稿；TripPanel 位于左下角，两者不重叠。未登录时不渲染。
+- 入口：右下角固定圆形按钮（`data-testid="agent-fab"`，带 aria-label），所有登录后页面可见，不依赖激活行程；TripPanel 位于左下角，两者不重叠。未登录时不渲染。
 - 面板容器：shadcn/ui Sheet（base 变体，`npx shadcn@latest add sheet` 拷入项目），不复用 TripPanel（其内部耦合 dnd-kit 排序逻辑）。以受控 `open` 驱动（开关状态仅存内存，刷新后回到收起态），`SheetContent side="right"`；按非模态使用（Base UI Dialog `modal=false`、移除 Backdrop）：页面保持可见可交互，不因点击页面关闭，仅通过入口按钮或面板内关闭按钮收起，ESC 可关闭。展开态样式在默认 Sheet 上定制，镜像 TripPanel 悬浮态（`border bg-card shadow-xl rounded-xl`）：小屏 `fixed inset-0` 全屏滚动，`lg: inset-y-4 right-4 left-auto w-[400px]`。z-index 高于 TripPanel（含其小屏全屏展开态）。
 - 对话区：直接采用 AI Elements 的 Chat 组合（`npx shadcn@latest add message-scroller message bubble input-group`）：Message Scroller 负责滚动锚点与自动跟随流式回复（`scrollAnchor` 放在用户消息），Bubble 渲染正文，Prompt Input 承担输入框与发送；不自研滚动跟随或消息布局。
 - parts 映射：TanStack AI `useChat` 的 `UIMessage` parts 渲染到对应 AI Elements 模式——`text` → Bubble，`thinking` → Reasoning，`tool-call`/`tool-result` → Tool 卡片（地点查找、地点详情、方案提案等 Pawtrip 工具调用对用户可见），加载态用 Spinner；自研仅限此映射层与 Reasoning/Tool 模式的按需拷贝。
 - 方案卡片（唯一的较大自研件）：`propose_trip_plan` 的结构化方案渲染为基于 Card/Button 的自研方案卡片，含与目标行程现有计划的差异预览及确认/拒绝按钮；结构化差异不走通用 markdown 渲染。
-- 功能收口在面板内：对话、目标选择、方案预览与确认/拒绝（含创建新行程确认、取消当前激活行程确认、替换草稿确认）全部在面板内完成，不跳转页面。
+- 功能收口在面板内：对话、目标选择、方案预览与确认/拒绝（含创建新行程确认弹窗预填、取消当前激活行程确认）全部在面板内完成，不跳转页面。
 - 刷新页面后对话与待审核方案丢失，与本变更“不做跨会话持久化”的非目标一致。切换规划目标时，旧目标的全部待审核方案 MUST 失效并要求重新生成。
 
 ### 复用共享已保存地点列表作为 Agent 地点目录
@@ -83,18 +83,18 @@ Agent 的地点查找只针对 Pawtrip 已保存地点，不调用 AMap 候选�
 
 ### 结构化方案由专用工具调用承载
 
-工具 `propose_trip_plan` 只面向已持久化的目标行程；新行程先通过草稿流程创建并激活，创建后的编排同样以该行程为 `target`，因此工具不承载创建配置：
+工具 `propose_trip_plan` 只面向已持久化的目标行程；新行程先通过创建行程确认弹窗创建并激活，创建后的编排同样以该行程为 `target`，因此工具不承载创建配置：
 
 - `target`：`{ kind: "existing", tripId: number }`
 - `plan`：既有 `TripPlan` v1；`days[].stops[]` 的 `toNext` 可为 `walk`、`drive`、`transit` 或省略
 - `summary`：面向用户的变更摘要
 - `warnings`：可选字符串数组
 
-约束：`poiId` 必须来自本轮地点工具结果；每轮对话维护“允许 `poiId` 集合”，`propose_trip_plan` 出现集合外的 ID 时整份方案拒绝。`day` 在 `1..totalDays` 且同一计划内唯一；`unscheduled` 去重；同一天允许重复 `poiId`；新建行程的 1–7 天限制由前端草稿保证，提案阶段不得修改目标行程的 `totalDays`、城市或宠物。切换目标或重新查询后旧提案失效。前端在应用前用同一 schema 校验。
+约束：`poiId` 必须来自本轮地点工具结果；每轮对话维护“允许 `poiId` 集合”，`propose_trip_plan` 出现集合外的 ID 时整份方案拒绝。`day` 在 `1..totalDays` 且同一计划内唯一；`unscheduled` 去重；同一天允许重复 `poiId`；新建行程的 1–7 天限制由前端创建弹窗的日期区间保证，提案阶段不得修改目标行程的 `totalDays`、城市或宠物。切换目标或重新查询后旧提案失效。前端在应用前用同一 schema 校验。
 
 ### 领域约束由 Pawtrip 代码验证
 
-计划沿用既有 `TripPlan` v1 和 trip 服务校验。trip 只有一个城市和一个绑定宠物；新行程天数沿用前端草稿的 1–7 天限制；已有行程的 `totalDays`、城市与绑定宠物不由 Agent 修改。宠物规则以现有确定性匹配函数计算，Agent 可解释结果但不能自行决定友好性。跨城市地点不能加入当前单城市行程。
+计划沿用既有 `TripPlan` v1 和 trip 服务校验。trip 只有一个城市和一个绑定宠物；新行程天数沿用前端创建弹窗的日期区间（含首尾）1–7 天限制；已有行程的 `totalDays`、城市与绑定宠物不由 Agent 修改。宠物规则以现有确定性匹配函数计算，Agent 可解释结果但不能自行决定友好性。跨城市地点不能加入当前单城市行程。
 
 注意：后端 `TripService.validatePoiIds` 只校验 POI 是否存在，不校验 POI 是否属于目标城市；同城约束必须由 Agent 地点目录与前端 schema 在应用前强制，并补充跨城市地点拒绝测试。
 
@@ -118,7 +118,7 @@ Agent 服务端入口必须验证现有登录会话，身份只能来自可信�
 - **激活行程在另一标签页被修改** → 应用前比较 `updatedAt`，变化时要求重新审核，避免覆盖外部写入。
 - **智谱 OpenAI 兼容接口存在差异**（`tool_choice` 仅 `auto`、`temperature` 区间、模型可用性）→ 结构化方案经工具调用与前端校验；实施时依据官方文档验证流式与工具调用行为。
 - **存在激活行程时创建新行程需要取消激活** → 采用显式确认；待发送保存失败时不取消激活也不创建，创建失败时才提示可恢复原行程激活，避免用户丢失当前编辑上下文。
-- **Agent 与用户共用全局草稿** → 草稿是单一全局状态；Agent 编辑时面板可见，保存前重新确认城市、天数与宠物，避免覆盖用户正在进行的草稿。
+- **Agent 与用户共用创建行程确认弹窗** → Agent 预填弹窗时用户可见且可修改，提交前在弹窗内重新核对城市、日期与宠物；取消弹窗不产生任何写入。
 - **Start 与 Spring 的会话边界** → 服务端显式转发 Cookie 并校验 `GET /api/auth/me`；生产要求同源部署，禁止信任请求体里的用户 ID。
 - **模型可能误匹配同名地点或违反排程偏好** → 展示真实候选与计划差异；含糊候选要求用户选择，应用前由 Pawtrip 代码校验。
 - **完整行程更新沿用现有整量保存语义** → 应用前重新读取详情并保留 `name`/`totalDays`/`transportMode`，预览展示完整计划；本次不改变后端 trip CRUD 或引入乐观锁。

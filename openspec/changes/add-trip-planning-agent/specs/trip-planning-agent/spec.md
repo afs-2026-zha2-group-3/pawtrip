@@ -20,13 +20,13 @@
 - **THEN** Agent 可用且不会自动修改该行程
 
 ### Requirement: Agent interface is a global collapsible panel
-已登录用户 SHALL 在所有登录后页面通过右下角圆形入口按钮使用 Agent；点击入口 SHALL 展开 Agent 面板，对话、方案预览与确认等全部 Agent 操作 MUST 在面板内完成。入口与面板 MUST NOT 依赖激活行程或草稿存在；面板开关与对话状态 MUST 仅存于内存，刷新后丢失。
+已登录用户 SHALL 在所有登录后页面通过右下角圆形入口按钮使用 Agent；点击入口 SHALL 展开 Agent 面板，对话、方案预览与确认等全部 Agent 操作 MUST 在面板内完成。入口与面板 MUST NOT 依赖激活行程存在；面板开关与对话状态 MUST 仅存于内存，刷新后丢失。
 
 #### Scenario: Entry is available on any authenticated page
 - **GIVEN** 用户已登录
 - **WHEN** 用户停留在任意登录后页面
 - **THEN** 右下角显示 Agent 圆形入口按钮
-- **AND** 入口不依赖激活行程或草稿存在
+- **AND** 入口不依赖激活行程存在
 
 #### Scenario: All agent actions complete inside the panel
 - **GIVEN** 用户已展开 Agent 面板
@@ -64,22 +64,23 @@ Agent SHALL 区分新建行程与修改已有行程。修改已有行程时 SHAL
 - **AND** 旧方案未被写入任何行程
 
 ### Requirement: Agent creates a new trip only after confirmation
-Agent SHALL 能通过现有草稿流程协助用户完成新行程的城市、天数与单只宠物配置。新行程配置 MUST 遵循单城市、单宠物及前端草稿的 1–7 天限制；用户确认配置前 MUST NOT 创建持久化行程。存在激活行程时，Agent MUST 先经用户明确确认取消当前激活行程，且 MUST 先完成待发送的自动保存，取消成功后才可创建；同一时间 MUST 不超过一个激活行程。创建后的地点编排 SHALL 先展示可审核方案，用户确认后才写入行程并触发自动保存。
+Agent SHALL 能通过现有创建行程确认弹窗协助用户完成新行程的城市、起止日期与单只宠物配置。天数 MUST 由起止日期含首尾计算且为 1–7 的整数；宠物 MUST 为当前用户的一只宠物；用户在弹窗中确认前 MUST NOT 创建持久化行程。存在激活行程时，Agent MUST 先经用户明确确认取消当前激活行程，且 MUST 先完成待发送的自动保存，取消成功后才可创建；同一时间 MUST 不超过一个激活行程。创建后的地点编排 SHALL 先展示可审核方案，用户确认后才写入行程并触发自动保存。
 
-#### Scenario: Prepare a new trip draft without an active trip
+#### Scenario: Prepare a new trip via the confirmation dialog
 - **GIVEN** 用户没有激活行程
-- **WHEN** 用户描述城市、天数和宠物
-- **THEN** Agent 通过现有草稿流程协助完成配置并请求用户确认
+- **WHEN** 用户描述城市、日期和宠物
+- **THEN** Agent 通过现有创建行程确认弹窗协助完成配置并请求用户确认
 - **AND** 用户确认前不创建持久化行程
 
-#### Scenario: Existing draft is replaced
-- **GIVEN** 用户已有未确认的行程草稿
-- **WHEN** Agent 准备为另一个新行程启动草稿
-- **THEN** Agent 先说明将替换现有草稿并请求确认
-- **AND** 用户确认前不覆盖草稿
+#### Scenario: User cancels the confirmation dialog
+- **GIVEN** Agent 已协助填写创建行程确认弹窗
+- **WHEN** 用户取消或关闭该弹窗
+- **THEN** 不调用创建接口
+- **AND** 当前激活行程保持不变
+- **AND** 已填写的配置不持久化
 
 #### Scenario: Confirm a new trip
-- **GIVEN** Agent 已协助完成新行程的城市、天数与宠物配置
+- **GIVEN** Agent 已协助完成新行程的城市、日期与宠物配置
 - **WHEN** 用户明确确认保存
 - **THEN** 系统通过现有创建流程创建空计划行程
 - **AND** 新行程按现有行为成为激活行程
@@ -123,7 +124,7 @@ Agent SHALL 能通过现有草稿流程协助用户完成新行程的城市、�
 - **AND** 不生成可确认的新行程方案
 
 #### Scenario: Required trip information is missing
-- **GIVEN** 新行程缺少有效城市、宠物或 1–7 天范围内的天数
+- **GIVEN** 新行程的城市、宠物无效，或日期区间推导的天数不在 1–7 天范围内
 - **WHEN** Agent 准备生成可确认方案
 - **THEN** Agent 询问缺失或无效的信息
 - **AND** 不创建持久化行程
