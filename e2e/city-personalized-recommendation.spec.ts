@@ -212,7 +212,7 @@ test("badge contract: no reason text, coexists with policy tags, no recommendati
   await expect(recommended.locator('[data-slot="badge"]')).toHaveText("系统推荐");
   // 徽标不遮挡标题，且与逐宠物政策标签并存
   await expect(recommended.locator('[data-slot="card-title"]')).toHaveText("杭州市");
-  await expect(recommended.getByText(/豆豆 ·|毛毛 ·/).first()).toBeVisible();
+  await expect(recommended.getByText(/泳泳 ·/).first()).toBeVisible();
   // 无理由文字（Non-goal 反向）
   await expect(page.getByText(/推荐原因|因为|推荐理由/)).toHaveCount(0);
   const plain = cityCard(page, "北京市");
@@ -262,7 +262,7 @@ test("filter and search overlay keeps score order and syncs candidate count", as
   await expect(page.getByText("共 1 个候选")).toBeVisible();
   const hangzhou = cityCard(page, "杭州市");
   await expect(hangzhou.locator('[data-slot="badge"]')).toHaveText("系统推荐");
-  await expect(hangzhou.getByText(/豆豆 ·|毛毛 ·/).first()).toBeVisible();
+  await expect(hangzhou.getByText(/泳泳 ·/).first()).toBeVisible();
   // 选定流程不变
   await hangzhou.getByRole("button", { name: "选定" }).click();
   const dialog = page.getByRole("dialog");
