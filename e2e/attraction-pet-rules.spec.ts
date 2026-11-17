@@ -18,7 +18,7 @@ async function openAttractions(page: Page) {
 }
 
 async function tripTo(page: Page, city: string) {
-  await createTrip(page, { city, days: 1, pet: "豆豆" });
+  await createTrip(page, { city, days: 1 });
   await openAttractions(page);
 }
 
@@ -119,7 +119,7 @@ test("E5 switching city requires deactivating the current trip", async ({ page }
 
   await openTrips(page);
   await tripCard(page, "珠海市 · 1天 · 豆豆").getByRole("button", { name: "取消激活" }).click();
-  await createTrip(page, { city: "杭州市", days: 1, pet: "豆豆" });
+  await createTrip(page, { city: "杭州市", days: 1 });
   await openAttractions(page);
 
   await expect(attractionCard(page, "西湖")).toBeVisible();
