@@ -35,7 +35,7 @@ Agent SHALL 区分新建行程与修改已有行程。修改已有行程时 SHAL
 - **AND** 在用户选择前不应用行程修改
 
 ### Requirement: Agent creates a new trip only after confirmation
-Agent SHALL 能从用户提供的城市、天数、单只宠物和期望地点生成新行程方案。方案 MUST 遵循单城市、单宠物及 1–7 天限制；用户确认前 MUST NOT 创建持久化行程。
+Agent SHALL 能从用户提供的城市、天数、单只宠物和期望地点生成新行程方案。新行程方案 MUST 遵循单城市、单宠物及前端草稿的 1–7 天限制；用户确认前 MUST NOT 创建持久化行程。存在激活行程时，Agent MUST 先经用户明确确认取消当前激活行程，取消成功后才可创建；同一时间 MUST 不超过一个激活行程。
 
 #### Scenario: Plan a new trip without an active trip
 - **GIVEN** 用户没有激活行程
@@ -48,6 +48,13 @@ Agent SHALL 能从用户提供的城市、天数、单只宠物和期望地点�
 - **WHEN** 用户明确确认创建
 - **THEN** 系统通过现有创建流程持久化该行程
 - **AND** 新行程按现有行为成为激活行程
+
+#### Scenario: Active trip exists when creating a new trip
+- **GIVEN** 用户已有激活行程
+- **WHEN** 用户要求从零规划并确认创建新行程
+- **THEN** Agent 说明将取消当前激活行程并请求确认
+- **AND** 在用户确认且取消激活成功前不创建新行程
+- **AND** 新行程创建后成为唯一激活行程
 
 #### Scenario: Required trip information is missing
 - **GIVEN** 新行程缺少有效城市、宠物或 1–7 天范围内的天数
@@ -75,12 +82,18 @@ Agent 对已有行程的规划修改 SHALL 先形成可审核的方案；用户�
 - **THEN** 已保存行程保持不变
 
 ### Requirement: Agent uses only saved Pawtrip locations
-Agent SHALL 能从 Pawtrip 已收录地点中查找候选，范围不限于当前激活行程城市或景点类别。Agent MUST NOT 调用地图搜索或将未收录地点编造成可排程的地点 ID。
+Agent SHALL 通过登录后可读的共享已保存地点接口，在规划目标行程城市内按全部地点类型查找候选；范围不限于当前激活行程城市或景点类别。Agent MUST NOT 调用地图搜索、管理员地点接口，或将未收录的地点编造成可排程的地点 ID。
 
 #### Scenario: Requested location exists in Pawtrip
 - **GIVEN** 用户指定的地点可在 Pawtrip 已收录地点中匹配
 - **WHEN** Agent 生成行程方案
 - **THEN** 方案引用该地点的真实 Pawtrip 地点标识
+
+#### Scenario: Lookup follows the planning target city
+- **GIVEN** 用户选择了非激活行程或指定新行程城市作为规划目标
+- **WHEN** Agent 查找地点候选
+- **THEN** 只查询该规划目标城市的 Pawtrip 已保存地点
+- **AND** 不限于当前激活行程的城市或“景点”类型
 
 #### Scenario: Requested location is not in Pawtrip
 - **GIVEN** 用户指定的地点无法在 Pawtrip 已收录地点中匹配
@@ -95,7 +108,13 @@ Agent SHALL 能从 Pawtrip 已收录地点中查找候选，范围不限于当�
 - **AND** 不自行选择并应用地点
 
 ### Requirement: Agent respects existing trip constraints and pet policies
-Agent 生成或修改的计划 MUST 符合现有 trip 数据契约及目标行程的城市、宠物和天数约束。景点宠物政策结论 MUST 由 Pawtrip 确定性规则计算，模型 MUST NOT 自行裁定政策结果。
+Agent 生成或修改的计划 MUST 符合现有 trip 数据契约及目标行程的城市、宠物和天数约束。已有行程的城市、宠物与 `totalDays` MUST NOT 由 Agent 修改；新行程天数 MUST 为 1–7 的整数。景点宠物政策结论 MUST 由 Pawtrip 确定性规则计算，模型 MUST NOT 自行裁定政策结果。
+
+#### Scenario: Existing trip days remain unchanged
+- **GIVEN** 用户选择编辑一个已有行程
+- **WHEN** Agent 生成修改方案
+- **THEN** 方案只调整计划内的地点安排
+- **AND** 不修改该行程的 `totalDays`、城市或绑定宠物
 
 #### Scenario: Requested location is outside the trip city
 - **GIVEN** 用户要加入的已收录地点不属于目标行程城市
