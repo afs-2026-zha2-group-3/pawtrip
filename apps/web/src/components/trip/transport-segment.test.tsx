@@ -4,6 +4,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TransportSegmentRow } from "./transport-segment";
+import { createQueryClient } from "@/lib/query-client";
 import {
   ESTIMATE_LOADING_TEXT,
   ESTIMATE_UNAVAILABLE_TEXT,
@@ -185,6 +186,23 @@ describe("live estimate without a snapshot", () => {
     expect(stop.toNext).toBe("walk");
     expect(stop.toNextEstimate).toBeNull();
   });
+
+  it("keeps the fallback local under the production query-client throwOnError policy", async () => {
+    // 回归：全局 createQueryClient 默认 throwOnError 会把无数据的失败查询抛给路由错误边界，
+    // 导致整页崩溃（E2E E2/E9/E11 发现）；估算失败必须留在段行内兜底。
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse({ code: "UPSTREAM_FAILURE" }, 502)));
+    const stop: TripStop = { poiId: "poi-a" };
+    tripActions.setActive(tripWith([stop, { poiId: "poi-b" }]));
+    const segment = buildDaySegments([stop, { poiId: "poi-b" }], null)[0];
+    render(
+      <QueryClientProvider client={createQueryClient()}>
+        <TransportSegmentRow tripId={7} stopRef={REF} segment={segment} transportMode={null} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText(ESTIMATE_UNAVAILABLE_TEXT, undefined, { timeout: 8000 })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "选择途内交通方式" })).toBeTruthy();
+  }, 10000);
 });
 
 describe("mode selection", () => {

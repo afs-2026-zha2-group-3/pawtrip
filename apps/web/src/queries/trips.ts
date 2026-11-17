@@ -56,6 +56,8 @@ export function routeEstimateQueryOptions(
       ),
     retry: 1,
     staleTime: 300_000,
+    // 估算失败必须在段行内兜底（「估算暂不可用」），不能命中全局 throwOnError 默认策略拖垮整页。
+    throwOnError: false,
     enabled: options.enabled ?? true,
   });
 }

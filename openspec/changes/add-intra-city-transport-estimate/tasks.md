@@ -34,8 +34,8 @@
 
 ## 6. E2E 与集成验证
 
-- [ ] 6.1 新增途内交通 E2E（`e2e/intra-city-transport.spec.ts`，ATDD E1–E13；断言骨架可先于面板实现写红）：段行生成/边界/不可拖拽、默认不写库（GET 详情断言，含自驾默认驾车 E11）、预置快照（PUT 合法 toNextEstimate，含 self_drive+0/0）优先展示且零估算请求（page.route 拦截）、切换方式仅存方式并刷新恢复（CI 无 Key）、每天公交提示（非自驾时）、打车携宠提示显隐（含驾车段不展示）、政策提醒（首个景点行前；毛毛 38kg/55cm × e2e-zhu-a 8.5kg/40cm 超限警示、豆豆未超限不提示、hasLeash=false 用例内新建档案、e2e-zhu-d 全 null 不提醒）、同 POI 小字提醒零请求、估算失败兜底（种子坐标 NULL 天然失败）、拖拽回归；自驾联动（E11–E13）：PUT 设 transportMode=drive → 默认驾车仅时长/兜底态不写库、下拉选打车仅存方式+携宠提示、显式切回驾车写 self_drive、自驾隐藏公交提示（政策提醒仍在）、切回公共交通恢复默认打车/公交提示且已存选择不改写（GET 详情）、公共交通选择器无驾车选项；Non-goal 反向（无租车/公交选项/叫车按钮/筛选控件/新 Tab/规则页无改动）；验证：`node scripts/run-e2e.mjs` 新旧用例全绿
-- [ ] 6.2 全量集成验证：后端 `mvnw test`、前端 vitest + build、E2E 全量；验证：三套命令均通过并记录输出
+- [x] 6.1 新增途内交通 E2E（`e2e/intra-city-transport.spec.ts`，ATDD E1–E13；断言骨架可先于面板实现写红）：段行生成/边界/不可拖拽、默认不写库（GET 详情断言，含自驾默认驾车 E11）、预置快照（PUT 合法 toNextEstimate，含 self_drive+0/0）优先展示且零估算请求（page.route 拦截）、切换方式仅存方式并刷新恢复（CI 无 Key）、每天公交提示（非自驾时）、打车携宠提示显隐（含驾车段不展示）、政策提醒（首个景点行前；毛毛 38kg/55cm × e2e-zhu-a 8.5kg/40cm 超限警示、豆豆未超限不提示、hasLeash=false 用例内新建档案、e2e-zhu-d 全 null 不提醒）、同 POI 小字提醒零请求、估算失败兜底（种子坐标 NULL 天然失败）、拖拽回归；自驾联动（E11–E13）：PUT 设 transportMode=drive → 默认驾车仅时长/兜底态不写库、下拉选打车仅存方式+携宠提示、显式切回驾车写 self_drive、自驾隐藏公交提示（政策提醒仍在）、切回公共交通恢复默认打车/公交提示且已存选择不改写（GET 详情）、公共交通选择器无驾车选项；Non-goal 反向（无租车/公交选项/叫车按钮/筛选控件/新 Tab/规则页无改动）；验证：`node scripts/run-e2e.mjs` 新旧用例全绿。执行记录（2026-11-17）：20 用例已写入，全量 119/120 绿；E2E 发现并 TDD 修复估算失败 throwOnError 整页崩溃（trips.ts + 回归 UT，164 绿）；唯一失败 E10 为 AnimatedList 入场动画坐标漂移，已加拖拽前稳定等待，复验留待后续 E2E 运行（用户确认手工测试通过，同意先行进入下一步）
+- [x] 6.2 全量集成验证：后端 `mvnw test`、前端 vitest + build、E2E 全量；验证：三套命令均通过并记录输出。执行记录（2026-11-17，用户指示简化）：后端 213 绿（c857aff 后无后端变更）；前端 vitest 164/164 + tsc --noEmit 零错误；E2E 119/120（见 6.1 注）；用户确认不再重复全量集成，build 与 E2E 复验归入后续 /sdd:local-verify-report
 
 ## 7. 文档收尾
 
