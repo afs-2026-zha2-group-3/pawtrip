@@ -44,6 +44,18 @@ Before editing files for a substantial task:
   - Spring Framework REST Clients：https://docs.spring.io/spring-framework/reference/integration/rest-clients.html
   - Spring Boot Externalized Configuration：https://docs.spring.io/spring-boot/reference/features/external-config.html
 
+### 前端地图：高德 JS API 2.0
+
+- 地点页右侧地图使用高德 JS API 2.0；需要 **Web端 JS API Key**（与服务端 Web 服务 Key 不同），2021-12 之后申请的 Key 必须配合安全密钥 `securityJsCode`。
+- 本项目通过根目录 `.env` 的 `VITE_AMAP_JS_KEY` / `VITE_AMAP_SECURITY_CODE` 配置，Vite 通过 `envDir` 读取根目录 `.env`，只暴露 `VITE_` 前缀；未配置时地图显示占位，列表不受影响。
+- 直连安全密钥会进入前端 bundle，生产环境建议使用代理方案（`serviceHost`）并通过 Nginx 转发，同时配置域名白名单。
+- 地图组件使用 `webapi.amap.com/maps?v=2.0` 脚本加载器，marker/InfoWindow 只展示基础信息；E2E 不依赖外网 SDK，强制空 Key 验证占位与列表回归。
+- 文档：
+  - 高德 JS API 加载：https://lbs.amap.com/api/javascript-api-v2/guide/abc/load
+  - 高德 JS API 安全密钥：https://lbs.amap.com/api/javascript-api-v2/guide/abc/security
+  - 高德 JS API Marker：https://lbs.amap.com/api/javascript-api-v2/documentation#marker
+  - 高德 JS API InfoWindow：https://lbs.amap.com/api/javascript-api-v2/documentation#infowindow
+
 ### Spring Data JPA / Hibernate / Flyway / SQLite
 
 - `spring-boot-starter-data-jpa`:引入 Spring Data JPA、Hibernate 与事务管理;Hibernate 版本由 Spring Boot BOM 管理(`7.4.13.Final`)。
