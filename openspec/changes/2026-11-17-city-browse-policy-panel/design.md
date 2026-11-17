@@ -61,11 +61,11 @@
 
 ### D5：侧栏内容与状态
 
-- 复用 main 的 `CityPolicyMatch`、`BreedExamples` 与政策面板样式，侧栏以 `role="region"`、`aria-label="城市宠物管理政策"` 暴露。
-- 标题「{城市名}宠物管理政策」，有数据时展示「更新于 {updatedMonth}」与「适用范围：{areaScope}」。
-- 政策要点列表来自 `policy.policies`；来源展示 `policy.source.title` 与 `policy.source.note`，说明包含摘录范围或文件时间。
-- 逐宠物结论：不友好为红色提示，未命中为中性提示，无法判定为琥珀色提示；无宠物时引导添加；宠物接口失败展示读取失败。
-- 链接：`{policy.name}禁养犬名单` 指向 `/destinations/{adcode}/policy#banned-breeds`；`查看完整政策与来源` 指向完整政策页。政策页标注禁养名单仅为部分示例。
+- 复用 main 的政策面板样式，侧栏以 `role="region"`、`aria-label="城市宠物管理政策"` 暴露。
+- 标题「{城市名}宠物管理政策」，有数据时展示「更新于 {updatedMonth}」；不展示适用范围、禁养/可携带犬种名单与来源详情。
+- 逐宠物匹配结论使用 `PolicyMatchBanner`：未命中、命中或无法判定逐只给出简短结论；命中时不展示通用提醒。
+- 「政策要点」最多展示 3 条摘要；完整政策条目、禁养/可携带犬种与来源由底部两个链接进入的完整政策页承载。
+- 链接：「{城市名}禁养犬名单」指向 `/destinations/{adcode}/policy#banned-breeds`；「查看完整政策与来源」指向完整政策页。
 - 未收录：展示「暂无当地政策数据」与覆盖范围说明，不关闭侧栏。
 - 查询中展示加载提示，失败展示可重试提示；关闭按钮 `aria-label="关闭城市政策"`。
 
