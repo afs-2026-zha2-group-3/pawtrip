@@ -30,6 +30,7 @@ import {
   type SavedLocation,
 } from "../../../queries/admin-locations";
 import { locationQueryKeys } from "../../../queries/locations";
+import { safeImageUrl } from "../../../lib/location-image";
 import {
   emptyPetPolicyDraft,
   petPoliciesFromDraft,
@@ -423,18 +424,6 @@ function LocationPhotoPreview({ photo }: { photo: LocationPhoto }) {
       className="max-h-56 w-full rounded-md object-contain"
     />
   );
-}
-
-function safeImageUrl(sourceUrl: string): string | undefined {
-  try {
-    const parsedUrl = new URL(sourceUrl);
-    if (parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:") {
-      return parsedUrl.href;
-    }
-  } catch {
-    return undefined;
-  }
-  return undefined;
 }
 
 function JsonPreview({ value }: { value: JsonValue }) {

@@ -138,6 +138,8 @@ describe("trip store", () => {
         extraFeeCents: null,
         reservationRequired: null,
       },
+      coverPhotoUrl: null,
+      rating: null,
     });
 
     expect(tripStore.state.cache.city?.name).toBe("杭州市");

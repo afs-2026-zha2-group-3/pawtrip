@@ -66,7 +66,7 @@ class LocationQueryApiTest {
 		this.locationRepository.deleteAll();
 		this.locationRepository.saveAll(List.of(
 				location("poi-zhu-a", "情侣路", "attraction", "440402", "110000", 1, "DOG", 8.5, 40.0, true, false,
-						1050L, null),
+						1050L, null, "{\"rating\":\"4.6\"}"),
 				location("poi-zhu-b", "珠海渔女", "attraction", "440402", "110000", 0, "DOG", null, null, true, null,
 						null, null),
 				location("poi-zhu-c", "海滨公园", "attraction", "440400", "110000", null, null, null, null, true, null,
@@ -89,6 +89,14 @@ class LocationQueryApiTest {
 						null),
 				location("poi-hz-hotel", "杭州酒店", "hotel", "330106", "100000", 1, "DOG", null, null, null, null,
 						null, null)));
+		this.locationRepository.flush();
+		PawtripLocation rated = this.locationRepository.findByPoiId("poi-zhu-a").orElseThrow();
+		this.photoRepository.saveAll(List.of(
+				new LocationPhoto(rated.getId(), 1, "{}", "第二张", "https://photos.example/a-1.png"),
+				new LocationPhoto(rated.getId(), 0, "{}", "第一张", "https://photos.example/a-0.png")));
+		this.locationRepository.saveAll(List.of(
+				locationWithBusiness("poi-hz-blank", "空白评分景点", "330106", "{\"rating\":\"  \"}"),
+				locationWithBusiness("poi-hz-bad", "非法快照景点", "330106", "not-json")));
 		this.locationRepository.flush();
 	}
 
@@ -365,6 +373,74 @@ class LocationQueryApiTest {
 				.andExpect(status().isMethodNotAllowed());
 	}
 
+	@Test
+	void listItemsCarryFirstCoverPhotoAndRatingSnapshot() throws Exception {
+		JsonNode body = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "false")
+				.with(user("demo").roles("USER")));
+
+		JsonNode rated = item(body, "poi-zhu-a");
+		assertThat(rated.path("coverPhotoUrl").asString()).isEqualTo("https://photos.example/a-0.png");
+		assertThat(rated.path("rating").asString()).isEqualTo("4.6");
+
+		JsonNode plain = item(body, "poi-zhu-e");
+		assertThat(plain.path("coverPhotoUrl").isNull()).isTrue();
+		assertThat(plain.path("rating").isNull()).isTrue();
+	}
+
+	@Test
+	void detailCarriesCoverPhotoAndRatingOrNulls() throws Exception {
+		JsonNode rated = json(get("/api/locations/poi-zhu-a").with(user("demo").roles("USER")));
+		assertThat(rated.path("coverPhotoUrl").asString()).isEqualTo("https://photos.example/a-0.png");
+		assertThat(rated.path("rating").asString()).isEqualTo("4.6");
+
+		JsonNode plain = json(get("/api/locations/poi-zhu-d").with(user("demo").roles("USER")));
+		assertThat(plain.path("coverPhotoUrl").isNull()).isTrue();
+		assertThat(plain.path("rating").isNull()).isTrue();
+	}
+
+	@Test
+	void blankOrInvalidRatingSnapshotBecomesNull() throws Exception {
+		JsonNode body = json(get("/api/locations")
+				.param("regionCode", "330100")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "false")
+				.with(user("demo").roles("USER")));
+
+		assertThat(item(body, "poi-hz-blank").path("rating").isNull()).isTrue();
+		assertThat(item(body, "poi-hz-bad").path("rating").isNull()).isTrue();
+		assertThat(item(body, "poi-hz-a").path("rating").isNull()).isTrue();
+	}
+
+	@Test
+	void userMediaResponsesDoNotExposeAdminOnlyFields() throws Exception {
+		JsonNode body = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "false")
+				.with(user("demo").roles("USER")));
+
+		for (JsonNode item : body.path("items")) {
+			assertThat(item.has("photos")).isFalse();
+			assertThat(item.has("business")).isFalse();
+			assertThat(item.has("poi")).isFalse();
+		}
+	}
+
+	@Test
+	void adminSharedListGainsMediaScalarsAndAdminDetailKeepsFullData() throws Exception {
+		JsonNode body = json(get("/api/locations").with(user("admin").roles("ADMIN")));
+		assertThat(item(body, "poi-zhu-a").has("coverPhotoUrl")).isTrue();
+		assertThat(item(body, "poi-zhu-a").has("rating")).isTrue();
+
+		JsonNode adminDetail = json(get("/api/admin/locations/poi-zhu-a").with(user("admin").roles("ADMIN")));
+		assertThat(adminDetail.has("photos")).isTrue();
+		assertThat(adminDetail.has("business")).isTrue();
+		assertThat(adminDetail.has("poi")).isTrue();
+	}
+
 	private JsonNode json(MockHttpServletRequestBuilder request) throws Exception {
 		MvcResult result = this.mockMvc.perform(request)
 				.andExpect(status().isOk())
@@ -397,11 +473,25 @@ class LocationQueryApiTest {
 			String typeCode, Integer maxPetsPerPerson, String allowedPetTypes, Double maxWeight,
 			Double maxShoulderHeight, Boolean leashRequired, Boolean vaccinationProofRequired, Long extraFeeCents,
 			Boolean reservationRequired) {
+		return location(poiId, name, typeGroup, regionCode, typeCode, maxPetsPerPerson, allowedPetTypes, maxWeight,
+				maxShoulderHeight, leashRequired, vaccinationProofRequired, extraFeeCents, reservationRequired, "{}");
+	}
+
+	private static PawtripLocation location(String poiId, String name, String typeGroup, String regionCode,
+			String typeCode, Integer maxPetsPerPerson, String allowedPetTypes, Double maxWeight,
+			Double maxShoulderHeight, Boolean leashRequired, Boolean vaccinationProofRequired, Long extraFeeCents,
+			Boolean reservationRequired, String businessJson) {
 		PawtripLocation location = new PawtripLocation(poiId, name, typeCode, typeGroup, "测试地址", null, null,
-				regionCode, "{}", "{}", null, null);
+				regionCode, "{}", businessJson, null, null);
 		location.updatePetPolicies(allowedPetTypes, maxPetsPerPerson, maxWeight, maxShoulderHeight, leashRequired,
 				vaccinationProofRequired, extraFeeCents, reservationRequired);
 		return location;
+	}
+
+	private static PawtripLocation locationWithBusiness(String poiId, String name, String regionCode,
+			String businessJson) {
+		return location(poiId, name, "attraction", regionCode, "110000", null, null, null, null, null, null, null,
+				null, businessJson);
 	}
 
 }

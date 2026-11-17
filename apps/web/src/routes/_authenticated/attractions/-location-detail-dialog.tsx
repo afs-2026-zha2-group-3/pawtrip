@@ -14,6 +14,8 @@ import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
 import { tripActions } from "@/lib/trip/store";
 import { locationBrowseDetailQueryOptions } from "../../../queries/locations";
 import { DaySelect } from "./-day-select";
+import { LocationCover } from "./-location-cover";
+import { LocationRating } from "./-location-rating";
 import { PetFriendlyBadge } from "./-pet-friendly-badge";
 import { PetPolicyFields } from "./-pet-policy-fields";
 
@@ -51,12 +53,23 @@ export function LocationDetailDialog({
       }}
     >
       <DialogContent className="max-w-2xl">
+        {location ? (
+          <LocationCover
+            coverPhotoUrl={location.coverPhotoUrl}
+            name={location.name}
+            typeLabel={typeLabel}
+            className="rounded-lg"
+          />
+        ) : null}
         <DialogHeader>
           <DialogTitle>{location?.name ?? "地点详情"}</DialogTitle>
-          <DialogDescription>
-            {location
-              ? `${typeLabel} · ${location.address ?? "地址未收录"}`
-              : "正在加载地点详情…"}
+          <DialogDescription className="flex items-center justify-between gap-2">
+            <span>
+              {location
+                ? `${typeLabel} · ${location.address ?? "地址未收录"}`
+                : "正在加载地点详情…"}
+            </span>
+            {location ? <LocationRating rating={location.rating} /> : null}
           </DialogDescription>
         </DialogHeader>
 
