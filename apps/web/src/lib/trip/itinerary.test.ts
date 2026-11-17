@@ -106,6 +106,7 @@ describe("buildItinerary", () => {
     const [firstStop, transport] = itinerary.days[0].entries;
     expect(firstStop).toMatchObject({
       kind: "stop",
+      poiId: "poi-a",
       name: "情侣路",
       address: "珠海市香洲区",
       policy: { leashRequired: true },

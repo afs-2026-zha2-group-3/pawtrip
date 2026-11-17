@@ -83,7 +83,7 @@ function AppHeader() {
   });
 
   return (
-    <header className="relative flex items-center justify-center px-4 pt-9 pb-4">
+    <header className="relative flex items-center justify-center px-4 pt-9 pb-4 print:hidden">
       <AppTabs />
       {auth.isSuccess ? (
         <AlertDialog

@@ -338,6 +338,7 @@ function TripPanelContent({ embedded }: { embedded: boolean }) {
             ? "fixed inset-0 overflow-y-auto p-4 lg:top-24 lg:bottom-4 lg:left-4 lg:right-auto lg:w-[364px] lg:rounded-xl"
             : "fixed bottom-4 left-4 w-[min(92vw,360px)] rounded-xl p-3"),
       )}
+      data-print-hidden
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">

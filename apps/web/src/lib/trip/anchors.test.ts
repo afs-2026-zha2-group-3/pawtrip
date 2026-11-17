@@ -10,6 +10,7 @@ function tripWithPlan(days: Trip["plan"]["days"], unscheduled: Trip["plan"]["uns
     cityAdcode: "440400",
     petId: 1,
     totalDays: 2,
+    startDate: null,
     transportMode: null,
     startDate: null,
     plan: { version: 1, days, unscheduled },

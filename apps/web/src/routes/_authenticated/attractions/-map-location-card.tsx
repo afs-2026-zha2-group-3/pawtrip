@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Clock, MapPinned, Phone, Tag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PolicyTags } from "@/components/trip/policy-tags";
+import { petRulesApplyTo } from "@/lib/attraction-pet-rules";
 import { formatDistanceKm } from "@/lib/distance";
-import { matchLocationPolicy } from "@/lib/trip/policy-match";
+import { matchLocationPolicyForType } from "@/lib/trip/policy-match";
 import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
 import { tripActions } from "@/lib/trip/store";
 import { cn } from "@/lib/utils";
@@ -100,7 +101,13 @@ export function MapLocationCard({
   const name = location?.name ?? point?.name ?? "地点详情";
   const address = location?.address ?? point?.address ?? "地址未收录";
   const policies = location?.petPolicies;
-  const chips = policies ? policyChips(policies) : [];
+  const typeGroup = location?.typeGroup ?? point?.typeGroup ?? "";
+  const chips =
+    policies && !petRulesApplyTo(typeGroup) && policyChips(policies).length === 0
+      ? ["允许所有宠物"]
+      : policies
+        ? policyChips(policies)
+        : [];
   const addedDays = active
     ? active.plan.days
         .filter((entry) => entry.stops.some((stop) => stop.poiId === poiId))
@@ -246,13 +253,16 @@ export function MapLocationCard({
           {policies ? (
             <>
               <div className="flex flex-wrap items-center gap-1.5">
-                <PetFriendlyBadge maxPetsPerPerson={policies.maxPetsPerPerson} />
+                <PetFriendlyBadge
+                  typeGroup={typeGroup}
+                  maxPetsPerPerson={policies.maxPetsPerPerson}
+                />
                 <PolicyTags
                   subjects={subjects}
-                  match={(pet) => matchLocationPolicy(policies, pet)}
+                  match={(pet) => matchLocationPolicyForType(typeGroup, policies, pet)}
                 />
               </div>
-              <PetPolicyFields policies={policies} />
+              <PetPolicyFields policies={policies} typeGroup={typeGroup} />
               {chips.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {chips.map((chip) => (

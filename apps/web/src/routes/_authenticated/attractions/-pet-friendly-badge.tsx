@@ -1,5 +1,9 @@
 import { cn } from "@/lib/utils";
-import { petFriendlyLabel, petFriendlyStatus } from "@/lib/attraction-pet-rules";
+import {
+  petFriendlyLabel,
+  petFriendlyStatus,
+  petRulesApplyTo,
+} from "@/lib/attraction-pet-rules";
 
 const STATUS_CLASSES = {
   friendly: "bg-primary/10 text-primary ring-primary/20",
@@ -7,8 +11,15 @@ const STATUS_CLASSES = {
   unconfigured: "bg-muted text-muted-foreground ring-foreground/10",
 } as const;
 
-export function PetFriendlyBadge({ maxPetsPerPerson }: { maxPetsPerPerson: number | null }) {
-  const status = petFriendlyStatus(maxPetsPerPerson);
+export function PetFriendlyBadge({
+  typeGroup,
+  maxPetsPerPerson,
+}: {
+  typeGroup: string;
+  maxPetsPerPerson: number | null;
+}) {
+  const unrestricted = !petRulesApplyTo(typeGroup) && maxPetsPerPerson === null;
+  const status = unrestricted ? "friendly" : petFriendlyStatus(maxPetsPerPerson);
   return (
     <span
       data-status={status}
@@ -17,7 +28,7 @@ export function PetFriendlyBadge({ maxPetsPerPerson }: { maxPetsPerPerson: numbe
         STATUS_CLASSES[status],
       )}
     >
-      {petFriendlyLabel(maxPetsPerPerson)}
+      {unrestricted ? "不限宠物" : petFriendlyLabel(maxPetsPerPerson)}
     </span>
   );
 }

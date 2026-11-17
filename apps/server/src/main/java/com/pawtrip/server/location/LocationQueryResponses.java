@@ -66,6 +66,13 @@ final class LocationQueryResponses {
 		}
 	}
 
+	record NearbyServices(NearbyService hospital, NearbyService supplies) {
+	}
+
+	record NearbyService(String poiId, String name, String address, Long distanceMeters,
+			String openingHours) {
+	}
+
 	record LocationDetail(String poiId, String name, String typeCode, String typeGroup, String address,
 			String regionCode, PetPolicies petPolicies, String coverPhotoUrl, String rating, String keytag,
 			String businessArea, String openTime, String tel) {

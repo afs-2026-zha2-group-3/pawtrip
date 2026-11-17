@@ -60,6 +60,42 @@ class LocationQueryService {
 			.orElseThrow(() -> new ApiException(ApiErrorCode.LOCATION_NOT_FOUND, "Saved location was not found"));
 	}
 
+	LocationQueryResponses.NearbyServices nearbyServices(String poiId) {
+		PawtripLocation anchor = this.locationRepository.findByPoiId(poiId)
+			.orElseThrow(() -> new ApiException(ApiErrorCode.LOCATION_NOT_FOUND, "Saved location was not found"));
+		if (anchor.getLongitude() == null || anchor.getLatitude() == null) {
+			return new LocationQueryResponses.NearbyServices(null, null);
+		}
+		return new LocationQueryResponses.NearbyServices(
+				nearestService(anchor, LocationTypeCatalog.PET_HOSPITAL_KEY),
+				nearestService(anchor, LocationTypeCatalog.PET_SUPPLIES_KEY));
+	}
+
+	private LocationQueryResponses.NearbyService nearestService(PawtripLocation anchor, String typeGroup) {
+		String regionCode = anchor.getRegionCode();
+		String regionLevel = regionCode == null ? null : "city";
+		return this.locationRepository.findLocations(regionCode, regionLevel, typeGroup, 0)
+			.stream()
+			.filter(candidate -> candidate.getLongitude() != null && candidate.getLatitude() != null)
+			.map(candidate -> new NearbyLocation(candidate,
+					distanceMeters(anchor.getLatitude(), anchor.getLongitude(), candidate.getLatitude(),
+							candidate.getLongitude())))
+			.min(Comparator.comparingDouble(NearbyLocation::distanceMeters)
+				.thenComparing(candidate -> candidate.location().getId()))
+			.map(candidate -> toNearbyService(candidate.location(), Math.round(candidate.distanceMeters())))
+			.orElse(null);
+	}
+
+	private LocationQueryResponses.NearbyService toNearbyService(PawtripLocation location, long distanceMeters) {
+		JsonNode poi = parseJson(location.getPoiJson());
+		String openingHours = businessField(location, poi, "opentime_week");
+		if (openingHours == null) {
+			openingHours = businessField(location, poi, "opentime_today");
+		}
+		return new LocationQueryResponses.NearbyService(location.getPoiId(), location.getName(),
+				location.getAddress(), distanceMeters, openingHours);
+	}
+
 	private LocationQueryResponses.LocationDetail toDetail(PawtripLocation location) {
 		JsonNode poi = parseJson(location.getPoiJson());
 		String coverPhotoUrl = coverPhotos(List.of(location)).get(location.getId());

@@ -4,7 +4,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { PolicyTags } from "@/components/trip/policy-tags";
 import { policyNoteParts, restrictionFeeParts } from "@/lib/location-summary";
 import { formatDistanceKm } from "@/lib/distance";
-import { matchLocationPolicy } from "@/lib/trip/policy-match";
+import { matchLocationPolicyForType } from "@/lib/trip/policy-match";
 import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
 import { cn } from "@/lib/utils";
 import type { LocationSummary } from "../../../queries/locations";
@@ -70,7 +70,10 @@ export function LocationCard({
           <LocationRating rating={location.rating} />
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <PetFriendlyBadge maxPetsPerPerson={location.petPolicies.maxPetsPerPerson} />
+          <PetFriendlyBadge
+            typeGroup={location.typeGroup}
+            maxPetsPerPerson={location.petPolicies.maxPetsPerPerson}
+          />
           {noteParts.map((part) => (
             <span key={part} className={TAG_PILL_CLASS}>
               {part}
@@ -78,7 +81,9 @@ export function LocationCard({
           ))}
           <PolicyTags
             subjects={subjects}
-            match={(pet) => matchLocationPolicy(location.petPolicies, pet)}
+            match={(pet) =>
+              matchLocationPolicyForType(location.typeGroup, location.petPolicies, pet)
+            }
           />
         </div>
         {restrictionParts.length > 0 ? (

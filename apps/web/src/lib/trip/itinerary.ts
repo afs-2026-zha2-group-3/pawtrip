@@ -32,6 +32,7 @@ export type ItineraryEntry =
   | {
       kind: "stop";
       key: string;
+      poiId: string;
       name: string;
       address: string | null;
       policy: PetPolicies | null;
@@ -76,6 +77,7 @@ export function buildItinerary(
       entries.push({
         kind: "stop",
         key: `day-${day}-stop-${stopIndex}`,
+        poiId: stop.poiId,
         name: detail?.name ?? stop.poiId,
         address: detail?.address ?? null,
         policy: detail?.petPolicies ?? null,

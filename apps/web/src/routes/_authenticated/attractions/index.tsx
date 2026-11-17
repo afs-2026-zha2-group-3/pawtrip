@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { PolicySubjectNotice } from "@/components/trip/policy-tags";
 import { TripPanel } from "@/components/trip/trip-panel";
+import { petRulesApplyTo } from "@/lib/attraction-pet-rules";
 import { cn } from "@/lib/utils";
 import { amapJsKey } from "../../../lib/amap/loader";
 import { ApiError } from "../../../lib/http/api-error";
@@ -77,6 +78,7 @@ function AttractionsPage() {
   const clientFilterActive = activeKeytag !== null || normalizedKeyword !== "";
 
   const nearbyType = NEARBY_TYPE_GROUPS.has(typeGroup);
+  const petRulesApply = petRulesApplyTo(typeGroup);
   const gated = typeGroup === "restaurant" && anchorPoiId === null;
   const nearbyAnchorPoiId = nearbyType ? (anchorPoiId ?? undefined) : undefined;
   const anchorName = anchorPoiId
@@ -123,7 +125,7 @@ function AttractionsPage() {
     ...locationsQueryOptions({
       regionCode,
       typeGroup,
-      petFriendlyOnly: !includeWithoutRules,
+      petFriendlyOnly: petRulesApply && !includeWithoutRules,
       nearPoiId: nearbyAnchorPoiId,
       page,
       pageSize: PAGE_SIZE,
@@ -134,6 +136,7 @@ function AttractionsPage() {
     placeholderData: keepPreviousData,
   });
   const friendlyEmpty =
+    petRulesApply &&
     !gated &&
     !locations.isError &&
     !includeWithoutRules &&
@@ -158,7 +161,7 @@ function AttractionsPage() {
     ...mapLocationsQueryOptions({
       regionCode,
       typeGroup,
-      petFriendlyOnly: !includeWithoutRules,
+      petFriendlyOnly: petRulesApply && !includeWithoutRules,
       nearPoiId: nearbyAnchorPoiId,
     }),
     enabled: isClient && Boolean(regionCode) && !gated && (mapEnabled || clientFilterActive),
@@ -262,20 +265,24 @@ function AttractionsPage() {
   const nearbyActive = nearbyType && anchorPoiId !== null;
   const checkingAny = friendlyEmpty && allLocations.isPending;
   const anyExists = (allLocations.data?.totalElements ?? 0) > 0;
-  const emptyTitle = includeWithoutRules
+  const emptyTitle = !petRulesApply
     ? nearbyActive
       ? `该锚点 5km 内暂无已保存${typeLabel}`
       : `该城市暂无已保存${typeLabel}`
-    : checkingAny
-      ? `正在确认${nearbyActive ? "该锚点 5km 内" : "该城市"}${typeLabel}…`
-      : anyExists
-        ? nearbyActive
-          ? `该锚点 5km 内暂无宠物友好的已保存${typeLabel}`
-          : `该城市暂无宠物友好的已保存${typeLabel}`
-        : nearbyActive
-          ? `该锚点 5km 内暂无已保存${typeLabel}`
-          : `该城市暂无已保存${typeLabel}`;
-  const showToggleHint = !includeWithoutRules && !checkingAny && anyExists;
+    : includeWithoutRules
+      ? nearbyActive
+        ? `该锚点 5km 内暂无已保存${typeLabel}`
+        : `该城市暂无已保存${typeLabel}`
+      : checkingAny
+        ? `正在确认${nearbyActive ? "该锚点 5km 内" : "该城市"}${typeLabel}…`
+        : anyExists
+          ? nearbyActive
+            ? `该锚点 5km 内暂无宠物友好的已保存${typeLabel}`
+            : `该城市暂无宠物友好的已保存${typeLabel}`
+          : nearbyActive
+            ? `该锚点 5km 内暂无已保存${typeLabel}`
+            : `该城市暂无已保存${typeLabel}`;
+  const showToggleHint = petRulesApply && !includeWithoutRules && !checkingAny && anyExists;
 
   const gridItems = clientFilterActive
     ? filteredItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -480,17 +487,19 @@ function AttractionsPage() {
               ) : null}
               {!gated ? (
                 <>
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <Checkbox
-                      aria-label="显示全部地点"
-                      checked={includeWithoutRules}
-                      onCheckedChange={(checked) => {
-                        setIncludeWithoutRules(Boolean(checked));
-                        setPage(1);
-                      }}
-                    />
-                    显示全部地点
-                  </label>
+                  {petRulesApply ? (
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <Checkbox
+                        aria-label="显示全部地点"
+                        checked={includeWithoutRules}
+                        onCheckedChange={(checked) => {
+                          setIncludeWithoutRules(Boolean(checked));
+                          setPage(1);
+                        }}
+                      />
+                      显示全部地点
+                    </label>
+                  ) : null}
                   {data && !(clientFilterActive && fullLocations.isPending) ? (
                     <span className="whitespace-nowrap text-muted-foreground">
                       共 {gridTotal} 个地点
