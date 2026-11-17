@@ -4,9 +4,9 @@
 
 ## 1. 词表与数据库迁移
 
-- [ ] 1.1 先扩展 `PetSchemaMigrationTest` 失败断言（V26 新列存在且默认 NULL、旧行读取兼容），再新增 `V26__add_pet_preferences_personality.sql`（pet 表 `preferences`/`personality` 可空 TEXT 列）；验证：迁移测试转绿，后端测试上下文 Flyway 启动成功
-- [ ] 1.2 先扩展 `PetSchemaMigrationTest` 失败断言（feature_tags 列存在、珠海 440400=COASTAL、杭州 330100=LAKE,CITY_PARK、未列出城市 NULL），再新增 `V27__add_region_feature_tags.sql`（administrative_region 增 `feature_tags TEXT` + 按需求附录 A UPDATE 48 城）；验证：迁移测试转绿
-- [ ] 1.3 后端新增喜好/性格枚举与特征键常量（design D1 词表）；验证：编译通过，枚举键与附录 A/前端词表逐项一致（对照检查）
+- [x] 1.1 先扩展 `PetSchemaMigrationTest` 失败断言（V26 新列存在且默认 NULL、旧行读取兼容），再新增 `V26__add_pet_preferences_personality.sql`（pet 表 `preferences`/`personality` 可空 TEXT 列）；验证：迁移测试转绿，后端测试上下文 Flyway 启动成功
+- [x] 1.2 先扩展 `PetSchemaMigrationTest` 失败断言（feature_tags 列存在、珠海 440400=COASTAL、杭州 330100=LAKE,CITY_PARK、未列出城市 NULL），再新增 `V27__add_region_feature_tags.sql`（administrative_region 增 `feature_tags TEXT` + 按需求附录 A UPDATE 48 城）；验证：迁移测试转绿
+- [x] 1.3 后端新增喜好/性格枚举与特征键常量（design D1 词表）；验证：编译通过，枚举键与附录 A/前端词表逐项一致（对照检查）
 
 ## 2. pet API 契约与校验（含本组测试与文档）
 
