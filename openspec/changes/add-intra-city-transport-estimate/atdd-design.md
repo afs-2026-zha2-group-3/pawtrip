@@ -1,6 +1,6 @@
 # ATDD 设计 — add-intra-city-transport-estimate
 
-- 阶段：P3（G1 Pass 2026-11-17，IO/SA=kitty；同日第 5 轮大交通自驾联动修订后同步，G1 Revision 2 待重签）；供 `/sdd:task-plan` 消费
+- 阶段：P3（G1 Pass 2026-11-17，IO/SA=kitty；同日第 5 轮大交通自驾联动修订后同步，G1 Revision 2 Pass 2026-11-17 重签）；供 `/sdd:task-plan` 消费
 - 输入：3 个 delta specs（trip-route-estimate / trip-context（含「大交通自驾联动」） / trip-planning（含 self_drive 枚举））、`dov-ac-review.md`、`design.md`（D1–D9）
 - 规则依据：`@rule:java-testing`（JUnit5 + AssertJ + Mockito）、`@rule:react-testing`（Vitest + RTL，UT 归 apply）、`@rule:pipeline-iac`（GitHub Actions web/server/e2e 三工作流，命令契约 `docs/feedback/verification-commands.md`）
 - NFR 专项测试：**不纳入，延后**（用户 2026-11-17 确认；高德配额/耗时风险由 tasks 1.2 真实 Key 冒烟与失败兜底场景覆盖）
@@ -97,4 +97,4 @@
 - 成功估算的端到端展示（真实高德）仅本地冒烟（tasks 1.2），CI 不覆盖——已在 G1 知悉项登记
 - 回填快照 E2E 不可行（CI 无 Key）→ store UT + 本地冒烟；`/sdd:task-plan` 需将其排入 apply 任务
 - 第 5 轮修订（大交通自驾联动）：API 契约不变（驾车时长复用 mode=drive），新增 A7（self_drive 枚举）与 E11–E13；自驾默认驾车的成功时长展示同样仅本地冒烟覆盖
-- 下一步：G1 Revision 2 重签后 `/sdd:quality-checklist`（P3）；tasks.md 已按本设计细化并对齐自检
+- 下一步：G1 Revision 2 已 Pass（2026-11-17），P3 收口检查 `/sdd:quality-checklist` 后 `/sdd:atdd-apply`（P4，前置 tasks 1.1/1.2）；tasks.md 已按本设计细化并对齐自检

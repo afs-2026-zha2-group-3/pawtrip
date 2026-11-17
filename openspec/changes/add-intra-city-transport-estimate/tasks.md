@@ -1,6 +1,6 @@
 # Tasks
 
-> P3 细化任务清单（G1 Pass 2026-11-17，IO/SA=kitty；同日第 5 轮大交通自驾联动修订已同步，G1 Revision 2 待重签）。设计依据：[design.md](design.md)（D1–D9）与 [atdd-design.md](atdd-design.md)（API A1–A7 / E2E E1–E13 分层、fixtures、Non-goal 反向验证）；复核：[dov-ac-review.md](dov-ac-review.md)、[g1-decision.md](g1-decision.md)。实现遵循 ATDD：验收检查先红，UT 红绿归 `/sdd:atdd-apply`。
+> P3 细化任务清单（G1 Pass 2026-11-17，IO/SA=kitty；同日第 5 轮大交通自驾联动修订已同步，G1 Revision 2 Pass 2026-11-17 重签）。设计依据：[design.md](design.md)（D1–D9）与 [atdd-design.md](atdd-design.md)（API A1–A7 / E2E E1–E13 分层、fixtures、Non-goal 反向验证）；复核：[dov-ac-review.md](dov-ac-review.md)、[g1-decision.md](g1-decision.md)。实现遵循 ATDD：验收检查先红，UT 红绿归 `/sdd:atdd-apply`。
 
 ## 1. 前置：知识库与高德冒烟
 
@@ -60,4 +60,4 @@
 | 门禁与命令契约 | Pass | mvnw test / vitest+build / run-e2e 对齐 pipeline-iac 三工作流，无新增门禁 |
 | NFR | Pass（延后） | 用户确认不纳入，atdd-design.md 已记录 |
 
-自检结论：**Pass**，计划完整（含第 5 轮修订）；G1 Revision 2 重签后下一步 `/sdd:quality-checklist`（P3）。
+自检结论：**Pass**，计划完整（含第 5 轮修订）；G1 Revision 2 已 Pass（2026-11-17），P3 收口检查 `/sdd:quality-checklist` 后下一步 `/sdd:atdd-apply`（P4，前置 tasks 1.1/1.2）。
