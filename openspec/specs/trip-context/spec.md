@@ -39,112 +39,9 @@ TBD - created by syncing the add-frontend-trip-context change. This capability o
 - **THEN** `active` 为空
 - **AND** 服务端不读取或写入任何用户的行程数据
 
-### Requirement: 草稿创建与确认
-
-无激活行程时，用户 SHALL 可通过在城市候选卡片上选定城市创建草稿。草稿 MUST 仅存在于 store 内存中，MUST NOT 写入 localStorage 或调用 `POST /api/trips`。草稿面板 SHALL 以 tag 展示城市、天数与宠物，其中城市只读，天数 MUST 为 1–7 的整数，宠物 MUST 为当前用户的一只宠物。只有草稿期 SHALL 允许编辑天数与宠物；确认前系统 MUST NOT 允许添加地点、拖拽排序或进入景点推荐。确认时系统 SHALL 调用 `POST /api/trips`，成功后以详情替换草稿并写入 `activeTripId`；行程名 SHALL 由城市、天数与宠物名自动生成。刷新页面时未确认草稿 MUST 丢失。
-
-#### Scenario: 选定城市创建草稿
-
-- **GIVEN** 用户无激活行程
-- **WHEN** 用户在 `/cities` 选定杭州
-- **THEN** store 创建一个城市为杭州的草稿
-- **AND** 不发送创建行程请求
-- **AND** 行程面板展开并显示城市、天数与宠物 tag
-
-#### Scenario: 草稿期编辑天数与宠物
-
-- **GIVEN** 用户存在杭州草稿
-- **WHEN** 用户将天数改为 3 并选择宠物「旺财」
-- **THEN** 草稿保存天数 3 与宠物「旺财」
-- **AND** 城市仍为杭州且不可编辑
-
-#### Scenario: 天数超出前端范围
-
-- **GIVEN** 用户存在草稿
-- **WHEN** 用户输入小于 1 或大于 7 的天数
-- **THEN** 系统拒绝该输入并展示 1–7 的提示
-- **AND** 草稿保留上一个合法值
-
-#### Scenario: 未确认不可添加地点
-
-- **GIVEN** 用户存在未确认草稿
-- **WHEN** 用户打开景点页或行程面板
-- **THEN** 系统不展示可执行的"加入行程"或拖拽操作
-- **AND** 不展示基于行程的景点推荐
-
-#### Scenario: 确认草稿创建行程
-
-- **GIVEN** 用户存在已选择天数与宠物的草稿
-- **WHEN** 用户点击确认
-- **THEN** 系统调用 `POST /api/trips`
-- **AND** 成功后 store 的 `active` 为该行程详情
-- **AND** `activeTripId` 写入 localStorage
-- **AND** 面板 tag 变为只读
-
-#### Scenario: 刷新丢失未确认草稿
-
-- **GIVEN** 用户存在未确认草稿
-- **WHEN** 用户刷新页面
-- **THEN** 草稿不再存在
-- **AND** `/cities` 回到候选列表
-
-#### Scenario: 放弃草稿
-
-- **GIVEN** 用户存在草稿
-- **WHEN** 用户点击放弃草稿
-- **THEN** store 中的草稿被清除
-- **AND** `/cities` 回到候选列表
-
-### Requirement: Trips 页与激活生命周期
-
-系统 SHALL 提供受登录保护的 `/trips` 页面，列出当前用户的全部已持久化行程，按 `id` 升序展示城市、天数、宠物与激活状态，并提供激活、取消激活与删除操作。同一时间 MUST 最多存在一个激活行程；存在激活行程时 MUST NOT 创建新行程；只有取消激活后才能重新创建。激活行程时系统 SHALL 拉取详情并写入 store；删除激活中的行程 MUST 先取消激活再调用 `DELETE /api/trips/{id}`。存在未确认草稿时激活其他行程 MUST 被阻止，用户需先放弃草稿。草稿 MUST NOT 出现在 Trips 列表中。
-
-#### Scenario: 列出本人行程
-
-- **GIVEN** 用户有两个已持久化行程
-- **WHEN** 用户打开 `/trips`
-- **THEN** 页面按 `id` 升序展示两个行程
-- **AND** 每个行程显示城市、天数与宠物
-- **AND** 激活中的行程带有激活标识
-
-#### Scenario: 激活已有行程
-
-- **GIVEN** 用户无激活行程并打开 `/trips`
-- **WHEN** 用户点击某行程的激活
-- **THEN** 系统请求该行程详情并写入 store
-- **AND** `activeTripId` 被写入 localStorage
-
-#### Scenario: 取消激活后可创建
-
-- **GIVEN** 用户存在激活行程
-- **WHEN** 用户在 `/trips` 取消激活
-- **THEN** 系统清除 `active` 与 `activeTripId`
-- **AND** 用户可在 `/cities` 重新创建行程
-
-#### Scenario: 激活期间不可创建
-
-- **GIVEN** 用户存在激活行程
-- **WHEN** 用户打开 `/cities`
-- **THEN** 页面只展示激活行程的城市详情
-- **AND** 不展示用于创建新行程的候选列表
-
-#### Scenario: 删除激活中的行程
-
-- **GIVEN** 用户存在激活行程
-- **WHEN** 用户在 `/trips` 确认删除该行程
-- **THEN** 系统先取消激活
-- **AND** 调用 `DELETE /api/trips/{id}`
-- **AND** 成功后该行程从列表移除
-
-#### Scenario: 草稿阻止激活
-
-- **GIVEN** 用户存在未确认草稿
-- **WHEN** 用户尝试在 `/trips` 激活另一个行程
-- **THEN** 系统阻止激活并提示先放弃草稿
-
 ### Requirement: 左下角行程面板
 
-系统 SHALL 在登录后的页面左下角展示基于 React Bits AnimatedList 的行程面板。折叠态 SHALL 悬浮于页面左下角，顶部以 tag 展示城市、天数与宠物名，并按天分组展示地点，包含"未排期"分组。面板 SHALL 提供展开按钮；展开后 SHALL 扩展至页面内容高度、增加宽度，并使后方页面内容向右挤压（移动端 MAY 使用全屏面板）。面板列表 MUST 按 `plan.days` 的 `day` 升序与 `stops` 数组顺序渲染，`unscheduled` MUST 单独成组。地点行 SHALL 支持拖拽：同日排序、跨天移动、拖入或拖出"未排期"；同一 `poiId` MAY 在同一天出现多次。草稿期面板 MUST 只展示配置控件，不展示地点拖拽。
+系统 SHALL 在登录后的页面左下角展示基于 React Bits AnimatedList 的行程面板。折叠态 SHALL 悬浮于页面左下角，顶部以 tag 展示城市、天数与宠物名，并按天分组展示地点，包含"未排期"分组。面板 SHALL 提供展开按钮；展开后 SHALL 扩展至页面内容高度、增加宽度，并使后方页面内容向右挤压（移动端 MAY 使用全屏面板）。面板列表 MUST 按 `plan.days` 的 `day` 升序与 `stops` 数组顺序渲染，`unscheduled` MUST 单独成组。地点行 SHALL 支持拖拽：同日排序、跨天移动、拖入或拖出"未排期"；同一 `poiId` MAY 在同一天出现多次。
 
 #### Scenario: 折叠态展示 tag 与分组
 
@@ -284,3 +181,86 @@ TBD - created by syncing the add-frontend-trip-context change. This capability o
 - **GIVEN** active trip 的 `transportMode` 为空
 - **WHEN** 行程面板渲染
 - **THEN** 面板顶部不展示大交通 tag
+
+### Requirement: 创建行程确认弹窗
+
+选定城市后，系统 SHALL 打开创建行程对话框，固定展示所选城市，并收集开始日期、结束日期与携带宠物。日期 MUST 完整，按含首尾计算的天数 MUST 为 1–7 的整数；宠物 MUST 为当前用户的一只宠物，默认选中第一只。城市 MUST NOT 可编辑。用户确认时系统 SHALL 调用 `POST /api/trips`，成功后把返回详情设为激活行程、写入 `activeTripId`、失效 Trips 列表查询并跳转 `/attractions`；行程名 SHALL 由城市、天数与宠物名自动生成。取消 MUST NOT 调用创建接口或改变激活行程。起止日期当前 MUST NOT 持久化到行程，行程只保存 `totalDays`。
+
+#### Scenario: 确认城市、日期与宠物
+
+- **GIVEN** 用户已选定杭州，填写 2026-12-01 至 2026-12-03，并选择宠物「豆豆」
+- **WHEN** 用户点击「确定」
+- **THEN** 系统调用 `POST /api/trips`
+- **AND** 创建 `totalDays=3` 的杭州行程
+- **AND** 该行程成为激活行程并写入 `activeTripId`
+- **AND** 页面跳转 `/attractions`
+
+#### Scenario: 取消不写入
+
+- **GIVEN** 用户已打开创建行程对话框并填写日期
+- **WHEN** 用户点击「取消」
+- **THEN** 对话框关闭
+- **AND** 不调用 `POST /api/trips`
+- **AND** 当前激活行程保持不变
+
+#### Scenario: 日期范围无效
+
+- **GIVEN** 用户在对话框中选择的日期推导出 0 天、负数天或超过 7 天
+- **WHEN** 用户点击「确定」
+- **THEN** 系统展示 1–7 天的错误提示
+- **AND** 对话框保持打开且不创建行程
+
+#### Scenario: 默认宠物
+
+- **GIVEN** 用户有两只宠物「豆豆」与「毛毛」
+- **WHEN** 用户打开创建行程对话框
+- **THEN** 携带宠物默认选中「豆豆」
+- **AND** 用户可切换为「毛毛」
+
+#### Scenario: 无宠物不可创建
+
+- **GIVEN** 用户没有任何宠物档案
+- **WHEN** 用户打开创建行程对话框
+- **THEN** 系统提示先添加宠物
+- **AND** 「确定」不可用
+
+### Requirement: Trips 页与单城市激活
+
+系统 SHALL 提供受登录保护的 `/trips` 页面，列出当前用户的全部已持久化行程，按 `id` 升序展示城市、天数、宠物与激活状态，并提供激活、取消激活与删除操作。同一时间 MUST 最多存在一个激活行程；存在激活行程时 MUST NOT 创建新行程，`/cities` 的「选定」入口 MUST 不可用，只有取消激活后才能重新创建。激活行程时系统 SHALL 拉取详情并写入 store；删除激活中的行程 MUST 先取消激活再调用 `DELETE /api/trips/{id}`。系统 MUST NOT 再通过城市候选页创建草稿。
+
+#### Scenario: 列出本人行程
+
+- **GIVEN** 用户有两个已持久化行程
+- **WHEN** 用户打开 `/trips`
+- **THEN** 页面按 `id` 升序展示两个行程
+- **AND** 每个行程显示城市、天数与宠物
+- **AND** 激活中的行程带有激活标识
+
+#### Scenario: 激活已有行程
+
+- **GIVEN** 用户无激活行程并打开 `/trips`
+- **WHEN** 用户点击某行程的激活
+- **THEN** 系统请求该行程详情并写入 store
+- **AND** `activeTripId` 被写入 localStorage
+
+#### Scenario: 取消激活后可创建
+
+- **GIVEN** 用户存在激活行程
+- **WHEN** 用户在 `/trips` 取消激活
+- **THEN** 系统清除 `active` 与 `activeTripId`
+- **AND** 用户可在 `/cities` 重新创建行程
+
+#### Scenario: 激活期间不可创建
+
+- **GIVEN** 用户存在激活行程
+- **WHEN** 用户打开 `/cities`
+- **THEN** 页面展示候选列表与政策入口
+- **AND** 「选定」不可用，并提示先在 Trips 取消激活
+
+#### Scenario: 删除激活中的行程
+
+- **GIVEN** 用户存在激活行程
+- **WHEN** 用户在 `/trips` 确认删除该行程
+- **THEN** 系统先取消激活
+- **AND** 调用 `DELETE /api/trips/{id}`
+- **AND** 成功后该行程从列表移除

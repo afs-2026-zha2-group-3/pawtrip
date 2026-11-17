@@ -9,7 +9,7 @@ const modeLabels = ["飞机", "高铁", "火车", "自驾"] as const;
 async function openTransportRules(page: Page) {
   await signIn(page);
   await resetTrips(page);
-  await createTrip(page, { city: "杭州市", days: 1, pet: "豆豆" });
+  await createTrip(page, { city: "杭州市", days: 1 });
   await page.getByRole("tab", { name: "交通规则" }).click();
   await expect(page.getByRole("table", { name: tableName })).toBeVisible();
 }

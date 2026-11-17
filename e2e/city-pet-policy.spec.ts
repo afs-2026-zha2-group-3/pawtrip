@@ -157,13 +157,8 @@ test("shows source, update month and area scope", async ({ page }) => {
 test("opens the city policy from city browsing", async ({ page }) => {
   await page.goto("/cities");
   await page.getByRole("textbox", { name: "搜索城市" }).fill("珠海");
-  await page
-    .locator('[data-slot="card"]')
-    .filter({ hasText: "珠海市" })
-    .getByRole("button", { name: "选定" })
-    .click();
 
-  const policyLink = page.getByRole("link", { name: "查看完整城市政策" });
+  const policyLink = page.getByRole("link", { name: "查看珠海市的城市政策" });
   await expect(policyLink).toBeVisible();
   await policyLink.click();
 
