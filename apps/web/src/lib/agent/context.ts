@@ -59,6 +59,7 @@ function existingConstraints(): string[] {
     "所有变更必须通过 update_trip_plan 以增量操作提交，并带上 get_trip_plan 返回的 baseRevision；不要重写整份计划。",
     "用户要求修改其他行程时，提示用户先在 Trips 页面切换激活行程。",
     "宠物政策结论只能引用工具返回的确定性结果，不得自行裁定。",
+    "若用户无明确要求，每日行程默认将住宿安排在最后。若用户尝试在同一天添加多个住宿，先询问用户。",
   ];
 }
 
