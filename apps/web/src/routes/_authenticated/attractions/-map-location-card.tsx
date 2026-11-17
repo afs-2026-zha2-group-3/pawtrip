@@ -4,8 +4,9 @@ import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PolicyTags } from "@/components/trip/policy-tags";
+import { petRulesApplyTo } from "@/lib/attraction-pet-rules";
 import { formatDistanceKm } from "@/lib/distance";
-import { matchLocationPolicy } from "@/lib/trip/policy-match";
+import { matchLocationPolicyForType } from "@/lib/trip/policy-match";
 import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
 import { tripActions } from "@/lib/trip/store";
 import {
@@ -79,7 +80,13 @@ export function MapLocationCard({
   const name = location?.name ?? point?.name ?? "地点详情";
   const address = location?.address ?? point?.address ?? "地址未收录";
   const policies = location?.petPolicies;
-  const chips = policies ? policyChips(policies) : [];
+  const typeGroup = location?.typeGroup ?? point?.typeGroup ?? "";
+  const chips =
+    policies && !petRulesApplyTo(typeGroup) && policyChips(policies).length === 0
+      ? ["允许所有宠物"]
+      : policies
+        ? policyChips(policies)
+        : [];
 
   return (
     <article className="absolute inset-x-3 bottom-3 z-20 max-h-[72%] overflow-y-auto rounded-2xl border bg-card p-3 shadow-xl">
@@ -117,11 +124,14 @@ export function MapLocationCard({
           {policies ? (
             <>
               <div className="mt-2">
-                <PetFriendlyBadge maxPetsPerPerson={policies.maxPetsPerPerson} />
+                <PetFriendlyBadge
+                  typeGroup={typeGroup}
+                  maxPetsPerPerson={policies.maxPetsPerPerson}
+                />
               </div>
               <PolicyTags
                 subjects={subjects}
-                match={(pet) => matchLocationPolicy(policies, pet)}
+                match={(pet) => matchLocationPolicyForType(typeGroup, policies, pet)}
               />
               <div className="mt-2 flex flex-wrap gap-1">
                 {chips.map((chip) => (
@@ -147,7 +157,7 @@ export function MapLocationCard({
       {policies ? (
         <div className="mt-3">
           <h3 className="text-xs font-medium text-muted-foreground">携宠政策</h3>
-          <PetPolicyFields policies={policies} />
+          <PetPolicyFields policies={policies} typeGroup={typeGroup} />
         </div>
       ) : null}
 

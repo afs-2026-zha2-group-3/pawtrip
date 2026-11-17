@@ -30,6 +30,12 @@ const ALLOWED_PET_TYPE_LABELS: Record<string, string> = {
   "CAT,DOG": "猫和狗",
 };
 
+const PET_RULE_EXEMPT_TYPE_GROUPS = new Set(["pet-hospital", "pet-supplies"]);
+
+export function petRulesApplyTo(typeGroup: string): boolean {
+  return !PET_RULE_EXEMPT_TYPE_GROUPS.has(typeGroup);
+}
+
 export function petFriendlyStatus(maxPetsPerPerson: number | null): PetFriendlyStatus {
   if (maxPetsPerPerson === null) {
     return "unconfigured";
@@ -39,6 +45,17 @@ export function petFriendlyStatus(maxPetsPerPerson: number | null): PetFriendlyS
 
 export function petFriendlyLabel(maxPetsPerPerson: number | null): string {
   return PET_FRIENDLY_LABELS[petFriendlyStatus(maxPetsPerPerson)];
+}
+
+export function isPetPolicyConfigured(policies: AttractionPetPolicies): boolean {
+  return (
+    policies.allowedPetTypes != null ||
+    policies.maxPetsPerPerson != null ||
+    policies.maxSinglePetWeightKg != null ||
+    policies.maxSinglePetShoulderHeightCm != null ||
+    policies.leashRequired != null ||
+    policies.vaccinationProofRequired != null
+  );
 }
 
 export function formatAllowedPetTypes(value: string | null): string | null {

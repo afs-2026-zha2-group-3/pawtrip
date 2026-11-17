@@ -46,4 +46,9 @@ class LocationQueryController {
 		return this.locationQueryService.detail(poiId);
 	}
 
+	@GetMapping("/{poiId}/nearby-services")
+	LocationQueryResponses.NearbyServices nearbyServices(@PathVariable String poiId) {
+		return this.locationQueryService.nearbyServices(poiId);
+	}
+
 }

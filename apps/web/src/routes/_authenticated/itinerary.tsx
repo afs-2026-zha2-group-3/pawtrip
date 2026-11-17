@@ -24,6 +24,7 @@ import {
   transportModeLabels,
   type TransportRule,
 } from "@/data/transport-rules";
+import { NearbyPetServices } from "@/components/trip/nearby-pet-services";
 import { petPolicyFields } from "@/lib/attraction-pet-rules";
 import {
   downloadBlob,
@@ -419,6 +420,10 @@ function DayDetail({
                         </summary>
                         <PolicyList policy={entry.policy} />
                       </details>
+                      <NearbyPetServices
+                        poiId={entry.poiId}
+                        attractionName={entry.name}
+                      />
                     </CardContent>
                   </Card>
                 ) : (
