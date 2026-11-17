@@ -1,6 +1,7 @@
 package com.pawtrip.server.location;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -65,8 +66,8 @@ class LocationQueryApiTest {
 		this.photoRepository.deleteAll();
 		this.locationRepository.deleteAll();
 		this.locationRepository.saveAll(List.of(
-				location("poi-zhu-a", "情侣路", "attraction", "440402", "110000", 1, "DOG", 8.5, 40.0, true, false,
-						1050L, null, "{\"rating\":\"4.6\"}"),
+				locationAt("poi-zhu-a", "情侣路", "attraction", "440402", "110000", 113.5, 22.1, 1, "DOG", 8.5, 40.0,
+						true, false, 1050L, null, "{\"rating\":\"4.6\"}"),
 				location("poi-zhu-b", "珠海渔女", "attraction", "440402", "110000", 0, "DOG", null, null, true, null,
 						null, null),
 				location("poi-zhu-c", "海滨公园", "attraction", "440400", "110000", null, null, null, null, true, null,
@@ -75,16 +76,22 @@ class LocationQueryApiTest {
 						null, null),
 				location("poi-zhu-e", "东澳岛", "attraction", "440400", "110000", 2, "CAT,DOG", 15.0, null, false, true,
 						0L, false),
-				location("poi-zhu-hotel", "某酒店", "hotel", "440402", "100000", 1, "DOG", null, null, null, null, null,
-						null),
-				location("poi-zhu-hotel-no-policy", "未配置酒店", "hotel", "440402", "100000", null, null, null, null,
+				locationAt("poi-zhu-hotel", "某酒店", "hotel", "440402", "100000", 113.5, 22.105, 1, "DOG", null, null,
 						null, null, null, null),
+				locationAt("poi-zhu-hotel-no-policy", "未配置酒店", "hotel", "440402", "100000", 113.5, 22.16, null,
+						null, null, null, null, null, null, null),
 				location("poi-zhu-hospital", "宠物医院", "pet-hospital", "440402", "090700", 1, "DOG", null, null,
 						null, null, null, null),
 				location("poi-zhu-supplies", "宠物用品店", "pet-supplies", "440402", "061211", 1, "DOG", null, null,
 						null, null, null, null),
-				location("poi-zhu-restaurant", "宠物餐厅", "restaurant", "440402", "050000", 1, "DOG", null, null,
-						null, null, null, null),
+				locationAt("poi-zhu-restaurant", "宠物餐厅", "restaurant", "440402", "050000", 113.5, 22.102, 1, "DOG",
+						null, null, null, null, null, null),
+				locationAt("poi-zhu-restaurant-close", "近距离餐厅", "restaurant", "440402", "050000", 113.5, 22.1005, 0,
+						"DOG", null, null, null, null, null, null),
+				locationAt("poi-zhu-restaurant-far", "远距离餐厅", "restaurant", "440402", "050000", 113.5, 22.16, 1,
+						"DOG", null, null, null, null, null, null),
+				locationAt("poi-zhu-restaurant-null", "无坐标餐厅", "restaurant", "440402", "050000", null, null, 1,
+						"DOG", null, null, null, null, null, null),
 				location("poi-hz-a", "西湖", "attraction", "330106", "110000", 1, "DOG", null, null, null, null, null,
 						null),
 				location("poi-hz-hotel", "杭州酒店", "hotel", "330106", "100000", 1, "DOG", null, null, null, null,
@@ -308,6 +315,30 @@ class LocationQueryApiTest {
 	}
 
 	@Test
+	void detailReturnsMapCardSummaryFields() throws Exception {
+		PawtripLocation card = new PawtripLocation("poi-card", "卡片酒店", "100000", "hotel", "情侣路",
+				113.5, 22.1, "440402",
+				"""
+				{"photos":[{"url":"http://example.com/a.jpg"},{"url":"https://example.com/b.jpg","title":"大堂"}]}
+				""",
+				"""
+				{"rating":4.6,"keytag":"宠物友好","business_area":"情侣路"}
+				""", null, null);
+		card.updatePetPolicies("CAT,DOG", 1, 15.0, 45.0, true, false, 30000L, false);
+		this.locationRepository.save(card);
+
+		JsonNode body = json(get("/api/locations/poi-card").with(user("demo").roles("USER")));
+
+		assertThat(body.path("coverPhotoUrl").asString()).isEqualTo("https://example.com/b.jpg");
+		assertThat(body.path("rating").asString()).isEqualTo("4.6");
+		assertThat(body.path("keytag").asString()).isEqualTo("宠物友好");
+		assertThat(body.path("businessArea").asString()).isEqualTo("情侣路");
+		assertThat(body.has("photos")).isFalse();
+		assertThat(body.has("business")).isFalse();
+		assertThat(body.has("poi")).isFalse();
+	}
+
+	@Test
 	void unauthenticatedRequestsReturn401() throws Exception {
 		this.mockMvc.perform(get("/api/locations").param("regionCode", "440400"))
 				.andExpect(status().isUnauthorized());
@@ -351,6 +382,11 @@ class LocationQueryApiTest {
 		json(get("/api/locations")
 				.param("regionCode", "440400")
 				.param("typeGroup", "hotel")
+				.with(user("demo").roles("USER")));
+		json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "restaurant")
+				.param("nearPoiId", "poi-zhu-a")
 				.with(user("demo").roles("USER")));
 		json(get("/api/locations/poi-zhu-a").with(user("demo").roles("USER")));
 
@@ -430,6 +466,74 @@ class LocationQueryApiTest {
 	}
 
 	@Test
+	void nearbyFilterReturnsOnlyLocationsWithinFiveKmSortedByDistance() throws Exception {
+		JsonNode body = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "restaurant")
+				.param("petFriendlyOnly", "false")
+				.param("nearPoiId", "poi-zhu-a")
+				.with(user("demo").roles("USER")));
+
+		assertThat(poiIds(body)).containsExactly("poi-zhu-restaurant-close", "poi-zhu-restaurant");
+		assertThat(item(body, "poi-zhu-restaurant-close").path("distanceMeters").asLong()).isBetween(50L, 70L);
+		assertThat(item(body, "poi-zhu-restaurant").path("distanceMeters").asLong()).isBetween(200L, 250L);
+		assertThat(poiIds(body)).doesNotContain("poi-zhu-restaurant-far", "poi-zhu-restaurant-null");
+		assertThat(body.path("totalElements").asLong()).isEqualTo(2);
+	}
+
+	@Test
+	void nearbyFilterCombinesWithPetFriendlyFilterAndPagination() throws Exception {
+		JsonNode friendly = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "restaurant")
+				.param("petFriendlyOnly", "true")
+				.param("nearPoiId", "poi-zhu-a")
+				.with(user("demo").roles("USER")));
+		JsonNode firstPage = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "restaurant")
+				.param("petFriendlyOnly", "false")
+				.param("nearPoiId", "poi-zhu-a")
+				.param("page", "1")
+				.param("pageSize", "1")
+				.with(user("demo").roles("USER")));
+		JsonNode secondPage = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "restaurant")
+				.param("petFriendlyOnly", "false")
+				.param("nearPoiId", "poi-zhu-a")
+				.param("page", "2")
+				.param("pageSize", "1")
+				.with(user("demo").roles("USER")));
+
+		assertThat(poiIds(friendly)).containsExactly("poi-zhu-restaurant");
+		assertThat(poiIds(firstPage)).containsExactly("poi-zhu-restaurant-close");
+		assertThat(firstPage.path("totalElements").asLong()).isEqualTo(2);
+		assertThat(firstPage.path("hasNext").asBoolean()).isTrue();
+		assertThat(poiIds(secondPage)).containsExactly("poi-zhu-restaurant");
+		assertThat(secondPage.path("hasPrevious").asBoolean()).isTrue();
+	}
+
+	@Test
+	void nearbyFilterSupportsHotelsAndRejectsInvalidAnchors() throws Exception {
+		JsonNode hotels = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "hotel")
+				.param("nearPoiId", "poi-zhu-a")
+				.with(user("demo").roles("USER")));
+
+		assertThat(poiIds(hotels)).containsExactly("poi-zhu-hotel");
+
+		for (String nearPoiId : List.of("missing", "poi-zhu-hotel", "poi-zhu-c")) {
+			this.mockMvc.perform(get("/api/locations")
+						.param("regionCode", "440400")
+						.param("nearPoiId", nearPoiId)
+						.with(user("demo").roles("USER")))
+				.andExpect(status().isBadRequest());
+		}
+	}
+
+	@Test
 	void adminSharedListGainsMediaScalarsAndAdminDetailKeepsFullData() throws Exception {
 		JsonNode body = json(get("/api/locations").with(user("admin").roles("ADMIN")));
 		assertThat(item(body, "poi-zhu-a").has("coverPhotoUrl")).isTrue();
@@ -439,6 +543,23 @@ class LocationQueryApiTest {
 		assertThat(adminDetail.has("photos")).isTrue();
 		assertThat(adminDetail.has("business")).isTrue();
 		assertThat(adminDetail.has("poi")).isTrue();
+	}
+
+	@Test
+	void databaseListOmitsDistanceMetersWithoutAnchor() throws Exception {
+		JsonNode body = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "restaurant")
+				.with(user("demo").roles("USER")));
+
+		assertThat(isNullOrMissing(item(body, "poi-zhu-restaurant").path("distanceMeters"))).isTrue();
+	}
+
+	@Test
+	void haversineDistanceIsMetersAndHandlesBoundaryOffset() {
+		assertThat(LocationQueryService.distanceMeters(22.1, 113.5, 22.1, 113.5)).isZero();
+		assertThat(LocationQueryService.distanceMeters(22.1, 113.5, 22.144969, 113.5))
+			.isCloseTo(5_000.0, within(2.0));
 	}
 
 	private JsonNode json(MockHttpServletRequestBuilder request) throws Exception {
@@ -482,6 +603,26 @@ class LocationQueryApiTest {
 			Double maxShoulderHeight, Boolean leashRequired, Boolean vaccinationProofRequired, Long extraFeeCents,
 			Boolean reservationRequired, String businessJson) {
 		PawtripLocation location = new PawtripLocation(poiId, name, typeCode, typeGroup, "测试地址", null, null,
+				regionCode, "{}", businessJson, null, null);
+		location.updatePetPolicies(allowedPetTypes, maxPetsPerPerson, maxWeight, maxShoulderHeight, leashRequired,
+				vaccinationProofRequired, extraFeeCents, reservationRequired);
+		return location;
+	}
+
+	private static PawtripLocation locationAt(String poiId, String name, String typeGroup, String regionCode,
+			String typeCode, Double longitude, Double latitude, Integer maxPetsPerPerson, String allowedPetTypes,
+			Double maxWeight, Double maxShoulderHeight, Boolean leashRequired, Boolean vaccinationProofRequired,
+			Long extraFeeCents, Boolean reservationRequired) {
+		return locationAt(poiId, name, typeGroup, regionCode, typeCode, longitude, latitude, maxPetsPerPerson,
+				allowedPetTypes, maxWeight, maxShoulderHeight, leashRequired, vaccinationProofRequired, extraFeeCents,
+				reservationRequired, "{}");
+	}
+
+	private static PawtripLocation locationAt(String poiId, String name, String typeGroup, String regionCode,
+			String typeCode, Double longitude, Double latitude, Integer maxPetsPerPerson, String allowedPetTypes,
+			Double maxWeight, Double maxShoulderHeight, Boolean leashRequired, Boolean vaccinationProofRequired,
+			Long extraFeeCents, Boolean reservationRequired, String businessJson) {
+		PawtripLocation location = new PawtripLocation(poiId, name, typeCode, typeGroup, "测试地址", longitude, latitude,
 				regionCode, "{}", businessJson, null, null);
 		location.updatePetPolicies(allowedPetTypes, maxPetsPerPerson, maxWeight, maxShoulderHeight, leashRequired,
 				vaccinationProofRequired, extraFeeCents, reservationRequired);

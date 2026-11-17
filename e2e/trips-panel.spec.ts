@@ -8,6 +8,7 @@ import {
   resetTrips,
   signIn,
   tripCard,
+  withTripPanelNotBlocking,
 } from "./trip-helpers";
 
 async function dragHandleTo(page: Page, stopName: string, target: ReturnType<Page["locator"]>) {
@@ -39,8 +40,10 @@ async function addDayAttraction(page: Page, name: string, day: number) {
       response.request().method() === "PUT",
   );
   const card = page.locator('[data-slot="card"]').filter({ hasText: name });
-  await card.getByRole("combobox", { name: "添加到行程" }).click();
-  await page.getByRole("option", { name: `第 ${day} 天` }).click();
+  await withTripPanelNotBlocking(page, async () => {
+    await card.getByRole("combobox", { name: "添加到行程" }).click();
+    await page.getByRole("option", { name: `第 ${day} 天` }).click();
+  });
   await put;
 }
 
@@ -162,7 +165,9 @@ test("adds stops to the selected day and to unscheduled with debounced saving", 
   await createTrip(page, { city: "杭州市", days: 3 });
   await page.getByRole("tab", { name: "地点浏览" }).click();
   const westLake = page.locator('[data-slot="card"]').filter({ hasText: "西湖" });
-  await westLake.getByRole("combobox", { name: "添加到行程" }).click();
+  await withTripPanelNotBlocking(page, async () => {
+    await westLake.getByRole("combobox", { name: "添加到行程" }).click();
+  });
   await expect(page.getByRole("option", { name: "第 3 天" })).toBeVisible();
   await expect(page.getByRole("option", { name: "第 4 天" })).toHaveCount(0);
   await page.keyboard.press("Escape");
@@ -183,7 +188,9 @@ test("adds stops to the selected day and to unscheduled with debounced saving", 
       response.request().method() === "PUT",
   );
   const card = page.locator('[data-slot="card"]').filter({ hasText: "灵隐寺" });
-  await card.getByRole("button", { name: "暂不排期" }).click();
+  await withTripPanelNotBlocking(page, async () => {
+    await card.getByRole("button", { name: "暂不排期" }).click();
+  });
   await put;
   await expect(page.locator('[data-stop-id^="u:"]')).toContainText("灵隐寺");
   await expect(page.getByTestId("save-status")).toContainText("已保存");
@@ -238,8 +245,10 @@ test("keeps local edits when saving fails and retries", async ({ page }) => {
   });
 
   const card = page.locator('[data-slot="card"]').filter({ hasText: "西湖" });
-  await card.getByRole("combobox", { name: "添加到行程" }).click();
-  await page.getByRole("option", { name: "第 1 天" }).click();
+  await withTripPanelNotBlocking(page, async () => {
+    await card.getByRole("combobox", { name: "添加到行程" }).click();
+    await page.getByRole("option", { name: "第 1 天" }).click();
+  });
   await expect(page.getByTestId("save-status")).toContainText("保存失败");
   await expect(page.getByTestId("trip-panel")).toContainText("西湖");
 

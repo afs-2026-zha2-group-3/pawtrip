@@ -10,7 +10,9 @@ import {
 } from "./trip-helpers";
 
 function attractionCard(page: Page, name: string) {
-  return page.locator('[data-slot="card"]').filter({ hasText: name });
+  return page.locator('[data-slot="card"]').filter({
+    has: page.locator('[data-slot="card-title"]', { hasText: name }),
+  });
 }
 
 async function openAttractions(page: Page) {
@@ -18,9 +20,39 @@ async function openAttractions(page: Page) {
   await expect(page).toHaveURL(/\/attractions$/);
 }
 
+async function hideTripPanel(page: Page) {
+  await page.getByTestId("trip-panel").evaluate((panel) => {
+    (panel as HTMLElement).style.display = "none";
+  });
+}
+
+async function showTripPanel(page: Page) {
+  await page.getByTestId("trip-panel").evaluate((panel) => {
+    (panel as HTMLElement).style.display = "";
+  });
+}
+
 async function tripTo(page: Page, city: string) {
   await createTrip(page, { city, days: 1, pet: "豆豆" });
   await openAttractions(page);
+  // 双列布局下固定的行程面板会遮挡左列卡片底部按钮；本套件专注列表/详情行为。
+  await hideTripPanel(page);
+}
+
+async function scheduleAttractionAndSelectAnchor(page: Page, name: string) {
+  const put = page.waitForResponse(
+    (response) =>
+      /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
+      response.request().method() === "PUT",
+  );
+  await attractionCard(page, name).getByRole("combobox", { name: "添加到行程" }).click();
+  await page.getByRole("option", { name: "第 1 天" }).click();
+  await put;
+
+  const anchor = page.getByRole("combobox", { name: "行程景点锚点" });
+  await expect(anchor).toBeEnabled();
+  await anchor.click();
+  await page.getByRole("option", { name, exact: true }).click();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -56,8 +88,9 @@ test("E2 toggles all saved attractions and shows forbidden/unconfigured states",
   await expect(attractionCard(page, "珠海某酒店")).toHaveCount(0);
 });
 
-test("E2b can filter, inspect and add a hotel location", async ({ page }) => {
+test("E2b can select an anchor, filter, inspect and add a hotel location", async ({ page }) => {
   await tripTo(page, "珠海市");
+  await scheduleAttractionAndSelectAnchor(page, "情侣路");
 
   const typeFilter = page.getByRole("combobox", { name: "地点类型筛选" });
   await typeFilter.click();
@@ -73,8 +106,11 @@ test("E2b can filter, inspect and add a hotel location", async ({ page }) => {
   await expect(dialog.getByRole("button", { name: "暂不排期" })).toBeVisible();
   await dialog.getByRole("combobox", { name: "添加到行程" }).click();
   await page.getByRole("option", { name: "第 1 天" }).click();
+  await showTripPanel(page);
   await expect(page.getByTestId("trip-panel")).toContainText("珠海某酒店");
-  await expect(page.locator('[data-stop-id^="d1:"]')).toContainText("珠海某酒店");
+  await expect(
+    page.locator('[data-stop-id^="d1:"]').filter({ hasText: "珠海某酒店" }),
+  ).toBeVisible();
 });
 
 test("E3 shows pet policy fields in location detail", async ({ page }) => {
@@ -399,7 +435,8 @@ test("media E8 type switch keeps card structure and add actions", async ({ page 
   await expect(hotel.getByText("第 1 天")).toBeVisible();
 
   await selectType(page, "餐厅");
-  await expect(page.getByText("该城市暂无已保存餐厅")).toBeVisible();
+  // REQ-012: 未选择锚点时餐厅显示门禁空态，不再请求餐厅列表。
+  await expect(page.getByText("请先在景点页选择行程景点", { exact: true })).toBeVisible();
 });
 
 test("media E9 no deposit/cleaning fee copy or rating controls", async ({ page }) => {
