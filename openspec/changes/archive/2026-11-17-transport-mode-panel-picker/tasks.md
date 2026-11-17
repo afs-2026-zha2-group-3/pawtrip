@@ -30,13 +30,16 @@
 ## 5. 验证
 
 - [x] 5.1 `npx tsc --noEmit -p apps/web/tsconfig.json` 通过。
-- [x] 5.2 `npm test -w apps/web`：24 文件 188 项通过。
-- [x] 5.3 E2E：`rule-recommendation-and-selection` 7 passed。
+- [x] 5.2 `npm test -w apps/web`：合并 main 后 26 文件 194 项通过。
+- [x] 5.3 E2E：`rule-recommendation-and-selection` 合并前 7 passed；PR #73 Browser E2E 全量通过。
 - [x] 5.4 浏览器结构验证：浮层四种方式与宠物结论、选择自驾后标签为「大交通 · 自驾」且状态「已保存」、规则页自驾单选选中。
-- [x] 5.5 `npx --no-install openspec validate 2026-11-17-transport-mode-panel-picker --strict` 通过；`openspec validate --specs` 23 passed。全量 `--specs --strict` 仍有 6 个与本变更无关的 TBD Purpose 失败，本变更不以此作为通过口径。
+- [x] 5.5 `npx --no-install openspec validate 2026-11-17-transport-mode-panel-picker --strict` 通过；`openspec validate --specs` 合并 main 后 24 passed。全量 `--specs --strict` 仍有与本变更无关的 TBD Purpose 失败，本变更不以此作为通过口径。
 
 ## Workflow follow-up
 
-- 提交本变更文件：新增 `components/ui/popover.tsx`、`components/trip/transport-mode-picker.tsx`、`data/transport-mode-options.ts` 与其单测、本 change 目录（含 `.openspec.yaml`）；修改 `trip-panel.tsx`、`e2e/rule-recommendation-and-selection.spec.ts`、2 份 delta 与对应 living spec。
-- PR 阶段补跑全量 E2E 与 CI。
-- G1/G2/G3 需实名签署，本记录不代签。
+- [x] 提交本变更文件到 `feat/transport-mode-in-panel`（`2d9fead`）。
+- [x] 合并 main 并推送（merge `b6c50d9`），创建 PR #73。
+- [x] PR 三工作流通过：Web build 37s、Browser E2E 9m4s。
+- [x] G2 Pass（VL=SCOTT）、G3 Pass（SA=LEO）已记录。
+- [x] 归档 `2026-11-17-transport-mode-panel-picker` 并同步 living specs。
+- G1 未单独记录；main 的 `anchors.test.ts` fixture 类型问题作为独立 follow-up。

@@ -22,11 +22,11 @@
 
 ## Gaps / residual risks
 
-- 全量 E2E 与 CI 未运行，PR 阶段补齐。
+- 全量 E2E 与 CI 已由 PR #73 覆盖并通过（Web build 37s、Browser E2E 9m4s）。
 - 飞机结论固定按默认航司，已记录并标注。
 - 需求改名已用 `RENAMED Requirements` + `MODIFIED` 表达，并在干净 `main` 临时 worktree 验证归档会应用 1 个 rename + 1 个 modified。
-- 未提交；提交时需包含新增组件/数据文件、单测、本 change 目录，以及 `trip-panel.tsx`、E2E、2 份 delta 与 living spec。
+- 已提交（`2d9fead`）、合并（`8770c88`）、归档；G2 Pass（VL=SCOTT）、G3 Pass（SA=LEO）。
 
 ## Outcome
 
-**Pass（计划层）**：Spec、Design、ATDD 与 Tasks 一致。该结果不代表 Gate 决策，也不代表 CI 已通过。
+**Pass（计划层）**：Spec、Design、ATDD 与 Tasks 一致；PR CI 已通过，Gate 决策见 G2/G3 记录。

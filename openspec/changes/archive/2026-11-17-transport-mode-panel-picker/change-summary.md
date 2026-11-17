@@ -1,7 +1,7 @@
 # Change summary — 2026-11-17-transport-mode-panel-picker
 
 - Change id: `2026-11-17-transport-mode-panel-picker`
-- 状态：实现与本地验证完成；未提交、未建 PR、未归档
+- 状态：已合并（PR #73，merge `8770c88`）并归档；G2 Pass（VL=SCOTT）、G3 Pass（SA=LEO）
 - 分支：`feat/transport-mode-in-panel`（基于 `main` `fcde4c7`）
 
 ## Intent
@@ -22,19 +22,19 @@
 
 | 项 | 结果 | 证据 |
 |---|---|---|
-| TypeScript | Pass | `npx tsc --noEmit -p apps/web/tsconfig.json` |
-| 前端单测 | Pass | `npm test -w apps/web`：24 文件 188 项 |
-| 受影响 E2E | Pass | `rule-recommendation-and-selection`：7 passed（面板选择、规则回显、详情跳转、宠物失败降级） |
+| TypeScript | Pass | 合并 main 前 `tsc` 通过；合并后仅 main 既有 `anchors.test.ts` fixture 错误，与本变更无关，CI 不跑 tsc |
+| 前端单测 | Pass | `npm test -w apps/web`（合并 main 后）：26 文件 194 项 |
+| 受影响 E2E | Pass | `rule-recommendation-and-selection`：合并前 7 passed；PR Browser E2E 全量通过 |
 | 浏览器结构验证 | Pass | 浮层结论、选择后标签与「已保存」、规则页单选同步 |
-| OpenSpec validate | Pass | change `--strict` 通过；`--specs` 23 passed（非 strict；全量 strict 仍有 6 个无关 TBD Purpose 失败） |
-| G1 / G2 / G3 | 未签署 | 需需求方明确指示并实名后补记录 |
-| 全量 E2E / CI | 未运行 | 待 PR 阶段补齐 |
+| OpenSpec validate | Pass | change `--strict` 通过；`--specs` 24 passed（非 strict；全量 strict 仍有无关 TBD Purpose 失败） |
+| G1 / G2 / G3 | G2 Pass（VL=SCOTT）；G3 Pass（SA=LEO）；G1 未单独记录 | `g2-decision.md`、`g3-decision.md` |
+| 全量 E2E / CI | Pass | PR #73：Web build 37s、Browser E2E 9m4s |
 
 ## Residual risks / follow-ups
 
 1. 飞机结论固定按默认航司（中国国际航空）；规则页切换航司后的结论可能不同，浮层已标注。
 2. 宠物档案不可用时浮层只展示方式与状态文案，不给结论；加载中与失败文案已分开。
-3. 全量 E2E 与 CI 尚未执行。
+3. 全量 E2E 与 CI 已由 PR #73 覆盖并通过。
 4. 提交范围：新增 `popover.tsx`、`transport-mode-picker.tsx`、`transport-mode-options.ts` 与其单测、本 change 目录；修改 `trip-panel.tsx`、E2E、2 份 delta 与 living spec。
 
 ## Links
@@ -46,3 +46,4 @@
 - DoV: `dov-ac-review.md`
 - Alignment: `alignment-self-check.md`
 - Tasks: `tasks.md`
+- Gates: `g2-decision.md`、`g3-decision.md`

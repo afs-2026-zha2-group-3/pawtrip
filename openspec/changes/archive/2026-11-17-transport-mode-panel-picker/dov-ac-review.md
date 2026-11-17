@@ -25,19 +25,19 @@
 | DoV-1 范围匹配 Proposal | Pass | `proposal.md`、`design.md`、两份 delta | 面板入口 + 浮层 + 详情链接 |
 | DoV-2 歧义已解决 | Pass | `design.md` D1、D3、D5 | 默认航司、入口形态、详情链接位置 |
 | DoV-3 残余风险已记录 | Pass | `design.md` Risks | 航司差异、宠物不可用、移动端布局 |
-| DoV-4 类型检查 | Pass | `npx tsc --noEmit -p apps/web/tsconfig.json` | 无输出即通过 |
-| DoV-5 前端单测 | Pass | `npm test -w apps/web` | 24 文件 188 项通过 |
-| DoV-6 受影响 E2E | Pass | `rule-recommendation-and-selection` | 7 passed |
+| DoV-4 类型检查 | Pass with note | `npx tsc --noEmit -p apps/web/tsconfig.json` | 合并 main 前通过；合并后仅 main 既有 `anchors.test.ts` fixture 错误，与本变更无关 |
+| DoV-5 前端单测 | Pass | `npm test -w apps/web`（合并 main 后） | 26 文件 194 项通过 |
+| DoV-6 受影响 E2E | Pass | `rule-recommendation-and-selection` + PR Browser E2E | 合并前 7 passed；PR CI 全量通过 |
 | DoV-7 浏览器结构验证 | Pass | 内置浏览器 | 浮层结论、选择后标签与「已保存」、规则页单选同步 |
-| DoV-8 规格校验 | Pass | `openspec validate <change> --strict`；`openspec validate --specs` | change strict 通过；specs 23 passed（非 strict；全量 strict 仍有 6 个无关 TBD Purpose 失败） |
+| DoV-8 规格校验 | Pass | `openspec validate <change> --strict`；`openspec validate --specs` | change strict 通过；specs 24 passed（非 strict；全量 strict 仍有无关 TBD Purpose 失败） |
 
 ## Residual concerns
 
 - 飞机结论固定按中国国际航空，与规则页切换航司后的结论可能不同；浮层已标注航司。
 - 宠物档案加载中/失败时只展示对应状态文案，不给结论；方式选择不受影响。
-- 全量 E2E 与 CI 未在本变更上运行，PR 阶段补齐。
-- 未提交、未建 PR、未归档；G1/G2/G3 未签署。
+- 全量 E2E 与 CI 已由 PR #73 覆盖并通过。
+- 已提交、合并、归档；G2 Pass（VL=SCOTT）、G3 Pass（SA=LEO），G1 未单独记录。
 
 ## Review outcome
 
-文档层 AC/DoV 检查为 **Pass（规格层）**；不代表 Gate 已批准，也不代表 CI 已通过。
+文档层 AC/DoV 检查为 **Pass（规格层）**；PR CI 已通过，Gate 决策见 G2/G3 记录。
