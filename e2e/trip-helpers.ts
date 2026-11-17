@@ -54,6 +54,12 @@ export async function openCities(page: Page) {
   await expect(page.getByText(/共 \d+ 个候选/)).toBeVisible();
 }
 
+export async function searchCity(page: Page, keyword: string) {
+  const search = page.getByRole("textbox", { name: "搜索城市" });
+  await search.fill(keyword);
+  await expect(page.getByText("共 1 个候选")).toBeVisible();
+}
+
 function isoDate(offsetDays: number): string {
   const date = new Date();
   date.setDate(date.getDate() + offsetDays);
@@ -63,6 +69,7 @@ function isoDate(offsetDays: number): string {
 }
 
 export async function openTripDialog(page: Page, cityName: string) {
+  await searchCity(page, cityName);
   await cityCard(page, cityName).getByRole("button", { name: "Pick" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
