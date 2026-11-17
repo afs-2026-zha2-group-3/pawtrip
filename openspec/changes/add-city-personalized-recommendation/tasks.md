@@ -22,9 +22,9 @@
 
 ## 4. 城市特征下发（含本组测试与文档）
 
-- [ ] 4.1 先写失败 API 测试（扩展 `DestinationApiTest`）：`GET /api/destinations` 每项含 featureTags（珠海=COASTAL、杭州=LAKE,CITY_PARK、未标注空数组）；keyword/petFriendly 等参数与名称升序不变；未认证 401；反向：未知排序类参数不改变名称升序、管理端 PATCH 契约不含 featureTags（对应 destination-selection delta「候选城市特征标签契约」3 场景 + atdd-design §5 反向行）
-- [ ] 4.2 `AdministrativeRegion` 增只读 featureTags 映射、`DestinationResponse` 增 `featureTags` 并在 toResponse 解析（trim/去空段/去重，NULL→空数组）；验证：4.1 测试转绿，既有 destination 测试不回归，管理端写路径不触碰新列
-- [ ] 4.3 更新 `docs/knowledge/interfaces/http-api.md` destinations 契约段落与 `docs/knowledge/domain/city-pet-policy.md`（或新条目）登记特征词表与 48 城种子口径；验证：文档与附录 A 一致
+- [x] 4.1 先写失败 API 测试（扩展 `DestinationApiTest`）：`GET /api/destinations` 每项含 featureTags（珠海=COASTAL、杭州=LAKE,CITY_PARK、未标注空数组）；keyword/petFriendly 等参数与名称升序不变；未认证 401；反向：未知排序类参数不改变名称升序、管理端 PATCH 契约不含 featureTags（对应 destination-selection delta「候选城市特征标签契约」3 场景 + atdd-design §5 反向行）
+- [x] 4.2 `AdministrativeRegion` 增只读 featureTags 映射、`DestinationResponse` 增 `featureTags` 并在 toResponse 解析（trim/去空段/去重，NULL→空数组）；验证：4.1 测试转绿，既有 destination 测试不回归，管理端写路径不触碰新列
+- [x] 4.3 更新 `docs/knowledge/interfaces/http-api.md` destinations 契约段落与 `docs/knowledge/domain/city-pet-policy.md`（或新条目）登记特征词表与 48 城种子口径；验证：文档与附录 A 一致（实际采用新条目 `domain/city-feature-tags.md` 并登记 _INDEX）
 
 ## 5. 前端打分排序与徽标（含本组 E2E）
 
