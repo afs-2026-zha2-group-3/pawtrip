@@ -163,9 +163,28 @@ test.describe("comparison-table", () => {
     await expect(weightCell).not.toContainText("kg");
   });
 
-  test("shows a review state for every row", async ({ page }) => {
+  test("hides review metadata and the duplicated drive form label", async ({
+    page,
+  }) => {
+    // 2026-11-17 精简：不再展示复核日期/复核统计/页头一览描述，自驾行不重复形态小字
     for (const mode of modeLabels) {
-      await expect(ruleRow(page, mode)).toContainText(/已复核|待复核/);
+      await expect(ruleRow(page, mode)).not.toContainText(/已复核|待复核/);
+    }
+    await expect(page.getByText(/人工复核|规则一览|发布前复核/)).toHaveCount(0);
+    await expect(ruleRow(page, "自驾").getByRole("cell").nth(1)).toHaveText(
+      "自驾",
+    );
+  });
+
+  test("renders container and procedure as bullet points", async ({ page }) => {
+    for (const mode of modeLabels) {
+      const row = ruleRow(page, mode);
+      await expect(
+        row.getByRole("cell").nth(5).getByRole("listitem"),
+      ).not.toHaveCount(0);
+      await expect(
+        row.getByRole("cell").nth(6).getByRole("listitem"),
+      ).not.toHaveCount(0);
     }
   });
 
@@ -205,13 +224,13 @@ test.describe("comparison-table", () => {
     await expect(ruleRow(page, "飞机")).toContainText("以航司最新规则为准");
   });
 
-  test("renders sources, review state, disclaimer and booking note in the footer", async ({
+  test("renders sources, disclaimer and booking note in the footer", async ({
     page,
   }) => {
     const footer = page.getByRole("region", { name: "规则说明" });
 
     await expect(footer).toContainText("数据来源");
-    await expect(footer).toContainText("人工复核");
+    await expect(footer).not.toContainText("人工复核");
     await expect(footer).toContainText("以承运方最新规则为准");
     await expect(footer).toContainText("不提供站内订票");
     await expect(footer).toContainText("官方或第三方渠道");

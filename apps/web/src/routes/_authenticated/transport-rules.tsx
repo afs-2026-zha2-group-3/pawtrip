@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -62,6 +61,26 @@ const allowanceStatusClasses: Record<AllowanceStatus, string> = {
   not_allowed: "bg-muted text-muted-foreground",
 };
 
+// 容器要求/办理流程概要按分号拆分为要点短句，分点展示（2026-11-17 精简）
+function RulePoints({ text }: { text: string }) {
+  const points = text
+    .split("；")
+    .map((point) => point.trim())
+    .filter(Boolean);
+  return (
+    <ul className="flex flex-col gap-1">
+      {points.map((point) => (
+        <li key={point} className="flex gap-1.5">
+          <span aria-hidden="true" className="text-muted-foreground">
+            ·
+          </span>
+          <span>{point}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function TransportRulesPage() {
   const isClient = typeof window !== "undefined";
   const flightRules = getFlightRules();
@@ -95,7 +114,6 @@ function TransportRulesPage() {
   const allRules = transportRuleRowModes.flatMap((mode) =>
     getRulesByMode(mode),
   );
-  const reviewedCount = allRules.filter((rule) => rule.verifiedOn).length;
   const sources = allRules.filter(
     (rule, index) =>
       allRules.findIndex((item) => item.sourceUrl === rule.sourceUrl) === index,
@@ -157,18 +175,17 @@ function TransportRulesPage() {
               </SelectContent>
             </Select>
           ) : (
-            <span className="text-xs text-muted-foreground">
-              {transportFormLabels[rule.transportForm]}
-            </span>
+            rule.transportForm !== "self" ? (
+              <span className="text-xs text-muted-foreground">
+                {transportFormLabels[rule.transportForm]}
+              </span>
+            ) : null
           )}
           {rule.mode === "flight" ? (
             <span className="text-xs text-muted-foreground">
               以航司最新规则为准
             </span>
           ) : null}
-          <span className="text-xs text-muted-foreground">
-            {rule.verifiedOn ? `已复核 ${rule.verifiedOn}` : "待复核"}
-          </span>
         </div>
       ),
     },
@@ -252,13 +269,13 @@ function TransportRulesPage() {
       key: "container",
       label: "容器要求",
       className: "min-w-56",
-      render: (rule) => rule.containerRequirement,
+      render: (rule) => <RulePoints text={rule.containerRequirement} />,
     },
     {
       key: "procedure",
       label: "办理流程概要",
       className: "min-w-64",
-      render: (rule) => rule.procedureSummary,
+      render: (rule) => <RulePoints text={rule.procedureSummary} />,
     },
     {
       key: "quarantine",
@@ -312,9 +329,6 @@ function TransportRulesPage() {
           <CardTitle role="heading" aria-level={1}>
             交通携宠规则对比
           </CardTitle>
-          <CardDescription>
-            四种交通方式的携宠规则一览；规则为人工摘录，发布前复核。
-          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <Table aria-label="交通携宠规则对比">
@@ -360,12 +374,6 @@ function TransportRulesPage() {
                   </a>
                 </span>
               ))}
-            </p>
-            <p>
-              人工复核：共 {allRules.length} 条规则，
-              {reviewedCount === allRules.length
-                ? "已全部复核。"
-                : `已复核 ${reviewedCount} 条，待复核 ${allRules.length - reviewedCount} 条；待复核条目不得发布，合并前须补齐复核日期。`}
             </p>
             <p>
               免责声明：规则可能随政策调整而滞后，请以承运方最新规则为准（飞机以航司最新规则为准，
