@@ -83,7 +83,7 @@ function AppHeader() {
   });
 
   return (
-    <header className="relative flex items-center justify-center px-4 pt-9 pb-4 print:hidden">
+    <header className="paw-header relative flex items-center justify-center px-4 py-2 print:hidden">
       <AppTabs />
       {auth.isSuccess ? (
         <AlertDialog
@@ -142,7 +142,7 @@ function AppHeader() {
 }
 
 const navPillClass =
-  "h-auto flex-none rounded-full px-5 py-2.5 text-base text-foreground group-data-horizontal/tabs:h-auto hover:bg-muted data-active:bg-foreground data-active:text-background group-data-[variant=default]/tabs-list:data-active:shadow-[0_3px_1px_0_rgba(0,0,0,0.04),0_3px_8px_0_rgba(0,0,0,0.12)] dark:text-foreground/70 dark:data-active:border-transparent dark:data-active:bg-foreground dark:data-active:text-background";
+  "h-auto flex-none rounded-full px-4 py-2 text-sm text-foreground group-data-horizontal/tabs:h-auto hover:bg-muted data-active:bg-foreground data-active:text-background group-data-[variant=default]/tabs-list:data-active:shadow-[0_3px_1px_0_rgba(0,0,0,0.04),0_3px_8px_0_rgba(0,0,0,0.12)] dark:text-foreground/70 dark:data-active:border-transparent dark:data-active:bg-foreground dark:data-active:text-background";
 
 function AppTabs() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });

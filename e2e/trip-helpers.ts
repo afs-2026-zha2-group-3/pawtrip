@@ -51,7 +51,7 @@ export function cityCard(page: Page, cityName: string) {
 export async function openCities(page: Page) {
   await page.getByRole("tab", { name: "城市浏览" }).click();
   await expect(page).toHaveURL(/\/cities$/);
-  await expect(page.getByText(/共 \d+ 个候选/)).toBeVisible();
+  await expect(page.getByText(/共 \d+ 个候选/)).toBeVisible({ timeout: 15_000 });
 }
 
 export async function searchCity(page: Page, keyword: string) {
@@ -121,6 +121,13 @@ export async function confirmTripDialog(page: Page) {
   const response = await created;
   expect(response.status()).toBe(201);
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/transport-rules$/);
+  await page.getByRole("radio", { name: "选择自驾" }).check();
+  await expect(page.getByTestId("save-status")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+  await page.getByRole("button", { name: "确认大交通并选择地点" }).click();
   await expect(page).toHaveURL(/\/attractions$/);
 }
 

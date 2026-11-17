@@ -58,6 +58,7 @@ function renderRow(options: {
   stop?: TripStop;
   toPoiId?: string;
   transportMode?: TransportMode | null;
+  compact?: boolean;
 }) {
   const stop = options.stop ?? { poiId: "poi-a" };
   const transportMode = options.transportMode ?? null;
@@ -74,6 +75,7 @@ function renderRow(options: {
         stopRef={REF}
         segment={segment}
         transportMode={transportMode}
+      compact={options.compact}
       />
     </QueryClientProvider>,
   );
@@ -212,6 +214,13 @@ describe("live estimate without a snapshot", () => {
 });
 
 describe("mode selection", () => {
+  it("shows an inline small-transport placeholder in compact mode", () => {
+    renderRow({ compact: true });
+
+    expect(screen.getByText("点击此处选择小交通")).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "选择途内交通方式" })).toBeTruthy();
+  });
+
   it("offers only taxi and walking for public transport", async () => {
     renderRow({ stop: { poiId: "poi-a", toNext: "drive", toNextEstimate: DRIVE_SNAPSHOT } });
     await userEvent.click(screen.getByRole("combobox", { name: "选择途内交通方式" }));

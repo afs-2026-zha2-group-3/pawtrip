@@ -11,16 +11,20 @@ export function DaySelect({
   label,
   totalDays,
   onSelectDay,
+  onSelectUnscheduled,
 }: {
   label: string;
   totalDays: number;
   onSelectDay: (day: number) => void;
+  onSelectUnscheduled?: () => void;
 }) {
   return (
     <Select
       value={null}
       onValueChange={(value) => {
-        if (typeof value === "number") {
+        if (value === "unscheduled") {
+          onSelectUnscheduled?.();
+        } else if (typeof value === "number") {
           onSelectDay(value);
         }
       }}
@@ -42,6 +46,9 @@ export function DaySelect({
               第 {day} 天
             </SelectItem>
           ))}
+          {onSelectUnscheduled ? (
+            <SelectItem value="unscheduled">暂不排期</SelectItem>
+          ) : null}
         </SelectGroup>
       </SelectContent>
     </Select>

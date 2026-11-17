@@ -105,7 +105,13 @@ const TAG_CLASS =
 const ACTION_BUTTON_CLASS =
   "inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground";
 
-export function TripPanel({ embedded = false }: { embedded?: boolean }) {
+export function TripPanel({
+  embedded = false,
+  timeline = false,
+}: {
+  embedded?: boolean;
+  timeline?: boolean;
+}) {
   const active = useActiveTrip();
   const draft = useDraftTrip();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -117,10 +123,10 @@ export function TripPanel({ embedded = false }: { embedded?: boolean }) {
   if (!active && !draft) {
     return null;
   }
-  return <TripPanelContent embedded={embedded} />;
+  return <TripPanelContent embedded={embedded} timeline={timeline} />;
 }
 
-function TripPanelContent({ embedded }: { embedded: boolean }) {
+function TripPanelContent({ embedded, timeline }: { embedded: boolean; timeline: boolean }) {
   const active = useActiveTrip();
   const draft = useDraftTrip();
   const expanded = usePanelExpanded();
@@ -149,16 +155,16 @@ function TripPanelContent({ embedded }: { embedded: boolean }) {
         kind: "header",
         id: `day-${day}`,
         container: day,
-        title: `第 ${day} 天`,
+        title: timeline ? `Day ${day}` : `第 ${day} 天`,
         endIndex: stops.length,
         count: stops.length,
       });
-      if (showTransitNotice(stops, active.transportMode)) {
+      if (!timeline && showTransitNotice(stops, active.transportMode)) {
         next.push({ kind: "notice", id: `transit-notice-${day}`, container: day });
       }
       const dayPolicy = deriveDayPolicy(stops, locations, activePet);
       const policyLines = dayPolicyLines(dayPolicy);
-      if (policyLines.length > 0) {
+      if (!timeline && policyLines.length > 0) {
         next.push({ kind: "policy", id: `day-policy-${day}`, container: day, lines: policyLines });
       }
       const warningByPoi = new Map(
@@ -194,7 +200,7 @@ function TripPanelContent({ embedded }: { embedded: boolean }) {
       kind: "header",
       id: "unscheduled",
       container: "unscheduled",
-      title: "未排期",
+      title: timeline ? "待安排" : "未排期",
       endIndex: active.plan.unscheduled.length,
       count: active.plan.unscheduled.length,
     });
@@ -340,10 +346,12 @@ function TripPanelContent({ embedded }: { embedded: boolean }) {
       data-testid="trip-panel"
       aria-label="行程面板"
       className={cn(
-        "flex flex-col gap-3 border bg-card text-card-foreground",
-        embedded
-          ? "w-full rounded-xl p-3"
-          : "z-50 shadow-xl [view-transition-name:trip-panel]",
+        "flex min-w-0 flex-col gap-2 text-card-foreground",
+        timeline
+          ? "h-full w-full overflow-hidden border-r border-[#E5E5E5] pr-3"
+          : embedded
+            ? "w-full rounded-xl border bg-card p-3"
+            : "z-50 rounded-xl border bg-card shadow-xl [view-transition-name:trip-panel]",
         !embedded &&
           (open
             ? "fixed inset-0 overflow-y-auto p-4 lg:top-24 lg:bottom-4 lg:left-4 lg:right-auto lg:w-[364px] lg:rounded-xl"
@@ -352,64 +360,72 @@ function TripPanelContent({ embedded }: { embedded: boolean }) {
       data-print-hidden
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {active ? (
-            <>
-              <span className={TAG_CLASS}>{cityName}</span>
-              <span className={TAG_CLASS}>{active.totalDays} 天</span>
-              <span className={TAG_CLASS}>{activePet?.name ?? `宠物 #${active.petId}`}</span>
-              <TransportModePicker
-                value={active.transportMode}
-                pet={activePet}
-                petState={
-                  petsQuery.isPending
-                    ? "loading"
-                    : petsQuery.isError
-                      ? "error"
-                      : "ready"
-                }
-                onChange={(mode) => tripActions.setTransportMode(mode)}
-              />
-              <span className={TAG_CLASS} data-testid="save-status" data-status={save.status}>
-                {save.status === "saving"
-                  ? "保存中…"
-                  : save.status === "saved"
-                    ? "已保存"
-                    : save.status === "error"
-                      ? "保存失败"
-                      : "已同步"}
-              </span>
-              <Link
-                to="/itinerary"
-                data-testid="itinerary-link"
-                className="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                行程单
-              </Link>
-            </>
-          ) : draft ? (
-            <>
-              <span className={TAG_CLASS}>{cityName}</span>
-              <span className="text-xs text-muted-foreground">未确认草稿</span>
-            </>
-          ) : null}
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          aria-label={open ? "收起行程面板" : "展开行程面板"}
-          data-testid="trip-panel-toggle"
-          onClick={() => {
-            if (embedded) {
-              setListOpen(!open);
-              return;
-            }
-            runViewTransition(() => tripActions.setPanelExpanded(!open));
-          }}
-        >
-          {open ? "收起" : "展开"}
-        </Button>
+        {timeline ? (
+          <div className="flex min-w-0 items-center">
+            <h2 className="text-sm leading-5 font-medium text-paw-ink">每日景点行程</h2>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {active ? (
+              <>
+                <span className={TAG_CLASS}>{cityName}</span>
+                <span className={TAG_CLASS}>{active.totalDays} 天</span>
+                <span className={TAG_CLASS}>{activePet?.name ?? `宠物 #${active.petId}`}</span>
+                <TransportModePicker
+                  value={active.transportMode}
+                  pet={activePet}
+                  petState={
+                    petsQuery.isPending
+                      ? "loading"
+                      : petsQuery.isError
+                        ? "error"
+                        : "ready"
+                  }
+                  onChange={(mode) => tripActions.setTransportMode(mode)}
+                />
+                <span className={TAG_CLASS} data-testid="save-status" data-status={save.status}>
+                  {save.status === "saving"
+                    ? "保存中…"
+                    : save.status === "saved"
+                      ? "已保存"
+                      : save.status === "error"
+                        ? "保存失败"
+                        : "已同步"}
+                </span>
+                <Link
+                  to="/itinerary"
+                  data-testid="itinerary-link"
+                  className="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  行程单
+                </Link>
+              </>
+            ) : draft ? (
+              <>
+                <span className={TAG_CLASS}>{cityName}</span>
+                <span className="text-xs text-muted-foreground">未确认草稿</span>
+              </>
+            ) : null}
+          </div>
+        )}
+        {!timeline ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label={open ? "收起行程面板" : "展开行程面板"}
+            data-testid="trip-panel-toggle"
+            onClick={() => {
+              if (embedded) {
+                setListOpen(!open);
+                return;
+              }
+              runViewTransition(() => tripActions.setPanelExpanded(!open));
+            }}
+          >
+            {open ? "收起" : "展开"}
+          </Button>
+        ) : null}
       </div>
 
       {draft ? (
@@ -540,15 +556,29 @@ function TripPanelContent({ embedded }: { embedded: boolean }) {
                 frame={false}
                 displayScrollbar={false}
                 width="100%"
-                gap={4}
-                radius={10}
-                maxHeight={open ? (embedded ? 320 : "calc(100vh - 18rem)") : 220}
-                className="w-full"
+                gap={timeline ? 12 : 6}
+                radius={8}
+                maxHeight={
+                  open
+                    ? timeline
+                      ? "calc(100svh - 170px)"
+                      : embedded
+                        ? 320
+                        : "calc(100vh - 18rem)"
+                    : 220
+                }
+                className={cn("w-full", timeline && "[&>[role=listbox]]:p-0")}
+                itemClassName={
+                  timeline
+                    ? "!cursor-grab !rounded-none !bg-transparent ![background:none] !p-0 !shadow-none"
+                    : ""
+                }
+                itemRim={!timeline}
                 renderItem={(item) => {
                   const row = rows.find((candidate) => candidate.id === String((item as { id?: string }).id));
                   if (!row) return null;
                   if (row.kind === "header") {
-                    return <DroppableHeader row={row} />;
+                    return <DroppableHeader row={row} timeline={timeline} />;
                   }
                   if (row.kind === "notice") {
                     return (
@@ -578,13 +608,18 @@ function TripPanelContent({ embedded }: { embedded: boolean }) {
                         stopRef={{ container: row.container, index: row.index }}
                         segment={row.segment}
                         transportMode={active!.transportMode}
+                        compact={timeline}
                       />
                     );
                   }
                   // 行容器为横向 flex：纵向包裹使警示独占景点下方一行
                   return (
                     <div className="flex w-full min-w-0 flex-col gap-1">
-                      <SortableStop row={row} onRemove={() => removeStop(row)} />
+                      <SortableStop
+                        row={row}
+                        timeline={timeline}
+                        onRemove={() => removeStop(row)}
+                      />
                       {row.sizeWarning ? (
                         <p
                           data-testid="stop-size-warning"
@@ -621,7 +656,7 @@ function TripPanelContent({ embedded }: { embedded: boolean }) {
   );
 }
 
-function DroppableHeader({ row }: { row: HeaderRow }) {
+function DroppableHeader({ row, timeline }: { row: HeaderRow; timeline: boolean }) {
   const { setNodeRef, isOver } = useDroppable({
     id: row.id,
     data: { kind: "header", container: row.container },
@@ -630,17 +665,27 @@ function DroppableHeader({ row }: { row: HeaderRow }) {
     <div
       ref={setNodeRef}
       className={cn(
-        "flex w-full items-center justify-between gap-2 rounded-md px-1 py-0.5 text-xs font-semibold text-muted-foreground",
+        timeline
+          ? "inline-flex h-7 w-fit items-center justify-between gap-2 rounded-full bg-[#F5F5F5] px-2.5 text-xs font-normal text-foreground"
+          : "flex w-full items-center justify-between gap-2 rounded-md px-1 py-0.5 text-xs font-semibold text-muted-foreground",
         isOver && "bg-primary/10 text-primary",
       )}
     >
       <span>{row.title}</span>
-      <span className="tabular-nums">{row.count}</span>
+      {timeline ? null : <span className="tabular-nums">{row.count}</span>}
     </div>
   );
 }
 
-function SortableStop({ row, onRemove }: { row: StopRow; onRemove: () => void }) {
+function SortableStop({
+  row,
+  timeline,
+  onRemove,
+}: {
+  row: StopRow;
+  timeline: boolean;
+  onRemove: () => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: row.id,
@@ -655,8 +700,12 @@ function SortableStop({ row, onRemove }: { row: StopRow; onRemove: () => void })
     <div
       ref={setNodeRef}
       data-stop-id={row.id}
+      {...(timeline ? attributes : {})}
+      {...(timeline ? listeners : {})}
       className={cn(
-        "flex w-full items-center gap-2 rounded-md px-1 py-0.5",
+        timeline
+          ? "relative ml-7 flex h-11 w-[calc(100%-1.75rem)] touch-none items-center gap-2 rounded-xl border border-[#E5E5E5] bg-card px-3 text-sm font-medium text-paw-ink after:absolute after:top-1/2 after:left-[-23px] after:z-10 after:size-2.5 after:-translate-y-1/2 after:rounded-full after:border-2 after:border-paw-accent after:bg-card"
+          : "flex w-full items-center gap-2 rounded-md px-1 py-0.5",
         isDragging && "opacity-40",
       )}
       style={{
@@ -666,21 +715,23 @@ function SortableStop({ row, onRemove }: { row: StopRow; onRemove: () => void })
         transition: transition ?? undefined,
       }}
     >
-      <button
-        type="button"
-        {...attributes}
-        {...listeners}
-        aria-label={`拖动${row.name}`}
-        className={cn(ACTION_BUTTON_CLASS, "cursor-grab touch-none")}
-        onClick={(event) => event.stopPropagation()}
-      >
-        ⠿
-      </button>
-      <span className="min-w-0 flex-1 truncate text-sm">{row.name}</span>
+      {!timeline ? (
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          aria-label={`拖动${row.name}`}
+          className={cn(ACTION_BUTTON_CLASS, "cursor-grab touch-none")}
+          onClick={(event) => event.stopPropagation()}
+        >
+          ⠿
+        </button>
+      ) : null}
+      <span className="relative z-10 min-w-0 flex-1 truncate text-sm">{row.name}</span>
       <button
         type="button"
         aria-label={`移除${row.name}`}
-        className={ACTION_BUTTON_CLASS}
+        className={cn(ACTION_BUTTON_CLASS, "relative z-10")}
         onClick={(event) => {
           event.stopPropagation();
           onRemove();

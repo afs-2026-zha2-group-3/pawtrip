@@ -23,6 +23,7 @@ import { scoreCity, sortByRecommendation } from "@/lib/destination-recommendatio
 import { matchCityCandidate, matchCityPolicy } from "@/lib/trip/policy-match";
 import type { PolicySubjects } from "@/lib/trip/policy-subjects";
 import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
+import { tripActions } from "@/lib/trip/store";
 import { cn } from "@/lib/utils";
 import {
   cityPetPolicyQueryOptions,
@@ -142,11 +143,6 @@ function CitiesPage() {
             <span className="text-sm whitespace-nowrap text-muted-foreground">
               共 {candidates.length} 个候选 · 点击卡片查看政策
             </span>
-            {active ? (
-              <p className="text-sm text-muted-foreground">
-                当前已有激活行程，请先在 我的行程 取消激活后再选择新城市。
-              </p>
-            ) : null}
             {subjects.status === "error" ? (
               <PolicySubjectNotice subjects={subjects} />
             ) : null}
@@ -190,10 +186,10 @@ function CitiesPage() {
                       ) > 0
                     }
                     selected={selected?.adcode === candidate.adcode}
-                    disabled={Boolean(active)}
                     subjects={subjects}
                     onSelect={() => setSelectedAdcode(candidate.adcode)}
                     onPick={() => {
+                      if (active) tripActions.clearActive();
                       setSelectedAdcode(candidate.adcode);
                       setDialogCity(candidate);
                     }}
@@ -260,7 +256,6 @@ function CityCard({
   cover,
   recommended,
   selected,
-  disabled,
   subjects,
   onSelect,
   onPick,
@@ -269,7 +264,6 @@ function CityCard({
   cover: string;
   recommended: boolean;
   selected: boolean;
-  disabled: boolean;
   subjects: PolicySubjects;
   onSelect: () => void;
   onPick: () => void;
@@ -307,8 +301,6 @@ function CityCard({
       <Button
         type="button"
         variant="outline"
-        disabled={disabled}
-        title={disabled ? "请先在 我的行程 取消激活当前行程" : undefined}
         onClick={(event) => {
           event.stopPropagation();
           onPick();

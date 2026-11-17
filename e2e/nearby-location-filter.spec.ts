@@ -24,12 +24,27 @@ async function addAttractionToDay(page: Page, name: string, day: number) {
 }
 
 async function chooseType(page: Page, label: string) {
+  if (label === "景点") {
+    const back = page.getByRole("button", { name: "返回景点选择" });
+    if (await back.isVisible()) {
+      await back.click();
+    }
+    return;
+  }
+  const entry = page.getByRole("button", { name: "选择住宿/餐厅" });
+  if (await entry.isVisible()) {
+    await entry.click();
+  }
   await page.getByRole("combobox", { name: "地点类型筛选" }).click();
   await page.getByRole("option", { name: label, exact: true }).click();
 }
 
 async function chooseAnchor(page: Page, name: string) {
-  const anchor = page.getByRole("combobox", { name: "行程景点锚点" });
+  const entry = page.getByRole("button", { name: "选择住宿/餐厅" });
+  if (await entry.isVisible()) {
+    await entry.click();
+  }
+  const anchor = page.getByRole("combobox", { name: "离景点最近" });
   await expect(anchor).toBeEnabled();
   await anchor.click();
   await page.getByRole("option", { name, exact: true }).click();
@@ -43,8 +58,7 @@ async function chooseHotelAnchor(page: Page, name: string) {
 }
 
 async function clearAnchor(page: Page) {
-  await page.getByRole("combobox", { name: "行程景点锚点" }).click();
-  await page.getByRole("option", { name: "不限距离", exact: true }).click();
+  await page.getByRole("button", { name: "返回景点选择" }).click();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -73,29 +87,20 @@ test("filters restaurants to 5km around the selected scheduled attraction", asyn
   await expect(locationCard(page, "远处餐厅")).toHaveCount(0);
   await expect(locationCard(page, "无坐标餐厅")).toHaveCount(0);
 
-  await page.getByRole("checkbox", { name: "显示全部地点" }).click();
-  const cards = page.locator('[data-slot="card"]');
-  await expect(cards.nth(0)).toContainText("最近餐厅");
-  await expect(cards.nth(1)).toContainText("附近餐厅");
-  await expect(locationCard(page, "最近餐厅")).toContainText("距情侣路约 0.1km");
-  await expect(locationCard(page, "远处餐厅")).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { name: "显示全部地点" })).toHaveCount(0);
 });
 
-test("requires an anchor before browsing restaurants but shows hotels by default", async ({ page }) => {
+test("requires a scheduled attraction before browsing nearby locations", async ({ page }) => {
   await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
   await openAttractions(page);
 
-  await chooseType(page, "餐厅");
-  await expect(page.getByText("请先在景点页选择行程景点", { exact: true })).toBeVisible();
-  await expect(locationCard(page, "附近餐厅")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "选择住宿/餐厅" })).toHaveCount(0);
+  await expect(locationCard(page, "珠海某酒店")).toHaveCount(0);
 
-  await chooseType(page, "住宿");
-  await expect(page.getByText("请先在景点页选择行程景点", { exact: true })).toHaveCount(0);
-  await expect(page.getByRole("combobox", { name: "离景点最近" })).toBeDisabled();
-  await expect(page.getByText("行程中还没有已排期的景点")).toBeVisible();
-  await expect(locationCard(page, "珠海某酒店")).toBeVisible();
-  await expect(locationCard(page, "附近酒店")).toBeVisible();
-  await expect(locationCard(page, "远处酒店")).toBeVisible();
+  await addAttractionToDay(page, "情侣路", 1);
+  await chooseAnchor(page, "情侣路");
+  await chooseType(page, "餐厅");
+  await expect(locationCard(page, "附近餐厅")).toBeVisible();
 });
 
 test("filters hotels by 离景点最近 and shares the anchor with restaurants", async ({ page }) => {
@@ -106,7 +111,7 @@ test("filters hotels by 离景点最近 and shares the anchor with restaurants",
   await chooseType(page, "住宿");
   await expect(locationCard(page, "珠海某酒店")).toBeVisible();
   await expect(locationCard(page, "附近酒店")).toBeVisible();
-  await expect(locationCard(page, "远处酒店")).toBeVisible();
+  await expect(locationCard(page, "远处酒店")).toHaveCount(0);
 
   await chooseHotelAnchor(page, "情侣路");
 
@@ -132,7 +137,7 @@ test("clears the anchor and restores the gate when the anchor leaves the trip", 
   await chooseType(page, "餐厅");
   await expect(locationCard(page, "附近餐厅")).toBeVisible();
 
-  const removeButton = page.getByRole("button", { name: "移除情侣路" });
+  const removeButton = page.getByRole("button", { name: "移除情侣路", exact: true });
   if (!(await removeButton.isVisible())) {
     await page.getByTestId("trip-panel-toggle").click();
   }
@@ -146,12 +151,10 @@ test("disables the anchor controls when no attraction is scheduled", async ({ pa
   await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
   await openAttractions(page);
 
-  await expect(page.getByRole("combobox", { name: "行程景点锚点" })).toBeDisabled();
-
-  await chooseType(page, "住宿");
-  await expect(page.getByRole("combobox", { name: "离景点最近" })).toBeDisabled();
-  await expect(page.getByText("行程中还没有已排期的景点")).toBeVisible();
-  await expect(locationCard(page, "珠海某酒店")).toBeVisible();
+  await expect(page.getByRole("button", { name: "选择住宿/餐厅" })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "地点类型筛选" })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "离景点最近" })).toHaveCount(0);
+  await expect(locationCard(page, "珠海某酒店")).toHaveCount(0);
 });
 
 test("keeps an already-added nearby restaurant in the result", async ({ page }) => {
@@ -177,15 +180,17 @@ test("keeps an already-added nearby restaurant in the result", async ({ page }) 
   await expect(restaurant).toContainText("距情侣路约 0.2km");
 });
 
-test("does not gate pet hospitals or pet supplies without an anchor", async ({ page }) => {
+test("nearby mode only exposes lodging and restaurant types", async ({ page }) => {
   await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
   await openAttractions(page);
-
-  for (const label of ["宠物医院", "宠物用品店"]) {
-    await chooseType(page, label);
-    await expect(page.getByText("请先在景点页选择行程景点", { exact: true })).toHaveCount(0);
-    await expect(page.getByText(new RegExp(`暂无已保存${label}`))).toBeVisible();
-  }
+  await addAttractionToDay(page, "情侣路", 1);
+  await chooseAnchor(page, "情侣路");
+  const typeFilter = page.getByRole("combobox", { name: "地点类型筛选" });
+  await typeFilter.click();
+  await expect(page.getByRole("option", { name: "住宿", exact: true })).toBeVisible();
+  await expect(page.getByRole("option", { name: "餐厅", exact: true })).toBeVisible();
+  await expect(page.getByRole("option", { name: "宠物医院", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("option", { name: "宠物用品店", exact: true })).toHaveCount(0);
 });
 
 test("shows a clear error when the hotel anchor has no coordinates", async ({ page }) => {
@@ -198,7 +203,8 @@ test("shows a clear error when the hotel anchor has no coordinates", async ({ pa
   await expect(page.getByText("该景点缺少坐标，无法计算距离", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "清除锚点" }).click();
-  await expect(locationCard(page, "珠海某酒店")).toBeVisible();
+  await expect(page.getByText("请先在景点页选择行程景点", { exact: true })).toBeVisible();
+  await expect(locationCard(page, "珠海某酒店")).toHaveCount(0);
 });
 
 test("clears the anchor and restores the restaurant gate", async ({ page }) => {
@@ -209,10 +215,7 @@ test("clears the anchor and restores the restaurant gate", async ({ page }) => {
   await chooseType(page, "餐厅");
   await expect(locationCard(page, "附近餐厅")).toBeVisible();
 
-  await chooseType(page, "景点");
   await clearAnchor(page);
-  await chooseType(page, "餐厅");
-
-  await expect(page.getByText("请先在景点页选择行程景点", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "选择住宿/餐厅" })).toBeVisible();
   await expect(locationCard(page, "附近餐厅")).toHaveCount(0);
 });
