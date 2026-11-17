@@ -38,6 +38,7 @@
 - 验证口径调整：2.3/3.2/3.3 原文"组件/卡片/弹窗单测"改由 E2E（media E1–E9，真实 Chromium）承担——仓库无 RTL/jsdom 基础设施且 design 约束零新依赖；纯函数（`location-image`/`location-summary`）仍按 vitest TDD（18 例）。
 - 夹具偏差：ATDD §5 政策组合甲（体重 15 + 附加费 8000 + 牵引/疫苗 true）落在 `e2e-zhu-hotel`，`e2e-zhu-a` 保留 REQ-009 既有政策以保护其断言（8.5 kg/40 cm/¥10.5/不需要）；组合乙全空 = `e2e-zhu-b`。
 - 用例修正：media E8 先"暂不排期"再"添加第 1 天"——既有 `addStop` 契约对已排期地点拒绝重复加入未排期（store.ts 去重），非本 change 行为。
+- CI 修正（PR #65 首轮 Browser E2E 红）：media E6 原误以渔女为"全空"夹具，但其 `leashRequired=1` 按规格应生成牵引短语；改用真正全空的无名景点，并为 absence 断言加卡片可见守卫、showAll 后断言 checked，消除空过假绿；本地全量 108 绿 + media 子集 repeat-each 2 共 18 绿后推送。
 - 验证结果：`apps/server ./mvnw test` 177 绿；`apps/web npm run build` 绿 + vitest 114 绿；`npm run test:e2e` 全量 109 绿（含管理端回归 E10）；390×844 窄屏单列、弹窗层叠、无横向溢出、控制台无错误（临时 spec/config 验证后已删除）；`openspec validate "add-location-card-media" --strict` 通过。
 - 遗留观察（非本 change 引入，不修）：390px 下行程面板默认展开为全屏抽屉需点"收起"；主导航 tabs 与 Log out 间距偏紧。
 - G1 未签署（用户指示直接 apply）；PR、G2/G3 未做，下一步 `/sdd:local-verify-report`。

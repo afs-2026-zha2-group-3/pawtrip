@@ -256,7 +256,9 @@ async function interceptMediaPhotos(page: Page) {
 }
 
 async function showAllAttractions(page: Page) {
-  await page.getByRole("checkbox", { name: "显示全部地点" }).click();
+  const toggle = page.getByRole("checkbox", { name: "显示全部地点" });
+  await toggle.click();
+  await expect(toggle).toBeChecked();
 }
 
 async function selectType(page: Page, label: string) {
@@ -333,8 +335,10 @@ test("media E5 restriction and fee row renders values or hides", async ({ page }
   await expect(hotel.getByText("cm")).toHaveCount(0);
 
   await selectType(page, "景点");
+  await expect(attractionCard(page, "情侣路")).toBeVisible();
   await showAllAttractions(page);
   const emptyCard = attractionCard(page, "珠海渔女");
+  await expect(emptyCard).toBeVisible();
   await expect(emptyCard.getByText(/≤|附加费/)).toHaveCount(0);
 });
 
@@ -351,8 +355,11 @@ test("media E6 policy note row renders generated phrases or hides", async ({ pag
   await expect(hotel.getByText("需疫苗证明")).toBeVisible();
 
   await selectType(page, "景点");
+  await expect(attractionCard(page, "情侣路")).toBeVisible();
   await showAllAttractions(page);
-  const emptyCard = attractionCard(page, "珠海渔女");
+  // 渔女 leashRequired=1 仍会生成牵引短语；真正全空（乙组合）是无名景点。
+  const emptyCard = attractionCard(page, "珠海无名景点");
+  await expect(emptyCard).toBeVisible();
   await expect(emptyCard.getByText(/公共区域需牵引|需疫苗证明|需提前预约/)).toHaveCount(0);
 });
 
