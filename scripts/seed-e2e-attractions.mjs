@@ -190,7 +190,9 @@ const insert = db.prepare(`
 
 db.exec("BEGIN IMMEDIATE");
 try {
-	db.exec("DELETE FROM pawtrip_location WHERE poi_id LIKE 'e2e-%'");
+	// Flyway V19 seeds Zhuhai demo locations into this temporary database; E2E specs expect only fixtures.
+	db.exec("DELETE FROM location_photo");
+	db.exec("DELETE FROM pawtrip_location");
 	for (const fixture of fixtures) {
 		insert.run(
 			fixture.poiId,
