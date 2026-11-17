@@ -63,6 +63,91 @@ test.describe("rule recommendation", () => {
 });
 
 test.describe("mode selection", () => {
+  test("selects the mode from the trip panel with the active pet verdict", async ({
+    page,
+  }) => {
+    await signIn(page);
+    await resetTrips(page);
+    await createActiveTrip(page, { city: "杭州市", days: 1, pet: "毛毛" });
+
+    await expect(page.getByTestId("transport-mode-tag")).toHaveCount(0);
+    await page.getByRole("button", { name: "选择大交通方式" }).click();
+    const railOption = page.locator('[data-mode="high_speed_rail"]');
+    await expect(page.locator("[data-mode]")).toHaveCount(4);
+    await expect(railOption).toContainText("毛毛 · 不推荐");
+    await expect(railOption).toContainText("体重 38kg 超过上限 15kg");
+
+    const saved = page.waitForResponse(
+      (response) =>
+        /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
+        response.request().method() === "PUT",
+    );
+    await railOption.click();
+    const response = await saved;
+    expect(response.request().postDataJSON()).toMatchObject({
+      transportMode: "high_speed_rail",
+    });
+    await expect(page.getByTestId("transport-mode-tag")).toContainText("高铁");
+
+    await page.reload();
+    await expect(page.getByTestId("transport-mode-tag")).toContainText("高铁");
+    await page.getByTestId("transport-mode-tag").click();
+    await expect(railOption).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("Escape");
+
+    await page.goto("/transport-rules");
+    await expect(page.getByRole("table", { name: tableName })).toBeVisible();
+    await expect(page.getByRole("radio", { name: "选择高铁" })).toBeChecked();
+  });
+
+  test("keeps the picker usable when pet data is unavailable", async ({
+    page,
+  }) => {
+    await signIn(page);
+    await resetTrips(page);
+    await createActiveTrip(page, { city: "杭州市", days: 1, pet: "豆豆" });
+
+    await page.route("**/api/pets", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ code: "INTERNAL_ERROR", message: "boom" }),
+      }),
+    );
+    await page.reload();
+
+    await page.getByRole("button", { name: "选择大交通方式" }).click();
+    const popover = page.locator('[data-slot="popover-content"]');
+    await expect(
+      popover.getByText("暂时无法读取宠物档案，请稍后重试。"),
+    ).toBeVisible();
+    const trainOption = popover.locator('[data-mode="train"]');
+    await expect(trainOption).toBeEnabled();
+
+    const saved = page.waitForResponse(
+      (response) =>
+        /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
+        response.request().method() === "PUT",
+    );
+    await trainOption.click();
+    const response = await saved;
+    expect(response.request().postDataJSON()).toMatchObject({
+      transportMode: "train",
+    });
+  });
+
+  test("opens the full rules page from the panel picker", async ({ page }) => {
+    await signIn(page);
+    await resetTrips(page);
+    await createActiveTrip(page, { city: "杭州市", days: 1, pet: "豆豆" });
+
+    await page.getByRole("button", { name: "选择大交通方式" }).click();
+    await page.getByRole("link", { name: "查看交通规则详情" }).click();
+
+    await expect(page).toHaveURL(/\/transport-rules$/);
+    await expect(page.getByRole("table", { name: tableName })).toBeVisible();
+  });
+
   test("saves one selected mode to the active trip and restores it after reload", async ({
     page,
   }) => {
