@@ -57,7 +57,7 @@
 
 ## Residual risks
 
-- 前置 `unify-location-browsing` 未归档且缺 `dov-ac-review.md` / `g1-decision.md`，影响本 change 归档顺序。
+- `unify-location-browsing` 已于 2026-11-17 随 origin/main 归档，归档顺序依赖已解除。
 - 本地验证报告为 Partial；G2 前需闭环实现收尾与 CI 证据。
 - 恰好 5000m 边界、景点页锚点不改变列表、行程切换清空锚点缺少自动化（详见 `dov-ac-review.md`）。
 

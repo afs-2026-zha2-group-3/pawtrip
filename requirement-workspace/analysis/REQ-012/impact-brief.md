@@ -19,7 +19,7 @@
 
 - `openspec/specs/trip-attractions/spec.md`：地点浏览页以激活行程城市为上下文、类型筛选、宠物友好筛选、加入行程/未排期、详情弹窗。
 - `openspec/specs/location-management/spec.md`：已保存地点、类型目录与管理端行为。
-- `openspec/changes/unify-location-browsing/`：共享 `GET /api/locations`、类型目录、用户/管理复用；该 change 已完成任务但尚未归档，本需求需在其 delta 之上叠加。
+- `openspec/changes/unify-location-browsing/`：共享 `GET /api/locations`、类型目录、用户/管理复用；该 change 已完成任务并已于 2026-11-17 随 origin/main 归档，本需求在其 Living Spec 之上叠加。
 
 **当前后端实现**
 
@@ -97,7 +97,7 @@
 | 风险 R3 | 距离过滤改变分页 | 现有分页按 `id ASC`；带距离筛选时改为距离升序且总数基于过滤后集合；测试覆盖页码、总数、排序 |
 | 风险 R4 | 锚点名称解析 | 行程只存 `poiId`；复用详情查询与缓存，加载完成前不可选；失败时该候选不出现 |
 | 风险 R5 | 跨城锚点 | 行程允许加入其他城市地点；选中后 5km 内结果可能为空；空态需说明“该锚点附近暂无匹配地点” |
-| 风险 R6 | 与未归档 change 叠加 | `unify-location-browsing` 已完成但未归档；本 change 的 `trip-attractions` delta 需基于其统一后的列表能力，归档顺序需协调 |
+| 已解除 R6 | 前置 change 叠加 | `unify-location-browsing` 已于 2026-11-17 归档；本 change 的 `trip-attractions` delta 基于其统一后的列表能力 |
 | 风险 R7 | 入口位置 | 用户已把景点加入行程但仍看到门禁，容易把“加入行程”误解为“选锚点”；酒店改为默认列表 + “离景点最近”下拉，餐厅门禁文案明确提示回景点页选择 |
 | 风险 R8 | 数据规模 | 当前每城每类型数百条；服务端在区域/类型/宠物友好集合上做距离过滤；若数据量显著增长再考虑 SQL 下推或空间索引 |
 | **blocker** | 无 | 无阻塞性未知依赖 |

@@ -104,7 +104,7 @@ Agents must not self-approve Waiver.
 |---|------|----------|------------|
 | 1 | 真实地图链路回归只能人工发现 | 外部 SDK 不宜作为 CI 依赖 | accepted（有 Key 环境验收清单） |
 | 2 | 距离筛选依赖地点坐标维护 | 生产数据由管理端/抓取脚本补齐 | tracking（数据维护 owner） |
-| 3 | 前置 `unify-location-browsing` 未归档且有 validate 错误 | 依赖关系未收口 | tracking（归档前处理） |
+| 3 | 前置 `unify-location-browsing` 已随 origin/main 归档（2026-11-17） | 依赖已收口 | mitigated |
 | 4 | 安全密钥进入前端 bundle | 本期直连方案 | tracking（生产代理） |
 | 5 | 6.5 与 CI/Gate 未闭环 | 实现收尾与提交流程未完成 | tracking |
 

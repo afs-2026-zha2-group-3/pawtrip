@@ -2,7 +2,7 @@
 
 ## Context
 
-见 `proposal.md` 与 `specs/trip-attractions/spec.md`。当前地点浏览页以激活行程城市为唯一范围，支持类型、宠物友好和分页；行程计划只保存 `poiId`，行程面板已按 `poiId` 拉取地点详情并缓存名称与 `typeGroup`；后端 `GET /api/locations` 已返回经纬度，但分页查询不计算距离。`unify-location-browsing` 已完成共享列表接口与类型目录，但尚未归档，本设计以其为前置基线。
+见 `proposal.md` 与 `specs/trip-attractions/spec.md`。当前地点浏览页以激活行程城市为唯一范围，支持类型、宠物友好和分页；行程计划只保存 `poiId`，行程面板已按 `poiId` 拉取地点详情并缓存名称与 `typeGroup`；后端 `GET /api/locations` 已返回经纬度，但分页查询不计算距离。`unify-location-browsing` 已完成共享列表接口与类型目录，并已于 2026-11-17 随 origin/main 归档，本设计以其为前置基线。
 
 ## Goals / Non-Goals
 
@@ -73,7 +73,7 @@
 - [距离过滤改变分页语义] → 带 `nearPoiId` 时在过滤后集合上计算总数与分页；用测试覆盖边界、排序和 `hasNext`。
 - [锚点名称加载失败或较慢] → 选择器显示加载态；失败候选不出现；不阻塞景点列表本身。
 - [跨城锚点导致空结果] → 允许选择，但空态说明“该锚点 5km 内暂无匹配地点”，并保留筛选条件。
-- [与未归档的 `unify-location-browsing` 叠加] → 本 change 的 delta 基于统一后的共享列表接口；归档顺序需先处理或并行协调，避免 `trip-attractions` 主规格冲突。
+- [与 `unify-location-browsing` 叠加] → 该前置 change 已于 2026-11-17 归档；本 change 的 delta 基于统一后的共享列表接口，归档时按现有 Living Spec 合并。
 - [单城数据量增长] → 当前在区域/类型/宠物友好集合上做内存距离过滤；任务中保留性能边界说明，数据量显著增长时再下推。
 
 ## Migration Plan

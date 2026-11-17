@@ -58,7 +58,7 @@ Go（2026-11-17）。需求边界已通过需求方确认：锚点固定为激�
    - 地点查询后端：`apps/server/src/main/java/com/pawtrip/server/location/LocationQueryController.java`、`LocationQueryService.java`、`LocationQueryResponses.java`、`PawtripLocationRepository.java`
    - 经纬度列：`apps/server/src/main/resources/db/migration/V4__create_location_management_tables.sql`
    - 地点浏览既有契约：`openspec/specs/trip-attractions/spec.md`
-   - 共享地点列表变更（未归档，需叠加）：`openspec/changes/unify-location-browsing/`
+   - 共享地点列表变更（已归档，Living Spec 基线）：`openspec/changes/unify-location-browsing/`
    - 架构说明：`docs/knowledge/architecture/README.md`
 
 ## Ready 形状

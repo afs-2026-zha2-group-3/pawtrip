@@ -27,7 +27,7 @@
 
 - `change-summary.md` 未生成：P5 归档尚未开始，本文件按“继续但标注缺口”处理。
 - PR / CI / G2 / G3 尚未发生；本地验证报告 Overall 为 Partial。
-- 前置 `unify-location-browsing` 未归档，影响本 change 归档顺序。
+- `unify-location-browsing` 已于 2026-11-17 随 origin/main 归档，归档顺序依赖已解除。
 
 ## Redirect — /sdd:evolve
 

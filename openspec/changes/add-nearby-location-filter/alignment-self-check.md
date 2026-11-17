@@ -54,7 +54,7 @@
 
 ## 6. 残余风险
 
-- 前置 `unify-location-browsing` 未归档且存在既有 validate 错误；本 change 归档前需先处理或协调。
+- 前置 `unify-location-browsing` 已于 2026-11-17 随 origin/main 归档，依赖已解除。
 - 恰好 `5000m` 的 API 过滤边界、景点页选择锚点不改变景点列表、激活行程切换清空锚点缺少直接自动化，见 `dov-ac-review.md`。
 - 距离筛选依赖地点经纬度已维护；V20/V21 只提供珠海测试数据。
 - Gate 记录待 IO/SA（G1）、VL（G2）、SA（G3）人工签署，代理不代签。

@@ -14,7 +14,7 @@
   - Scope: 酒店类型默认展示 + “离景点最近”下拉；景点类型保留锚点选择器；餐厅未选锚点门禁；`GET /api/locations` 可选 `nearPoiId`，Haversine 固定 5km 含边界、距离升序、过滤后分页并返回 `distanceMeters`；无 schema 迁移，V20/V21 仅珠海测试数据。地图拆到独立 `add-location-map`，未混入本 Delta。
   - Ambiguity: `impact-brief.md` 记录阻塞开放问题 0、DoR BLOCKER 0；5km 是否可配置、多景点距离聚合为 deferred，归属后续需求或上游 US-12，不阻塞本 Delta。
   - Conflict: 酒店口径已由“未选锚点门禁”改为“默认列表 + 下拉”，Delta/Design/Tasks/E2E 已同步；餐厅保留门禁，两类共用锚点。未改变管理端、高德调用、认证与错误契约。
-  - Residual concerns（不构成 G1 条件）: ① 恰好 5000m 的 API 过滤边界缺直接夹具；② 景点页选择/清除锚点不改变景点列表、激活行程切换清空锚点缺自动化；③ 依赖未归档的 `unify-location-browsing` 且其存在既有 validate 错误；④ 距离筛选依赖地点经纬度维护。
+  - Residual concerns（不构成 G1 条件）: ① 恰好 5000m 的 API 过滤边界缺直接夹具；② 景点页选择/清除锚点不改变景点列表、激活行程切换清空锚点缺自动化；③ 前置 `unify-location-browsing` 已在 G1 记录后随 origin/main 归档（记录时点尚未归档，不影响结论）；④ 距离筛选依赖地点经纬度维护。
 - Decision: **Pass**
 - Conditions + owners: 无（Pass）；残余关注点：边界与缺失自动化用例（owner: SA/VL）、前置 change 归档协调（owner: SA）、地点坐标数据维护（owner: PO/SA）
 - Approvers: IO=SUKI; SA=RANLE

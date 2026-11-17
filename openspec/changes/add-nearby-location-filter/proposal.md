@@ -43,4 +43,4 @@
 - **前端**：地点浏览页 `apps/web/src/routes/_authenticated/attractions/`、地点查询 `apps/web/src/queries/locations.ts`、行程地点缓存/选择器；复用现有 shadcn/ui 组件与 TanStack Query。
 - **测试与夹具**：新增地点 API 距离与锚点校验测试、前端查询/候选单测、酒店下拉与餐厅门禁 E2E；E2E 地点夹具需补经纬度与 5km 内/外餐厅、酒店。
 - **数据库与依赖**：不新增 schema 迁移或依赖；`longitude`/`latitude` 维持可空；V20 为珠海测试数据种子。
-- **前置基线**：依赖 `unify-location-browsing` 提供的共享 `GET /api/locations` 与类型目录；该 change 已完成但尚未归档，本 change 的 delta 需与其叠加。
+- **前置基线**：依赖 `unify-location-browsing` 提供的共享 `GET /api/locations` 与类型目录；该 change 已完成并已随 origin/main 归档，本 change 的 delta 在其 Living Spec 之上叠加。
