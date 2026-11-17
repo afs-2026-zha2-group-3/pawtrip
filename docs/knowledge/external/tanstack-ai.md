@@ -41,20 +41,28 @@ const bigmodel = openaiCompatible({
 Start 中使用 server route 承载 SSE。`createServerFn` 也能返回 `Response` 并支持 streaming，但 SSE 端点用 server route 更直接：
 
 ```ts
-// src/routes/api/agent.ts
+// src/routes/agent.ts
 import { createFileRoute } from "@tanstack/react-router";
 import {
   chat,
   chatParamsFromRequest,
+  mergeAgentTools,
   toServerSentEventsResponse,
 } from "@tanstack/ai";
 
-export const Route = createFileRoute("/api/agent")({
+export const Route = createFileRoute("/agent")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { messages, threadId, runId } = await chatParamsFromRequest(request);
-        const stream = chat({ adapter: bigmodel("glm-5.3"), messages, threadId, runId });
+        const { messages, threadId, runId, tools } = await chatParamsFromRequest(request);
+        const stream = chat({
+          adapter: bigmodel("glm-5.3"),
+          messages,
+          threadId,
+          runId,
+          // AGENT_TOOL_DEFINITIONS 是 allowlist 内的无 execute 工具定义
+          tools: mergeAgentTools(AGENT_TOOL_DEFINITIONS, tools),
+        });
         return toServerSentEventsResponse(stream);
       },
     },
@@ -66,16 +74,21 @@ export const Route = createFileRoute("/api/agent")({
 
 ```ts
 const { messages, sendMessage } = useChat({
-  connection: fetchServerSentEvents("/api/agent"),
+  connection: fetchServerSentEvents("/agent"),
   threadId: "trip-planning",
 });
 ```
+
+本仓库的 Vite dev server 将 `/api` 全部代理到 Spring，而 TanStack Start 的 SSR 中间件在 Vite 代理之后安装；因此本项目 Agent 端点使用 `/agent`，不要放在 `/api/agent`。生产反向代理也要把 `/agent` 路由到 Web Node，其余 `/api` 路由到 Spring。
 
 ## 工具
 
 - 使用 `toolDefinition({ name, description, inputSchema, outputSchema })` 定义。
 - `.server(fn)` 在服务端执行，`.client(fn)` 在浏览器执行；Pawtrip 的读取与写入工具应使用 `.client()`，复用同源会话与前端状态。
 - 工具输入必须用 Zod 等运行时 schema 校验；模型输入始终视为不可信。
+- 浏览器工具通过 `useChat({ tools })` 注册；服务端必须把工具 schema 传给 `chat({ tools })`，否则模型看不到任何工具。
+- `chatParamsFromRequest(request)` 会返回客户端声明的 `tools`；使用 `mergeAgentTools(serverTools, clientTools)`（或等价过滤逻辑）按 allowlist 合并后再传给 `chat()`。服务端只接受 allowlist 内的工具名，忽略客户端额外声明的工具。
+- 不要把带浏览器执行逻辑的 `.client()` 工具直接交给服务端执行；服务端应传无 `execute` 的 schema 定义或过滤后的客户端声明。
 
 ## 注意事项
 

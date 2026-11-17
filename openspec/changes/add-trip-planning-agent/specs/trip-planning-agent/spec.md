@@ -19,8 +19,30 @@
 - **WHEN** 用户打开 Agent
 - **THEN** Agent 可用且不会自动修改该行程
 
+### Requirement: Agent interface is a global collapsible panel
+已登录用户 SHALL 在所有登录后页面通过右下角圆形入口按钮使用 Agent；点击入口 SHALL 展开 Agent 面板，对话、方案预览与确认等全部 Agent 操作 MUST 在面板内完成。入口与面板 MUST NOT 依赖激活行程或草稿存在；面板开关与对话状态 MUST 仅存于内存，刷新后丢失。
+
+#### Scenario: Entry is available on any authenticated page
+- **GIVEN** 用户已登录
+- **WHEN** 用户停留在任意登录后页面
+- **THEN** 右下角显示 Agent 圆形入口按钮
+- **AND** 入口不依赖激活行程或草稿存在
+
+#### Scenario: All agent actions complete inside the panel
+- **GIVEN** 用户已展开 Agent 面板
+- **WHEN** 用户在面板内对话并生成方案
+- **THEN** 方案预览与差异展示在面板内
+- **AND** 确认、拒绝与目标切换均在面板内完成
+- **AND** 不需要离开当前页面
+
+#### Scenario: Panel state is not persisted
+- **GIVEN** 用户展开了 Agent 面板并有待审核方案
+- **WHEN** 用户刷新页面
+- **THEN** 面板回到收起状态
+- **AND** 对话与待审核方案丢失
+
 ### Requirement: Agent identifies the trip planning target
-Agent SHALL 区分新建行程与修改已有行程。修改已有行程时 SHALL 仅允许用户选择本人行程；目标不明确时 MUST 先询问，且 MUST NOT 因选择或编辑目标而隐式激活行程。
+Agent SHALL 区分新建行程与修改已有行程。修改已有行程时 SHALL 仅允许用户选择本人行程；目标不明确时 MUST 先询问，且 MUST NOT 因选择或编辑目标而隐式激活行程。切换规划目标时，旧目标的全部待审核方案 MUST 失效并要求重新生成。
 
 #### Scenario: User selects an inactive trip
 - **GIVEN** 用户有一个已保存但未激活的行程
@@ -33,6 +55,13 @@ Agent SHALL 区分新建行程与修改已有行程。修改已有行程时 SHAL
 - **WHEN** 用户要求修改已有行程
 - **THEN** Agent 展示本人可选行程并询问用户选择
 - **AND** 在用户选择前不应用行程修改
+
+#### Scenario: Switching target invalidates proposals
+- **GIVEN** Agent 已为某个规划目标生成待审核方案
+- **WHEN** 用户切换到另一个规划目标
+- **THEN** 旧目标的全部待审核方案失效
+- **AND** 系统要求针对新目标重新生成方案
+- **AND** 旧方案未被写入任何行程
 
 ### Requirement: Agent creates a new trip only after confirmation
 Agent SHALL 能通过现有草稿流程协助用户完成新行程的城市、天数与单只宠物配置。新行程配置 MUST 遵循单城市、单宠物及前端草稿的 1–7 天限制；用户确认配置前 MUST NOT 创建持久化行程。存在激活行程时，Agent MUST 先经用户明确确认取消当前激活行程，且 MUST 先完成待发送的自动保存，取消成功后才可创建；同一时间 MUST 不超过一个激活行程。创建后的地点编排 SHALL 先展示可审核方案，用户确认后才写入行程并触发自动保存。
@@ -100,7 +129,7 @@ Agent SHALL 能通过现有草稿流程协助用户完成新行程的城市、�
 - **AND** 不创建持久化行程
 
 ### Requirement: Agent edits existing trips through a reviewable proposal
-Agent 对已有行程的规划修改 SHALL 先形成可审核的方案；用户确认后，系统 SHALL 更新所选行程，且 MUST 保持其原有激活状态。新行程创建后的地点编排适用相同规则。应用前系统 SHALL 重新读取目标行程，并以该详情中的 `name`、`totalDays`、`transportMode` 与审核后的计划整体替换保存；`plan` 以外的字段 MUST 保持应用前的值。目标行程不存在时 MUST 终止应用；目标在预览后发生变化时 SHOULD 要求重新审核。
+Agent 对已有行程的规划修改 SHALL 先形成可审核的方案；用户确认后，系统 SHALL 更新所选行程，且 MUST 保持其原有激活状态。新行程创建后的地点编排适用相同规则。应用前系统 SHALL 重新读取目标行程，并以该详情中的 `name`、`totalDays`、`transportMode` 与审核后的计划整体替换保存；`plan` 以外的字段 MUST 保持应用前的值。目标为当前激活行程时，系统 MUST 先完成待发送的本地自动保存，保存失败 MUST 中止应用。目标行程不存在时 MUST 终止应用；目标在预览后发生变化时 SHOULD 要求重新审核。
 
 #### Scenario: Apply changes to the active trip
 - **GIVEN** 用户选择当前激活行程且 Agent 展示了变更
@@ -137,6 +166,13 @@ Agent 对已有行程的规划修改 SHALL 先形成可审核的方案；用户�
 - **WHEN** 应用前发现该行程已在其他标签页被修改
 - **THEN** 系统要求重新审核
 - **AND** 不覆盖最新保存的数据
+
+#### Scenario: Local edits are pending before apply
+- **GIVEN** 用户正在预览当前激活行程的变更，且该行程存在尚未发送的本地自动保存改动
+- **WHEN** 用户确认应用变更
+- **THEN** 系统先完成待发送保存
+- **AND** 保存失败时中止应用并保留待审核方案
+- **AND** 不以 Agent 方案静默覆盖本地改动
 
 #### Scenario: Save fails validation
 - **GIVEN** 用户确认应用已有行程的方案
@@ -190,6 +226,15 @@ Agent SHALL 通过登录后可读的共享已保存地点接口，在规划目�
 - **THEN** Agent 告知匹配可能不完整
 - **AND** 允许用户按地点类型缩小范围
 
+### Requirement: Agent tool surface is explicitly allowlisted
+Agent SHALL 只向模型暴露行程规划所需的固定工具集合。服务端 MUST 忽略客户端提交的 allowlist 之外的额外工具声明，且 MUST NOT 提供通用 fetch、地图搜索、管理员地点或绕过用户确认的行程/宠物写工具。
+
+#### Scenario: Client declares an extra tool
+- **GIVEN** 浏览器在对话请求中声明了一个不在 allowlist 内的工具
+- **WHEN** 服务端构造模型工具集合
+- **THEN** 该工具不会出现在模型可调用的工具集合中
+- **AND** 模型无法通过该工具读取或修改数据
+
 ### Requirement: Agent respects existing trip constraints and pet policies
 Agent 生成或修改的计划 MUST 符合现有 trip 数据契约及目标行程的城市、宠物和天数约束。已有行程的城市、宠物与 `totalDays` MUST NOT 由 Agent 修改；新行程天数 MUST 为 1–7 的整数。景点宠物政策结论 MUST 由 Pawtrip 确定性规则计算，模型 MUST NOT 自行裁定政策结果。
 
@@ -217,7 +262,7 @@ Agent 生成或修改的计划 MUST 符合现有 trip 数据契约及目标行�
 - **THEN** 结论与 Pawtrip 确定性政策匹配结果一致
 
 ### Requirement: Agent operations are non-destructive
-Agent MUST NOT 删除行程或宠物、创建或修改地点，或修改已有行程的城市、宠物与 `totalDays`。Agent 的写操作限定为更新目标行程的计划。
+Agent MUST NOT 删除行程或宠物、创建或修改地点，或修改已有行程的城市、宠物与 `totalDays`。Agent 的写操作限定为用户确认后创建新行程，以及更新目标行程的计划。
 
 #### Scenario: User requests deleting a trip
 - **GIVEN** 用户在 Agent 对话中要求删除某个行程

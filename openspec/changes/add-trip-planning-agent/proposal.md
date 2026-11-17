@@ -26,9 +26,9 @@ Pawtrip 目前的行程规划依赖用户手动选择城市、宠物和地点；
 
 ## Impact
 
-- 前端：`apps/web/src/routes/_authenticated.tsx`、全局应用外壳、`apps/web/src/lib/trip/` 与 `apps/web/src/queries/`；需区分 Agent 规划目标与 `tripStore.active`。
-- TanStack Start / TanStack AI：新增服务端对话编排及浏览器端工具；当前 `apps/web` 尚未集成 TanStack AI，本次使用 `@tanstack/ai`、`@tanstack/ai-react` 与 `@tanstack/ai-openai/compatible`。
+- 前端：`apps/web/src/routes/_authenticated.tsx`、全局应用外壳、`apps/web/src/lib/trip/` 与 `apps/web/src/queries/`；Agent 以右下角圆形入口按钮 + 可展开面板呈现，对话、预览与确认等全部操作在面板内完成；需区分 Agent 规划目标与 `tripStore.active`。
+- TanStack Start / TanStack AI：新增服务端对话编排及浏览器端工具；当前 `apps/web` 尚未集成 TanStack AI，本次使用 `@tanstack/ai`、`@tanstack/ai-react` 与 `@tanstack/ai-openai/compatible`。Agent 使用同源 `/agent` SSE 端点，不使用 `/api` 前缀，避免现有 Vite `/api` 代理与生产反向代理把请求转发给 Spring；服务端只向模型暴露固定 allowlist 工具。前端渲染复用 shadcn AI Elements（base 变体，拷贝代码）与 Sheet，自研仅限方案卡片与 parts 映射层。
 - 行程保存：激活行程复用现有 UI 状态与自动保存路径；未激活行程通过用户确认后的前端流程调用现有 trip 更新接口；新行程遵循现有创建流程。
 - 地点查询：复用登录后可读的共享接口 `GET /api/locations`（普通用户必填 `regionCode`）与 `GET /api/locations/{poiId}`；按规划目标城市与全部 `typeGroup` 分页查询，不新增地点接口。
 - 外部模型服务：使用智谱开放平台（BigModel）的 OpenAI 兼容接口 `https://open.bigmodel.cn/api/paas/v4`，服务端 Bearer 密钥；默认模型 `glm-5.3`，具体可用模型与限流以官方文档为准。
-- 验证：本版本 E2E 仅使用珠海（`440400`/`440402`）固定数据，不引入其他城市夹具；模型调用通过可注入的 fake provider 完成，CI 不访问智谱。
+- 验证：本版本 E2E 仅使用珠海固定数据，查询城市为 `440400`；`440402` 仅作为地点 `region_code`，不引入其他城市夹具；E2E runner 注入 `PAWTRIP_API_BASE_URL` 与 `PAWTRIP_AGENT_PROVIDER=fake`；模型调用通过可注入的 fake provider 完成，CI 不访问智谱。
