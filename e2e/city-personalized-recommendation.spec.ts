@@ -14,22 +14,29 @@ import {
 // 经 PAWTRIP_E2E_DB_PATH 直连临时库在 beforeAll/afterAll 精确快照/恢复（毛毛无品种，API 无法等价重建），
 // 保证同 worker 后续套件（destination-selection E4 等）不受污染。直连先例见 city-pet-policy.spec.ts。
 
-// V27 种子推导的命中集合（design D6）：SWIMMING→COASTAL/LAKE；CALM→LAKE/CITY_PARK
+// V27 种子推导的命中集合（design D6）：SWIMMING→COASTAL/LAKE；CALM→LAKE/CITY_PARK。
+// 注意桂林=MOUNTAIN,LAKE、无锡=LAKE、西宁/银川=LAKE,GRASSLAND 均含 LAKE，两组都命中。
 const swimmingHits = [
   "珠海市", "三亚市", "青岛市", "厦门市", "大连市", "海口市", "北海市", "深圳市",
-  "宁波市", "温州市", "泉州市", "烟台市", "威海市", "秦皇岛市", "舟山市",
+  "宁波市", "温州市", "泉州市", "烟台市", "威海市", "秦皇岛市", "舟山市", "桂林市",
   "杭州市", "苏州市", "无锡市", "武汉市", "昆明市", "大理白族自治州", "西宁市", "银川市",
 ];
 const calmHits = [
-  "厦门市", "深圳市", "杭州市", "苏州市", "武汉市", "昆明市", "成都市", "南京市",
-  "福州市", "长沙市", "广州市", "西安市", "哈尔滨市", "沈阳市", "大理白族自治州",
+  "厦门市", "深圳市", "桂林市", "杭州市", "苏州市", "无锡市", "武汉市", "昆明市",
+  "成都市", "南京市", "福州市", "长沙市", "广州市", "西安市", "哈尔滨市", "沈阳市",
+  "大理白族自治州", "西宁市", "银川市",
 ];
 
 async function cardNames(page: Page): Promise<string[]> {
-  return page.locator('[data-slot="card"] [data-slot="card-title"]').allTextContents();
+  // 新版城市卡片标题为 h2（无 card-title slot）；政策侧栏 h2 不在卡片内，不受影响。
+  return page.locator('[data-slot="card"] h2').allTextContents();
 }
 
-// 排序断言用相对位次而非绝对索引（atdd-design §4 确定性）：命中城市整体先于未命中，组内保持名称升序
+// 排序断言用相对位次而非绝对索引（atdd-design §4 确定性）：命中城市整体先于未命中；
+// 同分维持服务端名称升序（SQLite BINARY 码位序，非拼音）；城市名均为 BMP 字符，
+// UTF-16 码元比较与 UTF-8 字节序一致，不依赖浏览器 ICU 排序。
+const byServerNameOrder = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
 async function expectRecommendedOrder(page: Page, hits: string[]) {
   const names = await cardNames(page);
   const hitSet = new Set(hits);
@@ -37,8 +44,8 @@ async function expectRecommendedOrder(page: Page, hits: string[]) {
   const restNames = names.filter((name) => !hitSet.has(name));
   expect(hitNames.length).toBeGreaterThan(0);
   expect(restNames.length).toBeGreaterThan(0);
-  expect(hitNames).toEqual([...hitNames].sort((a, b) => a.localeCompare(b, "zh-Hans-CN")));
-  expect(restNames).toEqual([...restNames].sort((a, b) => a.localeCompare(b, "zh-Hans-CN")));
+  expect(hitNames).toEqual([...hitNames].sort(byServerNameOrder));
+  expect(restNames).toEqual([...restNames].sort(byServerNameOrder));
   const lastHit = names.lastIndexOf(hitNames[hitNames.length - 1]);
   const firstRest = names.indexOf(restNames[0]);
   expect(lastHit).toBeLessThan(firstRest);
@@ -47,14 +54,14 @@ async function expectRecommendedOrder(page: Page, hits: string[]) {
 async function expectNameOrderWithoutBadges(page: Page) {
   const names = await cardNames(page);
   expect(names.length).toBeGreaterThan(2);
-  expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, "zh-Hans-CN")));
+  expect(names).toEqual([...names].sort(byServerNameOrder));
   await expect(page.locator('[data-slot="badge"]')).toHaveCount(0);
 }
 
 async function expectBadgesExactlyOn(page: Page, hits: string[]) {
   const cards = page.locator('[data-slot="card"]');
   const badgeCards = cards.filter({ has: page.locator('[data-slot="badge"]') });
-  const badgeTitles = await badgeCards.locator('[data-slot="card-title"]').allTextContents();
+  const badgeTitles = await badgeCards.locator("h2").allTextContents();
   expect([...badgeTitles].sort()).toEqual([...hits].sort());
   const badges = cards.locator('[data-slot="badge"]');
   await expect(badges).toHaveCount(hits.length);
@@ -189,9 +196,9 @@ test("preference SWIMMING ranks coastal/lake cities first with badges and name-o
 
   await expectRecommendedOrder(page, swimmingHits);
   await expectBadgesExactlyOn(page, swimmingHits);
-  // 未命中城市（如北京，名称序本应靠前）被压后且无徽标
+  // 未命中城市（如广州，码位序本应靠前）被压后且无徽标；北京仅省级种子，不在候选内
   const names = await cardNames(page);
-  expect(names.indexOf("珠海市")).toBeLessThan(names.indexOf("北京市"));
+  expect(names.indexOf("珠海市")).toBeLessThan(names.indexOf("广州市"));
 });
 
 test("personality CALM alone boosts lake/park cities without preferences", async ({ page }) => {
@@ -211,11 +218,11 @@ test("badge contract: no reason text, coexists with policy tags, no recommendati
   const recommended = cityCard(page, "杭州市");
   await expect(recommended.locator('[data-slot="badge"]')).toHaveText("系统推荐");
   // 徽标不遮挡标题，且与逐宠物政策标签并存
-  await expect(recommended.locator('[data-slot="card-title"]')).toHaveText("杭州市");
+  await expect(recommended.locator("h2")).toHaveText("杭州市");
   await expect(recommended.getByText(/泳泳 ·/).first()).toBeVisible();
   // 无理由文字（Non-goal 反向）
   await expect(page.getByText(/推荐原因|因为|推荐理由/)).toHaveCount(0);
-  const plain = cityCard(page, "北京市");
+  const plain = cityCard(page, "广州市");
   await expect(plain.locator('[data-slot="badge"]')).toHaveCount(0);
   // /cities 无推荐开关：仅「宠物友好筛选」一个复选框，无 switch 控件
   await expect(page.getByRole("checkbox")).toHaveCount(1);
@@ -264,7 +271,7 @@ test("filter and search overlay keeps score order and syncs candidate count", as
   await expect(hangzhou.locator('[data-slot="badge"]')).toHaveText("系统推荐");
   await expect(hangzhou.getByText(/泳泳 ·/).first()).toBeVisible();
   // 选定流程不变
-  await hangzhou.getByRole("button", { name: "选定" }).click();
+  await hangzhou.getByRole("button", { name: "Pick" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: "取消" }).click();
@@ -274,12 +281,10 @@ test("filter and search overlay keeps score order and syncs candidate count", as
 test("legacy pet without preference fields stays unset and unranked", async ({ page }) => {
   await createPetViaApi(page, { name: "旧档", omitPreferenceFields: true });
 
-  await page.getByRole("tab", { name: "Paws" }).click();
-  await page.getByRole("button", { name: "旧档（猫）" }).click();
-  const detail = page.getByRole("dialog");
-  await expect(detail.getByText("未设置", { exact: true })).toHaveCount(2);
-  await detail.getByRole("button", { name: "关闭", exact: true }).click();
-  await expect(detail).toHaveCount(0);
+  // 新版宠物页：内联档案视图（无详情弹窗），喜好/性格未填时展示两处「未设置」
+  await page.getByRole("tab", { name: "我的宠物" }).click();
+  await expect(page.getByRole("heading", { name: "旧档的档案" })).toBeVisible();
+  await expect(page.getByText("未设置", { exact: true })).toHaveCount(2);
 
   await openCities(page);
   await expectNameOrderWithoutBadges(page);

@@ -188,6 +188,11 @@ function modeSelect(page: Page, selfDrive: boolean, index = 0) {
     .nth(index);
 }
 
+// 面板景点排序列表（animated-list）也暴露 role=option；方式选项断言限定在打开的 Select 弹层内。
+function modeOptions(page: Page) {
+  return page.locator('[data-slot="select-content"]').getByRole("option");
+}
+
 const MODE_LABELS: Record<string, string> = { walk: "步行", drive: "打车", self_drive: "驾车" };
 
 // 共享 Select（base-ui）交互：点开 combobox 后按文案选中 option
@@ -623,7 +628,7 @@ test("E11 self-drive default shows driving duration-only without writing", async
   await expect(page.getByText(TAXI_PET_HINT)).toHaveCount(0);
   await expect(page.getByTestId("transit-pet-notice")).toHaveCount(0);
   await modeSelect(page, true).click();
-  await expect(page.getByRole("option")).toHaveText(["打车", "步行", "驾车"]);
+  await expect(modeOptions(page)).toHaveText(["打车", "步行", "驾车"]);
   await page.keyboard.press("Escape");
 
   expect(puts).toHaveLength(0);
@@ -756,7 +761,7 @@ test("E13 drive hides transit notice; switching back restores it without rewriti
   const select = modeSelect(page, false);
   await expect(select).toContainText("切换方式");
   await select.click();
-  await expect(page.getByRole("option")).toHaveText(["打车", "步行"]);
+  await expect(modeOptions(page)).toHaveText(["打车", "步行"]);
   await page.keyboard.press("Escape");
 
   const trip = await getTrip(page, id);
@@ -786,7 +791,9 @@ test("non-goals: no rental/transit options, no call buttons, no new filters or t
   expect(selectorCount).toBeGreaterThan(0);
   for (let i = 0; i < selectorCount; i += 1) {
     await selectors.nth(i).click();
-    const optionTexts = await page.getByRole("option").allTextContents();
+    // 弹层挂载后再读选项，避免 allTextContents 无重试导致空读。
+    await expect(modeOptions(page).first()).toBeVisible();
+    const optionTexts = await modeOptions(page).allTextContents();
     expect(optionTexts.length).toBeGreaterThan(0);
     for (const text of optionTexts) {
       expect(["打车", "步行", "驾车"]).toContain(text);

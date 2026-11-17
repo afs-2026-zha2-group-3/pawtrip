@@ -6,6 +6,7 @@ import cover1 from "@/assets/city-covers/cover-1.png";
 import cover2 from "@/assets/city-covers/cover-2.png";
 import cover3 from "@/assets/city-covers/cover-3.png";
 import cover4 from "@/assets/city-covers/cover-4.png";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,6 +23,7 @@ import {
   CityPolicyMatch,
 } from "@/components/city/city-policy-details";
 import type { DestinationCandidate } from "@/lib/destination-matching";
+import { scoreCity, sortByRecommendation } from "@/lib/destination-recommendation";
 import { matchCityCandidate, matchCityPolicy } from "@/lib/trip/policy-match";
 import type { PolicySubjects } from "@/lib/trip/policy-subjects";
 import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
@@ -81,7 +83,8 @@ function CitiesPage() {
     );
   }
 
-  const candidates = destinations.data;
+  // REQ-014：渲染前按首宠喜好/性格打分排序；profile 晚到时自动重排（design D6）
+  const candidates = sortByRecommendation(destinations.data, profile.data ?? null);
   const selected =
     candidates.find((candidate) => candidate.adcode === selectedAdcode) ??
     candidates[0] ??
@@ -159,6 +162,13 @@ function CitiesPage() {
                   key={candidate.adcode}
                   candidate={candidate}
                   cover={CITY_COVERS[index % CITY_COVERS.length]}
+                  recommended={
+                    scoreCity(
+                      candidate.featureTags,
+                      profile.data?.preferences ?? [],
+                      profile.data?.personality ?? null,
+                    ) > 0
+                  }
                   selected={selected?.adcode === candidate.adcode}
                   disabled={Boolean(active)}
                   subjects={subjects}
@@ -195,6 +205,7 @@ function CitiesPage() {
 function CityCard({
   candidate,
   cover,
+  recommended,
   selected,
   disabled,
   subjects,
@@ -203,6 +214,7 @@ function CityCard({
 }: {
   candidate: DestinationCandidate;
   cover: string;
+  recommended: boolean;
   selected: boolean;
   disabled: boolean;
   subjects: PolicySubjects;
@@ -227,6 +239,11 @@ function CityCard({
         selected ? "border-[#EC9455]" : "border-[#E0E0E0]",
       )}
     >
+      {recommended ? (
+        <Badge className="absolute right-2 top-2" aria-label="系统推荐">
+          系统推荐
+        </Badge>
+      ) : null}
       <img
         src={cover}
         alt={`${candidate.name}景观示意图`}
