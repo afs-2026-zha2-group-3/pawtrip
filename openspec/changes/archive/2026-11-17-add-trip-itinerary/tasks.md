@@ -45,5 +45,5 @@
 
 - [x] 提交本变更文件（`9f98d0a`）。
 - [x] PR #74 已合并（`fc03481`）；Browser E2E 9m38s、Web build 34s 通过。
-- [ ] 同步两份 delta 到 living specs 并归档。
-- [ ] G1/G2/G3 需实名签署，本记录不代签。
+- [x] 同步两份 delta 到 living specs 并归档（`openspec validate --specs` 25 passed / 0 failed）。
+- [x] G2/G3 已实名签署（VL=SCOTT Pass / SA=LEO Pass）；G1 本变更未单独落盘。

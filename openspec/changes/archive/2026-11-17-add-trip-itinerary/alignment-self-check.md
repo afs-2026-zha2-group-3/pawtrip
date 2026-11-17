@@ -49,10 +49,10 @@
 
 ## Gaps / residual risks
 
-- PR #74 CI 全绿（Browser E2E 9m38s、Web build 34s），合并提交 `fc03481`；未归档。
+- PR #74 CI 全绿（Browser E2E 9m38s、Web build 34s），合并提交 `fc03481`；已归档。
 - 食宿/应急/天气/具体时间点缺失，属于已记录的依赖缺口。
 - 路线估算依赖外部服务，失败时仅展示兜底文案。
-- 本变更已提交 `9f98d0a` 并合并；归档时需把两份 delta 同步到 living specs。
+- 本变更已提交 `9f98d0a` 并合并；两份 delta 已同步到 living specs，`openspec validate --specs` 25 passed / 0 failed。
 
 ## Outcome
 
