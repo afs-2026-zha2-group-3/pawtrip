@@ -12,7 +12,6 @@ function tripWithPlan(days: Trip["plan"]["days"], unscheduled: Trip["plan"]["uns
     totalDays: 2,
     startDate: null,
     transportMode: null,
-    startDate: null,
     plan: { version: 1, days, unscheduled },
     createdAt: "2026-11-17T00:00:00Z",
     updatedAt: "2026-11-17T00:00:00Z",
