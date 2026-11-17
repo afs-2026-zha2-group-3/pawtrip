@@ -27,7 +27,7 @@ Go — 需求边界明确：在既有行程面板（TripPanel）按天视图中�
 ## 六字段
 
 1. **id**：REQ-011
-2. **statement**：已登录用户的激活行程在行程面板按天视图中，每两个相邻景点之间展示一段途内交通：用户可在「打车 / 步行」间选择，系统经服务端调用高德路线规划 2.0 估算并展示参考费用区间与预计时长；地铁/公交仅静态提示「不可携带宠物上车」，不可选、不调用 API；打车段行内展示携宠乘车小字提示（宠物专车/司机同意/航空箱）；每天第一个景点行前按绑定宠物档案与当天景点政策对比展示小字提醒（牵引绳/体型超限）；用户显式选择后将方式与估算快照写入 `plan_json` 的 `stop.toNext`（`drive`=打车、`walk`=步行）与新增可选 `stop.toNextEstimate`（时长 + 费用区间），随既有防抖保存持久化；打开视图优先展示已存快照、不调高德，刷新后恢复。
+2. **statement**：已登录用户的激活行程在行程面板按天视图中，每两个相邻景点之间展示一段途内交通：大交通为公共交通（飞机/高铁/火车）或未选择时，用户可在「打车 / 步行」间选择，系统经服务端调用高德路线规划 2.0 估算并展示参考费用区间与预计时长；大交通为自驾时段行默认展示「驾车」（仅预估时长、无费用，派生默认不写库），并提供「选择其他途内交通方式」下拉（打车/步行）与可显式选回的驾车，显式选择后写库（驾车=`self_drive`，快照费用 0/0 仅存不展示）；地铁/公交仅静态提示「不可携带宠物上车」（自驾模式下隐藏），不可选、不调用 API；打车段行内展示携宠乘车小字提示（宠物专车/司机同意/航空箱，跟随段行实际方式，驾车/步行段不展示）；每天第一个景点行前按绑定宠物档案与当天景点政策对比展示小字提醒（牵引绳/体型超限，两种大交通模式下均保留）；用户显式选择后将方式与估算快照写入 `plan_json` 的 `stop.toNext`（`drive`=打车、`walk`=步行、`self_drive`=驾车）与新增可选 `stop.toNextEstimate`（时长 + 费用区间），随既有防抖保存持久化；打开视图优先展示已存快照、不调高德，刷新后恢复；切换大交通不破坏性改写已存选择。
 3. **actors**：
    - 已登录用户：查看按天行程、选择每段途内交通方式、查看费用与时长参考
    - 前端应用 `apps/web`（TripPanel / trip store）：渲染交通段行、发起估算查询、写入 `toNext` 与 `toNextEstimate` 快照并触发防抖保存
@@ -39,9 +39,10 @@ Go — 需求边界明确：在既有行程面板（TripPanel）按天视图中�
    - AC-1（按天展示）：某天有 n（n≥2）个景点时，按天视图展示 n−1 个交通段行；仅 1 个或 0 个景点时不展示段行
    - AC-2（与地点关联）：每个段行紧邻其对应的上一景点行渲染，语义为「该景点 → 下一景点」；当天最后一个景点无段行
    - AC-3（费用与时长）：选择打车时展示 `taxi_cost` ±20% 的费用区间与预计时长（分钟）；选择步行时展示预计时长（分钟）与费用 ¥0
-   - 默认方式：`toNext` 未设置时 UI 默认按打车展示估算；`plan_json` 中 `toNext` 保持为空，直到用户显式选择
-   - 公共交通：每天标题下展示一条「地铁/公交：不可携带宠物上车」类静态提示（该天有交通段时），不可选择、不触发算路
-   - 打车携宠提示：每个当前方式为打车的段行内展示小字提示「部分平台提供宠物专车选项；普通网约车需司机同意，建议航空箱携带」类语义；步行段与同 POI 段不展示
+   - 默认方式：`toNext` 未设置时，大交通为公共交通或未选择 → UI 默认按打车展示估算；大交通为自驾 → 默认按驾车展示（仅时长）；`plan_json` 中 `toNext` 保持为空，直到用户显式选择
+   - 大交通自驾联动：自驾模式下每段提供「选择其他途内交通方式」下拉（打车/步行），驾车也可显式选择（含切回）；显式选驾车 → 写 `toNext=self_drive` + 时长快照（费用 0/0 仅存不展示）；选打车/步行 → 按既有规则估算时间与价格并落库；自驾模式隐藏每天公交提示，携宠提示跟随段行实际方式（切为打车的段恢复展示）；切换大交通不改写已存选择，切回公共交通后恢复原选择展示
+   - 公共交通：每天标题下展示一条「地铁/公交：不可携带宠物上车」类静态提示（该天有交通段且大交通非自驾时），不可选择、不触发算路
+   - 打车携宠提示：每个当前展示方式为打车的段行内（含自驾模式下用户切为打车的段）展示小字提示「部分平台提供宠物专车选项；普通网约车需司机同意，建议航空箱携带」类语义；驾车段、步行段与同 POI 段不展示
    - 每天政策对比提醒：当天任一景点 `leashRequired=true` → 每天首个景点行前小字「当天需携带牵引绳」（档案 `hasLeash=false` 加强「请自备」）；景点设体重/肩高上限且绑定宠物超限 → 警示「您的宠物超出XX景点限制（≤Xkg/≤Ycm）」，未超限不提示；纯前端派生、不写库
    - 持久化：切换方式后 `stop.toNext` 与估算快照 `stop.toNextEstimate {durationMinutes, costLowYuan, costHighYuan}`（步行 0/0）一并更新，触发既有防抖 `PUT /api/trips/{id}`；刷新后从 `plan_json` 恢复方式与快照
    - 快照优先：已有快照的段打开视图时直接展示存值、不调高德；无快照时按需查询；`toNext` 已选但快照为空时估算成功后补写
@@ -72,7 +73,8 @@ Go — 需求边界明确：在既有行程面板（TripPanel）按天视图中�
 
 **In**
 
-- TripPanel 按天视图中相邻景点间的交通段行：方式选择（打车/步行）+ 参考费用区间与预计时长
+- TripPanel 按天视图中相邻景点间的交通段行：方式选择（公共交通/未选择：打车/步行；自驾：默认驾车 + 打车/步行下拉与可显式选回的驾车）+ 参考费用区间与预计时长（驾车仅时长）
+- 大交通自驾联动：只读复用既有 `active.transportMode`（trip 表已持久化）派生默认方式与提示显隐，不改大交通选择与交通规则页行为
 - 服务端估算 API（登录保护）+ 高德路线规划 2.0 适配器（步行/驾车），沿用端口/适配器架构与共享传输层
 - 地铁/公交「不可携带宠物上车」静态提示（前端写死，MVP 统一口径）
 - 打车段行内携宠乘车小字提示（宠物专车/司机同意/航空箱，前端写死，语义固定）
@@ -85,8 +87,8 @@ Go — 需求边界明确：在既有行程面板（TripPanel）按天视图中�
 - 实时计价、站内叫车、可携宠筛选（Release 2）
 - 公共交通算路调用与可携宠公共交通判定
 - 服务端估算缓存策略（缓存细节留 P3 设计；估算 API 本身不写库，快照由前端随 PUT 写入）
-- `plan_json` 破坏性结构变更（本次仅增量新增可选 `toNextEstimate`，version 保持 1，旧数据兼容）、新增导航 Tab 或路由
-- 大交通（`transportMode`）与交通规则页行为
+- `plan_json` 破坏性结构变更（本次仅增量新增可选 `toNextEstimate` 与 `toNext` 新增枚举值 `self_drive`，version 保持 1，旧数据兼容）、新增导航 Tab 或路由
+- 大交通选择本身与交通规则页行为（本次仅只读复用 `transportMode` 做途内联动，不改其选择/保存/展示）
 
 ### Scenarios + AC Hints
 
@@ -180,12 +182,30 @@ Go — 需求边界明确：在既有行程面板（TripPanel）按天视图中�
 - **When** 用户查看该天
 - **Then** 不展示对应提醒项；提醒不写库、不新增后端接口；未排期景点不计入当天聚合
 
+#### S14：大交通自驾联动（2026-11-17 第 5 轮修订）
+
+- **Given** 激活行程大交通为自驾（`transportMode=drive`），某段 `toNext` 为空
+- **When** 用户查看该段
+- **Then** 段行默认展示「驾车」，仅展示预估时长、不展示费用；派生默认不写库；每段提供「选择其他途内交通方式」下拉（打车/步行），驾车也可显式选择（含从打车/步行切回）
+- **Given** 大交通为自驾，用户显式选择某段方式（含驾车）
+- **When** 选择完成
+- **Then** 写入 `toNext`（驾车=`self_drive`、打车=`drive`、步行=`walk`）与 `toNextEstimate` 快照（驾车费用 0/0 仅存不展示；打车/步行按既有规则），复用防抖保存；估算不可用时仅存方式待回填
+- **Given** 大交通为自驾
+- **When** 用户查看某天
+- **Then** 不展示该天公交/地铁不可携宠提示；携宠提示跟随段行实际方式（用户切为打车的段展示，驾车/步行段不展示）；每天政策对比提醒规则不变
+- **Given** 大交通为飞机/高铁/火车或未选择
+- **When** 用户查看途内交通段
+- **Then** 完全按既有规则（默认打车、打车/步行切换、快照落库、每天公交提示）；选择器不提供驾车选项
+- **Given** 某段已保存 `toNext` 与快照
+- **When** 用户切换大交通（自驾 ↔ 公共交通）
+- **Then** 已存 `toNext` 与快照不被改写，展示跟随已存值；切回公共交通后恢复原保存选择展示（含已存 `self_drive` 段按驾车仅时长展示）
+
 ### Constraints
 
 - 技术栈沿用 React 19 / TanStack Router / TanStack Query / shadcn/ui（Base UI）与 Spring Boot；不引入新状态库或 HTTP 客户端。
 - 高德调用 MUST 走 `application.port.maps` 端口 + `infrastructure.amap.api` 适配器，复用 `AmapTransport` 与 `AmapProperties`；Key 缺失时应用可启动，调用以类型化错误失败（沿用既有约定）。
 - 高德路线规划 2.0：驾车 `GET /v5/direction/driving`（`route.taxi_cost` 基础字段，元，字符串）、步行 `GET /v5/direction/walking`；时长需 `show_fields=cost`（`paths[].cost.duration`，秒）；坐标「经度,纬度」小数 ≤6 位；建议携带 `origin_id`/`destination_id`（POI ID）提升准确性。
-- `plan_json` v1 增量扩展：`stops` 元素新增可选 `toNextEstimate {durationMinutes, costLowYuan, costHighYuan}`（可省略/为 null，数值 ≥0，时长为整数分钟）；version 保持 1，旧数据无该字段仍合法；`toNext ∈ {walk, drive, transit}` 不变；UI 仅提供 `walk`/`drive`，`drive` 展示为「打车」；`TripPlanValidator`/`TripPlan.TripStop` 需扩展解析与序列化（当前会丢弃未知字段）。
+- `plan_json` v1 增量扩展：`stops` 元素新增可选 `toNextEstimate {durationMinutes, costLowYuan, costHighYuan}`（可省略/为 null，数值 ≥0，时长为整数分钟）；version 保持 1，旧数据无该字段仍合法；`toNext ∈ {walk, drive, transit, self_drive}`（`self_drive` 为本次新增枚举值=驾车，与 `drive`=打车区分，避免切换大交通后语义混淆）；UI 在公共交通/未选择模式仅提供 `walk`/`drive`（`drive` 展示为「打车」），自驾模式提供 `self_drive`/`drive`/`walk`；`TripPlanValidator`/`TripPlan.TripStop` 需扩展解析与序列化（当前会丢弃未知字段）。
 - 保存链路复用 trip-context 的乐观更新 + 约 600ms 防抖整量 `PUT`；不引入乐观锁。
 - 估算 API 本身 MUST NOT 写库；快照由前端随 `PUT` 写入 `plan_json`；无快照时前端以 TanStack Query 按「景点对 + 方式」缓存查询结果。
 - 每天政策对比提醒为纯前端派生：复用面板既有 `tripStore.cache.locations`（含 `petPolicies`）与 `petsQueryOptions` 绑定的 `activePet`；不新增后端接口/字段/迁移，不写库；体型判定以景点体重/肩高上限为准（DB 无独立「仅小型犬」字段），超限比较为严格大于，档案值缺失时不警示。
@@ -199,7 +219,7 @@ Go — 需求边界明确：在既有行程面板（TripPanel）按天视图中�
 
 - **ADDED** `trip-route-estimate`：服务端途内交通估算 API 与高德路线规划 2.0 适配（步行/驾车），含归属校验、参数校验与类型化上游错误
 - **MODIFIED** `trip-context`：行程面板按天视图新增交通段行（方式选择、快照优先的估算展示、公共交通静态提示）；`toNext` + `toNextEstimate` 写入触发既有防抖保存
-- **MODIFIED** `trip-planning`：Plan JSON v1 `stops` 元素增量新增可选 `toNextEstimate` 快照字段（version 保持 1，旧数据兼容）；校验器扩展解析/序列化与非法快照拒绝
+- **MODIFIED** `trip-planning`：Plan JSON v1 `stops` 元素增量新增可选 `toNextEstimate` 快照字段与 `toNext` 新增枚举值 `self_drive`（version 保持 1，旧数据兼容）；校验器扩展解析/序列化与非法快照拒绝
 - **CHECKED** `backend-amap-poi-search`：复用共享传输/配置，不改变 POI 搜索行为
 - **CHECKED** `attraction-pet-rules`：只读复用景点 `petPolicies` 字段（leashRequired/体重/肩高上限），不改变其展示与查询行为
 - **CHECKED** `paws-page`：只读复用宠物档案（weightKg/shoulderHeightCm/hasLeash），不改变档案 CRUD
@@ -224,6 +244,7 @@ Go — 需求边界明确：在既有行程面板（TripPanel）按天视图中�
 | non-blocking | resolved | 「仅小型犬」如何判定（DB 无独立字段）？ | Product / Dev | 景点体重/肩高上限即体型限制；与绑定档案对比，超限才警示、未超限不提示（2026-11-17 用户确认；S13） |
 | non-blocking | resolved | 牵引绳提醒是否结合档案？提醒归属哪个需求？ | Product / Dev | 聚合+档案对比（hasLeash=false 加强）；并入 REQ-011 与当前 Change（2026-11-17 用户确认；S13） |
 | non-blocking | resolved | 档案体重/肩高缺失或景点政策缓存未加载时如何展示？ | Dev | 无法判定超限则不警示（防御性假设，与「未超限不提示」一致）；缓存加载后自然重算（S13） |
+| non-blocking | resolved | 大交通为自驾时途内交通如何展示与选择？ | Product / Dev | 默认驾车仅时长不写库；下拉可选打车/步行，驾车可显式选回且选后写库（self_drive，费用 0/0）；自驾模式隐藏公交提示、携宠提示跟随段方式；公共交通/未选择按既有规则（2026-11-17 用户第 5 轮修订确认；S14） |
 | non-blocking | deferred | 前端缓存 TTL 与服务端是否加缓存？ | Dev | 后续解决（P3 设计决定，不影响应用边界与契约） |
 
 ## DoR Findings

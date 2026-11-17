@@ -9,11 +9,11 @@ API SHALL 以 JSON 对象承载计划，结构为 `{version, days, unscheduled}`
 - `version` MUST 为 `1`；
 - `days` MUST 为数组，元素为 `{day, stops}`；`day` MUST 为整数，`stops` MUST 为数组；
 - `stops` 元素为 `{poiId, toNext?, toNextEstimate?}`，数组顺序即当日游玩顺序，MUST NOT 依赖额外顺序字段；
-- `toNext` MAY 省略或为 `null`；有值 MUST 为 `walk`、`drive` 或 `transit`；
+- `toNext` MAY 省略或为 `null`；有值 MUST 为 `walk`、`drive`、`transit` 或 `self_drive`（`self_drive`=驾车，本次新增枚举值，与 `drive`=打车区分）；
 - `toNextEstimate` MAY 省略或为 `null`；有值 MUST 为对象 `{durationMinutes, costLowYuan, costHighYuan}`，三字段 MUST 齐全且为数值：`durationMinutes` MUST 为 ≥0 的整数，`costLowYuan`/`costHighYuan` MUST ≥0 且 `costLowYuan` MUST ≤ `costHighYuan`；非法值 MUST 返回 `400 VALIDATION_ERROR`；
 - `unscheduled` MUST 为数组，元素为 `{poiId}`。
 
-`toNextEstimate` 为本次增量扩展的可选估算快照字段（交通方式对应的预计时长与参考费用区间），`version` 保持 `1`；不含该字段的存量计划 MUST 继续合法，服务端 SHALL 原样保留合法快照（解析与序列化 MUST NOT 丢弃该字段）。`days`、`stops`、`unscheduled` MAY 为空；整个计划为空 MUST 合法，并作为新建 trip 未提供计划时的默认值。同一 `poiId` MAY 在 `days` 中重复出现。`unscheduled` MUST 按 `poiId` 去重；服务端 SHALL 将同时出现在 `days` 与 `unscheduled` 的 `poiId` 从 `unscheduled` 中移除。
+`toNextEstimate` 为本次增量扩展的可选估算快照字段（交通方式对应的预计时长与参考费用区间；步行与驾车快照费用为 0/0，驾车费用仅存不展示），`self_drive` 为本次增量新增的 `toNext` 枚举值，`version` 保持 `1`；不含该字段/枚举值的存量计划 MUST 继续合法，服务端 SHALL 原样保留合法快照（解析与序列化 MUST NOT 丢弃该字段）。`days`、`stops`、`unscheduled` MAY 为空；整个计划为空 MUST 合法，并作为新建 trip 未提供计划时的默认值。同一 `poiId` MAY 在 `days` 中重复出现。`unscheduled` MUST 按 `poiId` 去重；服务端 SHALL 将同时出现在 `days` 与 `unscheduled` 的 `poiId` 从 `unscheduled` 中移除。
 
 #### Scenario: 空计划合法
 
@@ -39,7 +39,7 @@ API SHALL 以 JSON 对象承载计划，结构为 `{version, days, unscheduled}`
 #### Scenario: 非法交通方式
 
 - **GIVEN** 已登录用户
-- **WHEN** 提交 `toNext` 为 `walk`、`drive`、`transit` 之外的值
+- **WHEN** 提交 `toNext` 为 `walk`、`drive`、`transit`、`self_drive` 之外的值
 - **THEN** 返回 `400` 与 `code=VALIDATION_ERROR`
 
 #### Scenario: toNextEstimate 可省略
@@ -61,6 +61,13 @@ API SHALL 以 JSON 对象承载计划，结构为 `{version, days, unscheduled}`
 - **WHEN** 更新 trip 时某 stop 携带合法 `toNext=drive` 与 `toNextEstimate {durationMinutes: 25, costLowYuan: 40, costHighYuan: 60}`
 - **THEN** 请求成功
 - **AND** 详情接口返回的该 stop 原样保留 `toNext` 与 `toNextEstimate` 全部字段值
+
+#### Scenario: self_drive 枚举合法且往返保留
+
+- **GIVEN** 已登录用户
+- **WHEN** 更新 trip 时某 stop 携带 `toNext=self_drive` 与 `toNextEstimate {durationMinutes: 25, costLowYuan: 0, costHighYuan: 0}`
+- **THEN** 请求成功
+- **AND** 详情接口返回的该 stop 原样保留 `toNext=self_drive` 与快照全部字段值
 
 #### Scenario: unscheduled 去重
 
