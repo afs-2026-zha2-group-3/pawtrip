@@ -50,4 +50,5 @@
 ## 8. Markdown 渲染与消息呈现
 
 - [ ] 8.1 引入 `@tanstack/markdown`：Agent 最终文本使用 `@tanstack/markdown/react` 渲染，流式使用 `streamingMarkdownExtension()`，关闭 `frontmatter`、`headingIds` 与 `allowHtml`；用户消息保持纯文本。
-- [ ] 8.2 调整消息呈现：用户消息靠右气泡；Agent 消息去掉气泡与背景，直接以 Markdown 内容块显示；不显示头像、图标或身份标签；Agent 消息首次出现时渐显，流式更新不重复触发动画。
+- [ ] 8.2 调整消息呈现：用户消息靠右气泡；Agent 消息去掉气泡与背景，直接以 Markdown 内容块显示；不显示头像、图标或身份标签。
+- [ ] 8.3 实现平滑流式渐显：维护原始文本与展示文本，按 `requestAnimationFrame`/固定时间片合并细碎增量并以稳定速率揭示；新增尾部短 opacity 过渡或底部渐变遮罩；流结束立即补齐剩余文本；`prefers-reduced-motion` 直接显示；消息切换或卸载时清理动画帧与缓冲。

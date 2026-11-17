@@ -55,7 +55,7 @@
 - **AND** 对话与待审核方案丢失
 
 ### Requirement: Agent messages use Markdown and a distinct presentation
-Agent 的文本回复 SHALL 使用 TanStack Markdown 渲染；用户消息 MUST 保持纯文本。用户消息 SHALL 以靠右气泡呈现；Agent 消息 MUST NOT 使用气泡或背景，直接渲染在面板中，并以渐显效果出现。消息 MUST NOT 显示头像、图标或身份标签。Markdown 渲染 MUST 保留 HTML 转义与危险 URL 移除。
+Agent 的文本回复 SHALL 使用 TanStack Markdown 渲染；用户消息 MUST 保持纯文本。用户消息 SHALL 以靠右气泡呈现；Agent 消息 MUST NOT 使用气泡或背景，直接渲染在面板中。流式回复 SHALL 合并细碎增量并以稳定节奏平滑渐显，MUST NOT 逐字符跳动；流式结束后 MUST 补齐全部剩余文本。消息 MUST NOT 显示头像、图标或身份标签；`prefers-reduced-motion` 下 MUST 直接显示文本而不播放渐显动画。Markdown 渲染 MUST 保留 HTML 转义与危险 URL 移除。
 
 #### Scenario: Agent reply renders Markdown
 - **GIVEN** Agent 最终回复包含 Markdown 语法（如粗体、列表、代码、链接）
@@ -70,11 +70,23 @@ Agent 的文本回复 SHALL 使用 TanStack Markdown 渲染；用户消息 MUST 
 - **AND** Agent 消息不使用气泡或背景，直接以 Markdown 内容显示
 - **AND** 两类消息均不显示头像、图标或身份标签
 
-#### Scenario: Agent replies fade in
-- **GIVEN** Agent 最终回复出现
-- **WHEN** 面板显示该消息
-- **THEN** 消息以渐显效果出现
-- **AND** 流式更新不会重复触发整段渐显
+#### Scenario: Streaming reply reveals smoothly
+- **GIVEN** Agent 正在流式返回回复且服务端发送多个细碎文本增量
+- **WHEN** 面板渲染该回复
+- **THEN** 增量被合并为稳定节奏的展示更新
+- **AND** 文本不会逐字符跳动
+
+#### Scenario: Stream completion flushes remaining text
+- **GIVEN** Agent 的流式回复已结束
+- **WHEN** 面板完成最后一次展示更新
+- **THEN** 全部剩余文本均已显示
+- **AND** 不出现截断或长时间停留在未完成状态
+
+#### Scenario: Reduced motion skips the reveal animation
+- **GIVEN** 用户启用了 `prefers-reduced-motion`
+- **WHEN** Agent 流式返回回复
+- **THEN** 文本直接显示
+- **AND** 不播放渐显动画
 
 #### Scenario: Unsafe markdown stays inert
 - **GIVEN** Agent 回复包含原始 HTML 或可执行 URL

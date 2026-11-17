@@ -61,7 +61,7 @@ Start server route 运行在 Node 运行时，不能依赖浏览器的 Vite dev 
 
 ### Agent UI 与对话生命周期
 
-Agent 以“全局浮动入口 + 可展开面板”呈现，挂在登录后的全局布局（`AuthenticatedShell` 内，与 TripPanel 同级），不随页面路由切换销毁。实现原则：AI 渲染与对话能力尽量复用现成组件——shadcn AI Elements 模式负责渲染、TanStack AI 负责对话状态与流式、shadcn Sheet 负责容器（详见 `docs/knowledge/external/ai-elements.md`）；自研仅限 Pawtrip 业务特有部分（parts 映射层、方案卡片/差异预览、业务确认流程），不重造消息布局、滚动跟随、流式渲染或工具卡片：
+Agent 以“全局浮动入口 + 可展开面板”呈现，挂在登录后的全局布局（`AuthenticatedShell` 内，与 TripPanel 同级），不随页面路由切换销毁。实现原则：AI 渲染与对话能力尽量复用现成组件——shadcn AI Elements 模式负责渲染、TanStack AI 负责对话状态与流式、shadcn Sheet 负责容器（详见 `docs/knowledge/external/ai-elements.md`）；自研仅限 Pawtrip 业务特有部分（parts 映射层、流式文本平滑呈现、方案卡片/差异预览、业务确认流程），不重造消息布局、滚动跟随、SSE 传输或工具卡片：
 
 - 入口：右下角固定圆形按钮（`data-testid="agent-fab"`，带 aria-label），所有登录后页面可见，不依赖激活行程；TripPanel 位于左下角，两者不重叠。未登录时不渲染。
 - 面板容器：shadcn/ui Sheet（base 变体，`npx shadcn@latest add sheet` 拷入项目），不复用 TripPanel（其内部耦合 dnd-kit 排序逻辑）。以受控 `open` 驱动（开关状态仅存内存，刷新后回到收起态），`SheetContent side="right"`；按非模态使用（Base UI Dialog `modal=false`、移除 Backdrop）：页面保持可见可交互，不因点击页面关闭，仅通过入口按钮或面板内关闭按钮收起，ESC 可关闭。展开态样式在默认 Sheet 上定制，镜像 TripPanel 悬浮态（`border bg-card shadow-xl rounded-xl`）：小屏 `fixed inset-0` 全屏滚动，`lg: inset-y-4 right-4 left-auto w-[400px]`。z-index 高于 TripPanel（含其小屏全屏展开态）。
@@ -76,7 +76,8 @@ Agent 以“全局浮动入口 + 可展开面板”呈现，挂在登录后的�
 
 - 依赖：`@tanstack/markdown`，使用 `@tanstack/markdown/react` 的 `<Markdown>`；流式阶段使用 `@tanstack/markdown/extensions/streaming` 的 `streamingMarkdownExtension()`，设置 `frontmatter={false}`、`headingIds={false}`，流式结束后保持同一扩展。
 - 呈现：用户消息保持纯文本并靠右气泡显示；Agent 最终回复不使用 Bubble 或背景，直接以 Markdown 内容块渲染在面板中；不显示头像、图标或「行程助手」等身份标识。
-- 渐显：Agent 消息首次出现时通过 CSS 动画渐显，并兼容 `prefers-reduced-motion`；流式文本更新只更新内容，不重复触发整段渐显。
+- 流式呈现：不要把每个 SSE 增量直接渲染成字符跳动。维护原始文本与展示文本，按 `requestAnimationFrame` 或固定时间片合并细碎增量，以稳定字符速率揭示；新出现的尾部文本通过短 opacity 过渡或底部渐变遮罩渐显。流结束或用户停止时立即补齐剩余文本；`prefers-reduced-motion` 下跳过动画直接显示。TanStack Markdown 始终接收展示文本，避免未闭合 Markdown 结构造成闪烁。
+- 生命周期：平滑呈现状态以消息 id 为 key，在消息切换、面板关闭或组件卸载时清理动画帧与缓冲，避免跨消息串流或残留定时器。
 - 安全：`allowHtml` 保持关闭；原始 HTML 转义、可执行 URL 移除；外链与图片如需放开，由显式 `urlTransform` 或组件策略控制；不接入未审计的语法高亮器。提示词要求 Agent 输出 TanStack Markdown 支持的简洁语法，不输出原始 HTML 或 MDX。
 - 范围：结构化方案差异仍由方案卡片渲染，不走 Markdown；本次为呈现层调整，不新增仅针对视觉呈现的测试。
 
