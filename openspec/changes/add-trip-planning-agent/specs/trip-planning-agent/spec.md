@@ -35,19 +35,44 @@ Agent SHALL 区分新建行程与修改已有行程。修改已有行程时 SHAL
 - **AND** 在用户选择前不应用行程修改
 
 ### Requirement: Agent creates a new trip only after confirmation
-Agent SHALL 能从用户提供的城市、天数、单只宠物和期望地点生成新行程方案。新行程方案 MUST 遵循单城市、单宠物及前端草稿的 1–7 天限制；用户确认前 MUST NOT 创建持久化行程。存在激活行程时，Agent MUST 先经用户明确确认取消当前激活行程，取消成功后才可创建；同一时间 MUST 不超过一个激活行程。
+Agent SHALL 能通过现有草稿流程协助用户完成新行程的城市、天数与单只宠物配置。新行程配置 MUST 遵循单城市、单宠物及前端草稿的 1–7 天限制；用户确认配置前 MUST NOT 创建持久化行程。存在激活行程时，Agent MUST 先经用户明确确认取消当前激活行程，且 MUST 先完成待发送的自动保存，取消成功后才可创建；同一时间 MUST 不超过一个激活行程。创建后的地点编排 SHALL 先展示可审核方案，用户确认后才写入行程并触发自动保存。
 
-#### Scenario: Plan a new trip without an active trip
+#### Scenario: Prepare a new trip draft without an active trip
 - **GIVEN** 用户没有激活行程
-- **WHEN** 用户描述城市、天数、宠物和想去的地点
-- **THEN** Agent 展示可审核的新行程方案
+- **WHEN** 用户描述城市、天数和宠物
+- **THEN** Agent 通过现有草稿流程协助完成配置并请求用户确认
 - **AND** 用户确认前不创建持久化行程
 
+#### Scenario: Existing draft is replaced
+- **GIVEN** 用户已有未确认的行程草稿
+- **WHEN** Agent 准备为另一个新行程启动草稿
+- **THEN** Agent 先说明将替换现有草稿并请求确认
+- **AND** 用户确认前不覆盖草稿
+
 #### Scenario: Confirm a new trip
-- **GIVEN** Agent 已展示新行程方案
-- **WHEN** 用户明确确认创建
-- **THEN** 系统通过现有创建流程持久化该行程
+- **GIVEN** Agent 已协助完成新行程的城市、天数与宠物配置
+- **WHEN** 用户明确确认保存
+- **THEN** 系统通过现有创建流程创建空计划行程
 - **AND** 新行程按现有行为成为激活行程
+- **AND** Agent 可在该行程上继续编排地点
+
+#### Scenario: Continue planning after creation
+- **GIVEN** Agent 已创建并激活新行程
+- **WHEN** Agent 生成地点编排方案
+- **THEN** Agent 先展示可审核方案
+- **AND** 仅在用户确认后将方案写入行程并触发自动保存
+
+#### Scenario: Unconfirmed plan is not persisted
+- **GIVEN** Agent 已展示计划变更但用户尚未确认
+- **WHEN** 用户继续对话或刷新页面
+- **THEN** 行程数据保持不变
+- **AND** 不触发保存请求
+
+#### Scenario: Trip remains after planning is abandoned
+- **GIVEN** Agent 已创建并激活新行程，但地点编排尚未完成
+- **WHEN** 用户放弃本次规划
+- **THEN** 已创建的行程保留
+- **AND** 用户可在 Trips 页面删除该行程
 
 #### Scenario: Active trip exists when creating a new trip
 - **GIVEN** 用户已有激活行程
@@ -56,6 +81,18 @@ Agent SHALL 能从用户提供的城市、天数、单只宠物和期望地点�
 - **AND** 在用户确认且取消激活成功前不创建新行程
 - **AND** 新行程创建后成为唯一激活行程
 
+#### Scenario: Pending save before deactivation
+- **GIVEN** 激活行程存在尚未发送的自动保存改动
+- **WHEN** Agent 需要取消激活以创建新行程
+- **THEN** 系统先完成保存
+- **AND** 保存失败时不取消激活，也不创建新行程
+
+#### Scenario: No pets available
+- **GIVEN** 用户没有任何宠物
+- **WHEN** 用户要求创建新行程
+- **THEN** Agent 说明需要先创建宠物
+- **AND** 不生成可确认的新行程方案
+
 #### Scenario: Required trip information is missing
 - **GIVEN** 新行程缺少有效城市、宠物或 1–7 天范围内的天数
 - **WHEN** Agent 准备生成可确认方案
@@ -63,23 +100,50 @@ Agent SHALL 能从用户提供的城市、天数、单只宠物和期望地点�
 - **AND** 不创建持久化行程
 
 ### Requirement: Agent edits existing trips through a reviewable proposal
-Agent 对已有行程的规划修改 SHALL 先形成可审核的方案；用户确认后，系统 SHALL 更新所选行程，且 MUST 保持其原有激活状态。
+Agent 对已有行程的规划修改 SHALL 先形成可审核的方案；用户确认后，系统 SHALL 更新所选行程，且 MUST 保持其原有激活状态。新行程创建后的地点编排适用相同规则。应用前系统 SHALL 重新读取目标行程，并以该详情中的 `name`、`totalDays`、`transportMode` 与审核后的计划整体替换保存；`plan` 以外的字段 MUST 保持应用前的值。目标行程不存在时 MUST 终止应用；目标在预览后发生变化时 SHOULD 要求重新审核。
 
 #### Scenario: Apply changes to the active trip
 - **GIVEN** 用户选择当前激活行程且 Agent 展示了变更
 - **WHEN** 用户确认应用变更
 - **THEN** 所选行程计划通过 Pawtrip 的行程编辑与保存流程更新
+- **AND** 大交通方式、名称与总天数保持不变
 
 #### Scenario: Apply changes to an inactive trip
 - **GIVEN** 用户选择已保存但未激活的行程且 Agent 展示了变更
 - **WHEN** 用户确认应用变更
 - **THEN** 所选行程通过 Pawtrip 的前端保存流程更新
 - **AND** 该行程仍保持未激活
+- **AND** 大交通方式、名称与总天数保持不变
 
 #### Scenario: Reject a proposed edit
 - **GIVEN** Agent 已展示已有行程的变更方案
 - **WHEN** 用户拒绝或放弃该方案
 - **THEN** 已保存行程保持不变
+
+#### Scenario: Target trip is deleted before apply
+- **GIVEN** Agent 已展示已有行程的变更方案
+- **WHEN** 用户确认应用时该行程已不存在
+- **THEN** 系统终止应用并告知用户
+- **AND** 不创建或修改任何行程
+
+#### Scenario: Target trip changed before apply
+- **GIVEN** Agent 已展示已有行程的变更方案
+- **WHEN** 应用前发现目标行程已被其他操作修改
+- **THEN** 系统要求用户重新审核更新后的方案
+- **AND** 不直接覆盖最新数据
+
+#### Scenario: Active trip changed externally
+- **GIVEN** 用户正在预览当前激活行程的变更
+- **WHEN** 应用前发现该行程已在其他标签页被修改
+- **THEN** 系统要求重新审核
+- **AND** 不覆盖最新保存的数据
+
+#### Scenario: Save fails validation
+- **GIVEN** 用户确认应用已有行程的方案
+- **WHEN** 保存返回 `400 VALIDATION_ERROR`
+- **THEN** 系统告知用户方案未生效
+- **AND** 保留待审核方案供修改
+- **AND** 不以服务端数据静默替代方案
 
 ### Requirement: Agent uses only saved Pawtrip locations
 Agent SHALL 通过登录后可读的共享已保存地点接口，在规划目标行程城市内按全部地点类型查找候选；范围不限于当前激活行程城市或景点类别。Agent MUST NOT 调用地图搜索、管理员地点接口，或将未收录的地点编造成可排程的地点 ID。
@@ -107,6 +171,25 @@ Agent SHALL 通过登录后可读的共享已保存地点接口，在规划目�
 - **THEN** Agent 展示候选并请求用户消歧
 - **AND** 不自行选择并应用地点
 
+#### Scenario: Target city has no saved locations
+- **GIVEN** 规划目标城市没有任何已保存地点
+- **WHEN** Agent 查找候选
+- **THEN** Agent 告知该城市暂无可用于规划的已保存地点
+- **AND** 不调用地图搜索
+- **AND** 对新行程可询问是否更换城市
+
+#### Scenario: Location disappears before apply
+- **GIVEN** 预览方案引用了某 Pawtrip 地点，应用前该地点已不存在
+- **WHEN** 系统应用方案
+- **THEN** 终止应用并说明无效地点
+- **AND** 不写入不存在的 `poiId`
+
+#### Scenario: Catalog exceeds fetch limit
+- **GIVEN** 规划目标城市的已保存地点超过抓取上限
+- **WHEN** Agent 查找候选
+- **THEN** Agent 告知匹配可能不完整
+- **AND** 允许用户按地点类型缩小范围
+
 ### Requirement: Agent respects existing trip constraints and pet policies
 Agent 生成或修改的计划 MUST 符合现有 trip 数据契约及目标行程的城市、宠物和天数约束。已有行程的城市、宠物与 `totalDays` MUST NOT 由 Agent 修改；新行程天数 MUST 为 1–7 的整数。景点宠物政策结论 MUST 由 Pawtrip 确定性规则计算，模型 MUST NOT 自行裁定政策结果。
 
@@ -132,6 +215,21 @@ Agent 生成或修改的计划 MUST 符合现有 trip 数据契约及目标行�
 - **GIVEN** 目标宠物对应的地点政策已配置
 - **WHEN** Agent 说明该地点是否适合该宠物
 - **THEN** 结论与 Pawtrip 确定性政策匹配结果一致
+
+### Requirement: Agent operations are non-destructive
+Agent MUST NOT 删除行程或宠物、创建或修改地点，或修改已有行程的城市、宠物与 `totalDays`。Agent 的写操作限定为更新目标行程的计划。
+
+#### Scenario: User requests deleting a trip
+- **GIVEN** 用户在 Agent 对话中要求删除某个行程
+- **WHEN** Agent 处理该请求
+- **THEN** Agent 拒绝执行并说明只能通过 Trips 页面删除
+- **AND** 不调用删除接口
+
+#### Scenario: User requests creating a location
+- **GIVEN** 用户在 Agent 对话中要求新增一个 Pawtrip 未收录的地点
+- **WHEN** Agent 处理该请求
+- **THEN** Agent 说明只能使用已收录地点
+- **AND** 不调用管理员地点接口
 
 ### Requirement: Agent access is authenticated and user-scoped
 行程规划 Agent SHALL 仅向已登录用户提供服务，并 SHALL 只读取该用户有权访问的宠物与行程。Agent MUST NOT 将客户端提交的用户标识作为身份或授权依据。
