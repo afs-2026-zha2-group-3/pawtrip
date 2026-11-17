@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -20,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { PolicySubjectNotice, PolicyTags } from "@/components/trip/policy-tags";
 import type { DestinationCandidate } from "@/lib/destination-matching";
+import { scoreCity, sortByRecommendation } from "@/lib/destination-recommendation";
 import { matchCityCandidate } from "@/lib/trip/policy-match";
 import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
 import { destinationsQueryOptions } from "@/queries/destinations";
@@ -70,7 +72,8 @@ function CitiesPage() {
     );
   }
 
-  const candidates = destinations.data;
+  // REQ-014：渲染前按首宠喜好/性格打分排序；profile 晚到时自动重排（design D6）
+  const candidates = sortByRecommendation(destinations.data, profile.data ?? null);
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
@@ -120,38 +123,50 @@ function CitiesPage() {
         </Empty>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {candidates.map((candidate) => (
-            <Card key={candidate.adcode} className="relative">
-              <CardHeader>
-                <CardTitle>{candidate.name}</CardTitle>
-                <CardDescription>{candidate.province}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <PolicyTags
-                  subjects={subjects}
-                  match={(pet) => matchCityCandidate(candidate, pet)}
-                />
-              </CardContent>
-              <CardFooter className="gap-2">
-                <Button
-                  size="sm"
-                  disabled={Boolean(active)}
-                  title={active ? "请先在 Trips 取消激活当前行程" : undefined}
-                  onClick={() => setDialogCity(candidate)}
-                >
-                  选定
-                </Button>
-                <Link
-                  to="/destinations/$adcode/policy"
-                  params={{ adcode: candidate.adcode }}
-                  aria-label={`查看${candidate.name}的城市政策`}
-                  className={buttonVariants({ variant: "outline", size: "sm" })}
-                >
-                  查看政策
-                </Link>
-              </CardFooter>
-            </Card>
-          ))}
+          {candidates.map((candidate) => {
+            const score = scoreCity(
+              candidate.featureTags,
+              profile.data?.preferences ?? [],
+              profile.data?.personality ?? null,
+            );
+            return (
+              <Card key={candidate.adcode} className="relative">
+                {score > 0 ? (
+                  <Badge className="absolute right-2 top-2" aria-label="系统推荐">
+                    系统推荐
+                  </Badge>
+                ) : null}
+                <CardHeader>
+                  <CardTitle>{candidate.name}</CardTitle>
+                  <CardDescription>{candidate.province}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PolicyTags
+                    subjects={subjects}
+                    match={(pet) => matchCityCandidate(candidate, pet)}
+                  />
+                </CardContent>
+                <CardFooter className="gap-2">
+                  <Button
+                    size="sm"
+                    disabled={Boolean(active)}
+                    title={active ? "请先在 Trips 取消激活当前行程" : undefined}
+                    onClick={() => setDialogCity(candidate)}
+                  >
+                    选定
+                  </Button>
+                  <Link
+                    to="/destinations/$adcode/policy"
+                    params={{ adcode: candidate.adcode }}
+                    aria-label={`查看${candidate.name}的城市政策`}
+                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                  >
+                    查看政策
+                  </Link>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
       )}
 

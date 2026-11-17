@@ -28,10 +28,10 @@
 
 ## 5. 前端打分排序与徽标（含本组 E2E）
 
-- [ ] 5.1 新增 `lib/destination-recommendation.ts` 纯函数（`scoreCity` 喜好映射/同特征去重/性格三档加成，`sortByRecommendation` 得分降序、同分保持输入序、profile null/两字段空不重排）与前端词表常量（前端不按 TDD，直接实现）；验证：tsc/build 通过，既有 vitest 不回归
-- [ ] 5.2 `PetProfile` 扩展 preferences/personality（null 退化语义不变）；验证：tsc/build 通过，`pet-profile.test.ts` 既有用例不回归（类型适配如需）
-- [ ] 5.3 `cities.tsx` 渲染前应用排序；得分 >0 卡片右上角 shadcn Badge「系统推荐」（绝对定位、aria-label、无理由文字）；验证：tsc/build 通过
-- [ ] 5.4 新增 `e2e/city-personalized-recommendation.spec.ts`（atdd-design §2 E2E 表）：喜好「游泳」→海滨/湖泊排前且右上角徽标、同分名称序；仅性格 CALM 也生效；0 分无徽标、徽标无理由文字、与政策标签并存；未填/无宠物→名称序无徽标；多宠取第一只（第二只 SNOW_PLAY 不抬升雪景城市）；筛选/搜索叠加计数同步；/cities 无推荐开关控件；验证：新 spec 全部通过，既有 `destination-selection.spec.ts` 不改且仍绿（回归）
+- [x] 5.1 新增 `lib/destination-recommendation.ts` 纯函数（`scoreCity` 喜好映射/同特征去重/性格三档加成，`sortByRecommendation` 得分降序、同分保持输入序、profile null/两字段空不重排）与前端词表常量（前端不按 TDD，直接实现）；验证：tsc/build 通过，既有 vitest 不回归
+- [x] 5.2 `PetProfile` 扩展 preferences/personality（null 退化语义不变）；验证：tsc/build 通过，`pet-profile.test.ts` 既有用例不回归（类型适配如需）
+- [x] 5.3 `cities.tsx` 渲染前应用排序；得分 >0 卡片右上角 shadcn Badge「系统推荐」（绝对定位、aria-label、无理由文字）；验证：tsc/build 通过
+- [x] 5.4 新增 `e2e/city-personalized-recommendation.spec.ts`（atdd-design §2 E2E 表）：喜好「游泳」→海滨/湖泊排前且右上角徽标、同分名称序；仅性格 CALM 也生效；0 分无徽标、徽标无理由文字、与政策标签并存；未填/无宠物→名称序无徽标；多宠取第一只（第二只 SNOW_PLAY 不抬升雪景城市）；筛选/搜索叠加计数同步；/cities 无推荐开关控件；验证：新 spec 全部通过，既有 `destination-selection.spec.ts` 不改且仍绿（回归）（E2E 运行委托用户手动验证，2026-11-17 用户决定；tsc 独立类型检查与 --list 收集 7 用例通过。账号策略偏离 atdd-design demo 口径：改用 worker 账号 + PAWTRIP_E2E_DB_PATH 直连快照/恢复种子宠物，避免与 paws(demo) 并发冲突，且毛毛无品种无法经 API 等价重建）
 
 ## 6. 集成验证
 

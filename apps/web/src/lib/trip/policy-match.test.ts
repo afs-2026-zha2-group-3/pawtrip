@@ -53,6 +53,7 @@ const city: DestinationCandidate = {
   allowedPetTypes: "CAT,DOG",
   allowedDogBreedIds: [3],
   maxSinglePetShoulderHeightCm: null,
+  featureTags: [],
 };
 
 const cityPolicy: CityPetPolicy = {
