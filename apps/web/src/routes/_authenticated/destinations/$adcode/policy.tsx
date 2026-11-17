@@ -84,13 +84,15 @@ function CityPetPolicyPage() {
               <li key={item}>{item}</li>
             ))}
           </ul>
-          <BreedExamples
-            title="禁养犬种名单"
-            scope={policy.areaScope}
-            breeds={policy.bannedBreeds}
-            emptyText="暂未收录禁养犬种名单"
-            note="仅列出部分示例，完整名单请查阅当地政府通告。"
-          />
+          <div id="banned-breeds" className="scroll-mt-6">
+            <BreedExamples
+              title="禁养犬种名单"
+              scope={policy.areaScope}
+              breeds={policy.bannedBreeds}
+              emptyText="暂未收录禁养犬种名单"
+              note="仅列出部分示例，完整名单请查阅当地政府通告。"
+            />
+          </div>
           <BreedExamples
             title="可携带犬种"
             breeds={policy.allowedBreeds}

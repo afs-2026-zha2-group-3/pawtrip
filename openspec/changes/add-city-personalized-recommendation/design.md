@@ -35,7 +35,7 @@
 
 ### D3 迁移拆分
 
-- `V26__add_pet_preferences_personality.sql`：pet 表两个可空 TEXT 列（SQLite `ALTER TABLE ADD COLUMN`）。
+- `V28__add_pet_preferences_personality.sql`（原 V26，main 合入后让位公开政策种子重编号）：pet 表两个可空 TEXT 列（SQLite `ALTER TABLE ADD COLUMN`）。
 - `V27__add_region_feature_tags.sql`：administrative_region 增 `feature_tags TEXT`；按需求附录 A 以 `UPDATE ... WHERE adcode=...` 注入 48 城标签（adcode 已逐一核对 V5 city 级）。
 - 不改动历史迁移；既有开发库经 UPDATE 补标签，E2E 全新库随迁移注入。**备选**：单迁移合并——拒绝，pet 与行政区属不同能力域，拆分便于回滚定位。
 
@@ -74,7 +74,7 @@
 
 ## Migration Plan
 
-1. 合并后后端启动自动执行 V26/V27（Flyway，`ddl-auto=none`）；开发库与 E2E 库均自动升级。
+1. 合并后后端启动自动执行 V27/V28（Flyway，`ddl-auto=none`）；开发库与 E2E 库均自动升级。
 2. 回滚：还原代码即可——新列可空且旧代码不读不写，无数据破坏；无需降级迁移。
 3. 前端与后端同 change 交付，无独立部署顺序要求（旧前端读新接口仅忽略新字段）。
 

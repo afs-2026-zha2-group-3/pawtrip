@@ -25,6 +25,7 @@
 - commands_attempted: 3（npm run build；cd apps/server && ./mvnw test；CI=true npm run test:e2e）
 - commands_failed: 0（首轮 20261117-215356 日志 E2E 11 失败→修复 4 文件后，复跑 20261117-222109 全量 166 passed / 0 failed）
 - runner_log: docs/ai4se-plugins/20261117-222109-local-verify-run.log（首轮：docs/ai4se-plugins/20261117-215356-local-verify-run.log）
+- 第二轮 main 同步后复验：docs/ai4se-plugins/20261117-224339-local-verify-run.log（build ✓ / E2E 173 ✓；server 首轮因开发库旧 V26 校验和冲突 Fail，用户同意备份重建后重跑 243/243 ✓，见报告补记）
 
 ## Report
 

@@ -8,7 +8,7 @@
 
 ## What Changes
 
-- 宠物档案新增「喜好」（固定 5 项多选：游泳/爬山/草地奔跑/城市漫步/玩雪）与「性格」（固定 3 项单选：活泼好动/温和平静/胆小敏感），均可空；数据库迁移 V26、实体/请求/响应契约扩展、服务端枚举校验（非法 → 400 VALIDATION_ERROR）、创建/编辑表单与详情展示。
+- 宠物档案新增「喜好」（固定 5 项多选：游泳/爬山/草地奔跑/城市漫步/玩雪）与「性格」（固定 3 项单选：活泼好动/温和平静/胆小敏感），均可空；数据库迁移 V28（原 V26，main 合入后重编号）、实体/请求/响应契约扩展、服务端枚举校验（非法 → 400 VALIDATION_ERROR）、创建/编辑表单与详情展示。
 - 行政区新增城市特征标签（海滨/山地/湖泊/草原/城市公园/雪景）：迁移 V27 增列并以种子维护 48 个知名旅游城市（含珠海=海滨、杭州=湖泊+城市公园；清单见需求附录 A，adcode 已核对 V5）；未标注城市为空。
 - `GET /api/destinations` 响应每项新增只读 `featureTags`；既有参数、筛选与服务端名称序不变，不加排序参数。
 - `/cities` 进入即呈现个性化结果：前端纯函数按第一只宠物打分（喜好命中城市特征每项 +2、性格按映射加成 +1），得分降序、同分维持名称序；得分 >0 的城市排前且卡片右上角展示「系统推荐」徽标（仅徽标，无理由文字）；未填喜好与性格、无档案或档案读取失败时维持现有名称排序、无徽标。
@@ -29,7 +29,7 @@
 
 ## Impact
 
-- **后端**：`pet` 表与 `Pet` 实体/`PetRequests`/`PetResponses`/`PetService`（枚举校验）；`administrative_region` 表与 `AdministrativeRegion` 实体（只读特征列）；`DestinationController.DestinationResponse` 增 `featureTags`；新迁移 V26/V27（当前最新 V25）。
+- **后端**：`pet` 表与 `Pet` 实体/`PetRequests`/`PetResponses`/`PetService`（枚举校验）；`administrative_region` 表与 `AdministrativeRegion` 实体（只读特征列）；`DestinationController.DestinationResponse` 增 `featureTags`；新迁移 V27/V28（原编号 V26/V27；main 的 V26 公开政策种子合入后让位重编号）。
 - **前端**：`-pet-dialogs.tsx` 表单与详情（Checkbox 组 + Select 含「未设置」）；`queries/pets.ts`、`queries/pet-profile.ts` 类型扩展；`cities.tsx` 打分排序与徽标；新增 `lib/` 推荐打分纯函数与单测。
 - **测试**：后端 pet/destinations API 测试；前端打分函数单测；`e2e/paws-pet-management.spec.ts`、`e2e/destination-selection.spec.ts` 更新。
 - **依赖/系统**：无新依赖、无外部服务、无管理端改动；旧客户端不传新字段仍合法，候选接口只增只读字段，向后兼容。

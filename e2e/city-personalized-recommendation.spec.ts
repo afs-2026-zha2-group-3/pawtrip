@@ -37,8 +37,54 @@ async function cardNames(page: Page): Promise<string[]> {
 // UTF-16 码元比较与 UTF-8 字节序一致，不依赖浏览器 ICU 排序。
 const byServerNameOrder = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
+// main 合入城市分页（PAGE_SIZE=9）：排序/徽标断言需遍历全部页累计；
+// 翻页以「第 X / Y 页」指示文本变化为准，避免读到旧 DOM（allTextContents 无重试）。
+const pageIndicator = (page: Page) => page.locator('nav[aria-label="城市分页"] p');
+
+async function advancePage(page: Page): Promise<boolean> {
+  const next = page.getByRole("button", { name: "下一页" });
+  if ((await next.count()) === 0 || (await next.isDisabled())) return false;
+  const before = await pageIndicator(page).textContent();
+  await next.click();
+  await expect(pageIndicator(page)).not.toHaveText(before ?? "");
+  return true;
+}
+
+async function gotoFirstPage(page: Page) {
+  const prev = page.getByRole("button", { name: "上一页" });
+  while ((await prev.count()) > 0 && (await prev.isEnabled())) {
+    const before = await pageIndicator(page).textContent();
+    await prev.click();
+    await expect(pageIndicator(page)).not.toHaveText(before ?? "");
+  }
+}
+
+async function forEachPage(page: Page, visit: () => Promise<void>) {
+  await gotoFirstPage(page);
+  do {
+    await visit();
+  } while (await advancePage(page));
+}
+
+async function allCardNames(page: Page): Promise<string[]> {
+  const names: string[] = [];
+  await forEachPage(page, async () => {
+    names.push(...(await cardNames(page)));
+  });
+  return names;
+}
+
+// 分页后目标城市可能在任意页：逐页查找，返回时停留于该城市所在页。
+async function gotoCityCard(page: Page, name: string) {
+  await gotoFirstPage(page);
+  do {
+    if ((await cityCard(page, name).count()) > 0) return cityCard(page, name);
+  } while (await advancePage(page));
+  return cityCard(page, name);
+}
+
 async function expectRecommendedOrder(page: Page, hits: string[]) {
-  const names = await cardNames(page);
+  const names = await allCardNames(page);
   const hitSet = new Set(hits);
   const hitNames = names.filter((name) => hitSet.has(name));
   const restNames = names.filter((name) => !hitSet.has(name));
@@ -52,25 +98,32 @@ async function expectRecommendedOrder(page: Page, hits: string[]) {
 }
 
 async function expectNameOrderWithoutBadges(page: Page) {
-  const names = await cardNames(page);
+  const names = await allCardNames(page);
   expect(names.length).toBeGreaterThan(2);
   expect(names).toEqual([...names].sort(byServerNameOrder));
-  await expect(page.locator('[data-slot="badge"]')).toHaveCount(0);
+  await forEachPage(page, async () => {
+    await expect(page.locator('[data-slot="badge"]')).toHaveCount(0);
+  });
 }
 
 async function expectBadgesExactlyOn(page: Page, hits: string[]) {
-  const cards = page.locator('[data-slot="card"]');
-  const badgeCards = cards.filter({ has: page.locator('[data-slot="badge"]') });
-  const badgeTitles = await badgeCards.locator("h2").allTextContents();
+  const badgeTitles: string[] = [];
+  let badgeCount = 0;
+  await forEachPage(page, async () => {
+    const cards = page.locator('[data-slot="card"]');
+    const badgeCards = cards.filter({ has: page.locator('[data-slot="badge"]') });
+    badgeTitles.push(...(await badgeCards.locator("h2").allTextContents()));
+    const badges = cards.locator('[data-slot="badge"]');
+    badgeCount += await badges.count();
+    const texts = await badges.allTextContents();
+    expect(texts.every((text) => text === "系统推荐")).toBe(true);
+    const labels = await badges.evaluateAll((elements) =>
+      elements.map((element) => element.getAttribute("aria-label")),
+    );
+    expect(labels.every((label) => label === "系统推荐")).toBe(true);
+  });
   expect([...badgeTitles].sort()).toEqual([...hits].sort());
-  const badges = cards.locator('[data-slot="badge"]');
-  await expect(badges).toHaveCount(hits.length);
-  const texts = await badges.allTextContents();
-  expect(texts.every((text) => text === "系统推荐")).toBe(true);
-  const labels = await badges.evaluateAll((elements) =>
-    elements.map((element) => element.getAttribute("aria-label")),
-  );
-  expect(labels.every((label) => label === "系统推荐")).toBe(true);
+  expect(badgeCount).toBe(hits.length);
 }
 
 async function createPetViaApi(
@@ -197,7 +250,7 @@ test("preference SWIMMING ranks coastal/lake cities first with badges and name-o
   await expectRecommendedOrder(page, swimmingHits);
   await expectBadgesExactlyOn(page, swimmingHits);
   // 未命中城市（如广州，码位序本应靠前）被压后且无徽标；北京仅省级种子，不在候选内
-  const names = await cardNames(page);
+  const names = await allCardNames(page);
   expect(names.indexOf("珠海市")).toBeLessThan(names.indexOf("广州市"));
 });
 
@@ -215,14 +268,14 @@ test("badge contract: no reason text, coexists with policy tags, no recommendati
   await createPetViaApi(page, { name: "泳泳", preferences: ["SWIMMING"] });
   await openCities(page);
 
-  const recommended = cityCard(page, "杭州市");
+  const recommended = await gotoCityCard(page, "杭州市");
   await expect(recommended.locator('[data-slot="badge"]')).toHaveText("系统推荐");
   // 徽标不遮挡标题，且与逐宠物政策标签并存
   await expect(recommended.locator("h2")).toHaveText("杭州市");
   await expect(recommended.getByText(/泳泳 ·/).first()).toBeVisible();
   // 无理由文字（Non-goal 反向）
   await expect(page.getByText(/推荐原因|因为|推荐理由/)).toHaveCount(0);
-  const plain = cityCard(page, "广州市");
+  const plain = await gotoCityCard(page, "广州市");
   await expect(plain.locator('[data-slot="badge"]')).toHaveCount(0);
   // /cities 无推荐开关：仅「宠物友好筛选」一个复选框，无 switch 控件
   await expect(page.getByRole("checkbox")).toHaveCount(1);
@@ -250,9 +303,10 @@ test("multi-pet scoring uses only the first pet", async ({ page }) => {
   // 第二只 SNOW_PLAY 不抬升雪景城市：命中集合仍为首只 SWIMMING 的海滨/湖泊
   await expectRecommendedOrder(page, swimmingHits);
   await expectBadgesExactlyOn(page, swimmingHits);
-  const names = await cardNames(page);
+  const names = await allCardNames(page);
   expect(names.indexOf("珠海市")).toBeLessThan(names.indexOf("哈尔滨市"));
-  await expect(cityCard(page, "哈尔滨市").locator('[data-slot="badge"]')).toHaveCount(0);
+  const harbin = await gotoCityCard(page, "哈尔滨市");
+  await expect(harbin.locator('[data-slot="badge"]')).toHaveCount(0);
 });
 
 test("filter and search overlay keeps score order and syncs candidate count", async ({ page }) => {

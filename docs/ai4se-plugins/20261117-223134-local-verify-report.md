@@ -121,3 +121,12 @@ Runner 日志：`docs/ai4se-plugins/20261117-222109-local-verify-run.log`（comm
 | 6.8 真实 Chrome 打印预览人工记录（版本、页眉页脚开关、预览结果）；完成前页眉页脚项保持 Pending | tantine（指定负责人） | 2026-11-24（PR 合入前） | tantine 于 2026-11-17 在交互问答中明确选择「签署豁免并提交 PR」并署名 tantine |
 
 **Agent must not self-approve this section.** 本 Waiver 四要素齐全，由人工签署；Agent 仅记录。
+
+## 补记：第二轮 main 同步（2026-11-17 晚）
+
+- 同步 `origin/main @ f351bbd`（PR #78 城市政策侧栏+分页、PR #92 侧栏紧凑化）；唯一冲突 `cities.tsx` 已解决：保留 main 分页布局（PAGE_SIZE=9），重新接入 REQ-014 打分排序与「系统推荐」徽标。
+- Flyway 冲突已解决：本分支 `V26__add_pet_preferences_personality.sql` 重编号为 **V28**（main 的 V26 公开政策种子保留；本分支 V27 特征标签不变）；change 文档（design/tasks/proposal/atdd）与 `docs/knowledge/interfaces/http-api.md` 引用同步更新。
+- REQ-014 E2E 适配分页：排序/徽标断言改为遍历全部页累计（翻页以页码指示文本变化为等待条件），目标卡片逐页定位。
+- 本地开发库经用户同意**备份后重建**（旧库保留为 `apps/server/data/pawtrip.db.bak`）：消除旧 V26 校验和冲突导致的 `contextLoads` 失败（即 main PR #78 文档预告的开发库重建项）。
+- 复验证据：白名单日志 `20261117-224339-local-verify-run.log`（build exit 0；全量 E2E **173 passed / 0 failed**，含 main 新增 7 例；开发库未被 E2E 修改）；服务端重建后重跑 `mvnw test` **243/243 BUILD SUCCESS**（首轮因开发库校验和冲突 Fail，重建后转绿）；web/e2e tsc exit 0；定向套件 66/66。
+- **WARNING #2（main 未同步 / V26 冲突）已解决**；CRITICAL #1（6.8 人工打印预览）与 Waiver 不变，Overall 维持 Fail（待 6.8 补齐或豁免期限内完成）。

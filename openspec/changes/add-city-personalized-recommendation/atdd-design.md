@@ -44,9 +44,9 @@ GET /api/pets：旧行（JDBC 直插 preferences/personality NULL）→ preferen
 
 红测清单：创建回显 / 编辑回显 / 不填可存 / 清空（[]+null）/ 非法喜好键 / 非法性格键 / 重复键去重 / 省略字段 / 旧档案读取 / 非法请求不落库。
 
-### API — 扩展 `PetSchemaMigrationTest`（V26/V27）
+### API — 扩展 `PetSchemaMigrationTest`（V27/V28）
 
-红测清单：V26 后 pet 新列存在且默认 NULL、旧行读取兼容；V27 后 `administrative_region.feature_tags` 存在、48 城种子命中（珠海=COASTAL、杭州=LAKE,CITY_PARK）、未标注城市 NULL、重复执行迁移幂等（Flyway 历史）。
+红测清单：V28（原 V26）后 pet 新列存在且默认 NULL、旧行读取兼容；V27 后 `administrative_region.feature_tags` 存在、48 城种子命中（珠海=COASTAL、杭州=LAKE,CITY_PARK）、未标注城市 NULL、重复执行迁移幂等（Flyway 历史）。
 
 ### API — 扩展 `DestinationApiTest`
 
