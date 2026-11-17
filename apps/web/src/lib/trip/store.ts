@@ -77,7 +77,12 @@ export const tripActions = {
   },
   clearActive(): void {
     removePersistedActiveTripId();
-    update((state) => ({ ...state, active: null, hydration: state.hydration === "missing" ? "missing" : "ready" }));
+    update((state) => ({
+      ...state,
+      active: null,
+      panel: { expanded: false },
+      hydration: state.hydration === "missing" ? "missing" : "ready",
+    }));
   },
   clearTripContext(): void {
     removePersistedActiveTripId();

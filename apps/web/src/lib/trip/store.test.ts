@@ -35,6 +35,16 @@ describe("trip store", () => {
     expect(tripStore.state.draft).toBeNull();
   });
 
+  it("clears the active trip and collapses its panel", () => {
+    tripActions.setActive(activeTrip());
+    tripActions.setPanelExpanded(true);
+
+    tripActions.clearActive();
+
+    expect(tripStore.state.active).toBeNull();
+    expect(tripStore.state.panel.expanded).toBe(false);
+  });
+
   it("updates transport mode and increments the save revision only when it changes", () => {
     tripActions.setActive(activeTrip());
     const revision = tripStore.state.saveRevision;

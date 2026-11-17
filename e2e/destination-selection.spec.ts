@@ -105,10 +105,9 @@ test("E6 confirming the dialog creates a trip and opens attraction browsing", as
   await setTripDates(page, 3);
   await confirmTripDialog(page);
 
-  await expect(page.getByRole("heading", { name: "珠海市地点" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "景点", exact: true })).toBeVisible();
   const panel = page.getByTestId("trip-panel");
-  await expect(panel).toContainText("珠海市");
-  await expect(panel).toContainText("3 天");
+  await expect(panel).toContainText("Day 3");
 
   const activeTripId = await page.evaluate(() =>
     window.localStorage.getItem("pawtrip.activeTripId"),
@@ -116,8 +115,8 @@ test("E6 confirming the dialog creates a trip and opens attraction browsing", as
   expect(activeTripId).not.toBeNull();
 
   await page.reload();
-  await expect(page.getByRole("heading", { name: "珠海市地点" })).toBeVisible();
-  await expect(page.getByTestId("trip-panel")).toContainText("3 天");
+  await expect(page.getByRole("heading", { name: "景点", exact: true })).toBeVisible();
+  await expect(page.getByTestId("trip-panel")).toContainText("Day 3");
 });
 
 test("E7 rejects incomplete or overlong date ranges without creating a trip", async ({ page }) => {
@@ -164,7 +163,7 @@ test("E8 city cards expose policy inline without policy links", async ({ page })
   await expect(page.getByText("政策要点")).toBeVisible();
 });
 
-test("E9 active trip keeps candidates but blocks selecting another city", async ({
+test("E9 active trip is cleared when selecting another city", async ({
   page,
 }) => {
   await createTrip(page, { city: "杭州市", days: 2 });
@@ -172,16 +171,15 @@ test("E9 active trip keeps candidates but blocks selecting another city", async 
   await searchCity(page, "杭州");
 
   await expect(page.getByRole("textbox", { name: "搜索城市" })).toBeVisible();
-  await expect(page.getByText("当前已有激活行程")).toBeVisible();
   const card = cityCard(page, "杭州市");
-  await expect(card.getByRole("button", { name: "Pick" })).toBeDisabled();
-  await expect(
-    card.getByRole("link", { name: /查看.*的城市政策/ }),
-  ).toHaveCount(0);
-  await card.click();
-  await expect(
-    page.getByRole("heading", { name: "杭州市宠物管理政策" }),
-  ).toBeVisible();
+  const pick = card.getByRole("button", { name: "Pick" });
+  await expect(pick).toBeEnabled();
+  await pick.click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByText("当前已有激活行程")).toHaveCount(0);
+  expect(
+    await page.evaluate(() => window.localStorage.getItem("pawtrip.activeTripId")),
+  ).toBeNull();
 });
 
 test("E10 cleans legacy session storage keys on startup", async ({ page }) => {

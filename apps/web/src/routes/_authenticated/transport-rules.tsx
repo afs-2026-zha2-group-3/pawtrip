@@ -425,6 +425,16 @@ function TransportRulesPage() {
           </TableBody>
         </Table>
 
+        <div className="flex justify-end">
+          <Button
+            className="rounded-full"
+            disabled={active.transportMode === null}
+            onClick={() => void navigate({ to: "/attractions" })}
+          >
+            {active.transportMode === null ? "请选择大交通方式" : "确认大交通并选择地点"}
+          </Button>
+        </div>
+
         <section
           aria-label="规则说明"
           className="flex flex-col gap-2 rounded-[14px] bg-muted/50 p-4 text-xs leading-relaxed text-muted-foreground"

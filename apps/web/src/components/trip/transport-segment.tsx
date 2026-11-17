@@ -30,6 +30,7 @@ interface TransportSegmentRowProps {
   stopRef: StopRef;
   segment: TransportSegment;
   transportMode: TransportMode | null;
+  compact?: boolean;
 }
 
 export function TransportSegmentRow({
@@ -37,6 +38,7 @@ export function TransportSegmentRow({
   stopRef,
   segment,
   transportMode,
+  compact = false,
 }: TransportSegmentRowProps) {
   const stop = useSelector(tripStore, (state): TripStop | null => {
     if (!state.active || stopRef.container === "unscheduled") return null;
@@ -48,7 +50,7 @@ export function TransportSegmentRow({
   const queryMode = displayMode === "walk" ? "walk" : "drive";
   const estimateQuery = useQuery(
     routeEstimateQueryOptions(tripId, segment.fromPoiId, segment.toPoiId, queryMode, {
-      enabled: !segment.samePoi && !snapshot,
+      enabled: !segment.samePoi && !snapshot && (!compact || Boolean(stop?.toNext)),
     }),
   );
 
@@ -82,7 +84,64 @@ export function TransportSegmentRow({
         }
       : null);
   const options = transportSelectorOptions(transportMode);
-  const selectValue = options.includes(displayMode) ? displayMode : "";
+  const savedMode =
+    stop.toNext === "walk" || stop.toNext === "drive" || stop.toNext === "self_drive"
+      ? stop.toNext
+      : null;
+  const selectValue = compact
+    ? savedMode && options.includes(savedMode)
+      ? savedMode
+      : ""
+    : options.includes(displayMode)
+      ? displayMode
+      : "";
+  const handleModeChange = (value: string) => {
+    if (value === "walk" || value === "drive" || value === "self_drive") {
+      tripActions.setStopTransport(stopRef, value, null);
+    }
+  };
+
+  if (compact) {
+    return (
+      <div
+        data-testid="transport-segment"
+        className="relative flex min-h-8 items-center gap-1.5 py-0.5 pl-0"
+      >
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-[10px] z-0 h-[100px] w-[2px] -translate-y-1/2 bg-paw-accent"
+        />
+        <span
+          aria-hidden="true"
+          className="relative z-10 inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-paw-accent text-xs text-paw-accent-strong"
+        >
+          ↔
+        </span>
+        <select
+          aria-label={transportMode === "drive" ? "选择其他途内交通方式" : "选择途内交通方式"}
+          className="relative z-10 h-7 min-w-0 flex-1 rounded-full border-0 bg-muted px-2.5 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          value={selectValue}
+          onChange={(event) => handleModeChange(event.target.value)}
+        >
+          {selectValue === "" ? (
+            <option value="" disabled>
+              点击此处选择小交通
+            </option>
+          ) : null}
+          {options.map((mode) => (
+            <option key={mode} value={mode}>
+              {toNextLabels[mode]}
+            </option>
+          ))}
+        </select>
+        {estimate ? (
+          <span className="relative z-10 text-xs text-muted-foreground">
+            约 {estimate.durationMinutes} 分钟
+          </span>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -109,11 +168,7 @@ export function TransportSegmentRow({
         )}
         <Select
           value={selectValue === "" ? null : selectValue}
-          onValueChange={(value) => {
-            if (value === "walk" || value === "drive" || value === "self_drive") {
-              tripActions.setStopTransport(stopRef, value, null);
-            }
-          }}
+          onValueChange={handleModeChange}
         >
           <SelectTrigger
             size="sm"

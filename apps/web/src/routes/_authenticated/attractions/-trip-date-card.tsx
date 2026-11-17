@@ -47,21 +47,23 @@ export function TripDateCard() {
   return (
     <div
       ref={rootRef}
-      className="relative w-fit rounded-[26px] bg-card px-6 py-5 shadow-[0_2px_4px_-2px_rgba(0,0,0,0.1),0_4px_6px_-1px_rgba(0,0,0,0.1)]"
+      className="relative w-full max-w-[544px] rounded-[22px] bg-card px-5 py-2.5 shadow-[0_2px_4px_-2px_rgba(0,0,0,0.1),0_4px_6px_-1px_rgba(0,0,0,0.1)]"
     >
-      <div className="flex flex-wrap items-center gap-x-10 gap-y-3">
-        <h2 className="text-2xl leading-8 font-medium text-foreground">{active.name}</h2>
+      <div className="flex min-w-0 items-center justify-between gap-4">
+        <h2 className="min-w-0 truncate text-lg leading-7 font-medium text-foreground">
+          {active.name}
+        </h2>
         <button
           type="button"
           aria-expanded={open}
           aria-label="选择出发日期"
           onClick={() => setOpen((current) => !current)}
-          className="flex h-10 items-center gap-3 rounded-xl border border-transparent px-4 text-base text-foreground transition-colors hover:border-paw-line"
+          className="flex shrink-0 items-center gap-2 rounded-xl border border-transparent px-2 py-1.5 text-sm text-foreground transition-colors hover:border-paw-line"
         >
           <span className="tabular-nums">{start ?? "未设置出发日期"}</span>
-          <ArrowRight aria-hidden="true" className="size-5" />
+          <ArrowRight aria-hidden="true" className="size-4" />
           <span className="tabular-nums">{end ?? `共 ${active.totalDays} 天`}</span>
-          <CalendarDays aria-hidden="true" className="size-5" />
+          <CalendarDays aria-hidden="true" className="size-4" />
         </button>
       </div>
       {open ? (

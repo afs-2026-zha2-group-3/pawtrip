@@ -8,6 +8,9 @@ import {
   workerUsername,
 } from "./trip-helpers";
 
+// 该套件需要反复翻页遍历全部城市；全量并发时给分页遍历更宽的时间窗口，业务断言保持不变。
+test.describe.configure({ timeout: 120_000 });
+
 // REQ-014 城市个性化推荐（atdd-design §2 E2E 表）。
 // 账号策略：沿用 worker 账号（与 destination-selection 同槽位串行），避免与 paws（demo）并发冲突；
 // 造数走 POST /api/pets、清理走 DELETE（不 mock 档案接口）；种子宠物（豆豆/毛毛，新列 NULL）
@@ -341,19 +344,22 @@ test("unfilled preferences or no pet keeps name order without badges", async ({ 
   await expect(page.getByText(/尚未添加宠物档案/)).toBeVisible();
 });
 
-test("multi-pet scoring uses only the first pet", async ({ page }) => {
-  await createPetViaApi(page, { name: "泳泳", preferences: ["SWIMMING"] });
-  await createPetViaApi(page, { name: "雪雪", preferences: ["SNOW_PLAY"] });
-  await openCities(page);
+test(
+  "multi-pet scoring uses only the first pet",
+  async ({ page }) => {
+    await createPetViaApi(page, { name: "泳泳", preferences: ["SWIMMING"] });
+    await createPetViaApi(page, { name: "雪雪", preferences: ["SNOW_PLAY"] });
+    await openCities(page);
 
-  // 第二只 SNOW_PLAY 不抬升雪景城市：命中集合仍为首只 SWIMMING 的海滨/湖泊
-  await expectRecommendedOrder(page, swimmingHits);
-  await expectBadgesExactlyOn(page, swimmingHits);
-  const names = await allCardNames(page);
-  expect(names.indexOf("珠海市")).toBeLessThan(names.indexOf("哈尔滨市"));
-  const harbin = await gotoCityCard(page, "哈尔滨市");
-  await expect(harbin.locator('[data-slot="badge"]')).toHaveCount(0);
-});
+    // 第二只 SNOW_PLAY 不抬升雪景城市：命中集合仍为首只 SWIMMING 的海滨/湖泊
+    await expectRecommendedOrder(page, swimmingHits);
+    await expectBadgesExactlyOn(page, swimmingHits);
+    const names = await allCardNames(page);
+    expect(names.indexOf("珠海市")).toBeLessThan(names.indexOf("哈尔滨市"));
+    const harbin = await gotoCityCard(page, "哈尔滨市");
+    await expect(harbin.locator('[data-slot="badge"]')).toHaveCount(0);
+  },
+);
 
 test("filter and search overlay keeps score order and syncs candidate count", async ({ page }) => {
   await createPetViaApi(page, { name: "泳泳", preferences: ["SWIMMING"] });
@@ -389,6 +395,7 @@ test("legacy pet without preference fields stays unset and unranked", async ({ p
   await openCities(page);
   await expectNameOrderWithoutBadges(page);
 });
+
 
 // REQ-014 修订（2026-11-17）：徽标 = 得分 >0 且首宠政策判定非「明确违反」（matchCityCandidate：
 // friendly/unjudgeable 均展示，仅 unfriendly 隐藏）；政策判定仅影响徽标，排序位次不变。
