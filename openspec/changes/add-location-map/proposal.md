@@ -37,5 +37,5 @@
 
 - **前端**：地点页、地点卡片、新的地图组件与高德加载器、地点查询中的地图点位查询；Vite 环境变量与 E2E 运行器。
 - **后端**：地点详情响应在既有 `coverPhotoUrl`/`rating` 上增加 `keytag`/`businessArea` 摘要字段；从现有 `poi_json`/`business_json` 解析，不新增 schema 列。
-- **数据库**：V22 将珠海测试地点关联真实 POI 的 `poi_json`/`business_json`，用于卡片照片/评分展示；无 schema 变更。
+- **数据库**：V25 将珠海测试地点关联真实 POI 的 `poi_json`/`business_json`，用于卡片照片/评分展示；无 schema 变更。
 - **外部依赖**：高德 JS API 2.0，需要 Web端 JS API Key 和安全密钥；需要浏览器访问高德域名并配置域名白名单。E2E 强制不配置 Key，避免依赖外网 SDK。

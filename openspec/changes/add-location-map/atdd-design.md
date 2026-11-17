@@ -30,7 +30,7 @@ NFR 测试：本期不纳入。地图加载不承诺 SLA；网络不可达时以
 | E4 | 卡片“在地图查看” → 地图定位 marker（联动） | Manual / 审查 | `tasks.md` 5.1、6.4；`onLocate` 设置 `mapFocusPoiId` | 外部 SDK |
 | E5 | 类型/宠物友好/锚点变化 → 地图点位更新（筛选刷新） | 审查 | `pointsKey` 变化重建 marker；地图查询参数与列表一致 | 代码审查 |
 | E6 | InfoWindow“查看详情” → 关闭气泡并打开地图详情卡片（详情卡片） | Manual | `tasks.md` 6.4：卡片已打开并显示宠物政策、地址、加入行程 | 外部 SDK |
-| E7 | 详情卡片展示照片/评分/商圈/政策；缺失不伪造（详情卡片） | Manual / 审查 | `-map-location-card.tsx` 条件渲染；V22 提供照片/评分 | 外部 SDK |
+| E7 | 详情卡片展示照片/评分/商圈/政策；缺失不伪造（详情卡片） | Manual / 审查 | `-map-location-card.tsx` 条件渲染；V25 提供照片/评分 | 外部 SDK |
 | E8 | SDK 加载失败 → “地图加载失败”占位，列表不受影响（降级） | 审查 | `loadAmap` reject → `status="error"` 分支；无 E2E | 代码审查 |
 | E9 | 地图卡片加入行程/暂不排期（详情卡片） | Manual / 审查 | 复用 `DaySelect` 与 `tripActions.addStop` | 既有组件 |
 
@@ -56,7 +56,7 @@ P3 约定如下；P4 落地情况见括号：
 - API：`poi_json` 提供 `http` + `https` 两张照片，`business_json` 提供评分/标签/商圈；验证 https 优先与 absence。
 - E2E：`scripts/run-e2e.mjs` 设置空 `VITE_AMAP_JS_KEY` / `VITE_AMAP_SECURITY_CODE`，不加载外网 SDK。
 - 本地真图：根目录 `.env` 配置 `VITE_AMAP_JS_KEY` / `VITE_AMAP_SECURITY_CODE`；不入库、不提交真实密钥。
-- 开发库：V22 按同名真实 POI 关联 `poi_json`/`business_json`，为地图详情卡片提供照片/评分；找不到同名记录时保留原 JSON。
+- 开发库：V25 按同名真实 POI 关联 `poi_json`/`business_json`，为地图详情卡片提供照片/评分；找不到同名记录时保留原 JSON。
 - 地图点位复用 `GET /api/locations` 与 E2E 地点夹具，不新增专用接口。
 
 ## 6. Non-goals 与反向验证

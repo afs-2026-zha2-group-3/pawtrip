@@ -13,7 +13,7 @@
 | TD-3 | 引入地图专用轻量点位接口或聚合 | 当前按 `pageSize=100` 循环取完所有分页，请求数随数据增长 | `design.md` Risks；本地验证报告 S2 | SA | low | `add-location-map` |
 | TD-4 | 补 `design.md` D1、D3–D5 的备选方案说明 | consistency lint 记录为 WARNING | `consistency-lint.md` L1 | SA | low | `add-location-map` |
 | TD-5 | 生产环境改用 `serviceHost` 代理安全密钥 | 当前安全密钥直连前端 bundle | `design.md` Open Questions；本地验证报告 S1 | SA | high | REQ-012 |
-| TD-6 | 减少 V22 对“同名真实 POI”的依赖 | 找不到同名记录时卡片缺少照片/评分 | `proposal.md`；本地验证报告 S3 | SA | low | `add-location-map` |
+| TD-6 | 减少 V25 对“同名真实 POI”的依赖 | 找不到同名记录时卡片缺少照片/评分 | `proposal.md`；本地验证报告 S3 | SA | low | `add-location-map` |
 
 ## Business backlog
 
@@ -21,7 +21,7 @@
 |---|---|---|---|---|---|---|
 | BZ-1 | 押金/清洁费与宠物设施字段及展示 | 当前数据模型无字段，本期明确不展示、不伪造 | `design.md` Non-Goals/Open Questions；`proposal.md` Non-Goals | PO | unset | REQ-012 |
 | BZ-2 | 地图样式精修、聚合、路线、定位与导航 | 本期只保证功能主链 | `design.md` Non-Goals | PO | unset | `add-location-map` |
-| BZ-3 | 地图详情卡片的照片/评分正式数据维护 | 当前依赖 V22 关联与现有 JSON 摘要 | `design.md` D6 | PO/SA | unset | REQ-012 |
+| BZ-3 | 地图详情卡片的照片/评分正式数据维护 | 当前依赖 V25 关联与现有 JSON 摘要 | `design.md` D6 | PO/SA | unset | REQ-012 |
 
 ## Gaps
 

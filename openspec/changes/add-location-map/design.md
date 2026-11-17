@@ -59,7 +59,7 @@
 - InfoWindow 保留基础信息，并增加“查看详情”按钮；点击后关闭 InfoWindow，在地图列内打开 `MapLocationCard`。
 - 卡片展示名称、类型、地址、锚点距离、首张照片、评分、商圈/标签、宠物政策、逐宠物结论和行程操作；照片与评分复用 REQ-013 已有的 `coverPhotoUrl`/`rating`，`keytag`/`businessArea` 从现有 `poi_json`/`business_json` 解析，不新增 schema 列。
 - 共享详情接口不返回原始 `photos`、`business` 或 `poi` JSON；字段缺失时返回 `null`，卡片不伪造押金、清洁费或宠物设施。
-- 测试地点 V20/V21 通过 V22 关联同名真实 POI 的 JSON，保证照片/评分可展示；开发库已直接更新。
+- 测试地点 V23/V24 通过 V25 关联同名真实 POI 的 JSON，保证照片/评分可展示；开发库已直接更新。
 - 备选方案：新增独立详情卡片接口。当前摘要字段足以支撑卡片，且避免额外 DTO/请求，不采用。
 
 ## Risks / Trade-offs
@@ -75,7 +75,7 @@
 1. 配置 `VITE_AMAP_JS_KEY` / `VITE_AMAP_SECURITY_CODE`（或先不配置，验证占位和列表）。
 2. 前端部署后确认浏览器可访问高德域名、Key 域名白名单正确。
 3. 回滚：移除地图列/组件即可；列表和筛选不依赖地图。
-4. 无 schema 迁移；V22 仅关联测试地点的现有 `poi_json`/`business_json`，回滚可恢复测试 JSON。
+4. 无 schema 迁移；V25 仅关联测试地点的现有 `poi_json`/`business_json`，回滚可恢复测试 JSON。
 
 ## Open Questions
 

@@ -79,7 +79,7 @@ P3 设计约定以下顺序；P4 已按此落地：
   - 餐厅：`e2e-restaurant-close`（约 56m，非宠物友好）、`e2e-restaurant-near`（约 222m）、`e2e-restaurant-far`（约 6.7km）、`e2e-restaurant-null`（无坐标）。
   - 酒店：`e2e-zhu-hotel`（约 0.6km）、`e2e-hotel-near`（约 0.7km）、`e2e-hotel-far`（约 6.7km）。
 - 脚本只操作临时 E2E 库，不触碰 `apps/server/data/pawtrip.db`；重复执行按 `poi_id` 覆盖。
-- V20/V21 为开发库珠海测试酒店/餐厅数据，V21 将坐标修正为真实 POI 坐标；不属于 schema 变更。
+- V23/V24 为开发库珠海测试酒店/餐厅数据，V24 将坐标修正为真实 POI 坐标；不属于 schema 变更。
 
 ## 6. Non-goals 与反向验证
 
@@ -87,7 +87,7 @@ P3 设计约定以下顺序；P4 已按此落地：
 |---|---|---|
 | 自动推荐/评分/多景点聚合排序 | 代码审查：无推荐接口、无评分字段、单锚点参数 | 审查 |
 | 地图/定位/驾车距离/路径规划 | 本 Delta 无地图 requirement；地图由独立 change | 审查 |
-| 新增数据库列/迁移 | 代码审查：无 schema migration；V20/V21 仅数据种子与坐标修正 | 审查 |
+| 新增数据库列/迁移 | 代码审查：无 schema migration；V23/V24 仅数据种子与坐标修正 | 审查 |
 | 锚点持久化 | E2E 重新进入页面不保留；代码审查：`useState` | E2E + 审查 |
 | 改变管理端/AMap/认证行为 | A6–A8 回归；管理端测试保持绿 | API |
 | 距离筛选作用于景点/宠物医院/用品店 | E7 + 代码审查：`nearbyType` 仅 hotel/restaurant | E2E |

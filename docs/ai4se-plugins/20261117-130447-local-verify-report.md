@@ -39,7 +39,7 @@ Agents must not self-approve Waiver.
 - 地图点位复用列表接口，按 `pageSize=100` 循环取完全部分页；筛选参数与列表一致。
 - InfoWindow HTML 对名称/地址做转义；地图详情卡片按字段有无条件渲染，不伪造押金/清洁费/设施。
 - 详情摘要从 `poi_json`/`business_json` 解析，优先 `https` 照片；原始 `photos`/`business`/`poi` 不进入响应。
-- 本批改动未新增数据库 schema；V20/V21/V22 仅测试数据与 JSON 关联。
+- 本批改动未新增数据库 schema；V23/V24/V25 仅测试数据与 JSON 关联。
 
 ## Evidence checklist
 
@@ -95,7 +95,7 @@ Agents must not self-approve Waiver.
 |---|---------|------|----------|------------|
 | S1 | 安全密钥直连前端 bundle | [fact] | `apps/web/src/lib/amap/loader.ts` | 生产改用 `serviceHost` 代理并配置域名白名单 |
 | S2 | 地图点位请求数随数据增长 | [inference] | `mapLocationsQueryOptions` | 数据量增长后引入轻量点位接口或聚合 |
-| S3 | V22 依赖同名真实 POI | [fact] | `V22__enrich_zhuhai_test_location_business.sql` | 保留“找不到同名记录则不改”的兜底；测试数据更新时复核 |
+| S3 | V25 依赖同名真实 POI | [fact] | `V25__enrich_zhuhai_test_location_business.sql` | 保留“找不到同名记录则不改”的兜底；测试数据更新时复核 |
 | S4 | InfoWindow HTML 转义函数未单测 | [inference] | `-location-map.tsx` | 抽离 `escapeHtml` 并补纯函数测试 |
 
 ## Residual risks

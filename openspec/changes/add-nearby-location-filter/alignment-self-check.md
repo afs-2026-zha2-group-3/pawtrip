@@ -19,7 +19,7 @@
 |---|---|---|
 | 2026-11-17 | 酒店从“未选锚点门禁”改为“默认展示列表 + 离景点最近下拉”，与餐厅门禁区分 | `proposal.md`、`design.md` D4、Delta 第 2 个 requirement、E2E 已同步 |
 | 2026-11-17 | 原“地图暂缓”调整为独立 change `add-location-map` 承接，并追加地图详情卡片与详情摘要字段 | 本 Delta 未新增地图 requirement；`design.md` Non-Goals 中的“不引入地图 SDK”仍限定本 change |
-| 2026-11-17 | V21 将 V20 珠海测试数据坐标修正为真实 POI 坐标 | `README.md`、`registry.md`、`handoff.md` 已登记；`tasks.md` 4.4 仅写 V20，本文件补充记录，建议在 4.4 补注 V21 |
+| 2026-11-17 | V24 将 V23 珠海测试数据坐标修正为真实 POI 坐标 | `README.md`、`registry.md`、`handoff.md` 已登记；`tasks.md` 4.4 仅写 V23，本文件补充记录，建议在 4.4 补注 V24 |
 
 以上变化均为需求方已确认的口径调整或数据修正，不是静默扩范围。
 
@@ -29,7 +29,7 @@
 |---|---|---|
 | 自动推荐/评分/多景点聚合 | 无推荐接口与评分字段；查询只接受单锚点 | 代码审查、ATDD 第 6 节 |
 | 地图/定位/驾车距离/路径规划 | 本 Delta 无地图 requirement；地图在 `add-location-map` | Delta Spec、ATDD 第 6 节 |
-| 新增数据库列/迁移 | 无 schema migration；V20/V21 仅数据 | 代码审查、`design.md` D7 |
+| 新增数据库列/迁移 | 无 schema migration；V23/V24 仅数据 | 代码审查、`design.md` D7 |
 | 锚点持久化 | 页面内 `useState`；刷新/重进不保留 | `attractions/index.tsx`、ATDD 第 6 节 |
 | 改变管理端/AMap/认证/错误契约 | 管理端与既有 API 测试保持绿；`verifyNoInteractions` | `LocationQueryApiTest` |
 | 景点/宠物医院/用品店应用距离筛选 | E7；`nearbyType` 仅 hotel/restaurant 传 `nearPoiId` | E2E + 代码审查 |
@@ -39,7 +39,7 @@
 ## 4. Task 边界检查
 
 - Tasks 1.x–5.x 均可映射到至少一个 Delta Requirement 或 Non-goal 反向验证，无“顺手重构”任务。
-- 每组任务包含验证方式：1.x 带 API 测试与后端全量；2.x/3.x 带单测与 E2E；4.x 带夹具脚本、V20/V21 数据与回归；5.x 做集成验证。
+- 每组任务包含验证方式：1.x 带 API 测试与后端全量；2.x/3.x 带单测与 E2E；4.x 带夹具脚本、V23/V24 数据与回归；5.x 做集成验证。
 - 未改变行程 `TripPlan` 结构、管理端写入、认证授权或外部高德调用。
 - 5.3（补 P3 验证与 Gate 记录）仍为未完成项：本文件与 `atdd-design.md`、`dov-ac-review.md` 补齐 P3 部分；G1/G2/G3 需对应角色签署。
 
@@ -56,5 +56,5 @@
 
 - 前置 `unify-location-browsing` 已于 2026-11-17 随 origin/main 归档，依赖已解除。
 - 恰好 `5000m` 的 API 过滤边界、景点页选择锚点不改变景点列表、激活行程切换清空锚点缺少直接自动化，见 `dov-ac-review.md`。
-- 距离筛选依赖地点经纬度已维护；V20/V21 只提供珠海测试数据。
+- 距离筛选依赖地点经纬度已维护；V23/V24 只提供珠海测试数据。
 - Gate 记录待 IO/SA（G1）、VL（G2）、SA（G3）人工签署，代理不代签。

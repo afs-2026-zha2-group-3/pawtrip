@@ -13,7 +13,7 @@
 - 距离筛选与激活行程城市、地点类型、宠物友好/显示全部地点条件叠加；5km 内已加入行程的餐厅/酒店照常显示。
 - 锚点景点被移出行程或激活行程变化时自动清空锚点；酒店恢复默认全量列表，餐厅恢复门禁；无坐标候选排除，锚点无坐标时提示且不发起查询。
 - 本轮只做列表与锚点下拉功能；地图、小型犬/大型犬/低押金/免清洁费/搜索、卡片视觉与评分/押金字段暂不做。
-- 不新增数据库列或 schema 变更；新增 V20 珠海测试酒店/餐厅数据种子用于本地验证；不改变行程计划结构、管理端地点管理、高德搜索或认证授权。
+- 不新增数据库列或 schema 变更；新增 V23 珠海测试酒店/餐厅数据种子用于本地验证；不改变行程计划结构、管理端地点管理、高德搜索或认证授权。
 
 ## Non-Goals
 
@@ -42,5 +42,5 @@
 - **后端实现**：`LocationQueryController`、`LocationQueryService`、`LocationQueryResponses`、`PawtripLocationRepository`；距离在服务端计算，不调用高德。
 - **前端**：地点浏览页 `apps/web/src/routes/_authenticated/attractions/`、地点查询 `apps/web/src/queries/locations.ts`、行程地点缓存/选择器；复用现有 shadcn/ui 组件与 TanStack Query。
 - **测试与夹具**：新增地点 API 距离与锚点校验测试、前端查询/候选单测、酒店下拉与餐厅门禁 E2E；E2E 地点夹具需补经纬度与 5km 内/外餐厅、酒店。
-- **数据库与依赖**：不新增 schema 迁移或依赖；`longitude`/`latitude` 维持可空；V20 为珠海测试数据种子。
+- **数据库与依赖**：不新增 schema 迁移或依赖；`longitude`/`latitude` 维持可空；V23 为珠海测试数据种子。
 - **前置基线**：依赖 `unify-location-browsing` 提供的共享 `GET /api/locations` 与类型目录；该 change 已完成并已随 origin/main 归档，本 change 的 delta 在其 Living Spec 之上叠加。
