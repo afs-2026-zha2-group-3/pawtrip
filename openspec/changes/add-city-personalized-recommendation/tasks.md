@@ -1,6 +1,6 @@
 # Tasks
 
-> 上游：REQ-014（requirements/REQ-014、analysis/REQ-014/{impact-brief,deep-dive}）。设计双链接：[design.md](design.md)（D1–D9）与 [atdd-design.md](atdd-design.md)（API+E2E 分层、红测清单、夹具与反向验证）。实现遵循 TDD：每组先写失败测试再实现。词表以 design D1 为单点依据。
+> 上游：REQ-014（requirements/REQ-014、analysis/REQ-014/{impact-brief,deep-dive}）。设计双链接：[design.md](design.md)（D1–D9）与 [atdd-design.md](atdd-design.md)（API+E2E 分层、红测清单、夹具与反向验证）。实现约定（2026-11-17 用户决定）：**后端按 TDD**（每组先写失败测试再实现）；**前端不按 TDD**，直接实现，以 E2E + build/tsc + 既有 vitest 回归验证。词表以 design D1 为单点依据。
 
 ## 1. 词表与数据库迁移
 
@@ -26,10 +26,10 @@
 - [ ] 4.2 `AdministrativeRegion` 增只读 featureTags 映射、`DestinationResponse` 增 `featureTags` 并在 toResponse 解析（trim/去空段/去重，NULL→空数组）；验证：4.1 测试转绿，既有 destination 测试不回归，管理端写路径不触碰新列
 - [ ] 4.3 更新 `docs/knowledge/interfaces/http-api.md` destinations 契约段落与 `docs/knowledge/domain/city-pet-policy.md`（或新条目）登记特征词表与 48 城种子口径；验证：文档与附录 A 一致
 
-## 5. 前端打分排序与徽标（含本组单测与 E2E）
+## 5. 前端打分排序与徽标（含本组 E2E）
 
-- [ ] 5.1 先写失败 vitest 单测：`scoreCity` 喜好映射（游泳→海滨+湖泊各 +2）、多喜好同特征去重、性格三档加成、未填/未标注 0 分；`sortByRecommendation` 得分降序、同分保持输入序、profile null/两字段空不重排（对应「候选个性化推荐排序」7 场景）
-- [ ] 5.2 新增 `lib/destination-recommendation.ts` 纯函数与前端词表常量；`PetProfile` 扩展 preferences/personality；验证：5.1 单测转绿
+- [ ] 5.1 新增 `lib/destination-recommendation.ts` 纯函数（`scoreCity` 喜好映射/同特征去重/性格三档加成，`sortByRecommendation` 得分降序、同分保持输入序、profile null/两字段空不重排）与前端词表常量（前端不按 TDD，直接实现）；验证：tsc/build 通过，既有 vitest 不回归
+- [ ] 5.2 `PetProfile` 扩展 preferences/personality（null 退化语义不变）；验证：tsc/build 通过，`pet-profile.test.ts` 既有用例不回归（类型适配如需）
 - [ ] 5.3 `cities.tsx` 渲染前应用排序；得分 >0 卡片右上角 shadcn Badge「系统推荐」（绝对定位、aria-label、无理由文字）；验证：tsc/build 通过
 - [ ] 5.4 新增 `e2e/city-personalized-recommendation.spec.ts`（atdd-design §2 E2E 表）：喜好「游泳」→海滨/湖泊排前且右上角徽标、同分名称序；仅性格 CALM 也生效；0 分无徽标、徽标无理由文字、与政策标签并存；未填/无宠物→名称序无徽标；多宠取第一只（第二只 SNOW_PLAY 不抬升雪景城市）；筛选/搜索叠加计数同步；/cities 无推荐开关控件；验证：新 spec 全部通过，既有 `destination-selection.spec.ts` 不改且仍绿（回归）
 

@@ -11,20 +11,20 @@
 | paws-page MODIFIED「整卡打开详情并支持弹窗内编辑」（+喜好性格展示 2 场景） | D8（详情未填显示「未设置」） | 3.2（详情视图）、3.3（E2E 回归） | §1 行 1–2（E2E + 既有 6 场景回归） | Pass |
 | paws-page ADDED「宠物喜好与性格维护」（9 场景） | D1 词表、D2 存储、D4 契约/校验/去重 | 1.1/1.3（列+枚举）、2.1–2.3（红测→实现→文档）、3.1–3.3（表单） | §1 行 3–10（API 8 项 + E2E 表单闭环）；§2 PetApiTest 红测清单 10 项 | Pass |
 | destination-selection「候选城市特征标签契约」（3 场景） | D2/D3（V27 种子）、D5（只读下发） | 1.2（迁移红测）、4.1–4.3（红测→实现→文档） | §1 行 11–12（API + 回归）；§2 DestinationApiTest | Pass |
-| destination-selection「候选个性化推荐排序」（7 场景） | D6（纯函数、稳定排序、null 退化、第一只宠物） | 5.1（vitest 红测）、5.2（实现）、5.3（接入）、5.4（E2E） | §1 行 13–16（Defer UT + E2E）；§2 E2E 表排序/性格/多宠/叠加行 | Pass |
+| destination-selection「候选个性化推荐排序」（7 场景） | D6（纯函数、稳定排序、null 退化、第一只宠物） | 5.1（纯函数直接实现）、5.2（PetProfile）、5.3（接入）、5.4（E2E） | §1 行 13–16（E2E）；§2 E2E 表排序/性格/多宠/叠加行 | Pass |
 | destination-selection「系统推荐徽标」（4 场景） | D7（右上角 Badge、无理由、不遮挡） | 5.3（渲染）、5.4（E2E 断言） | §1 行 17（E2E + 窄屏 advisory）；§2 徽标契约行 | Pass |
 
 ## 2. 横切一致性检查
 
 | # | 检查项 | 证据 | 结论 |
 |---|---|---|---|
-| 1 | 词表单点一致：喜好 5 键/性格 3 键/特征 6 键 | spec 规范句 = D1 = tasks 1.3/5.2 = ATDD §4 词表夹具（同一常量字符串） | Pass |
+| 1 | 词表单点一致：喜好 5 键/性格 3 键/特征 6 键 | spec 规范句 = D1 = tasks 1.3/5.1 = ATDD §4 词表夹具（同一常量字符串） | Pass |
 | 2 | 重复键去重（Revision 1 新增场景） | spec 场景「重复喜好键去重」= D4 定稿 = tasks 2.1/2.2 = ATDD §1 行 8 | Pass |
 | 3 | 非法键 400 不落库 | spec 2 场景 = D4 = tasks 2.1（仓库断言）= ATDD §1 行 7（API 证 absence） | Pass |
 | 4 | 旧客户端/旧档案兼容 | spec 2 场景 = D2/D4 = tasks 2.1（JDBC NULL 行）/3.3 = ATDD §1 行 9–10、§4 夹具 | Pass |
 | 5 | 服务端零排序改动（方案 A） | spec「MUST NOT 新增排序参数」= D5/D6 = tasks 4.2 = ATDD §1 行 12 + §5 后端排序反向 | Pass |
 | 6 | 第一只宠物约定 | spec 多宠场景 = D6（pet-profile 首条）= tasks 5.2 = ATDD §4 确定性 | Pass |
-| 7 | 稳定排序（同分名称序） | spec 同分场景 = D6 显式稳定比较器 = tasks 5.1 同分样本 = ATDD §1 行 13 | Pass |
+| 7 | 稳定排序（同分名称序） | spec 同分场景 = D6 显式稳定比较器 = tasks 5.1 同分保持输入序 = ATDD §1 行 13 + §2 同分位次断言 | Pass |
 | 8 | 徽标仅标记无理由 | spec 徽标需求 = D7 = tasks 5.3/5.4 = ATDD §2 徽标行 + §5 理由文字反向 | Pass |
 | 9 | Non-goals 5 项全覆盖反向 | design Non-Goals = ATDD §5 五行 = tasks 4.1（PATCH 契约/排序参数）、5.4（理由文字/多宠/开关） | Pass |
 | 10 | 门禁不新增 CI 语义 | ATDD §3（mvnw/vitest/build/tsc/test:e2e + 三条既有 workflow）= tasks 6.1 | Pass |
@@ -46,6 +46,7 @@
 | tasks follow-up | G1 已 Pass；后续 apply→verify→G2→PR→G3→归档 | 流程状态同步 |
 | atdd-design §5 | 管理端端点 PUT→PATCH（AdminCityController 实证） | 避免虚构契约 |
 | dov-ac-review AC-1 | 场景计数 25→31（新增/变更 25） | 计数口径精确化 |
+| tasks 5.1/5.2、atdd-design §1/§3/§4、design Risks | 前端不按 TDD：移除前端红测要求，改为直接实现 + E2E/build/tsc/既有 vitest 回归验证；后端 TDD 不变 | 用户明确指示（2026-11-17，P4 启动时） |
 
 ## 4. 结论
 

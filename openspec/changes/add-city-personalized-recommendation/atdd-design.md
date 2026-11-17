@@ -21,13 +21,13 @@
 | 10 | 旧档案读取兼容 | API | — | JDBC 直插 NULL 列旧行后 GET 断言（夹具构造迁移前状态） |
 | 11 | 已标注城市携带特征 / 未标注为空 | API | — | `GET /api/destinations` 响应字段契约（珠海 COASTAL、杭州 LAKE+CITY_PARK、未标注 []） |
 | 12 | 既有契约行为不变（keyword/petFriendly/名称升序/401） | API + E2E（回归） | security（advisory） | 既有 `DestinationApiTest` 与 `destination-selection.spec.ts` 必须仍绿 |
-| 13 | 喜好驱动排序 / 性格加成 / 仅性格 / 同特征只计一次 / 同分名称序 | Defer UT + E2E | — | `scoreCity` 纯函数留 apply；用户可见位次走 E2E（优先级 2+4） |
-| 14 | 未填维持名称序（含无档案/读取失败） | E2E + Defer UT | — | 页面位次与无徽标；null 档案分支纯逻辑留 apply |
-| 15 | 多宠物取第一只 | E2E + Defer UT | — | 两只宠物造数后位次断言；取首只逻辑留 apply |
+| 13 | 喜好驱动排序 / 性格加成 / 仅性格 / 同特征只计一次 / 同分名称序 | E2E | — | 前端不按 TDD（用户决定 2026-11-17）；用户可见位次走 E2E（优先级 2） |
+| 14 | 未填维持名称序（含无档案/读取失败） | E2E | — | 页面位次与无徽标；null 档案分支由 E2E 退化用例覆盖 |
+| 15 | 多宠物取第一只 | E2E | — | 两只宠物造数后位次断言 |
 | 16 | 筛选与搜索叠加 | E2E | — | 排序作用于过滤后集合 + 计数同步 + 政策标签/选定不变 |
 | 17 | 被推荐徽标 / 未命中无徽标 / 与政策标签并存 / 未启用无徽标 | E2E | Compatibility（advisory，窄屏目视） | 卡片右上角可见标记与遮挡断言（优先级 2） |
 
-Deferred to `/sdd:atdd-apply`（单元级 TDD，不在此展开套件）：`scoreCity`/`sortByRecommendation` 打分与稳定排序、词表常量前后端对照、`pet-profile` 新字段解析（preferences 数组/personality null）、喜好键去重工具。
+前端测试约定（2026-11-17 用户决定，取代原 Defer UT 清单）：**前端不按 TDD**，不新增 UT 红测；`scoreCity`/`sortByRecommendation`/词表常量/`pet-profile` 新字段解析直接实现，正确性由 E2E（§2 表）+ tsc/build + 既有 vitest 回归保障。后端仍严格 TDD（先红后绿）。
 
 ## 2. 生产代码前先写的验收（红测）
 
@@ -77,7 +77,7 @@ GET /api/destinations
 | 环境 | 命令 | 说明 |
 |---|---|---|
 | 本地后端 | `cd apps/server; ./mvnw test` | PetApiTest / PetSchemaMigrationTest / DestinationApiTest 扩展红测先红后绿 |
-| 本地前端 | `cd apps/web; npm.cmd run test`（vitest run）、`npm.cmd run build`、`npx tsc --noEmit -p apps/web/tsconfig.json` | 纯函数 UT 在 apply 阶段先红后绿；不新增检查项 |
+| 本地前端 | `cd apps/web; npm.cmd run test`（vitest run）、`npm.cmd run build`、`npx tsc --noEmit -p apps/web/tsconfig.json` | 前端直接实现（非 TDD）；vitest 仅回归既有；不新增检查项 |
 | 本地 E2E | `npm.cmd run test:e2e`（根目录） | `scripts/run-e2e.mjs` 临时 DB（18080/3100）+ 全量迁移 + 种子账号 |
 | CI | 现有 `server.yml` / `web.yml` / `e2e.yml` | 不新增 CI 语义；PR 触发即门禁 |
 
@@ -86,7 +86,7 @@ GET /api/destinations
 - **API 夹具**：各测试类独立临时 SQLite（`target/pet-api-test.db` 等），`@DynamicPropertySource` 重置 + Flyway 全量迁移；旧档案行用 JDBC 直插 NULL 新列构造；非法请求「不落库」用 `PetRepository` 断言行数/字段不变；认证 `user("demo")` 后置处理器 + csrf。
 - **E2E 夹具**：runner 每次临时 DB 执行全部迁移，V27 的 48 城特征种子天然可用；宠物经 API 创建/删除（不 mock 档案接口）；demo 账号初始无宠物（`paws-pet-management` 先例），用例自带造数与清理，避免跨用例污染。
 - **确定性**：同分断言依赖服务端名称升序（既有契约）；「第一只宠物」= `GET /api/pets` 列表首条（`pet-profile.ts` 既有约定）；排序断言用卡片相对位次而非绝对索引，避免种子城市增减脆断。
-- **词表夹具**：API 红测直接使用 D1 键常量字符串；前端 UT 在 apply 阶段对照同一词表（漂移风险缓解，见 dov-ac-review 残余风险 1）。
+- **词表夹具**：API 红测直接使用 D1 键常量字符串；前端词表常量实现时对照 D1（代码审查 + E2E 键驱动断言；漂移风险缓解见 dov-ac-review 残余风险 1）。
 
 ## 5. Non-goals 与反向验证
 
