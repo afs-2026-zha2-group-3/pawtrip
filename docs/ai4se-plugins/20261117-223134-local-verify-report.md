@@ -71,7 +71,7 @@ Runner 日志：`docs/ai4se-plugins/20261117-222109-local-verify-run.log`（comm
 
 | Slot | Status | Source |
 |------|--------|--------|
-| E1 Machine | Partial | 本地白名单 3 命令全 Pass（20261117-222109 日志）；远程 CI 待 PR 创建后由 `/sdd:pipeline-report phase=ci` 回填 |
+| E1 Machine | Pass | 本地白名单 3 命令全 Pass（20261117-222109 / 20261117-224339 日志）；远程 CI 全绿（Web/Server/E2E @ 8dbdd40，E2E 173 passed），见 `openspec/changes/2026-11-17-export-itinerary-pdf/ci-report.md` 与 docs/ai4se-plugins/20261117-230517-pipeline-report.md |
 | E2 AI | Pass | 本报告（V1–V8 + 代码评审）；无 eval 报告需求 |
 | E3 Human | Pending（6.8 已豁免签署） | 6.8 真实打印预览记录仍待执行，tantine 已签 Waiver；G2 VL 决定尚未记录，不代签 |
 
@@ -130,3 +130,4 @@ Runner 日志：`docs/ai4se-plugins/20261117-222109-local-verify-run.log`（comm
 - 本地开发库经用户同意**备份后重建**（旧库保留为 `apps/server/data/pawtrip.db.bak`）：消除旧 V26 校验和冲突导致的 `contextLoads` 失败（即 main PR #78 文档预告的开发库重建项）。
 - 复验证据：白名单日志 `20261117-224339-local-verify-run.log`（build exit 0；全量 E2E **173 passed / 0 failed**，含 main 新增 7 例；开发库未被 E2E 修改）；服务端重建后重跑 `mvnw test` **243/243 BUILD SUCCESS**（首轮因开发库校验和冲突 Fail，重建后转绿）；web/e2e tsc exit 0；定向套件 66/66。
 - **WARNING #2（main 未同步 / V26 冲突）已解决**；CRITICAL #1（6.8 人工打印预览）与 Waiver 不变，Overall 维持 Fail（待 6.8 补齐或豁免期限内完成）。
+- CI 证据已回填（2026-11-17 23:05）：PR #93 @ 8dbdd40 触发 Web CI（44s）/ Server CI（81s）/ E2E CI（536s，173 passed）全绿，**E1 升级为 Pass**；报告见 docs/ai4se-plugins/20261117-230517-pipeline-report.md。
