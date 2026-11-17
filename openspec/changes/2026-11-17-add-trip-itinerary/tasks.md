@@ -43,6 +43,7 @@
 
 ## Workflow follow-up
 
-- 提交本变更文件（新增页面/模型/导航/测试与两份 delta）。
-- PR 阶段补跑全量 E2E 与 CI。
-- G1/G2/G3 需实名签署，本记录不代签。
+- [x] 提交本变更文件（`9f98d0a`）。
+- [x] PR #74 已合并（`fc03481`）；Browser E2E 9m38s、Web build 34s 通过。
+- [ ] 同步两份 delta 到 living specs 并归档。
+- [ ] G1/G2/G3 需实名签署，本记录不代签。

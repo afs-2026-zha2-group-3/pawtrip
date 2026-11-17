@@ -28,7 +28,7 @@
 | DoV-3 残余风险已记录 | Pass | `design.md` Risks | 无时间点、估算依赖高德、打印/导出未做 |
 | DoV-4 类型检查 | Pass | `npx tsc --noEmit -p apps/web/tsconfig.json` exit 0 | 无输出即通过 |
 | DoV-5 前端单测 | Pass | `npm test -w apps/web` | 24 文件 191 项通过（含行程单 6 项） |
-| DoV-6 受影响 E2E | Pass | `PAWTRIP_E2E_WORKERS=1 npm run test:e2e -- e2e/itinerary.spec.ts` | 8 passed / 0 failed |
+| DoV-6 受影响 E2E | Pass | 本地 `e2e/itinerary.spec.ts` 8 passed；PR #74 Browser E2E 9m38s SUCCESS | 定向与 CI 全量均通过 |
 | DoV-7 浏览器结构验证 | Pass | 内置浏览器 | Day tab、日期头、时间线与空天状态正常 |
 | DoV-8 规格校验 | Pass（本变更） | `openspec validate 2026-11-17-add-trip-itinerary --strict`；`openspec validate --specs` | 变更 strict 通过；主规格 23 passed / 0 failed；`--specs --strict` 仍为 17/23，6 项为既存 Purpose/长需求告警，非本变更引入 |
 
@@ -36,8 +36,8 @@
 
 - 食宿（US-12）、应急（US-13）、天气（US-16）与具体时间点未接入，行程单不展示对应内容。
 - 路线估算依赖高德与路况，失败时仅展示「估算暂不可用」；成功路径以快照固定展示，不断言真实金额。
-- 全量 E2E 与 CI 未在本变更上运行，PR 阶段补齐。
-- 未提交、未建 PR、未归档；G1/G2/G3 未签署。
+- PR #74 CI 全绿：Browser E2E 9m38s、Web build 34s；合并提交 `fc03481`。
+- 已提交 `9f98d0a` 并合并；未归档；G1/G2/G3 未签署。
 
 ## Review outcome
 

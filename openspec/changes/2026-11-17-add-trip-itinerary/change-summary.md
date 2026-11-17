@@ -1,7 +1,7 @@
 # Change summary — 2026-11-17-add-trip-itinerary
 
 - Change id: `2026-11-17-add-trip-itinerary`
-- 状态：实现与本地验证完成；未提交、未建 PR、未归档
+- 状态：实现、评审修复与本地验证完成；已提交 `9f98d0a`，PR #74 已合并（`fc03481`）；未归档
 - 分支：`feat/trip-itinerary`（基于 `main` `fcde4c7`）
 
 ## Intent
@@ -27,8 +27,8 @@
 | 受影响 E2E | Pass | `e2e/itinerary.spec.ts`：8 passed |
 | 浏览器结构验证 | Pass | Trips 高亮、分段导航、Day tab、日期头与空天状态 |
 | OpenSpec validate | Pass（本变更） | change `--strict` 通过；`--specs` 23 passed / 0 failed；`--specs --strict` 有 6 项既存告警 |
+| PR CI | Pass | PR #74：Browser E2E 9m38s、Web build 34s，均 SUCCESS |
 | G1 / G2 / G3 | 未签署 | 需需求方明确指示并实名后补记录 |
-| 全量 E2E / CI | 未运行 | 待 PR 阶段补齐 |
 
 ## Residual risks / follow-ups
 
@@ -39,6 +39,7 @@
 
 ## Links
 
+- PR: https://github.com/afs-2026-zha2-group-3/pawtrip/pull/74（merge `fc03481`）
 - Proposal: `proposal.md`
 - Design: `design.md`
 - Specs: `specs/trip-itinerary/spec.md`、`specs/web-app-shell/spec.md`
