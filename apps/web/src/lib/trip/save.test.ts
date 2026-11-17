@@ -15,6 +15,7 @@ const trip: Trip = {
   cityAdcode: "330100",
   petId: 1,
   totalDays: 2,
+  startDate: "2026-12-01",
   transportMode: null,
   plan: {
     version: 1,
@@ -55,6 +56,7 @@ describe("trip auto save", () => {
       expect.objectContaining({
         name: trip.name,
         totalDays: 2,
+        startDate: "2026-12-01",
         plan: expect.objectContaining({ version: 1 }),
         transportMode: "drive",
       }),

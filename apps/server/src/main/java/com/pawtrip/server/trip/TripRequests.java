@@ -7,8 +7,8 @@ public final class TripRequests {
 	private TripRequests() {
 	}
 
-	public record SaveTrip(String name, String cityAdcode, Long petId, Integer totalDays, String transportMode,
-			JsonNode plan) {
+	public record SaveTrip(String name, String cityAdcode, Long petId, Integer totalDays, String startDate,
+			String transportMode, JsonNode plan) {
 	}
 
 }

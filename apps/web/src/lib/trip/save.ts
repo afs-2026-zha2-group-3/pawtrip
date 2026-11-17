@@ -48,6 +48,7 @@ export async function flushTripSave(): Promise<void> {
     const updated = await updateTrip(active.id, {
       name: active.name,
       totalDays: active.totalDays,
+      startDate: active.startDate,
       plan,
       transportMode: active.transportMode,
     });

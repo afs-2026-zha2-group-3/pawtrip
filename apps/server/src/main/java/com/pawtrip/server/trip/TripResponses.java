@@ -7,7 +7,7 @@ public final class TripResponses {
 	private TripResponses() {
 	}
 
-	public record TripSummary(Long id, String name, String cityAdcode, Long petId, int totalDays,
+	public record TripSummary(Long id, String name, String cityAdcode, Long petId, int totalDays, String startDate,
 			String createdAt, String updatedAt) {
 
 		static TripSummary from(Trip trip) {
@@ -17,13 +17,14 @@ public final class TripResponses {
 					trip.getCityAdcode(),
 					trip.getPetId(),
 					trip.getTotalDays(),
+					trip.getStartDate(),
 					trip.getCreatedAt(),
 					trip.getUpdatedAt());
 		}
 
 	}
 
-	public record TripDetail(Long id, String name, String cityAdcode, Long petId, int totalDays,
+	public record TripDetail(Long id, String name, String cityAdcode, Long petId, int totalDays, String startDate,
 			String transportMode, String createdAt, String updatedAt, JsonNode plan) {
 
 		static TripDetail from(Trip trip, TripPlanValidator planValidator) {
@@ -33,6 +34,7 @@ public final class TripResponses {
 					trip.getCityAdcode(),
 					trip.getPetId(),
 					trip.getTotalDays(),
+					trip.getStartDate(),
 					trip.getTransportMode(),
 					trip.getCreatedAt(),
 					trip.getUpdatedAt(),
