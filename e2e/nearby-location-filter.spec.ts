@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createTrip, resetTrips, signIn } from "./trip-helpers";
+import { createTrip, resetTrips, signIn, withTripPanelNotBlocking } from "./trip-helpers";
 
 async function openAttractions(page: Page) {
   await page.getByRole("tab", { name: "地点浏览" }).click();
@@ -16,8 +16,10 @@ async function addAttractionToDay(page: Page, name: string, day: number) {
       /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
       response.request().method() === "PUT",
   );
-  await locationCard(page, name).getByRole("combobox", { name: "添加到行程" }).click();
-  await page.getByRole("option", { name: `第 ${day} 天` }).click();
+  await withTripPanelNotBlocking(page, async () => {
+    await locationCard(page, name).getByRole("combobox", { name: "添加到行程" }).click();
+    await page.getByRole("option", { name: `第 ${day} 天` }).click();
+  });
   await put;
 }
 
@@ -166,8 +168,10 @@ test("keeps an already-added nearby restaurant in the result", async ({ page }) 
       /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
       response.request().method() === "PUT",
   );
-  await restaurant.getByRole("combobox", { name: "添加到行程" }).click();
-  await page.getByRole("option", { name: "第 1 天" }).click();
+  await withTripPanelNotBlocking(page, async () => {
+    await restaurant.getByRole("combobox", { name: "添加到行程" }).click();
+    await page.getByRole("option", { name: "第 1 天" }).click();
+  });
   await put;
   await expect(restaurant).toContainText("第 1 天");
   await expect(restaurant).toContainText("距情侣路约 0.2km");

@@ -435,7 +435,8 @@ test("media E8 type switch keeps card structure and add actions", async ({ page 
   await expect(hotel.getByText("第 1 天")).toBeVisible();
 
   await selectType(page, "餐厅");
-  await expect(page.getByText("该城市暂无已保存餐厅")).toBeVisible();
+  // REQ-012: 未选择锚点时餐厅显示门禁空态，不再请求餐厅列表。
+  await expect(page.getByText("请先在景点页选择行程景点", { exact: true })).toBeVisible();
 });
 
 test("media E9 no deposit/cleaning fee copy or rating controls", async ({ page }) => {
