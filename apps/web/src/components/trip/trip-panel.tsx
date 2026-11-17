@@ -42,6 +42,7 @@ import {
   type TransportSegment,
 } from "@/lib/trip/transport-segments";
 import { TransportSegmentRow } from "@/components/trip/transport-segment";
+import { dayPolicyLines, deriveDayPolicy } from "@/lib/trip/day-policy";
 import { retryTripSave } from "@/lib/trip/save";
 import {
   useActiveTrip,
@@ -88,7 +89,14 @@ interface NoticeRow {
   container: number;
 }
 
-type PanelRow = HeaderRow | StopRow | SegmentRow | NoticeRow;
+interface PolicyRow {
+  kind: "policy";
+  id: string;
+  container: number;
+  lines: string[];
+}
+
+type PanelRow = HeaderRow | StopRow | SegmentRow | NoticeRow | PolicyRow;
 
 const TAG_CLASS =
   "inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground";
@@ -118,6 +126,10 @@ function TripPanelContent() {
   const [dragId, setDragId] = useState<string | null>(null);
   const requested = useRef(new Set<string>());
 
+  const activePet = active
+    ? (petsQuery.data ?? []).find((pet) => pet.id === active.petId) ?? null
+    : null;
+
   const rows = useMemo<PanelRow[]>(() => {
     if (!active) return [];
     const next: PanelRow[] = [];
@@ -133,6 +145,10 @@ function TripPanelContent() {
       });
       if (showTransitNotice(stops, active.transportMode)) {
         next.push({ kind: "notice", id: `transit-notice-${day}`, container: day });
+      }
+      const policyLines = dayPolicyLines(deriveDayPolicy(stops, locations, activePet));
+      if (policyLines.length > 0) {
+        next.push({ kind: "policy", id: `day-policy-${day}`, container: day, lines: policyLines });
       }
       const segments = buildDaySegments(stops, active.transportMode);
       stops.forEach((stop, index) => {
@@ -175,7 +191,7 @@ function TripPanelContent() {
       });
     });
     return next;
-  }, [active, locations]);
+  }, [active, locations, activePet]);
 
   const missingPoiIds = useMemo(() => {
     const ids = new Set<string>();
@@ -210,9 +226,6 @@ function TripPanelContent() {
   const contextAdcode = active?.cityAdcode ?? draft?.cityAdcode;
   const cityName =
     city && city.adcode === contextAdcode ? city.name : (contextAdcode ?? "城市");
-  const activePet = active
-    ? (petsQuery.data ?? []).find((pet) => pet.id === active.petId) ?? null
-    : null;
   const stopRows = rows.filter((row): row is StopRow => row.kind === "stop");
   const dragged = stopRows.find((row) => row.id === dragId) ?? null;
   const animatedItems: AnimatedListItem[] = rows.map((row) => ({
@@ -224,7 +237,9 @@ function TripPanelContent() {
           ? row.name
           : row.kind === "notice"
             ? TRANSIT_PET_NOTICE
-            : "途内交通",
+            : row.kind === "policy"
+              ? row.lines.join("；")
+              : "途内交通",
     selectable: row.kind === "stop",
   }));
 
@@ -237,7 +252,7 @@ function TripPanelContent() {
     const source = stopRows.find((row) => row.id === String(event.active.id));
     const target = rows.find((row) => row.id === String(event.over?.id));
     if (!source || !target) return;
-    if (target.kind === "notice" || target.kind === "segment") return;
+    if (target.kind === "notice" || target.kind === "segment" || target.kind === "policy") return;
     const to =
       target.kind === "header"
         ? { container: target.container, index: target.endIndex }
@@ -488,6 +503,17 @@ function TripPanelContent() {
                       >
                         {TRANSIT_PET_NOTICE}
                       </p>
+                    );
+                  }
+                  if (row.kind === "policy") {
+                    return (
+                      <div data-testid="day-policy-reminder" className="flex flex-col gap-0.5 px-1">
+                        {row.lines.map((line) => (
+                          <p key={line} className="text-xs text-amber-600">
+                            {line}
+                          </p>
+                        ))}
+                      </div>
                     );
                   }
                   if (row.kind === "segment") {
