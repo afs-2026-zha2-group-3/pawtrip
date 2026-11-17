@@ -143,3 +143,53 @@
     animation: none !important;
   }
 }
+
+/* 定义页边距盒可抑制 Chrome 默认页眉页脚（URL、日期与页码），同时保留 14mm 页边距。 */
+@page {
+  size: A4;
+  margin: 14mm;
+
+  @top-left {
+    content: "";
+  }
+
+  @top-center {
+    content: "";
+  }
+
+  @top-right {
+    content: "";
+  }
+
+  @bottom-left {
+    content: "";
+  }
+
+  @bottom-center {
+    content: "";
+  }
+
+  @bottom-right {
+    content: "";
+  }
+}
+
+@media print {
+  [data-print-hidden] {
+    display: none !important;
+  }
+
+  details > summary {
+    list-style: none;
+    cursor: default;
+  }
+
+  details > summary::marker {
+    content: "";
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
