@@ -6,14 +6,14 @@
   - Local verify:
     - `npx tsc --noEmit -p apps/web/tsconfig.json`：Pass
     - `npm test -w apps/web`：15 文件 99 用例通过（含 `duration.test.ts` 3 用例）
-    - `CI=1 npm run test:e2e --` 受影响 5 个 spec：50 passed / 0 failed
+    - `CI=1 npm run test:e2e --` 受影响 7 个 spec：82 passed / 0 failed
     - 内置浏览器结构验证：`/cities` 卡片含「查看政策」；「选定」打开创建行程对话框
   - PR: 待推送后补充
   - CI runs: 待 PR 后补充（Server tests / Web build / Browser E2E）
 - Dimension results:
   - Build: Pass（tsc、Vitest、Vite 开发服务运行；生产构建待 PR CI）
   - Static scan: n/a（仓库 CI 基线未配置独立 secret scan/SAST）
-  - Code review: Pass（纯前端；无 `apps/server` 变更、无新增 API/依赖；仅修复既有 `TransportMode` 导出类型错误）
+  - Code review: Pass（纯前端；无 `apps/server` 变更、无新增 API/依赖；仅修正 `store.ts` 的 `TransportMode` 导入来源以消除既有 `tsc` 报错）
   - Evidence: Pass（受影响 E2E 50/50；政策入口、弹窗确认、日期校验、景点跳转均有对应用例）
   - E3 Human: Signed（VL=SCOTT，2026-11-17 确认）
 - Defect grades:

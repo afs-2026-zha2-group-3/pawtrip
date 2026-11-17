@@ -14,6 +14,7 @@
 | AC-4 确认后创建行程并跳转景点 | Pass | 同上；`specs/trip-context/spec.md`：`创建行程确认弹窗` | 调用 `POST /api/trips`、写入 `activeTripId`、跳转 `/attractions` |
 | AC-5 取消无副作用 | Pass | `specs/destination-selection/spec.md` 场景「打开对话框后取消」 | 不创建行程、不改变激活行程 |
 | AC-6 无宠物不可创建 | Pass | `specs/trip-context/spec.md` 场景「无宠物不可创建」 | 提示先添加宠物并禁用确认 |
+| AC-7 同一时间只支持一个激活行程 | Pass | `specs/trip-context/spec.md`：`Trips 页与单城市激活`；`specs/destination-selection/spec.md` 场景「存在激活行程时不可选定新城市」 | 存在激活行程时「选定」禁用并提示先取消激活；与主规格单激活行程约束一致 |
 
 ## Definition of Verified
 
@@ -23,7 +24,7 @@
 | DoV-2 歧义已列出或解决 | Pass | `design.md` D1–D5、Risks | 日期不落库、宠物默认与切换、已有激活行程行为均已明确 |
 | DoV-3 残余风险已记录 | Pass | `design.md` Risks / Trade-offs | 日期不持久、草稿代码变为不可达、重复选城新建行程 |
 | DoV-4 未声称业务实现完成 | Pass | 本评审为文档层记录 | 实现与验证证据见 `tasks.md` 4.1–4.3 与后续 PR/CI |
-| DoV-5 需求可追溯 | Pass | 需求方截图与文字要求 → proposal → delta spec → tasks | AC-1 至 AC-6 均有 requirement/scenario 与任务映射 |
+| DoV-5 需求可追溯 | Pass | 需求方截图与文字要求 → proposal → delta spec → tasks | AC-1 至 AC-7 均有 requirement/scenario 与任务映射 |
 
 ## Residual concerns
 

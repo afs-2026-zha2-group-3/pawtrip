@@ -153,13 +153,16 @@ test("E8 city cards expose policy only through the policy link", async ({ page }
   await expect(page.getByRole("heading", { name: "珠海市养宠政策" })).toBeVisible();
 });
 
-test("E9 creating a trip keeps the candidate list and policy link", async ({ page }) => {
+test("E9 active trip keeps candidates but blocks selecting another city", async ({
+  page,
+}) => {
   await createTrip(page, { city: "杭州市", days: 2 });
   await openCities(page);
 
   await expect(page.getByRole("textbox", { name: "搜索城市" })).toBeVisible();
+  await expect(page.getByText("当前已有激活行程")).toBeVisible();
   const card = cityCard(page, "杭州市");
-  await expect(card.getByRole("button", { name: "选定" })).toBeVisible();
+  await expect(card.getByRole("button", { name: "选定" })).toBeDisabled();
   await expect(
     card.getByRole("link", { name: "查看杭州市的城市政策" }),
   ).toBeVisible();

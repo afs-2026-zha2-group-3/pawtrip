@@ -272,7 +272,7 @@ test("does not render the panel on the login page", async ({ page }) => {
 });
 
 test("shows active-pet location policy tags", async ({ page }) => {
-  await createTrip(page, { city: "杭州市", days: 1 });
+  await createTrip(page, { city: "杭州市", days: 1, pet: "豆豆" });
   await page.getByRole("tab", { name: "地点浏览" }).click();
 
   const xiHu = page.locator('[data-slot="card"]').filter({ hasText: "西湖" });

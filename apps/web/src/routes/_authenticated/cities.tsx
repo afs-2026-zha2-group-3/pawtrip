@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { PolicySubjectNotice, PolicyTags } from "@/components/trip/policy-tags";
 import type { DestinationCandidate } from "@/lib/destination-matching";
 import { matchCityCandidate } from "@/lib/trip/policy-match";
-import { usePolicySubjects } from "@/lib/trip/selectors";
+import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
 import { destinationsQueryOptions } from "@/queries/destinations";
 import { petProfileQueryOptions } from "@/queries/pet-profile";
 import { CityTripDialog } from "./-city-trip-dialog";
@@ -36,6 +36,7 @@ function CitiesPage() {
   const [keyword, setKeyword] = useState("");
   const [friendlyOnly, setFriendlyOnly] = useState(false);
   const [dialogCity, setDialogCity] = useState<DestinationCandidate | null>(null);
+  const active = useActiveTrip();
   const subjects = usePolicySubjects();
 
   useEffect(() => {
@@ -94,6 +95,11 @@ function CitiesPage() {
         </span>
       </div>
 
+      {active ? (
+        <p className="text-sm text-muted-foreground">
+          当前已有激活行程，请先在 Trips 取消激活后再选择新城市。
+        </p>
+      ) : null}
       {subjects.status === "error" ? <PolicySubjectNotice subjects={subjects} /> : null}
       {subjects.status === "none" ? (
         <p className="text-sm text-muted-foreground">
@@ -127,7 +133,12 @@ function CitiesPage() {
                 />
               </CardContent>
               <CardFooter className="gap-2">
-                <Button size="sm" onClick={() => setDialogCity(candidate)}>
+                <Button
+                  size="sm"
+                  disabled={Boolean(active)}
+                  title={active ? "请先在 Trips 取消激活当前行程" : undefined}
+                  onClick={() => setDialogCity(candidate)}
+                >
                   选定
                 </Button>
                 <Link

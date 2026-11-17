@@ -14,7 +14,8 @@
 - 候选卡片恢复「查看政策」链接（`/destinations/{adcode}/policy`），候选页不内嵌政策内容。
 - 新增「创建行程」对话框：目的地只读、开始/结束日期、携带宠物（默认第一只、可切换）；日期推导 1–7 天。
 - 确认调用 `POST /api/trips`，创建并激活行程、写入 `activeTripId`、跳转 `/attractions`；取消无写入。
-- 新增 `apps/web/src/lib/trip/duration.ts` 与单测；修复 `apps/web/src/lib/trip/types.ts` 的 `TransportMode` 导出（既有 `tsc` 报错）。
+- 同一时间只支持一个激活行程：存在激活行程时候选仍展示，但「选定」禁用并提示先在 Trips 取消激活。
+- 新增 `apps/web/src/lib/trip/duration.ts` 与单测；修正 `store.ts` 的 `TransportMode` 导入来源以消除既有 `tsc` 报错。
 - 更新 E2E 助手与 7 个受影响 spec。
 - 未改动后端、数据库与依赖。
 
@@ -24,7 +25,7 @@
 |---|---|---|
 | TypeScript | Pass | `npx tsc --noEmit -p apps/web/tsconfig.json` |
 | 前端单测 | Pass | `npm test -w apps/web`：15 文件 99 用例 |
-| 受影响 E2E | Pass | `CI=1 npm run test:e2e --` 5 个 spec：50 passed / 0 failed |
+| 受影响 E2E | Pass | `CI=1 npm run test:e2e --` 7 个 spec：82 passed / 0 failed |
 | 浏览器结构验证 | Pass | `/cities` 卡片含「查看政策」；「选定」打开创建行程对话框 |
 | 全量 E2E / CI | Pending | 待提交 PR 后确认 |
 | OpenSpec validate | Pass | `npx --no-install openspec validate <change> --strict` |
@@ -36,7 +37,7 @@
 
 1. 起止日期不落库，行程只保存 `totalDays`；需展示日期时另起变更。
 2. 草稿 store 与面板草稿 UI 仍存在但无入口，后续单独清理。
-3. 已有激活行程时再次选城会创建并激活新行程，旧行程保留在 Trips 列表。
+3. 单城市口径：存在激活行程时需先到 Trips 取消激活，才能选择新城市。
 4. `tasks.md` 4.5（全量 E2E 与 CI）与 G2 的 CI 证据待 PR 后补齐；G3 待合并归档时签署。
 
 ## Links

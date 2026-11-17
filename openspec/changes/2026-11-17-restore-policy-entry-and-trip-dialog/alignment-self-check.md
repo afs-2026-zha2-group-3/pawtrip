@@ -16,6 +16,7 @@
 | AC-4 traceability | Pass | Spec 场景「确认后创建行程并进入景点页」；Tasks 2.3、3.3 | 创建、激活、跳转链路 |
 | AC-5 traceability | Pass | Spec 场景「打开对话框后取消」；Tasks 2.3、3.3 | 取消无写入 |
 | AC-6 traceability | Pass | `trip-context` 场景「无宠物不可创建」；Tasks 2.4 | 禁用确认与提示 |
+| AC-7 traceability | Pass | `trip-context`：`Trips 页与单城市激活`；`destination-selection` 场景「存在激活行程时不可选定新城市」；Tasks 2.6、3.7 | 单激活行程约束与候选页禁用入口 |
 | Non-goal coverage | Pass | `proposal.md`、`design.md` Non-Goals、`atdd-design.md` | 日期落库、草稿清理、景点/Trips 改造均排除 |
 | Task verifiability | Pass | `tasks.md` 4.1–4.5 | 每项含命令或行为验证；4.5 明确待 PR 后确认 |
 

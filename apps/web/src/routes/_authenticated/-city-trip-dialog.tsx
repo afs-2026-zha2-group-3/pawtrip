@@ -85,7 +85,6 @@ export function CityTripDialog({
         name: city.name,
         province: city.province,
       });
-      tripActions.discardDraft();
       tripActions.setActive(trip);
       tripActions.setSaveStatus("saved");
       await queryClient.invalidateQueries({ queryKey: tripQueryKeys.all });
@@ -160,6 +159,10 @@ export function CityTripDialog({
             <FieldLabel>携带宠物</FieldLabel>
             {petsQuery.isPending ? (
               <p className="text-sm text-muted-foreground">正在读取宠物档案…</p>
+            ) : petsQuery.isError ? (
+              <p className="text-sm text-muted-foreground">
+                暂时无法读取宠物档案，请稍后重试。
+              </p>
             ) : pets.length > 0 ? (
               <Select
                 value={String(pet?.id ?? pets[0].id)}

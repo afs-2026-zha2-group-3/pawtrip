@@ -1,6 +1,4 @@
 import type { TransportMode } from "@/data/transport-rules";
-
-export type { TransportMode };
 import type { LocationBrowseDetail } from "@/queries/locations";
 import type { Pet } from "@/queries/pets";
 
