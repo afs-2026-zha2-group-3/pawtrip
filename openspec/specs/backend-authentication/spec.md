@@ -1,7 +1,8 @@
 # backend-authentication Specification
 
 ## Purpose
-TBD - created by archiving change add-user-login. Update Purpose after archive.
+
+本能力定义服务端认证与会话：SQLite 账号与 BCrypt 密码存储、表单登录与登出、基于会话的当前用户查询、CSRF 保护、业务接口的登录保护、用户角色持久化与注入，以及认证错误日志的敏感信息脱敏。
 ## Requirements
 ### Requirement: 账号持久化与密码存储
 

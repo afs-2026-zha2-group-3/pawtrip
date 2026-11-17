@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by syncing the add-frontend-trip-context change. This capability owns the frontend trip context: the active trip store, the draft-to-confirmed lifecycle, `activeTripId` persistence and hydration, the `/trips` activation page, the bottom-left trip panel, debounced plan auto-save, and the unified pet policy matching subject.
+本能力拥有前端行程上下文：激活行程 store、草稿到确认的生命周期、`activeTripId` 持久化与恢复、`/trips` 激活页、左下角行程面板、计划防抖自动保存、统一宠物政策匹配主体、大交通方式标签、创建行程确认弹窗与单城市激活规则。
 
 ## Requirements
 

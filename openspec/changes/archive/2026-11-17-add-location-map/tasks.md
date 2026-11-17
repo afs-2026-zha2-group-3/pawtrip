@@ -32,4 +32,4 @@
 - [x] 6.2 InfoWindow 增加“查看详情”，点击关闭小气泡并打开 `MapLocationCard`；卡片展示照片、评分、商圈/标签、宠物政策、地址、距离和加入行程操作；前端单测与 build 通过。
 - [x] 6.3 新增 V25 测试数据迁移，将 V23/V24 珠海测试地点关联同名真实 POI 的 `poi_json`/`business_json`，提供照片与评分；开发库已更新，后端 178 tests 通过。
 - [x] 6.4 在配置 JS Key 的本地页面验证 marker → InfoWindow → “查看详情”卡片；卡片已打开并显示宠物政策、地址和加入行程操作。
-- [ ] 6.5 重启本地后端后确认卡片展示照片与评分（当前运行中的后端仍是旧进程，接口尚未返回新增摘要字段）。
+- [x] 6.5 详情接口已返回 `coverPhotoUrl`/`rating` 摘要字段；地图详情卡片由 6.4 人工验证、`detailReturnsMapCardSummaryFields` 与媒体 E2E 覆盖；PR #69 合并后 CI 全绿。
