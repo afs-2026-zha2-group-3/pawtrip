@@ -13,6 +13,8 @@
 
 | REQ-009 | 宠物友好景点携宠规则展示 | In Change | `add-location-pet-rule-display` | 原登记 REQ-008，因 main 已将 REQ-008 用于规则推荐，2026-11-16 合并时改编号为 REQ-009；issue #17(US-25,Must);AC-1 In,AC-2 Out(依赖 US-48);Revision 3:公开页 DB-only,默认 maxPetsPerPerson >= 1,移除三档/迁移,新增顶层“景区浏览”Tab,选城后自动进入;P1–P3 同步;P4 实现完成;本地验证 Pass;PR #50 CI 全绿;G1 Revision 3 Pass(IO=SUKI,SA=RANLE);G2 Pass(VL=RANLE);合并后 P5 归档;归档需在 destination-selection 之后 |
 
+| REQ-010 | 输入旅游总天数 | Archived (superseded) | `openspec/changes/archive/2026-11-17-add-trip-duration-input` | P1–P3 工件齐全;G1 Pass(IO=Kitty Su,SA=HARLAN,2026-11-16);P4 经 PR #54(`codex/input-trip-duration`,merge `1871995`)合并,CI 4/4 job 全绿;本地验证 Pass(`20261116-185448-local-verify-report.md`);后被 active-trip 架构(PR #55–#58)取代,change 包曾被 `f3aab3e` 删除,2026-11-17 自 `25060a4` 恢复并补录 P4/P5;G2 Pass(VL=HARLAN HUANG)、G3 Pass(SA=HARLAN HUANG)均 2026-11-17 补录签署;按 superseded 归档,deltas 不合并 Living Spec(trip-duration-input 不建立,现行 trip-planning/trip-context/trip-attractions/destination-selection 已覆盖);`openspec validate --specs` 23 passed/0 failed;KB update SKIP(not configured) |
+
 > 登记缺口：`2026-11-14-add-playwright-e2e`、`2026-11-15-add-amap-poi-search`、`2026-11-16-admin-location-management`、`2026-11-16-add-pet-entry-policies` 已归档但未在本表登记；后续补登时需单独确认编号，不得直接复用 REQ-005。
 >
 > 编号提示：REQ-009 = US-25（原 REQ-008；main 已将 REQ-008 用于规则推荐，2026-11-16 合并时改编号）。
