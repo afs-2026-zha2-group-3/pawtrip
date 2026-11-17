@@ -46,3 +46,8 @@
 - [x] 7.1 扩展 `get_location_detail`：后端地点详情从 `poi_json` 解析自然语言类型（`type`）与行政区（`pname`/`cityname`/`adname`），并返回周营业时间；Agent 工具输出评分、自然语言类型、行政区、标签、商圈与营业时间，移除 `typeGroup` 等无自然语义代码和原始政策字段。补充后端详情与浏览器工具测试，验证 `cd apps/server && ./mvnw test`、`cd apps/web && npm test` 通过。
 - [x] 7.2 调整系统提示词：`update_trip_plan` 生成方案后只提示用户在下方方案卡片中确认或拒绝，不在对话中复述或总结逐日安排与地点清单；同步 spec 场景。
 - [x] 7.3 隐藏工具调用之间的过程消息：渲染层只展示用户消息与不含工具调用的最终回复，过程进度由单条状态提示承担。补充消息过滤与面板测试。
+
+## 8. Markdown 渲染与消息呈现
+
+- [ ] 8.1 引入 `@tanstack/markdown`：Agent 最终文本使用 `@tanstack/markdown/react` 渲染，流式使用 `streamingMarkdownExtension()`，关闭 `frontmatter`、`headingIds` 与 `allowHtml`；用户消息保持纯文本。
+- [ ] 8.2 调整消息呈现：用户消息靠右气泡；Agent 消息去掉气泡与背景，直接以 Markdown 内容块显示；不显示头像、图标或身份标签；Agent 消息首次出现时渐显，流式更新不重复触发动画。

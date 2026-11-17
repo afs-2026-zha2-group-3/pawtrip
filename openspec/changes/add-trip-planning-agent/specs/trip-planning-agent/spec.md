@@ -54,6 +54,34 @@
 - **THEN** 面板回到收起状态
 - **AND** 对话与待审核方案丢失
 
+### Requirement: Agent messages use Markdown and a distinct presentation
+Agent 的文本回复 SHALL 使用 TanStack Markdown 渲染；用户消息 MUST 保持纯文本。用户消息 SHALL 以靠右气泡呈现；Agent 消息 MUST NOT 使用气泡或背景，直接渲染在面板中，并以渐显效果出现。消息 MUST NOT 显示头像、图标或身份标签。Markdown 渲染 MUST 保留 HTML 转义与危险 URL 移除。
+
+#### Scenario: Agent reply renders Markdown
+- **GIVEN** Agent 最终回复包含 Markdown 语法（如粗体、列表、代码、链接）
+- **WHEN** 面板显示该回复
+- **THEN** 内容按 Markdown 语义渲染为对应元素
+- **AND** 不显示原始 Markdown 标记
+
+#### Scenario: Message presentation differs by role
+- **GIVEN** 对话中同时存在用户消息与 Agent 消息
+- **WHEN** 面板显示对话
+- **THEN** 用户消息显示为靠右气泡
+- **AND** Agent 消息不使用气泡或背景，直接以 Markdown 内容显示
+- **AND** 两类消息均不显示头像、图标或身份标签
+
+#### Scenario: Agent replies fade in
+- **GIVEN** Agent 最终回复出现
+- **WHEN** 面板显示该消息
+- **THEN** 消息以渐显效果出现
+- **AND** 流式更新不会重复触发整段渐显
+
+#### Scenario: Unsafe markdown stays inert
+- **GIVEN** Agent 回复包含原始 HTML 或可执行 URL
+- **WHEN** 面板渲染该回复
+- **THEN** 原始 HTML 被转义
+- **AND** 可执行 URL 不被渲染为可点击链接
+
 ### Requirement: Agent plans against the active trip
 Agent SHALL 以当前激活行程作为唯一编辑目标，且 MUST NOT 在面板内提供规划目标切换。存在激活行程时，Agent 的城市、宠物、天数与现有计划 MUST 来自该行程。切换激活行程 SHALL 只在 Trips 页面进行；激活行程变化后，旧行程的全部待审核方案 MUST 失效并要求重新生成。无激活行程时，Agent SHALL 先通过创建行程确认流程创建并激活新行程，再在该行程上编排。
 

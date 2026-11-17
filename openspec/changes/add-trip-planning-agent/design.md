@@ -65,12 +65,20 @@ Agent 以“全局浮动入口 + 可展开面板”呈现，挂在登录后的�
 
 - 入口：右下角固定圆形按钮（`data-testid="agent-fab"`，带 aria-label），所有登录后页面可见，不依赖激活行程；TripPanel 位于左下角，两者不重叠。未登录时不渲染。
 - 面板容器：shadcn/ui Sheet（base 变体，`npx shadcn@latest add sheet` 拷入项目），不复用 TripPanel（其内部耦合 dnd-kit 排序逻辑）。以受控 `open` 驱动（开关状态仅存内存，刷新后回到收起态），`SheetContent side="right"`；按非模态使用（Base UI Dialog `modal=false`、移除 Backdrop）：页面保持可见可交互，不因点击页面关闭，仅通过入口按钮或面板内关闭按钮收起，ESC 可关闭。展开态样式在默认 Sheet 上定制，镜像 TripPanel 悬浮态（`border bg-card shadow-xl rounded-xl`）：小屏 `fixed inset-0` 全屏滚动，`lg: inset-y-4 right-4 left-auto w-[400px]`。z-index 高于 TripPanel（含其小屏全屏展开态）。
-- 对话区：直接采用 AI Elements 的 Chat 组合（`npx shadcn@latest add message-scroller message bubble input-group`）：Message Scroller 负责滚动锚点与自动跟随流式回复（`scrollAnchor` 放在用户消息），Bubble 渲染正文，Prompt Input 承担输入框与发送；不自研滚动跟随或消息布局。
-- parts 映射：TanStack AI `useChat` 的 `UIMessage` parts 映射为——`text` → Bubble；`thinking` 与 `tool-call`/`tool-result` 聚合为一条面向用户的活动状态（正在规划行程、正在搜集景点、正在读取最新行程、正在编辑行程等），已完成步骤折叠为「已完成 N 个步骤」，当前轮次最多显示一条活动状态；自研限于此映射层、状态聚合与方案卡片。
+- 对话区：直接采用 AI Elements 的 Chat 组合（`npx shadcn@latest add message-scroller message bubble input-group`）：Message Scroller 负责滚动锚点与自动跟随流式回复（`scrollAnchor` 放在用户消息），Prompt Input 承担输入框与发送；不自研滚动跟随或消息布局。用户消息使用 `Message from="user"` + `Bubble variant="default"` 靠右显示；Agent 消息不使用 Bubble 或背景，直接以全宽 Markdown 内容块显示在面板中，不显示头像、图标或身份标签。
+- parts 映射：TanStack AI `useChat` 的 `UIMessage` parts 映射为——`text` → 角色化正文（用户消息为纯文本 Bubble，Agent 最终回复为 TanStack Markdown 内容块）；`thinking` 与 `tool-call`/`tool-result` 聚合为一条面向用户的活动状态（正在规划行程、正在搜集景点、正在读取最新行程、正在编辑行程等），已完成步骤折叠为「已完成 N 个步骤」，当前轮次最多显示一条活动状态；自研限于此映射层、状态聚合与方案卡片。
 - 方案卡片（唯一的较大自研件）：`update_trip_plan` 的结构化结果渲染为基于 Card/Button 的自研方案卡片，含与当前激活行程现有计划的差异预览及确认/拒绝按钮；结构化差异不走通用 markdown 渲染。用户确认应用成功或拒绝后移除卡片；应用失败时保留卡片。
 - 功能收口在面板内：对话、方案预览与确认/拒绝（含创建新行程确认弹窗预填、取消当前激活行程确认）全部在面板内完成，不跳转页面；面板顶部只展示当前激活行程名称，不提供行程切换。
 - 上下文随每次模型调用传递：客户端以 `useChat({ forwardedProps: { agentContext } })` 设置 chat 级上下文。`sendMessage` 的 per-message `body` 只覆盖首个请求，客户端工具执行后的续传请求依赖 chat 级 `forwardedProps`；仅用 body 会导致模型在工具调用后丢失当前激活行程上下文。
 - 刷新页面后对话与待审核方案丢失，与本变更“不做跨会话持久化”的非目标一致。激活行程变化时，全部待审核方案 MUST 失效并要求重新生成。
+
+### Agent 回复使用 TanStack Markdown 并直接呈现
+
+- 依赖：`@tanstack/markdown`，使用 `@tanstack/markdown/react` 的 `<Markdown>`；流式阶段使用 `@tanstack/markdown/extensions/streaming` 的 `streamingMarkdownExtension()`，设置 `frontmatter={false}`、`headingIds={false}`，流式结束后保持同一扩展。
+- 呈现：用户消息保持纯文本并靠右气泡显示；Agent 最终回复不使用 Bubble 或背景，直接以 Markdown 内容块渲染在面板中；不显示头像、图标或「行程助手」等身份标识。
+- 渐显：Agent 消息首次出现时通过 CSS 动画渐显，并兼容 `prefers-reduced-motion`；流式文本更新只更新内容，不重复触发整段渐显。
+- 安全：`allowHtml` 保持关闭；原始 HTML 转义、可执行 URL 移除；外链与图片如需放开，由显式 `urlTransform` 或组件策略控制；不接入未审计的语法高亮器。提示词要求 Agent 输出 TanStack Markdown 支持的简洁语法，不输出原始 HTML 或 MDX。
+- 范围：结构化方案差异仍由方案卡片渲染，不走 Markdown；本次为呈现层调整，不新增仅针对视觉呈现的测试。
 
 ### 复用共享已保存地点列表作为 Agent 地点目录
 
