@@ -35,8 +35,8 @@
 
 ## 6. 集成验证
 
-- [ ] 6.1 全量本地验证：后端 `mvnw test`、前端 vitest + build、E2E 全量；验证：全部通过，无既有能力回归
-- [ ] 6.2 `openspec validate add-city-personalized-recommendation --strict` 通过；对照 delta 场景逐条核对实现覆盖（AC-1…AC-6）
+- [x] 6.1 全量本地验证：后端 `mvnw test`、前端 vitest + build、E2E 全量；验证：全部通过，无既有能力回归（后端 238/238 绿；vitest 191/191、build 通过；tsc 仅 anchors.test.ts 2 处既有错误（main 已存在，P5 follow-up）；E2E 全量委托用户手动运行，2026-11-17 用户决定）
+- [x] 6.2 `openspec validate add-city-personalized-recommendation --strict` 通过；对照 delta 场景逐条核对实现覆盖（AC-1…AC-6）（validate 通过（openspec 1.16.1）；paws-page 17 场景：6 既有回归 + 2 详情新场景 + 9 维护场景均由 PetApiTest 13 绿与 paws spec 扩展覆盖；destination-selection 14 场景：特征契约 3 由 DestinationApiTest 15 绿覆盖，排序 7 + 徽标 4 由 scoreCity/sortByRecommendation/cities.tsx 与新 spec 7 用例覆盖（同特征去重由 Set 实现保证，词表映射互斥；读取失败退化由 pet-profile.test.ts 既有用例覆盖）；E2E 层运行待用户手动验证）
 
 ## Workflow follow-up
 
