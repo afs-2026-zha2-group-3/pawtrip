@@ -284,6 +284,8 @@ async function main() {
         env: {
           ...process.env,
           PAWTRIP_API_PROXY_TARGET: `http://127.0.0.1:${backendPort}`,
+          PAWTRIP_API_BASE_URL: `http://127.0.0.1:${backendPort}`,
+          PAWTRIP_AGENT_PROVIDER: "fake",
         },
         shell: process.platform === "win32",
       },

@@ -33,8 +33,8 @@ import {
 } from "@/components/ui/select";
 import { locationBrowseDetailQueryOptions } from "@/queries/locations";
 import { petsQueryOptions } from "@/queries/pets";
-import { createTrip, tripQueryKeys } from "@/queries/trips";
-import { createEmptyPlan, stopKey, type StopContainer } from "@/lib/trip/plan";
+import { createTripAndActivate } from "@/lib/trip/create";
+import { stopKey, type StopContainer } from "@/lib/trip/plan";
 import { retryTripSave } from "@/lib/trip/save";
 import {
   useActiveTrip,
@@ -240,17 +240,16 @@ function TripPanelContent() {
     setDraftError(null);
     try {
       const pet = (petsQuery.data ?? []).find((candidate) => candidate.id === draft.petId);
-      const trip = await createTrip({
+      await createTripAndActivate(queryClient, {
         name: `${cityName} · ${draft.totalDays}天 · ${pet?.name ?? draft.petId}`,
         cityAdcode: draft.cityAdcode,
         petId: draft.petId,
         totalDays: draft.totalDays,
-        plan: createEmptyPlan(draft.totalDays),
+        city: city
+          ? { adcode: city.adcode, name: city.name, province: city.province }
+          : undefined,
       });
-      tripActions.setActive(trip);
       tripActions.discardDraft();
-      tripActions.setSaveStatus("saved");
-      await queryClient.invalidateQueries({ queryKey: tripQueryKeys.all });
     } catch {
       setDraftError("创建行程失败，请重试。");
     } finally {

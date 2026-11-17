@@ -21,26 +21,37 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { DestinationCandidate } from "@/lib/destination-matching";
+import { createTripAndActivate } from "@/lib/trip/create";
 import { daysBetween } from "@/lib/trip/duration";
-import { createEmptyPlan } from "@/lib/trip/plan";
-import { tripActions } from "@/lib/trip/store";
 import { MAX_TRIP_DAYS, MIN_TRIP_DAYS } from "@/lib/trip/types";
 import { petsQueryOptions } from "@/queries/pets";
-import { createTrip, tripQueryKeys } from "@/queries/trips";
+import type { Trip } from "@/lib/trip/types";
 
 export function CityTripDialog({
   city,
   onClose,
+  initialStartDate = "",
+  initialEndDate = "",
+  initialPetId = null,
+  navigateOnCreate = true,
+  onCreated,
+  beforeCreate,
 }: {
   city: DestinationCandidate;
   onClose: () => void;
+  initialStartDate?: string;
+  initialEndDate?: string;
+  initialPetId?: number | null;
+  navigateOnCreate?: boolean;
+  onCreated?: (trip: Trip) => void;
+  beforeCreate?: () => Promise<boolean>;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const petsQuery = useQuery({ ...petsQueryOptions(), throwOnError: false });
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [petId, setPetId] = useState<number | null>(null);
+  const [startDate, setStartDate] = useState(initialStartDate);
+  const [endDate, setEndDate] = useState(initialEndDate);
+  const [petId, setPetId] = useState<number | null>(initialPetId);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -73,24 +84,24 @@ export function CityTripDialog({
 
     setSubmitting(true);
     try {
-      const trip = await createTrip({
+      if (beforeCreate && !(await beforeCreate())) {
+        setError("保存当前行程失败，请稍后重试。");
+        return;
+      }
+      const trip = await createTripAndActivate(queryClient, {
         name: `${city.name} · ${days}天 · ${pet.name}`,
         cityAdcode: city.adcode,
         petId: pet.id,
         totalDays: days,
-        plan: createEmptyPlan(days),
+        city,
       });
-      tripActions.cacheCity({
-        adcode: city.adcode,
-        name: city.name,
-        province: city.province,
-      });
-      tripActions.setActive(trip);
-      tripActions.setSaveStatus("saved");
-      await queryClient.invalidateQueries({ queryKey: tripQueryKeys.all });
-      onClose();
-      await navigate({ to: "/attractions" });
-    } catch {
+      if (navigateOnCreate) {
+        onClose();
+        await navigate({ to: "/attractions" });
+      } else {
+        onCreated?.(trip);
+        onClose();
+      }    } catch {
       setError("创建行程失败，请稍后重试。");
     } finally {
       setSubmitting(false);

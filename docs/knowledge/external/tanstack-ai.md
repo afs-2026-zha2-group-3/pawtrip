@@ -101,3 +101,12 @@ const { messages, sendMessage } = useChat({
 - 概览：https://tanstack.com/ai/latest/docs
 - OpenAI 兼容适配器：https://tanstack.com/ai/latest/docs/adapters/openai-compatible
 - 工具：https://tanstack.com/ai/latest/docs/tools/tools
+
+## 本项目实现（2026-11 复核）
+
+- 依赖：`@tanstack/ai` 1.4.x、`@tanstack/ai-react` 1.0.x、`@tanstack/ai-openai` 1.1.x。
+- `apps/web/src/routes/agent.ts` 使用 `createFileRoute("/agent")({ server: { handlers: { POST } } })`，handler 调用 `handleAgentRequest`（`src/lib/agent/server.ts`）。
+- 服务端以 `chatParamsFromRequest` 解析 AG-UI 请求；客户端声明的工具先按固定 allowlist 过滤，再交给 `mergeAgentTools(AGENT_TOOL_DEFINITIONS, filteredClientTools)` 和 `chat({ tools })`。服务端工具定义无 `execute`，实际执行由浏览器 `useChat({ tools })` 中的 `.client()` 实现完成。
+- 系统提示通过 `systemPrompts` 传入；上下文 JSON 放在 `forwardedProps.agentContext`，由客户端每次 `sendMessage(text, { body: { agentContext } })` 发送。
+- E2E/本地使用 `PAWTRIP_AGENT_PROVIDER=fake`：动态导入 `@tanstack/ai/testing` 的 `fakeText()`，按消息历史脚本化 text/toolCalls；生产环境禁用。
+- SSE 端点固定为 `/agent`，不得改为 `/api/agent`；Vite dev 的 `/api` 代理会先于 Start 中间件截获请求。

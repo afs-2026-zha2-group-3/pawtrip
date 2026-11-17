@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "../lib/http/api-error";
+import { agentActions } from "../lib/agent/store";
 import { tripActions } from "../lib/trip/store";
 import { authQueryOptions, logout } from "../queries/auth";
 
@@ -77,6 +78,7 @@ function AppHeader() {
     onSuccess: () => {
       queryClient.clear();
       tripActions.clearTripContext();
+      agentActions.reset();
       void navigate({ to: "/login", replace: true });
     },
   });

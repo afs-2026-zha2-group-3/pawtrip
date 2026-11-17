@@ -164,6 +164,13 @@ export const tripActions = {
         : state,
     );
   },
+  replaceActivePlan(plan: TripPlan): void {
+    update((state) =>
+      state.active
+        ? { ...state, active: { ...state.active, plan }, ...bumpRevision(state) }
+        : state,
+    );
+  },
   setPanelExpanded(expanded: boolean): void {
     update((state) => ({ ...state, panel: { expanded } }));
   },

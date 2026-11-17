@@ -102,6 +102,20 @@ com.pawtrip.server
 - **统一政策匹配主体**（`policy-subjects.ts` / `policy-match.ts`）：存在激活行程且已绑定宠物时只匹配该宠物，否则匹配全部宠物；宠物加载失败展示“暂时无法读取宠物”而非“无宠物”。结论统一为 `friendly | unfriendly | unjudgeable | unconfigured`，以“宠物名 · 结论”tag 展示，覆盖城市候选、城市政策页、地点列表/详情与交通规则推荐列。
 - **旧状态清理**：已删除 `lib/selected-destination.ts` 与 `lib/trip-duration.ts`；启动/登录后清理 `pawtrip.selectedDestination`、`pawtrip.tripDuration` 残留键；顶栏目的地 chip 移除。交通方式改存 active trip，`pawtrip:selected-transport-mode` 不再读写，旧值不参与业务。
 
+### 行程规划 Agent（trip-planning-agent）
+
+前端在登录后的全局布局挂载 `components/agent/agent-panel.tsx`：右下角圆形入口 `agent-fab`（`fixed bottom-4 right-4`）与可展开面板 `agent-panel`。面板基于 vendored `components/ui/sheet.tsx`（Base UI Dialog，受控 `open`、`modal={false}`、无 Backdrop），桌面端右侧 400px 悬浮，小屏全屏；开关、对话、规划目标与待审核方案只存内存，刷新丢失。消息渲染使用 vendored `message-scroller` / `message` / `bubble` / `input-group`：`text` → Bubble、`thinking` → 折叠详情、`tool-call` / `tool-result` → 工具卡片，`propose_trip_plan` 由自研方案卡片展示差异与确认/拒绝。
+
+规划工作区 `lib/agent/store.ts` 与 `tripStore.active` 分离，维护 `target`、`targetTrip`、`allowedPoiIds`、`proposals` 与新行程流程；切换目标清空旧提案与地点集合，不因选择目标激活行程。两阶段新行程复用 `CityTripDialog` 与 `lib/trip/create.ts` 的 `createTripAndActivate`（名称、宠物校验、`cacheCity`、激活、查询刷新）：Agent 只预填城市/日期/宠物并等待用户在弹窗点击「确定」；存在激活行程时先在面板确认，取消激活前完成待发送保存，保存失败则中止。创建后的编排通过 `propose_trip_plan` 生成待审核方案，用户确认前不写库。
+
+应用方案 `lib/agent/apply.ts`：重新读取目标详情并比较 `updatedAt`；激活行程先 `flushTripSave`，再用 `tripActions.replaceActivePlan`（bump `saveRevision`）整体替换并立即保存；未激活行程重新读取 `name` / `totalDays` / `transportMode` 后调用 `updateTrip`，保持未激活。任一 POI 失效、目标 404、预览后变更、保存失败或 `400 VALIDATION_ERROR` 都保留待审核方案并提示未生效；激活失败由既有保存链路回滚服务端数据。
+
+地点工具在浏览器执行：`find_locations` 按目标城市级 adcode（E2E 珠海 `440400`）调用 `GET /api/locations`，`pageSize=100`、全部类型、最多 20 页，结果以 React Query 缓存并在本地按名称/地址匹配；截断时提示并允许按 `typeGroup` 缩小。`get_location_detail` 读取 `GET /api/locations/{poiId}` 并校验同城（区级 region_code 与城市 adcode 前四位一致），宠物政策结论来自 `lib/trip/policy-match.ts` 的确定性结果。工具 allowlist 固定为 `find_locations`、`get_location_detail`、`prepare_new_trip`、`propose_trip_plan`；`propose_trip_plan` 仅接受 `allowedPoiIds` 内地点，校验目标 tripId、天数范围/唯一、`toNext` 与 `unscheduled` 去重。
+
+服务端 `/agent`（`apps/web/src/routes/agent.ts`）是 TanStack Start server route，返回 SSE；模型经 `@tanstack/ai-openai/compatible` 的 `openaiCompatible` 接入智谱 BigModel，默认 `glm-5.3`。服务端从 `BIGMODEL_API_KEY` 读取密钥，用 `PAWTRIP_API_BASE_URL` 把入站 `Cookie` 转发给 `GET /api/auth/me`，仅 200 继续；使用 `chatParamsFromRequest` 解析请求，并以 `mergeAgentTools` + 固定 allowlist 过滤客户端声明的工具。上下文以系统提示中的 JSON 传递（城市、宠物、天数、约束），身份不来自客户端。`.env.example` 提供 `BIGMODEL_API_KEY`、`PAWTRIP_API_BASE_URL`、`PAWTRIP_AGENT_PROVIDER`，模型可用 `PAWTRIP_AGENT_MODEL` 覆盖；`PAWTRIP_AGENT_PROVIDER=fake` 只允许非生产环境，CI/E2E 不访问智谱。
+
+部署要求：反向代理把 `/agent` 交给 Web Node 进程、`/api/*` 交给 Spring，且不能缓冲 SSE；生产环境必须禁用 fake provider，并按用户/会话为模型调用配置限流与配额。验证：`apps/web` 单测覆盖地点匹配、方案校验、应用边界、会话校验与 allowlist；E2E 使用 `PAWTRIP_AGENT_PROVIDER=fake` 覆盖新建/修改/拒绝/无宠物/目录截断/地点未命中。
+
 ### 服务端行程规划（trip-planning）
 
 - `com.pawtrip.server.trip` 新增 `Trip` 实体、`TripRepository`、`TripService`、`TripController`；Flyway **V17** 创建 `trip` 表：`user_id`、`name`、`city_adcode`、`pet_id`、`total_days`、`plan_json`、`created_at`、`updated_at`，索引 `(user_id, id)`；**V18** 增加可空 `transport_mode`，CHECK 仅允许 `flight` / `high_speed_rail` / `train` / `drive`。

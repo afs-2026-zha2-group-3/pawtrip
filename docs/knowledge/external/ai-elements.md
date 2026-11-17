@@ -61,3 +61,10 @@ area: external
 - Reasoning：https://ui.shadcn.com/docs/ai-elements/base/reasoning
 - Sheet（base）：https://ui.shadcn.com/docs/components/base/sheet
 - TanStack AI helper：https://ui.shadcn.com/docs/helpers/tanstack-ai
+
+## 本项目实现（2026-11 复核）
+
+- 组件以 vendored 形式位于 `apps/web/src/components/ui/`：`sheet.tsx`、`message-scroller.tsx`、`message.tsx`、`bubble.tsx`、`input-group.tsx`；未新增 npm 依赖，保持 base-nova 风格。
+- Agent 面板使用 `Sheet` 受控 `open` + `modal={false}`、仅渲染 Popup（无 Backdrop），桌面端 `lg:inset-y-4 lg:right-4 lg:w-[400px]`，小屏 `inset-0`；z-index（面板 60、入口 70、Select 80、Dialog 100）保证高于 TripPanel 与表单弹窗。
+- `MessageScroller` 在用户位于底部时自动跟随流式内容；parts 映射在 `components/agent/agent-panel.tsx`，`propose_trip_plan` 使用 `components/agent/proposal-card.tsx` 展示差异与确认/拒绝。
+- 未使用 `@shadcn/helpers/tanstack-ai`；组件测试通过 mock `useChat` 覆盖入口/面板/方案卡片，E2E 通过服务端 fake provider 覆盖完整流式链路。
