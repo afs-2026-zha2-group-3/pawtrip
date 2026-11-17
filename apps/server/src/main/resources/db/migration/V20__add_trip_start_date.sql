@@ -1,0 +1,2 @@
+ALTER TABLE trip
+ADD COLUMN start_date TEXT;

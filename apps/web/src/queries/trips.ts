@@ -8,6 +8,7 @@ export interface TripSummary {
   cityAdcode: string;
   petId: number;
   totalDays: number;
+  startDate: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,6 +37,7 @@ export function createTrip(input: {
   cityAdcode: string;
   petId: number;
   totalDays: number;
+  startDate?: string | null;
   plan: TripPlan;
 }): Promise<Trip> {
   return request<Trip>("/api/trips", {
@@ -45,6 +47,7 @@ export function createTrip(input: {
       cityAdcode: input.cityAdcode,
       petId: input.petId,
       totalDays: input.totalDays,
+      startDate: input.startDate ?? null,
       plan: input.plan,
     },
   });
@@ -56,6 +59,7 @@ export function updateTrip(id: number, input: SaveTripInput): Promise<Trip> {
     body: {
       name: input.name,
       totalDays: input.totalDays,
+      startDate: input.startDate,
       plan: input.plan,
       transportMode: input.transportMode,
     },

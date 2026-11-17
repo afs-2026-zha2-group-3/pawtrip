@@ -31,6 +31,7 @@ export interface Trip {
   cityAdcode: string;
   petId: number;
   totalDays: number;
+  startDate: string | null;
   transportMode: TransportMode | null;
   plan: TripPlan;
   createdAt: string;
@@ -80,6 +81,7 @@ export interface SaveTripInput {
   cityAdcode?: string;
   petId?: number;
   totalDays: number;
+  startDate: string | null;
   transportMode: TransportMode | null;
   plan: TripPlan;
 }

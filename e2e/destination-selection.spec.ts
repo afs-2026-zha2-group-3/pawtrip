@@ -5,6 +5,7 @@ import {
   createTrip,
   openCities,
   openTripDialog,
+  pickCalendarDate,
   resetTrips,
   setTripDates,
   signIn,
@@ -81,8 +82,9 @@ test("E5 selecting a city opens the trip dialog without POSTing a trip", async (
 
   await openCities(page);
   const dialog = await openTripDialog(page, "杭州市");
-  await expect(dialog.getByLabel("开始日期")).toHaveValue("");
-  await expect(dialog.getByLabel("结束日期")).toHaveValue("");
+  const calendar = dialog.locator('[data-slot="calendar-range"]');
+  await expect(calendar).toBeVisible();
+  await expect(calendar.locator('[data-date][aria-pressed="true"]')).toHaveCount(0);
 
   await dialog.getByRole("button", { name: "取消" }).click();
   await expect(dialog).toHaveCount(0);
@@ -111,7 +113,7 @@ test("E6 confirming the dialog creates a trip and opens attraction browsing", as
   await expect(page.getByTestId("trip-panel")).toContainText("3 天");
 });
 
-test("E7 rejects invalid date ranges without creating a trip", async ({ page }) => {
+test("E7 rejects incomplete or overlong date ranges without creating a trip", async ({ page }) => {
   const posts: string[] = [];
   page.on("request", (request) => {
     if (
@@ -125,13 +127,11 @@ test("E7 rejects invalid date ranges without creating a trip", async ({ page }) 
   await openCities(page);
   const dialog = await openTripDialog(page, "杭州市");
 
-  await dialog.getByLabel("开始日期").fill("2026-12-10");
-  await dialog.getByLabel("结束日期").fill("2026-12-09");
+  await pickCalendarDate(page, "2026-12-01");
   await dialog.getByRole("button", { name: "确定" }).click();
-  await expect(dialog.getByRole("alert")).toContainText("结束日期不能早于开始日期");
+  await expect(dialog.getByRole("alert")).toContainText("请选择开始和结束日期");
 
-  await dialog.getByLabel("开始日期").fill("2026-12-01");
-  await dialog.getByLabel("结束日期").fill("2026-12-08");
+  await pickCalendarDate(page, "2026-12-08");
   await dialog.getByRole("button", { name: "确定" }).click();
   await expect(dialog.getByRole("alert")).toContainText("行程需为 1–7 天");
 

@@ -26,8 +26,8 @@ class TripSchemaMigrationTest {
 
 		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
 			assertThat(columns(connection, "trip")).containsExactlyInAnyOrder(
-					"id", "user_id", "name", "city_adcode", "pet_id", "total_days", "plan_json", "created_at",
-					"updated_at", "transport_mode");
+					"id", "user_id", "name", "city_adcode", "pet_id", "total_days", "start_date", "plan_json",
+					"created_at", "updated_at", "transport_mode");
 			assertThat(indexNames(connection, "trip")).contains("idx_trip_user_id");
 
 			long userId = insertUser(connection, "trip-owner");
@@ -35,13 +35,14 @@ class TripSchemaMigrationTest {
 			long tripId = insertTrip(connection, userId, petId, "杭州周末", 3);
 
 			try (PreparedStatement query = connection.prepareStatement(
-					"SELECT plan_json, transport_mode FROM trip WHERE id = ?")) {
+					"SELECT plan_json, transport_mode, start_date FROM trip WHERE id = ?")) {
 				query.setLong(1, tripId);
 				try (ResultSet result = query.executeQuery()) {
 					assertThat(result.next()).isTrue();
 					assertThat(result.getString("plan_json"))
 						.isEqualTo("{\"version\":1,\"days\":[],\"unscheduled\":[]}");
 					assertThat(result.getString("transport_mode")).isNull();
+					assertThat(result.getString("start_date")).isNull();
 				}
 			}
 
