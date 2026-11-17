@@ -45,11 +45,18 @@ public class Pet {
 	@Column(name = "dog_breed_id")
 	private Long dogBreedId;
 
+	@Column(name = "preferences")
+	private String preferences;
+
+	@Column(name = "personality")
+	private String personality;
+
 	protected Pet() {
 	}
 
 	public Pet(Long userId, String name, PetType petType, Double weightKg, Double shoulderHeightCm,
-			boolean hasLeash, boolean hasVaccinationProof, byte[] photo, Long dogBreedId) {
+			boolean hasLeash, boolean hasVaccinationProof, byte[] photo, Long dogBreedId,
+			String preferences, String personality) {
 		this.userId = userId;
 		this.name = name;
 		this.petType = petType;
@@ -59,10 +66,12 @@ public class Pet {
 		this.hasVaccinationProof = hasVaccinationProof;
 		this.photo = photo;
 		this.dogBreedId = dogBreedId;
+		this.preferences = preferences;
+		this.personality = personality;
 	}
 
 	public void update(String name, PetType petType, Double weightKg, Double shoulderHeightCm, boolean hasLeash,
-			boolean hasVaccinationProof, byte[] photo, Long dogBreedId) {
+			boolean hasVaccinationProof, byte[] photo, Long dogBreedId, String preferences, String personality) {
 		this.name = name;
 		this.petType = petType;
 		this.weightKg = weightKg;
@@ -71,6 +80,8 @@ public class Pet {
 		this.hasVaccinationProof = hasVaccinationProof;
 		this.photo = photo;
 		this.dogBreedId = dogBreedId;
+		this.preferences = preferences;
+		this.personality = personality;
 	}
 
 	public Long getId() {
@@ -111,6 +122,14 @@ public class Pet {
 
 	public Long getDogBreedId() {
 		return this.dogBreedId;
+	}
+
+	public String getPreferences() {
+		return this.preferences;
+	}
+
+	public String getPersonality() {
+		return this.personality;
 	}
 
 }

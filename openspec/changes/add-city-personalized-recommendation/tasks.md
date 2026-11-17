@@ -10,9 +10,9 @@
 
 ## 2. pet API 契约与校验（含本组测试与文档）
 
-- [ ] 2.1 先写失败 API 测试（扩展 `PetApiTest`）：创建/编辑携带合法 preferences/personality 持久化并回显；不传/空数组=未设置；未知喜好键、未知性格键 → 400 VALIDATION_ERROR 且仓库断言不落库；重复键去重；旧档案（JDBC 直插 NULL 行）读取兼容（对应 paws-page delta「宠物喜好与性格维护」9 场景）
-- [ ] 2.2 扩展 `Pet` 实体、`PetRequests`/`PetResponses`、`PetService` 校验与读写（逗号分隔存储，trim/去空段/去重）；验证：2.1 测试全部转绿，既有 pet API 测试不回归
-- [ ] 2.3 更新 `docs/knowledge/interfaces/http-api.md` pet 契约段落（preferences/personality 字段、枚举词表、400 语义）；验证：文档与 2.1 测试断言一致
+- [x] 2.1 先写失败 API 测试（扩展 `PetApiTest`）：创建/编辑携带合法 preferences/personality 持久化并回显；不传/空数组=未设置；未知喜好键、未知性格键 → 400 VALIDATION_ERROR 且仓库断言不落库；重复键去重；旧档案（JDBC 直插 NULL 行）读取兼容（对应 paws-page delta「宠物喜好与性格维护」9 场景）
+- [x] 2.2 扩展 `Pet` 实体、`PetRequests`/`PetResponses`、`PetService` 校验与读写（逗号分隔存储，trim/去空段/去重）；验证：2.1 测试全部转绿，既有 pet API 测试不回归
+- [x] 2.3 更新 `docs/knowledge/interfaces/http-api.md` pet 契约段落（preferences/personality 字段、枚举词表、400 语义）；验证：文档与 2.1 测试断言一致
 
 ## 3. 档案表单与详情（含本组 E2E）
 

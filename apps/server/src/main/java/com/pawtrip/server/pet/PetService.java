@@ -1,6 +1,7 @@
 package com.pawtrip.server.pet;
 
 import java.util.Base64;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -59,7 +60,9 @@ class PetService {
 				pet.hasLeash(),
 				pet.hasVaccinationProof(),
 				pet.photo(),
-				dogBreedId(pet.dogBreed())));
+				dogBreedId(pet.dogBreed()),
+				pet.preferences(),
+				pet.personality()));
 		return PetResponses.PetDetail.from(saved, pet.dogBreed());
 	}
 
@@ -75,7 +78,9 @@ class PetService {
 				pet.hasLeash(),
 				pet.hasVaccinationProof(),
 				pet.photo(),
-				dogBreedId(pet.dogBreed()));
+				dogBreedId(pet.dogBreed()),
+				pet.preferences(),
+				pet.personality());
 		return PetResponses.PetDetail.from(this.petRepository.save(existing), pet.dogBreed());
 	}
 
@@ -148,7 +153,41 @@ class PetService {
 		}
 		return new ValidatedPet(name, petType, request.weightKg(), request.shoulderHeightCm(),
 				request.hasLeash(), request.hasVaccinationProof(), photo(request.photo()),
-				resolveBreed(petType, request.dogBreedId()));
+				resolveBreed(petType, request.dogBreedId()), preferences(request.preferences()),
+				personality(request.personality()));
+	}
+
+	// 喜好键校验（design D4）：每键 ∈ PetPreference，非法 → 400；重复键去重后存储；null/空数组 → 未设置（NULL）
+	private static String preferences(List<String> values) {
+		if (values == null || values.isEmpty()) {
+			return null;
+		}
+		LinkedHashSet<String> keys = new LinkedHashSet<>();
+		for (String value : values) {
+			if (value == null) {
+				throw invalidRequest();
+			}
+			try {
+				keys.add(PetPreference.valueOf(value).name());
+			}
+			catch (IllegalArgumentException exception) {
+				throw invalidRequest();
+			}
+		}
+		return String.join(",", keys);
+	}
+
+	// 性格键校验（design D4）：单键 ∈ PetPersonality，非法 → 400；null → 未设置
+	private static String personality(String value) {
+		if (value == null) {
+			return null;
+		}
+		try {
+			return PetPersonality.valueOf(value).name();
+		}
+		catch (IllegalArgumentException exception) {
+			throw invalidRequest();
+		}
 	}
 
 	private DogBreed resolveBreed(PetType petType, Long dogBreedId) {
@@ -212,7 +251,8 @@ class PetService {
 	}
 
 	private record ValidatedPet(String name, PetType petType, Double weightKg, Double shoulderHeightCm,
-			boolean hasLeash, boolean hasVaccinationProof, byte[] photo, DogBreed dogBreed) {
+			boolean hasLeash, boolean hasVaccinationProof, byte[] photo, DogBreed dogBreed,
+			String preferences, String personality) {
 	}
 
 }

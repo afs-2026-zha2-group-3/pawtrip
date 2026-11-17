@@ -40,6 +40,14 @@ area: interfaces
 | PUT | `/api/trips/{id}` | 整量更新 `name`、`totalDays`、`plan`、`transportMode` |
 | DELETE | `/api/trips/{id}` | 删除本人行程，成功 `204` |
 
+### 宠物喜好与性格（REQ-014）
+
+`POST /api/pets` 与 `PUT /api/pets/{id}` 请求体可选携带 `preferences`（键数组，可省略/空数组）与 `personality`（单键或 `null`）；列表与详情响应恒回显 `preferences: string[]`（未设置为 `[]`）与 `personality: string | null`。
+
+- 词表（固定大写蛇形键，后端枚举 `PetPreference`/`PetPersonality` 校验）：喜好 `SWIMMING` 游泳、`HIKING` 爬山、`GRASS_RUNNING` 草地奔跑、`CITY_WALKING` 城市漫步、`SNOW_PLAY` 玩雪；性格 `ENERGETIC` 活泼好动、`CALM` 温和平静、`TIMID` 胆小敏感。
+- 非法键（含数组内 `null` 元素）→ `400 VALIDATION_ERROR` 且不落库；重复喜好键去重后存储（保持首次出现顺序）。
+- 存储为逗号分隔 TEXT（`pet.preferences`/`pet.personality`，V26）；NULL/空串=未设置；旧档案与不传新字段的旧客户端均视为未设置，既有必填校验（名字/类型/犬种/体重/肩高）不变。
+
 ### `GET /api/locations` 参数
 
 | 参数 | 默认 | 说明 |
