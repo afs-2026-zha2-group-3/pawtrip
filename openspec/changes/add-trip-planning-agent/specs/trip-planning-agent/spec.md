@@ -269,6 +269,27 @@ Agent SHALL 通过登录后可读的共享已保存地点接口，在当前激�
 - **THEN** Agent 告知匹配可能不完整
 - **AND** 允许用户按地点类型缩小范围
 
+### Requirement: Agent reads natural-language POI details for recommendations
+Agent SHALL 能通过 `get_location_detail` 读取已收录地点的评分、自然语言地点类型、行政区、标签/商圈与营业时间，用于向用户推荐。工具输出 MUST NOT 包含 `typeCode`、`typeGroup`、`regionCode` 等无自然语义的代码，MUST NOT 包含原始 `petPolicies` 或原始 POI JSON；宠物政策结论 MUST 继续使用确定性 `policy` 结果。工具未返回的信息 MUST NOT 被编造。
+
+#### Scenario: Recommend a location with detail fields
+- **GIVEN** 地点详情返回评分、类型、区域、标签与营业时间
+- **WHEN** Agent 向用户推荐该地点
+- **THEN** Agent 可引用工具返回的上述字段
+- **AND** 不补造未返回的信息
+
+#### Scenario: Detail output hides raw codes
+- **GIVEN** Agent 读取某个已收录地点的详情
+- **WHEN** 工具返回结果
+- **THEN** 结果不包含 `typeCode`、`typeGroup`、`regionCode`
+- **AND** 结果不包含原始 `petPolicies` 与原始 POI JSON
+
+#### Scenario: Detail field is missing
+- **GIVEN** 地点详情缺少评分或营业时间
+- **WHEN** Agent 推荐该地点
+- **THEN** Agent 省略缺失信息
+- **AND** 不猜测或补造字段值
+
 ### Requirement: Agent tool surface is explicitly allowlisted
 Agent SHALL 只向模型暴露行程规划所需的固定工具集合。服务端 MUST 忽略客户端提交的 allowlist 之外的额外工具声明，且 MUST NOT 提供通用 fetch、地图搜索、管理员地点或绕过用户确认的行程/宠物写工具。
 

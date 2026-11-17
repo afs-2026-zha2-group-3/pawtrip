@@ -65,11 +65,14 @@ export interface LocationBrowseDetail {
   typeGroup: string;
   address: string | null;
   regionCode: string | null;
+  typeName?: string | null;
+  regionName?: string | null;
   petPolicies: PetPolicies;
   coverPhotoUrl: string | null;
   rating: string | null;
   keytag?: string | null;
   businessArea?: string | null;
+  openingHours?: string | null;
 }
 
 export interface NearbyPetService {

@@ -76,8 +76,13 @@ export interface GetLocationDetailOutput {
   status: "ok" | "not_found";
   poiId: string;
   name?: string;
-  typeGroup?: string;
+  typeName?: string | null;
+  regionName?: string | null;
   address?: string | null;
+  rating?: string | null;
+  keytag?: string | null;
+  businessArea?: string | null;
+  openingHours?: string | null;
   policy?: PolicyVerdict | null;
   message?: string;
 }

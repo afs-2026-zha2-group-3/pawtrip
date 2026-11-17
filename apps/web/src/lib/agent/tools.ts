@@ -24,7 +24,8 @@ export const findLocationsTool = toolDefinition({
 
 export const getLocationDetailTool = toolDefinition({
   name: "get_location_detail",
-  description: "读取一个 Pawtrip 已收录地点的详情与确定性宠物政策结论。",
+  description:
+    "读取一个 Pawtrip 已收录地点的推荐信息（自然语言类型、区域、评分、标签、商圈、营业时间）与确定性宠物政策结论。",
   inputSchema: {
     type: "object",
     properties: {

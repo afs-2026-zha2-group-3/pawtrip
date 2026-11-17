@@ -1,5 +1,6 @@
 package com.pawtrip.server.location;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -101,7 +102,39 @@ class LocationQueryService {
 		String coverPhotoUrl = coverPhotos(List.of(location)).get(location.getId());
 		return LocationQueryResponses.LocationDetail.from(location, coverPhotoUrl,
 				businessField(location, poi, "rating"), businessField(location, poi, "keytag"),
-				businessField(location, poi, "business_area"));
+				businessField(location, poi, "business_area"), typeName(poi), regionName(poi),
+				openingHours(location, poi));
+	}
+
+	private static String typeName(JsonNode poi) {
+		String value = text(poi, "type");
+		if (value == null) {
+			return null;
+		}
+		List<String> parts = new ArrayList<>();
+		for (String part : value.split(";")) {
+			String item = part.trim();
+			if (!item.isEmpty() && !parts.contains(item)) {
+				parts.add(item);
+			}
+		}
+		return parts.isEmpty() ? null : String.join("、", parts);
+	}
+
+	private static String regionName(JsonNode poi) {
+		List<String> parts = new ArrayList<>();
+		for (String field : List.of("pname", "cityname", "adname")) {
+			String value = text(poi, field);
+			if (value != null && !parts.contains(value)) {
+				parts.add(value);
+			}
+		}
+		return parts.isEmpty() ? null : String.join("", parts);
+	}
+
+	private String openingHours(PawtripLocation location, JsonNode poi) {
+		String weekly = businessField(location, poi, "opentime_week");
+		return weekly != null ? weekly : businessField(location, poi, "opentime_today");
 	}
 
 	private JsonNode parseJson(String json) {

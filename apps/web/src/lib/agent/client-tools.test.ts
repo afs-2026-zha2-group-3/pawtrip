@@ -126,7 +126,15 @@ describe("agent client tools", () => {
           });
         }
         if (url.startsWith("/api/locations/detail")) {
-          return json(location("detail", "详情地点"));
+          return json({
+            ...location("detail", "详情地点"),
+            typeName: "风景名胜、公园",
+            regionName: "广东省珠海市香洲区",
+            rating: "4.6",
+            keytag: "海滨浴场",
+            businessArea: "吉大",
+            openingHours: "周一至周日 00:00-24:00",
+          });
         }
         if (url.startsWith("/api/locations/other-city")) {
           return json(location("other-city", "西湖", "330106"));
@@ -181,6 +189,26 @@ describe("agent client tools", () => {
 
     expect(output.status).toBe("not_found");
     expect(output.message).toContain("激活行程城市");
+  });
+
+  it("returns natural-language recommendation details without raw codes", async () => {
+    const tools = createAgentClientTools(new QueryClient());
+    const output = await tool<GetLocationDetailOutput>(tools, "get_location_detail").execute(
+      { poiId: "detail" },
+      context,
+    );
+
+    expect(output.status).toBe("ok");
+    expect(output.typeName).toBe("风景名胜、公园");
+    expect(output.regionName).toBe("广东省珠海市香洲区");
+    expect(output.rating).toBe("4.6");
+    expect(output.keytag).toBe("海滨浴场");
+    expect(output.businessArea).toBe("吉大");
+    expect(output.openingHours).toBe("周一至周日 00:00-24:00");
+    expect("typeCode" in output).toBe(false);
+    expect("typeGroup" in output).toBe(false);
+    expect("regionCode" in output).toBe(false);
+    expect("petPolicies" in output).toBe(false);
   });
 
   it("reads the latest store plan with names and a revision", async () => {

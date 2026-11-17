@@ -40,3 +40,7 @@
 - [x] 6.7 允许 `add_stop` 引用当前计划中已有的 poiId，通过 `remove_stop` + `add_stop(position)` 支持同天排序与跨天移动；补充先读后改、过期版本拒绝与排序测试。
 - [x] 6.8 将 Agent 进度展示改为面向用户的单条状态：thinking → 正在规划行程、find_locations → 正在搜集景点、get_trip_plan → 正在读取最新行程、update_trip_plan → 正在编辑行程等；已完成步骤折叠为「已完成 N 个步骤」，同一时刻最多一个活动状态。
 - [x] 6.9 用户点击「拒绝」时同样关闭待审核方案卡片（清空提案），行程保持不变；同步组件测试与 E2E。
+
+## 7. 扩展地点详情推荐信息
+
+- [x] 7.1 扩展 `get_location_detail`：后端地点详情从 `poi_json` 解析自然语言类型（`type`）与行政区（`pname`/`cityname`/`adname`），并返回周营业时间；Agent 工具输出评分、自然语言类型、行政区、标签、商圈与营业时间，移除 `typeGroup` 等无自然语义代码和原始政策字段。补充后端详情与浏览器工具测试，验证 `cd apps/server && ./mvnw test`、`cd apps/web && npm test` 通过。
