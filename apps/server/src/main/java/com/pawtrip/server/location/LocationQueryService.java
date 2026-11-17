@@ -63,9 +63,6 @@ class LocationQueryService {
 	private LocationQueryResponses.LocationDetail toDetail(PawtripLocation location) {
 		JsonNode poi = parseJson(location.getPoiJson());
 		String coverPhotoUrl = coverPhotos(List.of(location)).get(location.getId());
-		if (coverPhotoUrl == null) {
-			coverPhotoUrl = firstPhotoUrl(poi);
-		}
 		return LocationQueryResponses.LocationDetail.from(location, coverPhotoUrl,
 				businessField(location, poi, "rating"), businessField(location, poi, "keytag"),
 				businessField(location, poi, "business_area"));
@@ -190,6 +187,10 @@ class LocationQueryService {
 		for (LocationPhoto photo : this.photoRepository
 			.findAllByLocationIdInOrderByLocationIdAscPhotoOrderAsc(ids)) {
 			covers.putIfAbsent(photo.getLocationId(), photo.getSourceUrl());
+		}
+		for (PawtripLocation location : locations) {
+			covers.computeIfAbsent(location.getId(),
+					ignored -> firstPhotoUrl(parseJson(location.getPoiJson())));
 		}
 		return covers;
 	}
