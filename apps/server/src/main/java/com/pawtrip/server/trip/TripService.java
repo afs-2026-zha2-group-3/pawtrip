@@ -1,5 +1,7 @@
 package com.pawtrip.server.trip;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -62,7 +64,8 @@ class TripService {
 		Long userId = userId(username);
 		ValidatedTrip validated = validate(userId, request, true);
 		Trip saved = this.tripRepository.save(new Trip(userId, validated.name(), validated.cityAdcode(),
-				validated.petId(), validated.totalDays(), validated.transportMode(), validated.planJson()));
+				validated.petId(), validated.totalDays(), validated.startDate(), validated.transportMode(),
+				validated.planJson()));
 		return TripResponses.TripDetail.from(saved, this.planValidator);
 	}
 
@@ -71,7 +74,8 @@ class TripService {
 		Long userId = userId(username);
 		Trip existing = findOwnedTrip(userId, tripId);
 		ValidatedTrip validated = validate(userId, request, false);
-		existing.update(validated.name(), validated.totalDays(), validated.planJson(), validated.transportMode());
+		existing.update(validated.name(), validated.totalDays(), validated.startDate(), validated.planJson(),
+				validated.transportMode());
 		return TripResponses.TripDetail.from(this.tripRepository.save(existing), this.planValidator);
 	}
 
@@ -92,14 +96,15 @@ class TripService {
 		if (transportMode != null && !TRANSPORT_MODES.contains(transportMode)) {
 			throw invalid();
 		}
+		String startDate = validatedStartDate(request.startDate());
 		if (!requireBinding && (request.plan() == null || request.plan().isNull())) {
 			throw invalid();
 		}
 		TripPlan plan = this.planValidator.validate(request.plan(), request.totalDays());
 		validatePoiIds(plan);
 		if (!requireBinding) {
-			return new ValidatedTrip(name, null, null, request.totalDays(), this.planValidator.serialize(plan),
-					transportMode);
+			return new ValidatedTrip(name, null, null, request.totalDays(), startDate,
+					this.planValidator.serialize(plan), transportMode);
 		}
 		String cityAdcode = request.cityAdcode();
 		if (cityAdcode == null || cityAdcode.isBlank() || !isCity(cityAdcode)) {
@@ -109,8 +114,24 @@ class TripService {
 		if (petId == null || this.petRepository.findByIdAndUserId(petId, userId).isEmpty()) {
 			throw invalid();
 		}
-		return new ValidatedTrip(name, cityAdcode, petId, request.totalDays(), this.planValidator.serialize(plan),
-				transportMode);
+		return new ValidatedTrip(name, cityAdcode, petId, request.totalDays(), startDate,
+				this.planValidator.serialize(plan), transportMode);
+	}
+
+	private static String validatedStartDate(String raw) {
+		if (raw == null) {
+			return null;
+		}
+		if (!raw.matches("\\d{4}-\\d{2}-\\d{2}")) {
+			throw invalid();
+		}
+		try {
+			LocalDate.parse(raw);
+		}
+		catch (DateTimeParseException exception) {
+			throw invalid();
+		}
+		return raw;
 	}
 
 	private boolean isCity(String adcode) {
@@ -156,8 +177,8 @@ class TripService {
 		return new ApiException(ApiErrorCode.VALIDATION_ERROR, "Invalid trip request");
 	}
 
-	private record ValidatedTrip(String name, String cityAdcode, Long petId, int totalDays, String planJson,
-			String transportMode) {
+	private record ValidatedTrip(String name, String cityAdcode, Long petId, int totalDays, String startDate,
+			String planJson, String transportMode) {
 	}
 
 }
