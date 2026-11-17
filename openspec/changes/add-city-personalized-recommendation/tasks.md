@@ -16,9 +16,9 @@
 
 ## 3. 档案表单与详情（含本组 E2E）
 
-- [ ] 3.1 扩展 `queries/pets.ts` `Pet` 类型与创建/更新 payload（preferences/personality）；验证：tsc/build 通过
-- [ ] 3.2 `-pet-dialogs.tsx` 创建/编辑表单新增喜好 Checkbox 组（5 项）与性格 Select（含「未设置」sentinel→null），详情视图展示两字段（未填显示「未设置」）；既有必填校验不变；验证：tsc/build 通过
-- [ ] 3.3 更新 `e2e/paws-pet-management.spec.ts`：勾选喜好+选择性格创建→详情展示→编辑回显→清空保存显示「未设置」；不填时无必填错误；API 造 NULL 字段旧档案→详情「未设置」（atdd-design §2 表单维护闭环/旧档案兼容行）；验证：该 spec 全部通过且既有用例不回归
+- [x] 3.1 扩展 `queries/pets.ts` `Pet` 类型与创建/更新 payload（preferences/personality）；验证：tsc/build 通过
+- [x] 3.2 `-pet-dialogs.tsx` 创建/编辑表单新增喜好 Checkbox 组（5 项）与性格 Select（含「未设置」sentinel→null），详情视图展示两字段（未填显示「未设置」）；既有必填校验不变；验证：tsc/build 通过
+- [x] 3.3 更新 `e2e/paws-pet-management.spec.ts`：勾选喜好+选择性格创建→详情展示→编辑回显→清空保存显示「未设置」；不填时无必填错误；API 造 NULL 字段旧档案→详情「未设置」（atdd-design §2 表单维护闭环/旧档案兼容行）；验证：该 spec 全部通过且既有用例不回归（E2E 运行委托用户手动验证，2026-11-17 用户决定；本地 run-e2e 启动器 /login 404 问题另行记录）
 
 ## 4. 城市特征下发（含本组测试与文档）
 

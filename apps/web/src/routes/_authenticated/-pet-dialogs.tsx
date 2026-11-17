@@ -46,6 +46,8 @@ import {
   petQueryKeys,
   updatePetMutationOptions,
   type Pet,
+  type PetPersonality,
+  type PetPreference,
   type PetType,
   type SavePetInput,
 } from "@/queries/pets";
@@ -54,6 +56,32 @@ const petTypeLabels: Record<PetType, string> = {
   CAT: "猫",
   DOG: "狗",
 };
+
+// REQ-014 词表标签（design D1/D8，键与后端枚举镜像）
+const preferenceKeys: PetPreference[] = [
+  "SWIMMING",
+  "HIKING",
+  "GRASS_RUNNING",
+  "CITY_WALKING",
+  "SNOW_PLAY",
+];
+
+const preferenceLabels: Record<PetPreference, string> = {
+  SWIMMING: "游泳",
+  HIKING: "爬山",
+  GRASS_RUNNING: "草地奔跑",
+  CITY_WALKING: "城市漫步",
+  SNOW_PLAY: "玩雪",
+};
+
+const personalityLabels: Record<PetPersonality, string> = {
+  ENERGETIC: "活泼好动",
+  CALM: "温和平静",
+  TIMID: "胆小敏感",
+};
+
+// 性格 Select 的「未设置」哨兵值，仅 UI 使用，提交时映射 null（design D8）
+const PERSONALITY_UNSET = "UNSET";
 
 type PetDraft = {
   name: string;
@@ -64,6 +92,8 @@ type PetDraft = {
   hasLeash: boolean;
   hasVaccinationProof: boolean;
   photo: string | null;
+  preferences: PetPreference[];
+  personality: PetPersonality | typeof PERSONALITY_UNSET;
 };
 
 type DraftErrors = Partial<
@@ -83,6 +113,8 @@ function draftFromPet(pet: Pet | null): PetDraft {
     hasLeash: pet?.hasLeash ?? false,
     hasVaccinationProof: pet?.hasVaccinationProof ?? false,
     photo: pet?.photo ?? null,
+    preferences: pet?.preferences ?? [],
+    personality: pet?.personality ?? PERSONALITY_UNSET,
   };
 }
 
@@ -172,6 +204,14 @@ export function PetDialog({
     updateMutation.reset();
   }
 
+  function togglePreference(key: PetPreference, checked: boolean) {
+    updateDraft({
+      preferences: checked
+        ? [...draft.preferences, key]
+        : draft.preferences.filter((preference) => preference !== key),
+    });
+  }
+
   function startEdit() {
     setDraft(draftFromPet(pet));
     setErrors({});
@@ -227,6 +267,9 @@ export function PetDialog({
       photo: draft.photo,
       dogBreedId:
         draft.petType === "DOG" ? Number(draft.dogBreedId) : null,
+      preferences: draft.preferences,
+      personality:
+        draft.personality === PERSONALITY_UNSET ? null : draft.personality,
     };
 
     if (pet) {
@@ -422,6 +465,73 @@ export function PetDialog({
               </div>
 
               <Field>
+                <FieldLabel>喜好（可选）</FieldLabel>
+                <div className="flex flex-wrap gap-x-6 gap-y-2">
+                  {preferenceKeys.map((key) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`pet-preference-${key.toLowerCase()}`}
+                        checked={draft.preferences.includes(key)}
+                        onCheckedChange={(checked) =>
+                          togglePreference(key, checked)
+                        }
+                      />
+                      <FieldLabel
+                        htmlFor={`pet-preference-${key.toLowerCase()}`}
+                      >
+                        {preferenceLabels[key]}
+                      </FieldLabel>
+                    </div>
+                  ))}
+                </div>
+                <FieldDescription>
+                  用于城市个性化推荐，可不填。
+                </FieldDescription>
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="pet-personality">性格（可选）</FieldLabel>
+                <Select
+                  value={draft.personality}
+                  onValueChange={(value) => {
+                    if (typeof value === "string") {
+                      updateDraft({
+                        personality: value as PetDraft["personality"],
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger
+                    id="pet-personality"
+                    aria-label="宠物性格"
+                    className="w-full"
+                  >
+                    <SelectValue>
+                      {(value: string | null) =>
+                        value && value !== PERSONALITY_UNSET
+                          ? personalityLabels[value as PetPersonality]
+                          : "未设置"
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value={PERSONALITY_UNSET}>
+                        未设置
+                      </SelectItem>
+                      {(Object.keys(personalityLabels) as PetPersonality[]).map(
+                        (key) => (
+                          <SelectItem key={key} value={key}>
+                            {personalityLabels[key]}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              <Field>
                 <FieldLabel htmlFor="pet-photo">照片</FieldLabel>
                 <Input
                   id="pet-photo"
@@ -527,6 +637,18 @@ function PetDetails({ pet, photo }: { pet: Pet; photo: string | null }) {
         <dd>{pet.hasLeash ? "有" : "无"}</dd>
         <dt className="font-medium">免疫证明</dt>
         <dd>{pet.hasVaccinationProof ? "有" : "无"}</dd>
+        <dt className="font-medium">喜好</dt>
+        <dd>
+          {pet.preferences.length > 0
+            ? pet.preferences
+                .map((preference) => preferenceLabels[preference])
+                .join("、")
+            : "未设置"}
+        </dd>
+        <dt className="font-medium">性格</dt>
+        <dd>
+          {pet.personality ? personalityLabels[pet.personality] : "未设置"}
+        </dd>
       </dl>
     </div>
   );

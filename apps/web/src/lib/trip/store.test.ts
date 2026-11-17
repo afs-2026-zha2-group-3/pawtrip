@@ -120,6 +120,8 @@ describe("trip store", () => {
         hasVaccinationProof: true,
         photo: null,
         dogBreed: null,
+        preferences: [],
+        personality: null,
       },
     ]);
     tripActions.cacheLocation({
