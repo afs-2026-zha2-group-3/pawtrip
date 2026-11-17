@@ -5,6 +5,7 @@ import {
   openCities,
   openTrips,
   resetTrips,
+  searchCity,
   signIn,
   tripCard,
 } from "./trip-helpers";
@@ -156,6 +157,7 @@ test("E5 switching city requires deactivating the current trip", async ({ page }
   await expect(attractionCard(page, "情侣路")).toBeVisible();
 
   await openCities(page);
+  await searchCity(page, "杭州");
   await expect(page.getByText("当前已有激活行程")).toBeVisible();
   await expect(
     cityCard(page, "杭州市").getByRole("button", { name: "选定" }),

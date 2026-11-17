@@ -7,6 +7,7 @@ import {
   openTripDialog,
   pickCalendarDate,
   resetTrips,
+  searchCity,
   setTripDates,
   signIn,
 } from "./trip-helpers";
@@ -24,9 +25,10 @@ test.beforeEach(async ({ page }) => {
 test("E1 shows city candidates with Trips tab and without duration input", async ({ page }) => {
   await openCities(page);
 
-  await expect(cityCard(page, "杭州市")).toBeVisible();
-  await expect(cityCard(page, "珠海市")).toBeVisible();
   expect(await guestCount(page)).toBeGreaterThan(2);
+  await expect(page.getByTestId("city-card")).toHaveCount(9);
+  await expect(page.getByRole("navigation", { name: "城市分页" })).toBeVisible();
+  await expect(page.getByText(/第 1 \/ \d+ 页/)).toBeVisible();
   await expect(page.getByRole("tab", { name: "Trips" })).toBeVisible();
   await expect(page.getByText("旅游总天数")).toHaveCount(0);
   await expect(page.locator("header").getByText("目的地未选")).toHaveCount(0);
@@ -42,7 +44,7 @@ test("E2 searches by city or province keyword and shows empty state", async ({ p
   await expect(cityCard(page, "珠海市")).toHaveCount(0);
 
   await search.fill("广东");
-  await expect(cityCard(page, "珠海市")).toBeVisible();
+  await expect(page.getByTestId("city-card")).toHaveCount(9);
   await expect(cityCard(page, "杭州市")).toHaveCount(0);
 
   await search.fill("不存在的城市");
@@ -52,6 +54,7 @@ test("E2 searches by city or province keyword and shows empty state", async ({ p
 
 test("E3 pet-friendly filter keeps eligible candidates", async ({ page }) => {
   await openCities(page);
+  await searchCity(page, "杭州");
 
   const total = await guestCount(page);
   const filter = page.getByRole("checkbox", { name: "宠物友好筛选" });
@@ -63,6 +66,7 @@ test("E3 pet-friendly filter keeps eligible candidates", async ({ page }) => {
 
 test("E4 candidate cards show one tag per pet", async ({ page }) => {
   await openCities(page);
+  await searchCity(page, "杭州");
 
   const card = cityCard(page, "杭州市");
   await expect(card.getByText("豆豆 · 无法判定")).toBeVisible();
@@ -139,18 +143,22 @@ test("E7 rejects incomplete or overlong date ranges without creating a trip", as
   expect(posts).toHaveLength(0);
 });
 
-test("E8 city cards expose policy only through the policy link", async ({ page }) => {
+test("E8 card selection opens the sidebar policy without a card link", async ({
+  page,
+}) => {
   await openCities(page);
+  await searchCity(page, "珠海");
 
   const card = cityCard(page, "珠海市");
-  await expect(
-    card.getByRole("link", { name: "查看珠海市的城市政策" }),
-  ).toBeVisible();
+  await expect(card.getByRole("link")).toHaveCount(0);
   await expect(page.getByText("政策要点")).toHaveCount(0);
 
-  await card.getByRole("link", { name: "查看珠海市的城市政策" }).click();
-  await expect(page).toHaveURL(/\/destinations\/440400\/policy$/);
-  await expect(page.getByRole("heading", { name: "珠海市养宠政策" })).toBeVisible();
+  await card.getByText("珠海市", { exact: true }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "城市宠物管理政策" })
+      .getByText("政策要点"),
+  ).toBeVisible();
 });
 
 test("E9 active trip keeps candidates but blocks selecting another city", async ({
@@ -158,14 +166,13 @@ test("E9 active trip keeps candidates but blocks selecting another city", async 
 }) => {
   await createTrip(page, { city: "杭州市", days: 2 });
   await openCities(page);
+  await searchCity(page, "杭州");
 
   await expect(page.getByRole("textbox", { name: "搜索城市" })).toBeVisible();
   await expect(page.getByText("当前已有激活行程")).toBeVisible();
   const card = cityCard(page, "杭州市");
   await expect(card.getByRole("button", { name: "选定" })).toBeDisabled();
-  await expect(
-    card.getByRole("link", { name: "查看杭州市的城市政策" }),
-  ).toBeVisible();
+  await expect(card.getByRole("link")).toHaveCount(0);
   await expect(page.getByText("政策要点")).toHaveCount(0);
 });
 
@@ -251,6 +258,7 @@ test("E12 renders friendly and unfriendly tags per pet", async ({ page }) => {
 test("E13 prompts for a pet profile when the user has none", async ({ page }) => {
   await page.route("**/api/pets", (route) => route.fulfill({ json: [] }));
   await page.getByRole("tab", { name: "城市浏览" }).click();
+  await searchCity(page, "杭州");
 
   await expect(page.getByText(/尚未添加宠物档案/)).toBeVisible();
   await expect(page.getByRole("link", { name: "先去添加宠物" })).toBeVisible();
@@ -267,13 +275,100 @@ test("E14 reports a pet API failure instead of an empty pet list", async ({ page
   await expect(page.getByText(/尚未添加宠物档案/)).toHaveCount(0);
 });
 
-test("E15 policy content stays on the policy page", async ({ page }) => {
+test("E15 selecting a city shows its policy in the sidebar", async ({ page }) => {
+  await openCities(page);
+  await expect(page.getByRole("checkbox")).toHaveCount(1);
+  await expect(page.getByText("政策要点")).toHaveCount(0);
+
+  await searchCity(page, "珠海");
+  await cityCard(page, "珠海市").getByText("珠海市", { exact: true }).click();
+
+  const panel = page.getByRole("region", { name: "城市宠物管理政策" });
+  await expect(
+    panel.getByRole("heading", { name: "珠海市宠物管理政策" }),
+  ).toBeVisible();
+  await expect(panel.getByText("政策要点")).toBeVisible();
+  await expect(panel).toContainText("严格管理区内禁止饲养危险犬");
+  await expect(panel.getByText(/暂无法判定/).first()).toBeVisible();
+
+  await panel.getByRole("link", { name: "珠海市禁养犬名单" }).click();
+  await expect(page).toHaveURL(
+    /\/destinations\/440400\/policy#banned-breeds$/,
+  );
+  await expect(
+    page.getByRole("heading", { name: "珠海市养宠政策" }),
+  ).toBeVisible();
+  await expect(page.getByText("禁养犬种名单")).toBeVisible();
+});
+
+test("E16 paginates candidates and resets to the first page on search", async ({
+  page,
+}) => {
   await openCities(page);
 
-  await expect(
-    page.getByRole("link", { name: /查看.*的城市政策/ }).first(),
-  ).toBeVisible();
-  await expect(page.getByRole("heading", { name: /养犬政策/ })).toHaveCount(0);
-  await expect(page.getByText("禁养犬种名单")).toHaveCount(0);
-  await expect(page.getByRole("checkbox")).toHaveCount(1);
+  const pager = page.getByRole("navigation", { name: "城市分页" });
+  await expect(pager).toContainText("第 1 /");
+  const firstAdcode = await page
+    .getByTestId("city-card")
+    .first()
+    .getAttribute("data-adcode");
+
+  await pager.getByRole("button", { name: "下一页" }).click();
+  await expect(pager).toContainText("第 2 /");
+  await expect(page.getByTestId("city-card").first()).not.toHaveAttribute(
+    "data-adcode",
+    firstAdcode ?? "",
+  );
+
+  await searchCity(page, "杭州");
+  await expect(pager).toHaveCount(0);
+  await expect(cityCard(page, "杭州市")).toBeVisible();
+});
+
+test("E17 shows public policy for first-page cities", async ({ page }) => {
+  await openCities(page);
+
+  const cards = page.getByTestId("city-card");
+  const count = await cards.count();
+  const panel = page.getByRole("region", { name: "城市宠物管理政策" });
+  let covered = 0;
+
+  for (let index = 0; index < count; index += 1) {
+    const name =
+      (await cards
+        .nth(index)
+        .locator('[data-slot="card-title"]')
+        .textContent()) ?? "";
+    await cards.nth(index).click();
+    await panel
+      .getByRole("heading", { name: `${name}宠物管理政策` })
+      .waitFor({ timeout: 2500 });
+    const shown = await panel
+      .getByText("政策要点")
+      .waitFor({ state: "visible", timeout: 2000 })
+      .then(() => true)
+      .catch(() => false);
+    if (shown) covered += 1;
+  }
+
+  expect(covered).toBeGreaterThanOrEqual(8);
+  await expect(page.getByText("演示数据")).toHaveCount(0);
+
+  await searchCity(page, "三沙");
+  await cityCard(page, "三沙市").getByText("三沙市", { exact: true }).click();
+  await expect(panel.getByText("暂无当地政策数据")).toBeVisible();
+});
+
+test("E18 closes the sidebar policy panel", async ({ page }) => {
+  await openCities(page);
+  await searchCity(page, "珠海");
+  await cityCard(page, "珠海市").getByText("珠海市", { exact: true }).click();
+
+  const panel = page.getByRole("region", { name: "城市宠物管理政策" });
+  await expect(panel.getByText("政策要点")).toBeVisible();
+
+  await panel.getByRole("button", { name: "关闭城市政策" }).click();
+  await expect(panel).toHaveCount(0);
+  await expect(page.getByText("政策要点")).toHaveCount(0);
+  await expect(cityCard(page, "珠海市")).toBeVisible();
 });
