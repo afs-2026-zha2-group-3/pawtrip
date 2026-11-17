@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Download } from "lucide-react";
+import { Download, Image as ImageIcon } from "lucide-react";
 import { useSelector } from "@tanstack/react-store";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -25,6 +25,11 @@ import {
   type TransportRule,
 } from "@/data/transport-rules";
 import { petPolicyFields } from "@/lib/attraction-pet-rules";
+import {
+  downloadBlob,
+  elementToPngBlob,
+  imageFileName,
+} from "@/lib/trip/export-image";
 import { TripSectionNav } from "@/components/trip/trip-section-nav";
 import {
   addDays,
@@ -74,8 +79,11 @@ function ItineraryPage() {
   });
   const queryClient = useQueryClient();
   const requested = useRef(new Set<string>());
+  const imageSheetRef = useRef<HTMLDivElement>(null);
   const [selectedDay, setSelectedDay] = useState(1);
   const [printing, setPrinting] = useState(false);
+  const [exportingImage, setExportingImage] = useState(false);
+  const [imageExportError, setImageExportError] = useState<string | null>(null);
 
   useEffect(() => {
     const done = () => setPrinting(false);
@@ -198,6 +206,27 @@ function ItineraryPage() {
   const transportRule = active.transportMode
     ? getRuleForMode(active.transportMode)
     : null;
+  const trip = active;
+
+  async function exportImages() {
+    setImageExportError(null);
+    setExportingImage(true);
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+    try {
+      const sheet = imageSheetRef.current;
+      if (!sheet) {
+        throw new Error("导出容器未就绪");
+      }
+      const blob = await elementToPngBlob(sheet);
+      downloadBlob(blob, imageFileName(trip.name));
+    } catch {
+      setImageExportError("图片导出失败，请重试");
+    } finally {
+      setExportingImage(false);
+    }
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6 print:max-w-none print:p-0">
@@ -214,12 +243,34 @@ function ItineraryPage() {
 
       {transportRule ? <TransportRuleCard rule={transportRule} /> : null}
 
-      <div className="flex justify-end print:hidden">
-        <Button type="button" size="sm" variant="outline" onClick={exportPdf}>
+      <div className="flex flex-wrap justify-end gap-2 print:hidden">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={exportPdf}
+          disabled={exportingImage}
+        >
           <Download aria-hidden="true" />
           导出 PDF
         </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => void exportImages()}
+          disabled={exportingImage}
+          aria-busy={exportingImage}
+        >
+          <ImageIcon aria-hidden="true" />
+          {exportingImage ? "导出中…" : "导出图片"}
+        </Button>
       </div>
+      {imageExportError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {imageExportError}
+        </p>
+      ) : null}
 
       <div className="print:hidden">
         <Tabs
@@ -262,6 +313,51 @@ function ItineraryPage() {
             ))}
           </div>
         </section>
+      ) : null}
+
+      {exportingImage ? (
+        <div
+          aria-hidden="true"
+          style={{ position: "fixed", left: "-20000px", top: 0 }}
+        >
+          <div
+            ref={imageSheetRef}
+            data-testid="image-export-surface"
+            className="flex flex-col gap-8 bg-white p-10 text-foreground"
+            style={{ width: 1080 }}
+          >
+            <header className="border-b pb-4">
+              <p className="text-sm text-muted-foreground">PawTrip · 行程单</p>
+              <p className="text-2xl font-semibold">{active.name}</p>
+              <p className="text-sm text-muted-foreground">
+                {cityName} · {meta}
+              </p>
+            </header>
+            {transportRule ? (
+              <TransportRuleCard rule={transportRule} printOnly={false} />
+            ) : null}
+            {itinerary.days.map((entry) => (
+              <section key={entry.day} className="flex flex-col gap-4">
+                <DayDetail day={entry} tripId={active.id} forceOpen />
+              </section>
+            ))}
+            {itinerary.unscheduledNames.length > 0 ? (
+              <section aria-label="未排期地点" className="flex flex-col gap-2">
+                <h2 className="text-sm font-medium">未排期</h2>
+                <div className="flex flex-wrap gap-1.5">
+                  {itinerary.unscheduledNames.map((name, index) => (
+                    <span
+                      key={`${index}-${name}`}
+                      className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
+        </div>
       ) : null}
     </main>
   );
@@ -351,11 +447,20 @@ function DayDetail({
   );
 }
 
-function TransportRuleCard({ rule }: { rule: TransportRule }) {
+function TransportRuleCard({
+  rule,
+  printOnly = true,
+}: {
+  rule: TransportRule;
+  printOnly?: boolean;
+}) {
   return (
     <section
       aria-label="大交通携宠规则"
-      className="hidden flex-col gap-1 rounded-md border px-3 py-2 text-xs text-muted-foreground print:flex print:break-inside-avoid"
+      className={cn(
+        "flex-col gap-1 rounded-md border px-3 py-2 text-xs text-muted-foreground",
+        printOnly ? "hidden print:flex print:break-inside-avoid" : "flex",
+      )}
     >
       <p className="text-sm font-medium text-foreground">
         大交通携宠规则 · {transportModeLabels[rule.mode]}

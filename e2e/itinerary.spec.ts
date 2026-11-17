@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import { expect, test, type Download, type Page } from "@playwright/test";
 import {
   createTripViaApi,
   csrfHeaders,
@@ -559,5 +560,53 @@ test("exports without a transport rule when no transport mode is set", async ({
   await expect(page.getByText("12月1日 周二 · 珠海市")).toBeVisible();
   await expect(page.getByTestId("itinerary-stop").first()).toContainText(
     "情侣路",
+  );
+});
+
+test("exports the full itinerary as one PNG", async ({ page }) => {
+  await seedItineraryTrip(page);
+  await activateTrip(page);
+  await page.goto("/itinerary");
+
+  const downloads: Download[] = [];
+  page.on("download", (download) => downloads.push(download));
+
+  await page.getByRole("button", { name: "导出图片" }).click();
+  await expect.poll(() => downloads.length, { timeout: 20_000 }).toBe(1);
+
+  const download = downloads[0];
+  const path = await download.path();
+  if (!path) throw new Error("download path missing");
+  const buffer = await readFile(path);
+
+  expect(download.suggestedFilename()).toBe("珠海-2天-豆豆-行程单.png");
+  expect(buffer.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+  expect(buffer.readUInt32BE(16)).toBe(1080);
+  expect(buffer.readUInt32BE(20)).toBeGreaterThan(1080);
+
+  await expect(page.getByRole("button", { name: "导出图片" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Day 1" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+});
+
+test("shows an error when image generation fails", async ({ page }) => {
+  await page.addInitScript(() => {
+    HTMLCanvasElement.prototype.toBlob = (callback: BlobCallback) => {
+      callback(null);
+    };
+  });
+  await seedItineraryTrip(page);
+  await activateTrip(page);
+  await page.goto("/itinerary");
+
+  await page.getByRole("button", { name: "导出图片" }).click();
+
+  await expect(page.getByRole("alert")).toContainText("图片导出失败，请重试");
+  await expect(page.getByRole("button", { name: "导出图片" })).toBeEnabled();
+  await expect(page.getByRole("tab", { name: "Day 1" })).toHaveAttribute(
+    "aria-selected",
+    "true",
   );
 });
