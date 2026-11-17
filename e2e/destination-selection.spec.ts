@@ -287,9 +287,43 @@ test("E15 selecting a city shows its policy in the sidebar", async ({ page }) =>
   await expect(
     panel.getByRole("heading", { name: "珠海市宠物管理政策" }),
   ).toBeVisible();
+  await expect(panel.getByText("更新于 2025-07")).toBeVisible();
+  await expect(panel.getByText("适用范围：严格管理区")).toBeVisible();
   await expect(panel.getByText("政策要点")).toBeVisible();
   await expect(panel).toContainText("严格管理区内禁止饲养危险犬");
-  await expect(panel.getByText(/暂无法判定/).first()).toBeVisible();
+  await expect(
+    panel.getByText(
+      /您的宠物「豆豆」暂无法判定：城市养犬政策不适用于猫/,
+    ),
+  ).toBeVisible();
+  await expect(
+    panel.getByText(
+      /您的宠物「毛毛」暂无法判定：宠物未填写犬种/,
+    ),
+  ).toBeVisible();
+  await expect(
+    panel.getByText("仍需遵守当地关于数量、牵引、疫苗等其他规定。"),
+  ).toBeVisible();
+  await expect(
+    panel.getByText(
+      /来源：《关于珠海市严格管理区内禁止饲养的危险犬标准及品种的通告》/,
+    ),
+  ).toBeVisible();
+  await expect(
+    panel.getByText(/内容整理自珠海市人民政府公开发布的通告/),
+  ).toBeVisible();
+
+  await panel.getByRole("button", { name: "关闭城市政策" }).click();
+  await expect(panel).toHaveCount(0);
+  const card = cityCard(page, "珠海市");
+  await card.focus();
+  await page.keyboard.press("Enter");
+  await expect(panel).toBeVisible();
+  await panel.getByRole("button", { name: "关闭城市政策" }).click();
+  await expect(panel).toHaveCount(0);
+  await card.focus();
+  await page.keyboard.press("Space");
+  await expect(panel).toBeVisible();
 
   await panel.getByRole("link", { name: "珠海市禁养犬名单" }).click();
   await expect(page).toHaveURL(
@@ -299,6 +333,11 @@ test("E15 selecting a city shows its policy in the sidebar", async ({ page }) =>
     page.getByRole("heading", { name: "珠海市养宠政策" }),
   ).toBeVisible();
   await expect(page.getByText("禁养犬种名单")).toBeVisible();
+  await expect(page.locator("#banned-breeds")).toBeInViewport();
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  await expect(
+    page.getByText("仅列出部分示例，完整名单请查阅当地政府通告。"),
+  ).toBeVisible();
 });
 
 test("E16 paginates candidates and resets to the first page on search", async ({
@@ -308,6 +347,9 @@ test("E16 paginates candidates and resets to the first page on search", async ({
 
   const pager = page.getByRole("navigation", { name: "城市分页" });
   await expect(pager).toContainText("第 1 /");
+  await expect(pager.getByRole("button", { name: "上一页" })).toBeDisabled();
+  await expect(pager.getByRole("button", { name: "下一页" })).toBeEnabled();
+  const total = await guestCount(page);
   const firstAdcode = await page
     .getByTestId("city-card")
     .first()
@@ -315,10 +357,22 @@ test("E16 paginates candidates and resets to the first page on search", async ({
 
   await pager.getByRole("button", { name: "下一页" }).click();
   await expect(pager).toContainText("第 2 /");
+  await expect(pager.getByRole("button", { name: "上一页" })).toBeEnabled();
   await expect(page.getByTestId("city-card").first()).not.toHaveAttribute(
     "data-adcode",
     firstAdcode ?? "",
   );
+  expect(await guestCount(page)).toBe(total);
+
+  await page.getByRole("textbox", { name: "搜索城市" }).fill("广东");
+  await expect(pager).toContainText("第 1 / 3 页");
+  await expect(pager.getByRole("button", { name: "上一页" })).toBeDisabled();
+
+  await pager.getByRole("button", { name: "下一页" }).click();
+  await expect(pager).toContainText("第 2 / 3 页");
+  await pager.getByRole("button", { name: "下一页" }).click();
+  await expect(pager).toContainText("第 3 / 3 页");
+  await expect(pager.getByRole("button", { name: "下一页" })).toBeDisabled();
 
   await searchCity(page, "杭州");
   await expect(pager).toHaveCount(0);
@@ -332,6 +386,7 @@ test("E17 shows public policy for first-page cities", async ({ page }) => {
   const count = await cards.count();
   const panel = page.getByRole("region", { name: "城市宠物管理政策" });
   let covered = 0;
+  let withSource = 0;
 
   for (let index = 0; index < count; index += 1) {
     const name =
@@ -348,15 +403,162 @@ test("E17 shows public policy for first-page cities", async ({ page }) => {
       .waitFor({ state: "visible", timeout: 2000 })
       .then(() => true)
       .catch(() => false);
-    if (shown) covered += 1;
+    if (shown) {
+      covered += 1;
+      const sourceShown = await panel
+        .getByText(/来源：/)
+        .isVisible()
+        .catch(() => false);
+      if (sourceShown) withSource += 1;
+    }
   }
 
   expect(covered).toBeGreaterThanOrEqual(8);
+  expect(withSource).toBe(covered);
   await expect(page.getByText("演示数据")).toHaveCount(0);
 
   await searchCity(page, "三沙");
   await cityCard(page, "三沙市").getByText("三沙市", { exact: true }).click();
   await expect(panel.getByText("暂无当地政策数据")).toBeVisible();
+  await expect(
+    panel.getByText(/当前仅覆盖已录入政策的城市/),
+  ).toBeVisible();
+  await expect(panel.getByText("政策要点")).toHaveCount(0);
+});
+
+test("E19 lists the mapped subset of Shangrao banned breeds", async ({
+  page,
+}) => {
+  await openCities(page);
+  await searchCity(page, "上饶");
+  await cityCard(page, "上饶市").getByText("上饶市", { exact: true }).click();
+
+  const panel = page.getByRole("region", { name: "城市宠物管理政策" });
+  await expect(
+    panel.getByText(/来源：《上饶市养犬管理暂行规定》/),
+  ).toBeVisible();
+  await panel.getByRole("link", { name: "上饶市禁养犬名单" }).click();
+
+  await expect(page).toHaveURL(/\/destinations\/361100\/policy#banned-breeds$/);
+  await expect(page.locator("#banned-breeds")).toBeInViewport();
+  for (const breed of [
+    "比特犬",
+    "藏獒",
+    "德国牧羊犬",
+    "罗威纳犬",
+    "杜宾犬",
+    "秋田犬",
+  ]) {
+    await expect(page.getByText(breed, { exact: true }).first()).toBeVisible();
+  }
+  await expect(page.getByText("等 8 种")).toBeVisible();
+  await expect(
+    page.getByText("仅列出部分示例，完整名单请查阅当地政府通告。"),
+  ).toBeVisible();
+
+  const response = await page.request.get("/api/cities/361100/pet-policy");
+  expect(response.ok()).toBeTruthy();
+  const policy = (await response.json()) as { bannedBreeds: string[] };
+  expect(policy.bannedBreeds).toHaveLength(8);
+  for (const breed of [
+    "比特犬",
+    "藏獒",
+    "德国牧羊犬",
+    "罗威纳犬",
+    "杜宾犬",
+    "秋田犬",
+    "高加索犬",
+    "卡斯罗犬",
+  ]) {
+    expect(policy.bannedBreeds).toContain(breed);
+  }
+});
+
+test("E20 preserves card width on wide screens and stacks on narrow screens", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await openCities(page);
+  await searchCity(page, "珠海");
+
+  const card = cityCard(page, "珠海市");
+  const before = await card.boundingBox();
+  await card.getByText("珠海市", { exact: true }).click();
+
+  const panel = page.getByRole("region", { name: "城市宠物管理政策" });
+  await expect(panel.getByText("政策要点")).toBeVisible();
+  const after = await card.boundingBox();
+  expect(
+    Math.abs((after?.width ?? 0) - (before?.width ?? 0)),
+  ).toBeLessThanOrEqual(1);
+
+  const panelBox = await panel.boundingBox();
+  expect(panelBox?.x ?? 0).toBeGreaterThanOrEqual(
+    (before?.x ?? 0) + (before?.width ?? 0),
+  );
+  await expect(page.locator("main")).toHaveClass(/max-w-\[1408px\]/);
+
+  await panel.getByRole("button", { name: "关闭城市政策" }).click();
+  await expect(panel).toHaveCount(0);
+  await expect(page.locator("main")).toHaveClass(/max-w-5xl/);
+  await expect(card).toBeVisible();
+
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await card.getByText("珠海市", { exact: true }).click();
+  await expect(panel).toBeVisible();
+  const narrowCard = await card.boundingBox();
+  const narrowPanel = await panel.boundingBox();
+  expect(narrowPanel?.y ?? 0).toBeGreaterThanOrEqual(
+    (narrowCard?.y ?? 0) + (narrowCard?.height ?? 0),
+  );
+});
+
+test("E21 shows friendly and unfriendly verdicts per pet in the sidebar", async ({
+  page,
+}) => {
+  await page.route("**/api/pets", (route) =>
+    route.fulfill({
+      json: [
+        {
+          id: 1,
+          name: "旺财",
+          petType: "DOG",
+          weightKg: 10,
+          shoulderHeightCm: 35,
+          hasLeash: true,
+          hasVaccinationProof: true,
+          photo: null,
+          dogBreed: { id: 10, name: "柯基犬", officialAggressive: false },
+        },
+        {
+          id: 2,
+          name: "小白",
+          petType: "DOG",
+          weightKg: 10,
+          shoulderHeightCm: 35,
+          hasLeash: true,
+          hasVaccinationProof: true,
+          photo: null,
+          dogBreed: { id: 18, name: "比特犬", officialAggressive: true },
+        },
+      ],
+    }),
+  );
+
+  await openCities(page);
+  await searchCity(page, "珠海");
+  await cityCard(page, "珠海市").getByText("珠海市", { exact: true }).click();
+
+  const panel = page.getByRole("region", { name: "城市宠物管理政策" });
+  await expect(
+    panel.getByText("您的宠物「旺财」未命中珠海市禁养犬种名单。"),
+  ).toBeVisible();
+  await expect(
+    panel.getByText("您的宠物「小白」比特犬属于当地禁养犬种。"),
+  ).toBeVisible();
+  await expect(
+    panel.getByText("仍需遵守当地关于数量、牵引、疫苗等其他规定。"),
+  ).toHaveCount(0);
 });
 
 test("E18 closes the sidebar policy panel", async ({ page }) => {

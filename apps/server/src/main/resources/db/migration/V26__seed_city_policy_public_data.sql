@@ -1,16 +1,5 @@
--- 用可查证的公开政策替换 V26 的演示数据；三沙市暂未查到已施行的公开养犬规定，保留未收录状态。
-DELETE FROM city_banned_dog_breed
-WHERE adcode IN (
-    '230900', '460200', '350400', '460300', '411200',
-    '361100', '441900', '370500', '640500'
-);
-
-DELETE FROM city_pet_policy
-WHERE adcode IN (
-    '230900', '460200', '350400', '460300', '411200',
-    '361100', '441900', '370500', '640500'
-);
-
+-- 首页 9 个城市中，8 个可公开查证政策的摘录；三沙市（460300）暂未查到已施行的公开规定，保持未收录。
+-- 本迁移是唯一写入首页城市政策的迁移，不包含演示或虚构数据；来源说明随条目保存。
 INSERT INTO city_pet_policy (
     adcode,
     area_scope,
@@ -84,7 +73,7 @@ INSERT INTO city_pet_policy (
         '2023-01'
     );
 
--- 上饶市 35 个禁养品种中，可在宠物档案词表内精确对照的 8 个
+-- 上饶市 35 个禁养品种中，可在宠物档案词表内精确对照的 8 个；名单仅覆盖可选犬种目录内的品种。
 INSERT INTO city_banned_dog_breed (adcode, dog_breed_id)
 SELECT '361100', id
 FROM dog_breed

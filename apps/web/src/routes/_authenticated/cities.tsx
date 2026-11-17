@@ -378,7 +378,12 @@ function CityPolicyContent({
       </div>
 
       {policy.source ? (
-        <p className="text-xs text-muted-foreground">来源：{policy.source.title}</p>
+        <div className="flex flex-col gap-0.5">
+          <p className="text-xs text-muted-foreground">来源：{policy.source.title}</p>
+          {policy.source.note ? (
+            <p className="text-xs text-muted-foreground">{policy.source.note}</p>
+          ) : null}
+        </div>
       ) : null}
     </>
   );
