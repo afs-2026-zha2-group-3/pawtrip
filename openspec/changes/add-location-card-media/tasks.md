@@ -41,4 +41,4 @@
 - CI 修正（PR #65 首轮 Browser E2E 红）：media E6 原误以渔女为"全空"夹具，但其 `leashRequired=1` 按规格应生成牵引短语；改用真正全空的无名景点，并为 absence 断言加卡片可见守卫、showAll 后断言 checked，消除空过假绿；本地全量 108 绿 + media 子集 repeat-each 2 共 18 绿后推送。
 - 验证结果：`apps/server ./mvnw test` 177 绿；`apps/web npm run build` 绿 + vitest 114 绿；`npm run test:e2e` 全量 109 绿（含管理端回归 E10）；390×844 窄屏单列、弹窗层叠、无横向溢出、控制台无错误（临时 spec/config 验证后已删除）；`openspec validate "add-location-card-media" --strict` 通过。
 - 遗留观察（非本 change 引入，不修）：390px 下行程面板默认展开为全屏抽屉需点"收起"；主导航 tabs 与 Log out 间距偏紧。
-- G1 未签署（用户指示直接 apply）；PR、G2/G3 未做，下一步 `/sdd:local-verify-report`。
+- G1 未签署（用户指示直接 apply）；PR #65 已开并于 `791e90f` CI 全绿（Browser E2E 7m25s / Server 1m28s / Web build 33s）；G2/G3 未做，下一步 `/sdd:local-verify-report`。
