@@ -18,7 +18,7 @@ const SAME_POI_NOTE = "与上一景点相同，无需途内交通";
 const ESTIMATE_UNAVAILABLE = "估算暂不可用";
 const LEASH_LINE = "当天需携带牵引绳";
 const LEASH_MISSING_LINE = "当天需携带牵引绳（档案未登记牵引绳，请自备）";
-const SIZE_LINE_ZHU_A = "您的宠物超出景点 情侣路 限制（≤8.5kg/≤40cm）";
+const SIZE_LINE_ZHU_A = "您的宠物「毛毛」超出景点 情侣路 限制（≤8.5kg/≤40cm）";
 
 interface EstimateSnapshot {
   durationMinutes: number;
@@ -381,7 +381,7 @@ test("E6 self-drive segment shows no taxi hint", async ({ page }) => {
   await expect(page.getByText(TAXI_PET_HINT)).toHaveCount(0);
 });
 
-test("E7 policy reminder aggregates leash and names exceeded limits before first stop", async ({
+test("E7 policy reminder keeps leash line; size warning names the pet above its own stop", async ({
   page,
 }) => {
   const id = await presetTrip(page, {
@@ -395,7 +395,11 @@ test("E7 policy reminder aggregates leash and names exceeded limits before first
 
   const reminder = page.getByTestId("day-policy-reminder");
   await expect(reminder.getByText(LEASH_LINE, { exact: true })).toBeVisible();
-  await expect(reminder.getByText(SIZE_LINE_ZHU_A, { exact: true })).toBeVisible();
+  // 体型警示点名宠物，位于对应景点行上方（2026-11-17 修订）
+  const sizeWarning = page.getByTestId("stop-size-warning");
+  await expect(sizeWarning).toHaveText(SIZE_LINE_ZHU_A);
+  await expectBefore(sizeWarning, page.locator('[data-stop-id="d1:0:e2e-zhu-a"]'));
+  await expect(reminder).not.toContainText("超出景点");
   // 位置：公交提示之后、当天首个景点行之前。
   await expectBefore(page.getByTestId("transit-pet-notice").first(), reminder);
   await expectBefore(reminder, page.locator('[data-stop-id="d1:0:e2e-zhu-a"]'));

@@ -157,17 +157,27 @@ describe("day policy reminder placement", () => {
     ).toBeTruthy();
   });
 
-  it("names the exceeded attraction and both limits", async () => {
-    renderPanel({
+  it("names the pet and limits in a warning directly above the exceeded stop", async () => {
+    const { container } = renderPanel({
       locations: [
-        location("poi-a", "景点A", { maxSinglePetWeightKg: 8.5, maxSinglePetShoulderHeightCm: 40 }),
+        location("poi-a", "景点A", { leashRequired: true, maxSinglePetWeightKg: 8.5, maxSinglePetShoulderHeightCm: 40 }),
         location("poi-b", "景点B"),
       ],
     });
     await screen.findByText("毛毛");
 
-    const reminder = await screen.findByTestId("day-policy-reminder");
-    expect(reminder.textContent).toContain("您的宠物超出景点 景点A 限制（≤8.5kg/≤40cm）");
+    // 体型警示点名宠物，位于对应景点行上方；未超限景点无警示
+    const warning = await screen.findByTestId("stop-size-warning");
+    expect(warning.textContent).toBe("您的宠物「毛毛」超出景点 景点A 限制（≤8.5kg/≤40cm）");
+    const stopA = container.querySelector('[data-stop-id="d1:0:poi-a"]')!;
+    expect(
+      warning.compareDocumentPosition(stopA) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getAllByTestId("stop-size-warning")).toHaveLength(1);
+
+    // 当天汇总块仅保留牵引绳提醒，不再含体型警示
+    const reminder = screen.getByTestId("day-policy-reminder");
+    expect(reminder.textContent).toBe("当天需携带牵引绳（档案未登记牵引绳，请自备）");
   });
 
   it("renders no reminder without triggers and never counts unscheduled stops", async () => {
@@ -183,6 +193,7 @@ describe("day policy reminder placement", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("day-policy-reminder")).toBeNull();
     });
+    expect(screen.queryByTestId("stop-size-warning")).toBeNull();
   });
 
   it("keeps the reminder in self-drive mode while hiding the transit notice", async () => {

@@ -42,7 +42,7 @@ import {
   type TransportSegment,
 } from "@/lib/trip/transport-segments";
 import { TransportSegmentRow } from "@/components/trip/transport-segment";
-import { dayPolicyLines, deriveDayPolicy } from "@/lib/trip/day-policy";
+import { dayPolicyLines, deriveDayPolicy, sizeWarningLine } from "@/lib/trip/day-policy";
 import { retryTripSave } from "@/lib/trip/save";
 import {
   useActiveTrip,
@@ -73,6 +73,8 @@ interface StopRow {
   index: number;
   poiId: string;
   name: string;
+  /** 体型超限警示：展示在该景点行上方（2026-11-17 修订） */
+  sizeWarning: string | null;
 }
 
 interface SegmentRow {
@@ -146,10 +148,17 @@ function TripPanelContent() {
       if (showTransitNotice(stops, active.transportMode)) {
         next.push({ kind: "notice", id: `transit-notice-${day}`, container: day });
       }
-      const policyLines = dayPolicyLines(deriveDayPolicy(stops, locations, activePet));
+      const dayPolicy = deriveDayPolicy(stops, locations, activePet);
+      const policyLines = dayPolicyLines(dayPolicy);
       if (policyLines.length > 0) {
         next.push({ kind: "policy", id: `day-policy-${day}`, container: day, lines: policyLines });
       }
+      const warningByPoi = new Map(
+        dayPolicy.sizeWarnings.map((warning) => [
+          warning.poiId,
+          sizeWarningLine(warning, activePet?.name ?? null),
+        ]),
+      );
       const segments = buildDaySegments(stops, active.transportMode);
       stops.forEach((stop, index) => {
         next.push({
@@ -159,6 +168,7 @@ function TripPanelContent() {
           index,
           poiId: stop.poiId,
           name: locations[stop.poiId]?.name ?? stop.poiId,
+          sizeWarning: warningByPoi.get(stop.poiId) ?? null,
         });
         const segment = segments[index];
         if (segment) {
@@ -188,6 +198,7 @@ function TripPanelContent() {
         index,
         poiId: stop.poiId,
         name: locations[stop.poiId]?.name ?? stop.poiId,
+        sizeWarning: null,
       });
     });
     return next;
@@ -526,7 +537,20 @@ function TripPanelContent() {
                       />
                     );
                   }
-                  return <SortableStop row={row} onRemove={() => removeStop(row)} />;
+                  // 行容器为横向 flex：纵向包裹使警示独占景点上方一行
+                  return (
+                    <div className="flex w-full min-w-0 flex-col gap-1">
+                      {row.sizeWarning ? (
+                        <p
+                          data-testid="stop-size-warning"
+                          className="px-1 text-xs text-amber-600"
+                        >
+                          {row.sizeWarning}
+                        </p>
+                      ) : null}
+                      <SortableStop row={row} onRemove={() => removeStop(row)} />
+                    </div>
+                  );
                 }}
               />
             </SortableContext>
