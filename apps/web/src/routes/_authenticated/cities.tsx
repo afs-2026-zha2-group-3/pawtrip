@@ -17,10 +17,6 @@ import {
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { PolicySubjectNotice, PolicyTags } from "@/components/trip/policy-tags";
-import {
-  BreedExamples,
-  CityPolicyMatch,
-} from "@/components/city/city-policy-details";
 import type { DestinationCandidate } from "@/lib/destination-matching";
 import { matchCityCandidate, matchCityPolicy } from "@/lib/trip/policy-match";
 import type { PolicySubjects } from "@/lib/trip/policy-subjects";
@@ -353,11 +349,6 @@ function CityPolicyPane({
           {policy?.updatedMonth ? (
             <p className="text-sm text-[#8E8C99]">更新于 {policy.updatedMonth}</p>
           ) : null}
-          {policy?.areaScope ? (
-            <p className="text-sm text-[#8E8C99]">
-              适用范围：{policy.areaScope}
-            </p>
-          ) : null}
         </div>
         <Button
           type="button"
@@ -391,65 +382,33 @@ function CityPolicyPane({
       ) : (
         <>
           <PolicyMatchBanner policy={policy} subjects={subjects} cityName={name} />
-          <div className="flex flex-col gap-4">
-            <CityPolicyMatch policy={policy} />
-            <section className="flex flex-col gap-2">
-              <div className="flex items-center gap-4">
-                <BookOpen aria-hidden="true" className="size-6 text-foreground" />
-                <h3 className="text-base font-medium text-foreground">政策要点</h3>
-              </div>
-              <ul className="list-disc space-y-2 pl-10 text-base leading-6 text-foreground">
-                {policy.policies.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-              <div className="pl-10">
-                <BreedExamples
-                  title="禁养犬种名单"
-                  scope={policy.areaScope}
-                  breeds={policy.bannedBreeds}
-                  emptyText="暂未收录禁养犬种名单"
-                  note="仅列出部分示例，完整名单请查阅当地政府通告。"
-                />
-                <BreedExamples
-                  title="可携带犬种"
-                  breeds={policy.allowedBreeds}
-                  emptyText="暂未收录可携带犬种"
-                  note="仅列出部分可选品种；仍需遵守数量、牵引、疫苗等其他规定。"
-                />
-              </div>
-            </section>
-            <section className="flex flex-col gap-1 pl-10">
-              <h3 className="text-base font-medium text-foreground">来源与时效</h3>
-              {policy.source ? (
-                <p className="text-sm font-medium text-foreground">
-                  来源：{policy.source.title}
-                </p>
-              ) : null}
-              {policy.source?.note ? (
-                <p className="text-sm text-[#8E8C99]">{policy.source.note}</p>
-              ) : null}
-              <p className="text-sm text-[#8E8C99]">
-                以上内容为公开文件摘录，仅供参考，以当地政府最新文件为准。
-              </p>
-            </section>
-            <div className="flex flex-col items-start gap-1 pl-10">
-              <Link
-                to="/destinations/$adcode/policy"
-                params={{ adcode }}
-                hash="banned-breeds"
-                className="text-sm underline underline-offset-2"
-              >
-                {name}禁养犬名单
-              </Link>
-              <Link
-                to="/destinations/$adcode/policy"
-                params={{ adcode }}
-                className="text-sm underline underline-offset-2"
-              >
-                查看完整政策与来源
-              </Link>
+          <section className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <BookOpen aria-hidden="true" className="size-5 text-foreground" />
+              <h3 className="text-base font-medium text-foreground">政策要点</h3>
             </div>
+            <ul className="list-disc space-y-2 pl-7 text-sm leading-6 text-foreground">
+              {policy.policies.slice(0, 3).map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </section>
+          <div className="flex flex-col items-start gap-1">
+            <Link
+              to="/destinations/$adcode/policy"
+              params={{ adcode }}
+              hash="banned-breeds"
+              className="text-sm text-[#1677ff] underline underline-offset-2"
+            >
+              {name}禁养犬名单
+            </Link>
+            <Link
+              to="/destinations/$adcode/policy"
+              params={{ adcode }}
+              className="text-sm underline underline-offset-2"
+            >
+              查看完整政策与来源
+            </Link>
           </div>
         </>
       )}
