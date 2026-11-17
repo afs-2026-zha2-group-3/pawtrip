@@ -1,7 +1,7 @@
 ---
 id: REQ-010
 title: 输入旅游总天数
-status: ready-for-split
+status: archived-superseded
 discovery: Go (2026-11-16)
 impact: ../analysis/REQ-010/impact-brief.md
 deep_dive: ../analysis/REQ-010/deep-dive.md
@@ -17,6 +17,8 @@ sources:
 ---
 
 # REQ-010：输入旅游总天数
+
+> **归档状态（2026-11-17）**：Archived (superseded)。原 `sessionStorage` 方案经 PR #54 实现合并（CI 全绿）后，被 active-trip 架构（PR #55–#58）取代：天数现为服务端 trip 的 `totalDays`，经行程面板「行程天数」输入。change 包已按 superseded 归档至 `openspec/changes/archive/2026-11-17-add-trip-duration-input/`（含 G2/G3 补录决策）。下文保留原始需求口径作为历史记录。
 
 ## Discovery Decision
 

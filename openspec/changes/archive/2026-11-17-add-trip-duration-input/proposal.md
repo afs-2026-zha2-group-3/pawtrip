@@ -1,0 +1,35 @@
+# Proposal
+
+> **Superseded（P5 补录，2026-11-17）**：本 change 已按原口径实现并经 PR #54（`codex/input-trip-duration`，merge commit `1871995`，2026-11-16）合并，CI 全绿。随后被 active-trip 架构取代：PR #55（服务端 trip-planning，`totalDays` 落库）、PR #56（前端 trip-context，TanStack Store）、PR #57（景点按天选择器）、PR #58（交通方式写入激活行程）。`f3aab3e`（2026-11-17，Echo Luo）以 superseded 为由删除了本 change 包；本次从 `25060a4` 恢复工件并补录 P4/P5 记录，按 superseded 归档。原 `sessionStorage`（`pawtrip.tripDuration`）与 `/cities` 步进器实现已从代码库移除，天数输入现为行程面板「行程天数」（草稿 1–7 整数），经 `POST/PUT /api/trips` 持久化。下文保留原始提案内容作为历史记录。
+
+## Why
+
+用户在选定目的地后还没有地方输入旅游总天数，后续行程生成无法知道应安排多少天。现在补上当前浏览器会话内的天数输入与校验，让 US-09 可以复用一个明确、可验证的 1–7 天总天数。
+
+## What Changes
+
+- 在 `/cities` 候选列表上方始终显示旅游总天数步进器，默认显示 1 天；只有输入为合法 1–7 整数时才能选定目的地。
+- 允许保存 1–7 的整数；步进器步长为 1，边界不越界。
+- 对越界、空值、小数和非数字输入给出提示，非法值不得覆盖已有合法值。
+- 使用 `sessionStorage` 保存当前标签页会话内的单条旅游总天数，合法重填覆盖旧值。
+- 提供稳定的读取/校验契约，供 US-09 在生成前执行必填检查并读取总天数。
+- 在景点页按总天数从左到右显示“第 1 天”到“第 N 天”的天数栏，供用户按天浏览景点区域。
+- 不新增 US-09 行程生成页面、生成算法、服务端接口或数据库结构。
+
+## Capabilities
+
+### New Capabilities
+
+- `trip-duration-input`: 在目的地选择阶段输入、校验、保存并读取当前浏览器会话的旅游总天数。
+
+### Modified Capabilities
+
+- `destination-selection`: 在既有目的地确认区域增加当前会话旅游总天数输入；不改变城市候选、搜索、筛选和目的地存储行为。
+
+## Impact
+
+- **前端页面**：修改 `apps/web/src/routes/_authenticated/cities.tsx`，增加前置步进器、错误提示、选定按钮守卫与恢复逻辑。
+- **前端状态**：新增独立的 `sessionStorage` 状态/校验模块，建议键为 `pawtrip.tripDuration`；不修改已选目的地存储。
+- **下游契约**：US-09 读取合法的 `totalDays`；当前不实现 US-09 页面或生成算法。景点页仅提供按天浏览栏，不新增景点分配持久化。
+- **测试**：新增状态解析/边界单测，并补目的地页的交互验收；沿用现有前端测试和构建命令。
+- **后端与依赖**：无服务端、数据库、HTTP API、第三方依赖或导航结构变更。
