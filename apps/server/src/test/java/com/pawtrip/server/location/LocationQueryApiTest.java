@@ -427,6 +427,25 @@ class LocationQueryApiTest {
 	}
 
 	@Test
+	void listFallsBackToPoiPhotosWhenNoSavedCoverExists() throws Exception {
+		PawtripLocation card = new PawtripLocation("poi-list-fallback", "快照酒店", "100000", "hotel", "情侣路",
+				113.5, 22.1, "440402",
+				"""
+				{"photos":[{"url":"http://example.com/a.jpg"},{"url":"https://example.com/b.jpg","title":"大堂"}]}
+				""", "{}", null, null);
+		this.locationRepository.save(card);
+
+		JsonNode body = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "hotel")
+				.param("petFriendlyOnly", "false")
+				.with(user("demo").roles("USER")));
+
+		assertThat(item(body, "poi-list-fallback").path("coverPhotoUrl").asString())
+				.isEqualTo("https://example.com/b.jpg");
+	}
+
+	@Test
 	void detailCarriesCoverPhotoAndRatingOrNulls() throws Exception {
 		JsonNode rated = json(get("/api/locations/poi-zhu-a").with(user("demo").roles("USER")));
 		assertThat(rated.path("coverPhotoUrl").asString()).isEqualTo("https://photos.example/a-0.png");
