@@ -59,7 +59,8 @@ function AuthenticatedShell() {
 
   return (
     <>
-      <div className="min-h-svh [view-transition-name:app-content]">
+      {/* 页头 .paw-header 固定 80px；外壳再撑满 100svh 会让页面多出 80px 空白滚动 */}
+      <div className="min-h-[calc(100svh-80px)] [view-transition-name:app-content]">
         <Outlet />
       </div>
       <TripPanel />

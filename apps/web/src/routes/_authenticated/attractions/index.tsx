@@ -416,7 +416,7 @@ function AttractionsPage() {
           <TripPanel embedded timeline footer={panelFooter} />
         </aside>
 
-        <section className="min-h-0 min-w-0 overflow-y-auto lg:col-start-2 lg:col-span-1 lg:row-start-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <section className="h-full min-h-0 min-w-0 overflow-y-auto lg:col-start-2 lg:col-span-1 lg:row-start-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             {typeGroup === DEFAULT_TYPE_GROUP ? (
               <>
