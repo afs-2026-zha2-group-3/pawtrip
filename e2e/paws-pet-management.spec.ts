@@ -1,5 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
-import { csrfHeaders, signIn as signInWithApi } from "./trip-helpers";
+import {
+  createTripViaApi,
+  csrfHeaders,
+  resetTrips,
+  signIn as signInWithApi,
+} from "./trip-helpers";
 
 const username = "demo";
 
@@ -130,6 +135,75 @@ test("creates, switches, edits and deletes pets", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "Mimi Updated", exact: true }),
   ).toHaveCount(0);
+});
+
+test("explains pet deletion reasons and cascades only ended trips", async ({
+  page,
+}) => {
+  await signIn(page);
+  await resetTrips(page);
+  await deleteAllPetsViaApi(page);
+
+  const headers = await csrfHeaders(page);
+  const created = await page.request.post("/api/pets", {
+    headers,
+    data: {
+      name: "Biscuit",
+      petType: "CAT",
+      weightKg: 4,
+      shoulderHeightCm: 24,
+      hasLeash: true,
+      hasVaccinationProof: true,
+      photo: null,
+      dogBreedId: null,
+    },
+  });
+  expect(created.status()).toBe(201);
+  const petId = ((await created.json()) as { id: number }).id;
+
+  const ongoing = await createTripViaApi(page, {
+    name: "进行中行程",
+    cityAdcode: "330100",
+    petId,
+    totalDays: 2,
+  });
+
+  await openPaws(page);
+  await page.getByRole("button", { name: "删除 Biscuit" }).click();
+  const blocked = page.getByRole("alertdialog");
+  await expect(
+    blocked.getByText(
+      "该宠物正在被行程「进行中行程」使用，暂时无法删除。请先删除这些行程，或等待行程结束后再试。",
+    ),
+  ).toBeVisible();
+  await expect(blocked.getByRole("button", { name: "删除" })).toBeDisabled();
+  await blocked.getByRole("button", { name: "取消" }).click();
+  await expect(blocked).toHaveCount(0);
+
+  await page.request.delete(`/api/trips/${ongoing.id}`, { headers });
+  const ended = await createTripViaApi(page, {
+    name: "已结束行程",
+    cityAdcode: "330100",
+    petId,
+    totalDays: 2,
+    startDate: "2020-01-01",
+  });
+
+  await page.getByRole("button", { name: "删除 Biscuit" }).click();
+  const cascade = page.getByRole("alertdialog");
+  await expect(
+    cascade.getByText(
+      "删除后，引用该宠物的已结束行程「已结束行程」也会一并删除。",
+    ),
+  ).toBeVisible();
+  await cascade.getByRole("button", { name: "删除" }).click();
+  await expect(cascade).toHaveCount(0);
+  await expect(page.getByText("还没有宠物")).toBeVisible();
+
+  const remaining = (await (
+    await page.request.get("/api/trips")
+  ).json()) as { id: number }[];
+  expect(remaining.some((trip) => trip.id === ended.id)).toBe(false);
 });
 
 test("manages optional preferences and personality across create, view and edit", async ({

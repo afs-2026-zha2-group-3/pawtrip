@@ -128,7 +128,7 @@ com.pawtrip.server
 - API：`GET/POST /api/trips`、`GET/PUT/DELETE /api/trips/{id}`；均需登录且只能访问本人 trip，列表返回摘要不含 `plan` 与 `transportMode`，详情/创建/更新返回完整计划；未找到返回 `404 TRIP_NOT_FOUND`。
 - 途内交通估算（REQ-011）：`GET /api/trips/{tripId}/route-estimate?fromPoiId&toPoiId&mode`，`mode ∈ {walk, drive}`；需登录且仅限本人 trip（否则 `404 TRIP_NOT_FOUND`），缺参/非法 mode/poiId 不存在或坐标缺失 `400 VALIDATION_ERROR`，上游失败/Key 缺失 `502 UPSTREAM_FAILURE`（不泄露 Key 与原始报文）；响应 `{mode, durationMinutes, costLowYuan, costHighYuan}`：驾车费用为 `taxi_cost` ±20%、时长分钟向上取整，步行费用 0/0；只读估算，不修改 `plan_json`（快照由前端经既有防抖 PUT 落库）。换算在 `TripRouteEstimateService`，外部协议见 [高德路线规划 2.0](../external/amap-route-planning.md)。
 - `transportMode`：可空；创建/更新请求可携带，非法值返回 `400 VALIDATION_ERROR`；详情与创建/更新响应返回该字段。交通方式选择在规则页触发 `tripActions.setTransportMode`，并走同一防抖保存链路。
-- 宠物删除：`trip.pet_id` 外键为 `ON DELETE RESTRICT`；删除被 trip 引用的宠物返回 `409 PET_IN_USE`，未被引用的宠物保持 `204`。
+- 宠物删除：`trip.pet_id` 外键为 `ON DELETE RESTRICT`；服务端先按 `pet_id + user_id` 查引用行程。存在未结束行程（无开始日期视为未结束）时返回 `409 PET_IN_USE`，`detail` 列出这些行程名称；仅被已结束行程引用时先删除这些行程再删除宠物，返回 `204`。未被引用的宠物保持 `204`。
 - 前端已按 trip-context 接入本接口：草稿确认调用 `POST /api/trips`，Trips 页激活调用 `GET /api/trips/{id}`，计划编辑与交通方式选择以防抖 `PUT` 保存；不修改后端契约，也不新增迁移。
 
 ## 运行拓扑
