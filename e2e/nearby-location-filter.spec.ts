@@ -103,6 +103,37 @@ test("requires a scheduled attraction before browsing nearby locations", async (
   await expect(locationCard(page, "附近餐厅")).toBeVisible();
 });
 
+test("switches to hotel browsing from the itinerary panel next step", async ({ page }) => {
+  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
+  await openAttractions(page);
+
+  const nextStep = page.getByTestId("trip-next-step");
+  await expect(nextStep).toBeDisabled();
+  await expect(page.getByTestId("trip-next-step-hint")).toContainText("先在行程中添加景点");
+
+  await addAttractionToDay(page, "情侣路", 1);
+  await expect(nextStep).toBeEnabled();
+  await expect(page.getByTestId("trip-next-step-hint")).toContainText(
+    "推荐 5km 内的住宿与餐厅",
+  );
+  await nextStep.click();
+
+  await expect(page.getByRole("combobox", { name: "地点类型筛选" })).toContainText("住宿");
+  await expect(page.getByRole("combobox", { name: "离景点最近" })).toContainText("离情侣路最近");
+  await expect(locationCard(page, "附近酒店")).toBeVisible();
+});
+
+test("opens the itinerary from the nearby stage panel", async ({ page }) => {
+  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
+  await openAttractions(page);
+  await addAttractionToDay(page, "情侣路", 1);
+  await page.getByTestId("trip-next-step").click();
+
+  await page.getByTestId("trip-create-itinerary").click();
+  await expect(page).toHaveURL(/\/itinerary$/);
+  await expect(page.getByTestId("itinerary-stop").first()).toBeVisible();
+});
+
 test("filters hotels by 离景点最近 and shares the anchor with restaurants", async ({ page }) => {
   await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
   await openAttractions(page);
