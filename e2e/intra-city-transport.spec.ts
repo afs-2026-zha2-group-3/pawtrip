@@ -293,6 +293,9 @@ test("E3 snapshot-first display issues zero estimate requests and survives reloa
   expect(counter.count).toBe(0);
 
   await page.reload();
+  await page.waitForSelector("html[data-app-ready='true']", {
+    timeout: 15_000,
+  });
   await expect(page.getByTestId("transport-segment").first().getByText("约 12 分钟")).toBeVisible();
   expect(counter.count).toBe(0);
   const trip = await getTrip(page, id);

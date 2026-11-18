@@ -357,7 +357,7 @@ function TripPanelContent({
       className={cn(
         "flex min-w-0 flex-col gap-2 text-card-foreground",
         timeline
-          ? "h-full w-full overflow-hidden border-r border-[#E5E5E5] pr-3"
+          ? "h-full min-h-0 w-full overflow-hidden border-r border-[#E5E5E5] pr-3"
           : embedded
             ? "w-full rounded-xl border bg-card p-3"
             : "z-50 rounded-xl border bg-card shadow-xl [view-transition-name:trip-panel]",
@@ -368,7 +368,7 @@ function TripPanelContent({
       )}
       data-print-hidden
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex shrink-0 items-start justify-between gap-2">
         {timeline ? (
           <div className="flex min-w-0 items-center">
             <h2 className="text-sm leading-5 font-medium text-paw-ink">每日景点行程</h2>
@@ -534,6 +534,7 @@ function TripPanelContent({
       {active ? (
         <>
           {(!embedded || open) && (
+          <div className={timeline ? "flex min-h-0 flex-1 flex-col" : undefined}>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
@@ -570,15 +571,16 @@ function TripPanelContent({
                 maxHeight={
                   open
                     ? timeline
-                      ? footer
-                        ? "calc(100svh - 280px)"
-                        : "calc(100svh - 170px)"
+                      ? "100%"
                       : embedded
                         ? 320
                         : "calc(100vh - 18rem)"
                     : 220
                 }
-                className={cn("w-full", timeline && "[&>[role=listbox]]:p-0")}
+                className={cn(
+                  "w-full",
+                  timeline && "min-h-0 flex-1 [&>[role=listbox]]:p-0",
+                )}
                 itemClassName={
                   timeline
                     ? "!cursor-grab !rounded-none !bg-transparent ![background:none] !p-0 !shadow-none"
@@ -652,6 +654,7 @@ function TripPanelContent({
               ) : null}
             </DragOverlay>
           </DndContext>
+          </div>
           )}
           {save.status === "error" ? (
             <div className="flex items-center justify-between gap-2 rounded-lg bg-destructive/10 px-2 py-1.5">

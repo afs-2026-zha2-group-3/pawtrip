@@ -356,7 +356,7 @@ function CityPolicyPane({
     <aside
       role="region"
       aria-label="城市宠物管理政策"
-      className="paw-scroll flex min-w-0 flex-col gap-4 min-[1408px]:sticky min-[1408px]:top-6 min-[1408px]:max-h-[calc(100vh-3rem)] min-[1408px]:self-start min-[1408px]:overflow-y-auto"
+      className="paw-scroll flex min-w-0 flex-col gap-4 min-[1408px]:sticky min-[1408px]:top-6 min-[1408px]:max-h-[calc(100dvh-var(--app-header-height)-3rem)] min-[1408px]:self-start min-[1408px]:overflow-y-auto"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-2.5">

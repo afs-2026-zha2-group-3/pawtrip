@@ -52,6 +52,7 @@
 
 :root {
   --radius: 0.625rem;
+  --app-header-height: 80px;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -163,7 +164,7 @@
 }
 
 .paw-header {
-  min-height: 80px;
+  min-height: var(--app-header-height);
   background-color: #fffdf2;
   background-image: url("./assets/pet-heads-banner.jpeg");
   background-position: center;
@@ -394,6 +395,23 @@
 }
 
 @media print {
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+  }
+
+  body {
+    display: block;
+  }
+
+  .app-scroll {
+    display: block;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
   [data-print-hidden] {
     display: none !important;
   }

@@ -1,5 +1,5 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +43,24 @@ function AuthenticatedShell() {
   const revision = useSaveRevision();
   const hydration = useHydrationStatus();
   const [hasPersistedTrip, setHasPersistedTrip] = useState(false);
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const hash = useRouterState({ select: (state) => state.location.hash });
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 客户端注水完成的确定性信号：SSR 会先渲染 header，e2e 不能只靠可见性判断可交互。
+  useEffect(() => {
+    document.documentElement.dataset.appReady = "true";
+    return () => {
+      delete document.documentElement.dataset.appReady;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (hash) {
+      return;
+    }
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [pathname, hash]);
 
   useEffect(() => {
     void hydrateTripContext(queryClient);
@@ -60,7 +78,11 @@ function AuthenticatedShell() {
 
   return (
     <>
-      <div className="min-h-svh [view-transition-name:app-content]">
+      <div
+        ref={scrollRef}
+        data-testid="app-scroll"
+        className="app-scroll min-h-0 flex-1 overflow-y-auto [view-transition-name:app-content]"
+      >
         <Outlet />
       </div>
       <TripPanel />

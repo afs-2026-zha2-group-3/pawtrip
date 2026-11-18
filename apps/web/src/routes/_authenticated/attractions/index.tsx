@@ -370,11 +370,11 @@ function AttractionsPage() {
   );
 
   return (
-    <main className="relative px-4 pb-4 sm:px-6 lg:h-[calc(100svh-80px)] lg:overflow-hidden lg:px-10">
+    <main className="relative px-4 pb-4 sm:px-6 lg:h-full lg:overflow-hidden lg:px-10">
       <div
         data-testid="attractions-layout"
         className={cn(
-          "grid h-full min-h-0 items-start gap-4 lg:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)_minmax(360px,42%)]",
+          "grid min-h-0 items-stretch gap-4 lg:h-full lg:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)_minmax(360px,42%)]",
           // 展开态的 376px 留白 = Agent 面板 400px + right-4 16px - 页面右内边距 40px；
           // 面板宽度变更时需同步 agent-panel.tsx。
           agentOpen
@@ -425,11 +425,14 @@ function AttractionsPage() {
           </div>
         </div>
 
-        <aside className="h-full min-h-0 min-w-0 lg:col-start-1 lg:col-span-1 lg:row-start-2">
+        <aside className="min-h-0 min-w-0 lg:col-start-1 lg:col-span-1 lg:row-start-2 lg:h-full">
           <TripPanel embedded timeline footer={panelFooter} />
         </aside>
 
-        <section className="min-h-0 min-w-0 overflow-y-auto lg:col-start-2 lg:col-span-1 lg:row-start-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <section
+          data-testid="location-list"
+          className="min-h-0 min-w-0 lg:col-start-2 lg:col-span-1 lg:row-start-2 lg:overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             {typeGroup === DEFAULT_TYPE_GROUP ? (
               <>
@@ -621,7 +624,10 @@ function AttractionsPage() {
           </div>
         </section>
 
-        <aside className="relative h-full min-h-0 lg:col-start-3 lg:col-span-1 lg:row-start-2 lg:sticky lg:top-0">
+        <aside
+          data-testid="attractions-map"
+          className="relative min-h-0 lg:col-start-3 lg:col-span-1 lg:row-start-2 lg:h-full"
+        >
           {gated ? (
             <div
               data-testid="location-map-placeholder"

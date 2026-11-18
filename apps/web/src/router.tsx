@@ -9,7 +9,9 @@ export function getRouter() {
   const router = createTanStackRouter({
     routeTree,
     context: { queryClient },
-    scrollRestoration: true,
+    // 应用外壳让文档不再滚动，滚动复位由 _authenticated 的内容滚动视口自行处理，
+    // 避免路由把上一页的内部元素 scrollTop 带到下一页。
+    scrollRestoration: false,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
   });

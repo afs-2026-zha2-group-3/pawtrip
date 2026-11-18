@@ -90,7 +90,7 @@ test.describe("agent panel layout integration", () => {
 
     const grid = locationCardGrid(page);
     const cards = grid.locator('[data-slot="card"]');
-    await expect(cards).toHaveCount(5);
+    await expect(cards).toHaveCount(7);
 
     const [first, second, third] = await Promise.all([
       cards.nth(0).boundingBox(),
@@ -121,7 +121,7 @@ test.describe("agent panel layout integration", () => {
     await showAllAttractions(page);
 
     const cards = locationCardGrid(page).locator('[data-slot="card"]');
-    await expect(cards).toHaveCount(5);
+    await expect(cards).toHaveCount(7);
 
     await page.getByTestId("agent-fab").click();
     await expect(page.getByTestId("agent-panel")).toBeVisible();
@@ -171,7 +171,7 @@ test.describe("below the 2xl breakpoint", () => {
     await showAllAttractions(page);
 
     const cards = locationCardGrid(page).locator('[data-slot="card"]');
-    await expect(cards).toHaveCount(5);
+    await expect(cards).toHaveCount(7);
 
     await page.getByTestId("agent-fab").click();
     await expect(page.getByTestId("agent-panel")).toBeVisible();
