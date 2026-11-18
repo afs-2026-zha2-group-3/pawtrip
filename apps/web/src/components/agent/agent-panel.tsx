@@ -174,6 +174,7 @@ export function AgentPanel() {
     return null;
   }
 
+  // 悬浮宽度与地点浏览页 2xl 留白轨道（376px）耦合；修改宽度时需同步 attractions/index.tsx。
   return (
     <>
       <Button
@@ -195,7 +196,7 @@ export function AgentPanel() {
         <SheetContent
           side="right"
           data-testid="agent-panel"
-          className="z-[60] max-lg:inset-0 max-lg:h-full max-lg:w-full max-lg:max-w-none lg:inset-y-4 lg:right-4 lg:left-auto lg:h-auto lg:w-[400px] lg:rounded-xl lg:border"
+          className="z-[60] max-lg:inset-0 max-lg:h-full max-lg:w-full max-lg:max-w-none lg:top-24 lg:right-4 lg:bottom-4 lg:left-auto lg:h-auto lg:w-[400px] lg:rounded-xl lg:border"
         >
           <SheetHeader className="flex-row items-center justify-between gap-2 border-b pb-2">
             <SheetTitle>行程规划助手</SheetTitle>

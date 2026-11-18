@@ -77,7 +77,7 @@ com.pawtrip.server
 
 用户端 `/attractions` 页面展示为“地点浏览”，保留既有路由。存在激活行程时，页面固定以 `active.cityAdcode` 查询共享 `GET /api/locations`，默认类型为“景点”；不提供城市选择。无激活行程（含仅有草稿）时展示“先创建或激活行程”空态且不请求地点列表。地点类型切换重置为第一页；默认宠物友好筛选传 `petFriendlyOnly=true`，开启“显示全部地点”传 `false`。页面在“酒店”类型下默认展示该城市已保存酒店，并提供“离景点最近”下拉；在“景点”类型下保留“行程景点锚点”选择器供餐厅筛选使用。两者共用同一锚点，候选只来自激活行程已按天排期的景点（`plan.days[].stops`，按 `poiId` 去重，不含 `unscheduled`）；选择后请求携带 `nearPoiId` 并按 5km 距离筛选，卡片显示“距{锚点名}约 X.Xkm”。未选锚点时餐厅显示门禁空态且不请求列表，酒店保持默认列表；锚点景点被移出行程或切换激活行程后自动清空，酒店恢复默认列表、餐厅恢复门禁。
 
-地点页桌面端为左列表右地图布局，地图使用高德 JS API 2.0，显示当前筛选下的全部点位；marker 点击高亮列表卡片并打开基础信息窗口，卡片“在地图查看”定位 marker。地图 Key 通过 `VITE_AMAP_JS_KEY` / `VITE_AMAP_SECURITY_CODE` 配置；未配置或 SDK 加载失败时地图显示占位，列表与筛选不受影响。E2E 强制空 Key，不依赖高德外网 SDK。所有类型地点详情均可展示逐宠物政策，并提供“添加到行程”和“暂不排期”操作。页面不展示天数 Tabs；添加选择器由 `active.totalDays` 生成“第 1 天”至“第 N 天”。详情在列表页内打开，关闭后保留筛选与分页；不提供 `/attractions/$poiId` 独立路由。
+地点页桌面端为左列表右地图布局，地图使用高德 JS API 2.0，显示当前筛选下的全部点位；marker 点击高亮列表卡片并打开基础信息窗口，卡片“在地图查看”定位 marker。地图 Key 通过 `VITE_AMAP_JS_KEY` / `VITE_AMAP_SECURITY_CODE` 配置；未配置或 SDK 加载失败时地图显示占位，列表与筛选不受影响。E2E 强制空 Key，不依赖高德外网 SDK。桌面端在 `2xl`（≥1536px）下随 Agent 面板开合自适应：面板收起为“行程栏 / 地点列表 / 地图”三栏、卡片每行 3 张且地图贴右无空白；面板展开为卡片每行 2 张，右侧保留 376px 透明留白承载悬浮面板（= 面板 400px + `right-4` 16px − 页面右内边距 40px），地图收窄且不被遮挡；`<2xl` 保持两列卡片与面板覆盖。原灰色 AI 占位已删除。地图容器尺寸变化时通过 `ResizeObserver` 调用高德 `resize()`，避免瓦片与视野按旧尺寸绘制。所有类型地点详情均可展示逐宠物政策，并提供“添加到行程”和“暂不排期”操作。页面不展示天数 Tabs；添加选择器由 `active.totalDays` 生成“第 1 天”至“第 N 天”。详情在列表页内打开，关闭后保留筛选与分页；不提供 `/attractions/$poiId` 独立路由。
 
 地点浏览不新增数据库迁移；E2E 夹具由 `scripts/seed-e2e-attractions.mjs` 写入临时 E2E 库，不触碰 `apps/server/data/pawtrip.db`。
 
@@ -107,7 +107,7 @@ com.pawtrip.server
 
 ### 行程规划 Agent（trip-planning-agent）
 
-前端在登录后的全局布局挂载 `components/agent/agent-panel.tsx`：右下角圆形入口 `agent-fab`（`fixed bottom-4 right-4`）与可展开面板 `agent-panel`。面板基于 vendored `components/ui/sheet.tsx`（Base UI Dialog，受控 `open`、`modal={false}`、无 Backdrop），桌面端右侧 400px 悬浮，小屏全屏；开关、对话与待审核方案只存内存，刷新丢失。面板顶部只展示当前激活行程名称，不提供行程切换，切换激活行程只能在 Trips 页面完成。消息渲染：`text` → Bubble；`thinking` 与 `tool-call` / `tool-result` 聚合为一条用户可读的活动状态（正在规划行程、正在搜集景点、正在读取最新行程、正在编辑行程等），已完成步骤折叠为「已完成 N 个步骤」；当前轮次最多显示一条活动状态。`update_trip_plan` 由自研方案卡片展示差异与确认/拒绝；确认应用成功或拒绝后卡片移除，应用失败时保留。
+前端在登录后的全局布局挂载 `components/agent/agent-panel.tsx`：右下角圆形入口 `agent-fab`（`fixed bottom-4 right-4`）与可展开面板 `agent-panel`。面板基于 vendored `components/ui/sheet.tsx`（Base UI Dialog，受控 `open`、`modal={false}`、无 Backdrop），桌面端右侧 400px 悬浮（与地点浏览页 `2xl` 展开态留白轨道 376px 耦合，调整宽度需同步 `attractions/index.tsx`），小屏全屏；开关、对话与待审核方案只存内存，刷新丢失。面板顶部只展示当前激活行程名称，不提供行程切换，切换激活行程只能在 Trips 页面完成。消息渲染：`text` → Bubble；`thinking` 与 `tool-call` / `tool-result` 聚合为一条用户可读的活动状态（正在规划行程、正在搜集景点、正在读取最新行程、正在编辑行程等），已完成步骤折叠为「已完成 N 个步骤」；当前轮次最多显示一条活动状态。`update_trip_plan` 由自研方案卡片展示差异与确认/拒绝；确认应用成功或拒绝后卡片移除，应用失败时保留。
 
 规划工作区 `lib/agent/store.ts` 直接以 `tripStore.active` 为唯一规划目标，维护按行程 ID 隔离的 `allowedPoi`、`proposals` 与新行程流程；激活行程 ID 变化时清空旧提案与地点集合。两阶段新行程复用 `CityTripDialog` 与 `lib/trip/create.ts` 的 `createTripAndActivate`（名称、宠物校验、`cacheCity`、激活、查询刷新）：Agent 只预填城市/日期/宠物并等待用户在弹窗点击「确定」；存在激活行程时先在面板确认，取消激活前完成待发送保存，保存失败则中止。创建后的编排先通过 `get_trip_plan` 读取最新计划，再通过 `update_trip_plan` 生成待审核方案，用户确认前不写库。
 

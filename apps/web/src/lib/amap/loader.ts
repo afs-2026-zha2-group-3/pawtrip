@@ -1,6 +1,7 @@
 export interface AMapMap {
   setFitView(overlays?: unknown[]): void;
   setZoomAndCenter(zoom: number, center: [number, number]): void;
+  resize(): void;
   destroy(): void;
 }
 
