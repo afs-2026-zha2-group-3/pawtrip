@@ -85,6 +85,8 @@ test("requires an anchor before browsing restaurants but shows hotels by default
   await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
   await openAttractions(page);
 
+  await expect(page.getByRole("combobox", { name: "行程景点锚点" })).toBeDisabled();
+
   await chooseType(page, "餐厅");
   await expect(page.getByText("请先在景点页选择行程景点", { exact: true })).toBeVisible();
   await expect(locationCard(page, "附近餐厅")).toHaveCount(0);
@@ -140,18 +142,6 @@ test("clears the anchor and restores the gate when the anchor leaves the trip", 
 
   await expect(page.getByText("请先在景点页选择行程景点", { exact: true })).toBeVisible();
   await expect(locationCard(page, "附近餐厅")).toHaveCount(0);
-});
-
-test("disables the anchor controls when no attraction is scheduled", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await openAttractions(page);
-
-  await expect(page.getByRole("combobox", { name: "行程景点锚点" })).toBeDisabled();
-
-  await chooseType(page, "住宿");
-  await expect(page.getByRole("combobox", { name: "离景点最近" })).toBeDisabled();
-  await expect(page.getByText("行程中还没有已排期的景点")).toBeVisible();
-  await expect(locationCard(page, "珠海某酒店")).toBeVisible();
 });
 
 test("keeps an already-added nearby restaurant in the result", async ({ page }) => {

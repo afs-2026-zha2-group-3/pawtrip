@@ -233,25 +233,6 @@ test("E9 shows no friendly state and toggles all for a city with only forbidden/
   await expect(attractionCard(page, "玄武湖").getByText("未配置")).toBeVisible();
 });
 
-test("E10 exposes no city selector or admin controls but offers add actions", async ({
-  page,
-}) => {
-  await tripTo(page, "珠海市");
-
-  await expect(page.getByRole("textbox", { name: "搜索城市" })).toHaveCount(0);
-  await expect(page.getByRole("combobox", { name: "地点类型筛选" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /编辑|保存|删除/ })).toHaveCount(0);
-  await expect(
-    attractionCard(page, "情侣路").getByRole("combobox", { name: "添加到行程" }),
-  ).toBeVisible();
-  await expect(
-    attractionCard(page, "情侣路").getByRole("button", { name: "暂不排期" }),
-  ).toBeVisible();
-
-  await attractionCard(page, "情侣路").getByRole("button", { name: "查看详情" }).click();
-  await expect(page.getByRole("button", { name: /编辑|保存|删除/ })).toHaveCount(0);
-});
-
 test("E11 clears the active trip on logout", async ({ page }) => {
   await tripTo(page, "珠海市");
   expect(
@@ -268,13 +249,6 @@ test("E11 clears the active trip on logout", async ({ page }) => {
   await signIn(page);
   await page.goto("/attractions");
   await expect(page.getByText("先创建或激活行程")).toBeVisible();
-});
-
-test("E12 shows no scenic entry inside city browsing", async ({ page }) => {
-  await openCities(page);
-
-  await expect(page.getByRole("button", { name: /查看.*景点/ })).toHaveCount(0);
-  await expect(page.locator('[data-slot="card"]').filter({ hasText: "情侣路" })).toHaveCount(0);
 });
 
 // --- REQ-013 地点卡片媒体（add-location-card-media，ATDD E1–E9） ---

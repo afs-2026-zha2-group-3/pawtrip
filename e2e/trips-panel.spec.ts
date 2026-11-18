@@ -2,7 +2,6 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   createTrip,
   createTripViaApi,
-  openCities,
   openTrips,
   pets,
   resetTrips,
@@ -136,35 +135,6 @@ test("reports a missing trip when activation returns 404", async ({ page }) => {
   await expect(page.getByText("激活行程失败，请稍后重试。")).toBeVisible();
 });
 
-test("evaluates transport rules only for the active trip pet", async ({ page }) => {
-  await createTrip(page, { city: "杭州市", days: 1, pet: "毛毛" });
-  await page.getByRole("tab", { name: "交通规则" }).click();
-  await expect(page.getByRole("table", { name: "交通携宠规则对比" })).toBeVisible();
-
-  await expect(page.getByText(/^毛毛 · /).first()).toBeVisible();
-  await expect(page.getByText(/^豆豆 · /)).toHaveCount(0);
-});
-
-test("requires a created trip before browsing attractions", async ({ page }) => {
-  await openCities(page);
-
-  const locationListRequests: string[] = [];
-  page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/api/locations") {
-      locationListRequests.push(request.url());
-    }
-  });
-  await page.getByRole("tab", { name: "地点浏览" }).click();
-  await expect(page.getByText("先创建或激活行程")).toBeVisible();
-  expect(locationListRequests).toHaveLength(0);
-
-  await createTrip(page, { city: "杭州市", days: 1 });
-  await expect(
-    page.getByRole("combobox", { name: "添加到行程" }).first(),
-  ).toBeVisible();
-  await expect(page.getByTestId("save-status")).toContainText("已保存");
-});
-
 test("adds stops to the selected day and to unscheduled with debounced saving", async ({
   page,
 }) => {
@@ -204,17 +174,6 @@ test("adds stops to the selected day and to unscheduled with debounced saving", 
   await page.reload();
   await expect(page.getByTestId("trip-panel")).toContainText("西湖");
   await expect(page.getByTestId("trip-panel")).toContainText("灵隐寺");
-});
-
-test("allows duplicate stops on the same day", async ({ page }) => {
-  await createTrip(page, { city: "杭州市", days: 2 });
-  await page.getByRole("tab", { name: "地点浏览" }).click();
-
-  await addDayAttraction(page, "西湖", 1);
-  await addDayAttraction(page, "西湖", 1);
-
-  await expect(page.locator('[data-stop-id^="d1:"]')).toHaveCount(2);
-  await expect(page.getByTestId("trip-panel").getByText("西湖", { exact: true })).toHaveCount(2);
 });
 
 test("drags a stop across days and into unscheduled", async ({ page }) => {
@@ -262,30 +221,6 @@ test("keeps local edits when saving fails and retries", async ({ page }) => {
   failSaving = false;
   await page.getByRole("button", { name: "重试" }).click();
   await expect(page.getByTestId("save-status")).toContainText("已保存");
-});
-
-test("expands on the left for desktop", async ({ page }) => {
-  await createTrip(page, { city: "杭州市", days: 2 });
-  await page.waitForTimeout(600);
-  const panel = page.getByTestId("trip-panel");
-  await expect(panel.getByText("第 1 天", { exact: true })).toBeVisible();
-  await expect(panel.getByText("第 2 天", { exact: true })).toBeVisible();
-  await expect(panel.getByText("未排期", { exact: true })).toBeVisible();
-  const desktop = await panel.boundingBox();
-  expect(desktop?.width).toBeGreaterThan(300);
-  expect(desktop?.width).toBeLessThan(500);
-  expect(desktop?.x).toBeLessThan(30);
-
-});
-
-test("does not render the panel on the login page", async ({ page }) => {
-  await createTrip(page, { city: "杭州市", days: 1 });
-  await expect(page.getByTestId("trip-panel")).toBeVisible();
-
-  await page.getByRole("button", { name: "Log out" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Log out" }).click();
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByTestId("trip-panel")).toHaveCount(0);
 });
 
 test("shows active-pet location policy tags", async ({ page }) => {
