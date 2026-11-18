@@ -1,7 +1,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchServerSentEvents, useChat } from "@tanstack/ai-react";
-import { Bot, ChevronRight, Loader2, X } from "lucide-react";
+import { ChevronRight, Loader2, X } from "lucide-react";
+import blackDogGif from "@/assets/black-dog.gif";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupTextarea } from "@/components/ui/input-group";
 import { MessageScroller } from "@/components/ui/message-scroller";
@@ -181,10 +182,15 @@ export function AgentPanel() {
         type="button"
         data-testid="agent-fab"
         aria-label={open ? "关闭行程规划助手" : "打开行程规划助手"}
-        className="fixed right-4 bottom-4 z-[70] size-12 rounded-full shadow-lg"
+        className="fixed right-4 bottom-4 z-[70] size-16 bg-transparent p-0 shadow-none hover:bg-transparent"
         onClick={() => agentActions.toggleOpen()}
       >
-        <Bot aria-hidden />
+        <img
+          src={blackDogGif}
+          alt=""
+          aria-hidden
+          className="size-full object-contain"
+        />
       </Button>
 
       <Sheet
