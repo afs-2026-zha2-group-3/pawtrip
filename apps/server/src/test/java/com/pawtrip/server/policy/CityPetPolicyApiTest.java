@@ -178,7 +178,8 @@ class CityPetPolicyApiTest {
 		this.mockMvc.perform(get("/api/cities/440300/pet-policy").with(user("demo")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.name").value("深圳市"))
-			.andExpect(jsonPath("$.covered").value(false));
+			.andExpect(jsonPath("$.covered").value(false))
+			.andExpect(jsonPath("$.allowedPetTypes").value("CAT,DOG"));
 	}
 
 	@Test

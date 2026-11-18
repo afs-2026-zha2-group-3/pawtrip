@@ -103,6 +103,9 @@ describe("city candidate matching", () => {
     expect(matchCityCandidate({ ...city, allowedPetTypes: "DOG" }, cat).status).toBe(
       "unfriendly",
     );
+    expect(matchCityCandidate({ ...city, allowedPetTypes: null }, cat).status).toBe(
+      "unfriendly",
+    );
   });
 
   it("is unjudgeable for dogs without a breed", () => {
@@ -119,6 +122,12 @@ describe("city policy page matching", () => {
     expect(matchCityPolicy({ ...cityPolicy, allowedPetTypes: "DOG" }, cat).status).toBe(
       "unfriendly",
     );
+  });
+
+  it("is unfriendly for cats when the city has no allowed pet types", () => {
+    expect(
+      matchCityPolicy({ ...cityPolicy, allowedPetTypes: null }, cat).status,
+    ).toBe("unfriendly");
   });
 
   it("is unjudgeable for unknown breeds", () => {
@@ -190,6 +199,12 @@ describe("location policy matching", () => {
         { ...cat, hasVaccinationProof: false },
       ).reasons[0],
     ).toContain("疫苗证明");
+    expect(
+      matchLocationPolicy(
+        { ...emptyPolicies, leashRequired: true },
+        { ...cat, hasLeash: false },
+      ).status,
+    ).toBe("unfriendly");
   });
 
   it("is unfriendly when leash or vaccination requirements are unmet", () => {
