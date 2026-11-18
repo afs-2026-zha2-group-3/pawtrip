@@ -13,31 +13,31 @@ async function openLogin(page: import("@playwright/test").Page) {
 
 async function signIn(page: import("@playwright/test").Page) {
   await openLogin(page);
-  const usernameInput = page.getByLabel("Username");
+  const usernameInput = page.getByLabel("用户名");
   await usernameInput.fill(username);
   await expect(usernameInput).toHaveValue(username);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByLabel("密码").fill(password);
+  await page.getByRole("button", { name: "登录" }).click();
 }
 
 test("redirects a guest away from the protected home page", async ({ page }) => {
   await page.goto("/");
 
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "登录" })).toBeVisible();
   await expect(page.getByText("Hello World")).toHaveCount(0);
 });
 
 test("shows a generic error for invalid credentials", async ({ page }) => {
   await openLogin(page);
-  const usernameInput = page.getByLabel("Username");
+  const usernameInput = page.getByLabel("用户名");
   await usernameInput.fill(username);
   await expect(usernameInput).toHaveValue(username);
-  await page.getByLabel("Password").fill("invalid-password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByLabel("密码").fill("invalid-password");
+  await page.getByRole("button", { name: "登录" }).click();
 
   await expect(page.getByRole("alert")).toHaveText(
-    "Invalid username or password.",
+    "用户名或密码不正确。",
   );
   await expect(page).toHaveURL(/\/login$/);
 });
@@ -66,7 +66,7 @@ test("requires sign-in again after logging out", async ({ page }) => {
   await confirmation.getByRole("button", { name: "Log out" }).click();
 
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "登录" })).toBeVisible();
 
   await page.goto("/");
   await expect(page).toHaveURL(/\/login$/);

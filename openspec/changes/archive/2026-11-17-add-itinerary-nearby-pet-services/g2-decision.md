@@ -5,7 +5,7 @@
 - Inputs:
   - Local verify: `docs/ai4se-plugins/20261117-173057-local-verify-report.md`（Overall Partial）
   - Pipeline: `docs/ai4se-plugins/20261117-173057-pipeline-report.md`（CI Pass，E1 全绿）
-  - CI report: `openspec/changes/2026-11-17-add-itinerary-nearby-pet-services/ci-report.md`
+  - CI report: `openspec/changes/archive/2026-11-17-add-itinerary-nearby-pet-services/ci-report.md`
   - PR: https://github.com/afs-2026-zha2-group-3/pawtrip/pull/75
   - Head commit: `f160d71`；Merge commit: `70c7ca8`（squash）
 - Dimension results:
