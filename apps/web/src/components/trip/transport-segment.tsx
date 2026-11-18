@@ -103,12 +103,16 @@ export function TransportSegmentRow({
 
   if (compact) {
     return (
-      <div data-testid="transport-segment" className="flex flex-col gap-0.5 py-0.5 pl-0">
+      <div
+        data-testid="transport-segment"
+        className="relative flex flex-col gap-0.5 py-0.5 pl-0"
+      >
+        <span
+          aria-hidden="true"
+          data-testid="timeline-rail"
+          className="pointer-events-none absolute -top-[6px] -bottom-[6px] left-[9px] z-0 w-[2px] bg-paw-accent"
+        />
         <div className="relative flex min-h-8 items-center gap-1.5">
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-[10px] z-0 h-[100px] w-[2px] -translate-y-1/2 bg-paw-accent"
-          />
           <span
             aria-hidden="true"
             className="relative z-10 inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-paw-accent text-xs text-paw-accent-strong"
