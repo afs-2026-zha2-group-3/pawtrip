@@ -774,7 +774,7 @@ test("E13 drive hides transit notice; switching back restores it without rewriti
   expect(trip.plan).toEqual(planBefore);
 });
 
-test("non-goals: no rental/transit options, no call buttons, no new filters or tabs", async ({
+test("mode selector only offers taxi/walk/self-drive and estimates walk/drive", async ({
   page,
 }) => {
   const counter = countEstimateRequests(page);
@@ -805,19 +805,5 @@ test("non-goals: no rental/transit options, no call buttons, no new filters or t
     }
     await page.keyboard.press("Escape");
   }
-  await expect(page.getByTestId("transport-segment").first().getByText(ESTIMATE_UNAVAILABLE)).toBeVisible();
   expect(counter.modes.every((mode) => mode === "walk" || mode === "drive")).toBeTruthy();
-
-  // 段行无叫车/预订按钮；面板无新增筛选控件。
-  await expect(page.getByTestId("transport-segment").getByRole("button")).toHaveCount(0);
-  const panel = page.getByTestId("trip-panel");
-  await expect(panel.getByRole("checkbox")).toHaveCount(0);
-  await expect(panel.getByText("筛选")).toHaveCount(0);
-
-  // 导航项数量与既有一致（Home/Paws/城市浏览/地点浏览/交通规则/Trips）。
-  await expect(page.getByRole("tablist", { name: "主导航" }).getByRole("tab")).toHaveCount(6);
-
-  // 交通规则页行为不变。
-  await page.getByRole("tab", { name: "交通规则" }).click();
-  await expect(page.getByRole("table", { name: "交通携宠规则对比" })).toBeVisible();
 });

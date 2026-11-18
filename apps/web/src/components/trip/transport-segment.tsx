@@ -95,7 +95,7 @@ export function TransportSegmentRow({
     : options.includes(displayMode)
       ? displayMode
       : "";
-  const handleModeChange = (value: string) => {
+  const handleModeChange = (value: string | null) => {
     if (value === "walk" || value === "drive" || value === "self_drive") {
       tripActions.setStopTransport(stopRef, value, null);
     }

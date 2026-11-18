@@ -191,6 +191,7 @@ export async function createTripViaApi(
     petId: number;
     totalDays: number;
     startDate?: string | null;
+    plan?: { version: 1; days: unknown[]; unscheduled: unknown[] };
   },
 ) {
   const headers = await csrfHeaders(page);
@@ -198,7 +199,7 @@ export async function createTripViaApi(
     headers,
     data: {
       ...input,
-      plan: { version: 1, days: [], unscheduled: [] },
+      plan: input.plan ?? { version: 1, days: [], unscheduled: [] },
     },
   });
   expect(response.ok()).toBeTruthy();

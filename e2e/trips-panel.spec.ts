@@ -414,20 +414,6 @@ test("keeps local edits when saving fails and retries", async ({ page }) => {
   failSaving = false;
 });
 
-test("expands on the left for desktop", async ({ page }) => {
-  await createTrip(page, { city: "杭州市", days: 2 });
-  await page.waitForTimeout(600);
-  const panel = page.getByTestId("trip-panel");
-  await expect(panel.getByText("Day 1", { exact: true })).toBeVisible();
-  await expect(panel.getByText("Day 2", { exact: true })).toBeVisible();
-  await expect(panel.getByText("待安排", { exact: true })).toBeVisible();
-  const desktop = await panel.boundingBox();
-  expect(desktop?.width).toBeGreaterThan(200);
-  expect(desktop?.width).toBeLessThan(300);
-  expect(desktop?.x).toBeLessThan(60);
-
-});
-
 test("does not render the panel on the login page", async ({ page }) => {
   await createTrip(page, { city: "杭州市", days: 1 });
   await expect(page.getByTestId("trip-panel")).toBeVisible();

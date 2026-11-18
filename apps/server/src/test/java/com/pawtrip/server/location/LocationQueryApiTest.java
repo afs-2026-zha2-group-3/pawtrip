@@ -332,12 +332,50 @@ class LocationQueryApiTest {
 	}
 
 	@Test
+	void detailReturnsNaturalLanguageRecommendationFields() throws Exception {
+		PawtripLocation location = new PawtripLocation("poi-recommend", "香炉湾沙滩", "110208", "attraction",
+				"香湾街道情侣中路", 113.58, 22.26, "440402",
+				"""
+				{"type":"风景名胜;风景名胜;海滩","pname":"广东省","cityname":"珠海市","adname":"香洲区"}
+				""",
+				"""
+				{"rating":"4.7","keytag":"海滨浴场","business_area":"吉大","opentime_week":"周一至周日 00:00-24:00"}
+				""", null, null);
+		this.locationRepository.save(location);
+
+		JsonNode body = json(get("/api/locations/poi-recommend").with(user("demo").roles("USER")));
+
+		assertThat(body.path("typeName").asString()).isEqualTo("风景名胜、海滩");
+		assertThat(body.path("regionName").asString()).isEqualTo("广东省珠海市香洲区");
+		assertThat(body.path("rating").asString()).isEqualTo("4.7");
+		assertThat(body.path("keytag").asString()).isEqualTo("海滨浴场");
+		assertThat(body.path("businessArea").asString()).isEqualTo("吉大");
+		assertThat(body.path("openingHours").asString()).isEqualTo("周一至周日 00:00-24:00");
+	}
+
+	@Test
 	void detailReturnsNullsForUnconfiguredPolicies() throws Exception {
 		JsonNode body = json(get("/api/locations/poi-zhu-d").with(user("demo").roles("USER")));
 
 		assertThat(isNullOrMissing(body.path("petPolicies").path("maxPetsPerPerson"))).isTrue();
 		assertThat(isNullOrMissing(body.path("petPolicies").path("allowedPetTypes"))).isTrue();
 		assertThat(isNullOrMissing(body.path("petPolicies").path("leashRequired"))).isTrue();
+	}
+
+	@Test
+	void detailReturnsCoordinatesForSavedLocation() throws Exception {
+		JsonNode body = json(get("/api/locations/poi-zhu-a").with(user("demo").roles("USER")));
+
+		assertThat(body.path("longitude").asDouble()).isEqualTo(113.5);
+		assertThat(body.path("latitude").asDouble()).isEqualTo(22.1);
+	}
+
+	@Test
+	void detailReturnsNullCoordinatesWhenMissing() throws Exception {
+		JsonNode body = json(get("/api/locations/poi-zhu-c").with(user("demo").roles("USER")));
+
+		assertThat(body.path("longitude").isNull()).isTrue();
+		assertThat(body.path("latitude").isNull()).isTrue();
 	}
 
 	@Test

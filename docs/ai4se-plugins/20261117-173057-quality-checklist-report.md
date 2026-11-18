@@ -15,7 +15,7 @@
 | P1-1 | yes | Pass | `requirement-workspace/`（含 `intents/REQ-015-*`、`analysis/REQ-015/`、`requirements/REQ-015-*`） |
 | P1-2 | yes | Pass | `requirement-workspace/requirements/REQ-015-itinerary-nearby-pet-services.md`；阻塞 OQ=0、DoR BLOCKER=0 |
 | P1-3 | yes | Pass | `requirement-workspace/analysis/REQ-015/impact-brief.md`、`deep-dive.md` |
-| P1-4 | yes | Pass | `openspec/changes/2026-11-17-add-itinerary-nearby-pet-services/proposal.md` |
+| P1-4 | yes | Pass | `openspec/changes/archive/2026-11-17-add-itinerary-nearby-pet-services/proposal.md` |
 | P1-5 | no | Skipped | 未运行 `/sdd:explore`；需求由用户直接确认 |
 | P1-6 | no | Skipped | 非 agent-oriented change，未生成 evalset |
 
@@ -25,7 +25,7 @@
 
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
-| P2-1 | yes | Pass | `openspec/changes/2026-11-17-add-itinerary-nearby-pet-services/specs/trip-attractions/spec.md` |
+| P2-1 | yes | Pass | `openspec/changes/archive/2026-11-17-add-itinerary-nearby-pet-services/specs/trip-attractions/spec.md` |
 | P2-2 | yes | Pass | `dov-ac-review.md`（AC 1–4、DoV 1–5 全 Pass） |
 | P2-3 | yes* | Pass | `g1-decision.md`（IO=SUKI、SA=RANLE，2026-11-18，Pass） |
 | P2-4 | no | Partial | `consistency-lint.md`（2 WARNING：Living Spec 已含免筛选文本、附近服务 requirement 未归档） |

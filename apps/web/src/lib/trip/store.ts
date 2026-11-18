@@ -219,6 +219,13 @@ export const tripActions = {
         : state,
     );
   },
+  replaceActivePlan(plan: TripPlan): void {
+    update((state) =>
+      state.active
+        ? { ...state, active: { ...state.active, plan }, ...bumpRevision(state) }
+        : state,
+    );
+  },
   setStartDate(startDate: string | null): void {
     update((state) =>
       state.active && !isLocked(state) && state.active.startDate !== startDate

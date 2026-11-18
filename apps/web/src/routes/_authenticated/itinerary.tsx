@@ -1,23 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Download, Image as ImageIcon } from "lucide-react";
+import { Download, Image as ImageIcon, MapPin, PawPrint } from "lucide-react";
 import { useSelector } from "@tanstack/react-store";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import pawStickerSm from "@/assets/paw-sticker-sm.png";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  petCardTitleClass,
+  petPillOutlineClass,
+  petPillPrimaryClass,
+} from "@/components/pet/pet-profile-card";
 import {
   allowanceStatusLabels,
   getRuleForMode,
@@ -25,6 +18,7 @@ import {
   type TransportRule,
 } from "@/data/transport-rules";
 import { NearbyPetServices } from "@/components/trip/nearby-pet-services";
+import { DayRouteDialog } from "@/components/trip/day-route-dialog";
 import { petPolicyFields } from "@/lib/attraction-pet-rules";
 import {
   downloadBlob,
@@ -32,6 +26,7 @@ import {
   imageFileName,
 } from "@/lib/trip/export-image";
 import { TripSectionNav } from "@/components/trip/trip-section-nav";
+import { PageFrame } from "@/components/layout/page-frame";
 import {
   addDays,
   buildItinerary,
@@ -65,6 +60,15 @@ export const Route = createFileRoute("/_authenticated/itinerary")({
   component: ItineraryPage,
 });
 
+const pillLinkClass = (primary: boolean) =>
+  cn(
+    primary ? petPillPrimaryClass : petPillOutlineClass,
+    "inline-flex items-center justify-center",
+  );
+
+const cardClass =
+  "relative w-full rounded-[26px] bg-card p-6 shadow-pet-card ring-1 ring-foreground/5 sm:p-8";
+
 function ItineraryPage() {
   const active = useActiveTrip();
   const hydration = useHydrationStatus();
@@ -83,6 +87,7 @@ function ItineraryPage() {
   const requested = useRef(new Set<string>());
   const imageSheetRef = useRef<HTMLDivElement>(null);
   const [selectedDay, setSelectedDay] = useState(1);
+  const [routeDialogOpen, setRouteDialogOpen] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [exportingImage, setExportingImage] = useState(false);
   const [imageExportError, setImageExportError] = useState<string | null>(null);
@@ -157,59 +162,61 @@ function ItineraryPage() {
   if (!active || !itinerary) {
     if (hydration === "idle" || hydration === "loading") {
       return (
-        <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
-          <TripSectionNav active="itinerary" />
-          <p role="status" className="text-sm text-muted-foreground">
-            正在读取行程…
-          </p>
-        </main>
+        <PageFrame above={<TripSectionNav active="itinerary" />}>
+          <div
+            className="h-[420px] animate-pulse rounded-[26px] bg-muted/60"
+            aria-busy="true"
+          >
+            <span className="sr-only">正在读取行程…</span>
+          </div>
+        </PageFrame>
       );
     }
     return (
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
-        <TripSectionNav active="itinerary" />
-        <Empty>
-          <EmptyHeader>
-            <EmptyTitle>还没有可查看的行程单</EmptyTitle>
-            <EmptyDescription>
-              先创建或打开一个行程，行程单会按天汇总地点、交通与提醒。
-            </EmptyDescription>
-          </EmptyHeader>
-          <div className="flex gap-2">
-            <Link to="/cities" className={buttonVariants({ size: "sm" })}>
+      <PageFrame above={<TripSectionNav active="itinerary" />}>
+        <section className="flex flex-col items-center gap-3 rounded-[26px] bg-muted/40 p-8 text-center">
+          <PawPrint
+            aria-hidden="true"
+            className="size-10 text-muted-foreground/40"
+          />
+          <h2 className="text-lg font-medium leading-[21.6px]">
+            还没有可查看的行程单
+          </h2>
+          <p className="max-w-md text-sm text-muted-foreground">
+            先创建或打开一个行程，行程单会按天汇总地点、交通与提醒。
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link to="/cities" className={pillLinkClass(true)}>
               去创建行程
             </Link>
-            <Link
-              to="/trips"
-              className={buttonVariants({ size: "sm", variant: "outline" })}
-            >
+            <Link to="/trips" className={pillLinkClass(false)}>
               查看我的行程
             </Link>
           </div>
-        </Empty>
-      </main>
+        </section>
+      </PageFrame>
     );
   }
 
   if (!active.planCompleted) {
     return (
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
-        <TripSectionNav active="itinerary" />
-        <Empty>
-          <EmptyHeader>
-            <EmptyTitle>尚未创建行程单</EmptyTitle>
-            <EmptyDescription>
-              先在计划中选好景点与交通，点击「创建行程单」后再查看。
-            </EmptyDescription>
-          </EmptyHeader>
-          <Link
-            to="/attractions"
-            className={buttonVariants({ size: "sm" })}
-          >
+      <PageFrame above={<TripSectionNav active="itinerary" />}>
+        <section className="flex flex-col items-center gap-3 rounded-[26px] bg-muted/40 p-8 text-center">
+          <PawPrint
+            aria-hidden="true"
+            className="size-10 text-muted-foreground/40"
+          />
+          <h2 className="text-lg font-medium leading-[21.6px]">
+            尚未创建行程单
+          </h2>
+          <p className="max-w-md text-sm text-muted-foreground">
+            先在计划中选好景点与交通，点击「创建行程单」后再查看。
+          </p>
+          <Link to="/attractions" className={pillLinkClass(true)}>
             继续规划
           </Link>
-        </Empty>
-      </main>
+        </section>
+      </PageFrame>
     );
   }
 
@@ -261,57 +268,58 @@ function ItineraryPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6 print:max-w-none print:p-0">
-      <TripSectionNav active="itinerary" />
+    <PageFrame above={<TripSectionNav active="itinerary" />}>
 
-      <header className="flex flex-col gap-1">
-        <p className="text-sm text-muted-foreground">PawTrip</p>
-        <h1 className="text-2xl font-semibold tracking-tight">行程单</h1>
-        <p className="text-base font-medium">{active.name}</p>
-        <p className="text-sm text-muted-foreground">
-          {cityName} · {meta}
-        </p>
-        {ended ? (
-          <p role="status" className="text-sm text-amber-600">
-            该行程
-            {endDate ? `已于 ${formatTripDate(endDate) ?? endDate} ` : "已"}
-            结束，仅可查看与导出，无法继续编辑。
+<header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className={petCardTitleClass}>行程单</h1>
+          <p className="text-base font-medium text-foreground">{active.name}</p>
+          <p className="text-sm text-muted-foreground">
+            {cityName} · {meta}
           </p>
-        ) : null}
+          {ended ? (
+            <p role="status" className="text-sm text-amber-600">
+              该行程
+              {endDate ? `已于 ${formatTripDate(endDate) ?? endDate} ` : "已"}
+              结束，仅可查看与导出，无法继续编辑。
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-wrap justify-end gap-3 print:hidden">
+          <Button
+            type="button"
+            variant="outline"
+            className={petPillOutlineClass}
+            onClick={exportPdf}
+            disabled={exportingImage}
+          >
+            <Download aria-hidden="true" />
+            导出 PDF
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className={petPillOutlineClass}
+            onClick={() => void exportImages()}
+            disabled={exportingImage}
+            aria-busy={exportingImage}
+          >
+            <ImageIcon aria-hidden="true" />
+            {exportingImage ? "导出中…" : "导出图片"}
+          </Button>
+        </div>
       </header>
 
       {transportRule ? <TransportRuleCard rule={transportRule} /> : null}
 
-      <div className="flex flex-wrap justify-end gap-2 print:hidden">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={exportPdf}
-          disabled={exportingImage}
-        >
-          <Download aria-hidden="true" />
-          导出 PDF
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => void exportImages()}
-          disabled={exportingImage}
-          aria-busy={exportingImage}
-        >
-          <ImageIcon aria-hidden="true" />
-          {exportingImage ? "导出中…" : "导出图片"}
-        </Button>
-      </div>
       {imageExportError ? (
         <p role="alert" className="text-sm text-destructive">
           {imageExportError}
         </p>
       ) : null}
 
-      <div className="print:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Tabs
           value={String(day.day)}
           onValueChange={(value) => {
@@ -319,15 +327,38 @@ function ItineraryPage() {
             if (Number.isInteger(next)) setSelectedDay(next);
           }}
         >
-          <TabsList aria-label="按天切换">
+          <TabsList
+            aria-label="按天切换"
+            className="h-auto w-fit max-w-full flex-wrap gap-1 rounded-full bg-muted p-1 group-data-horizontal/tabs:h-auto"
+          >
             {itinerary.days.map((entry) => (
-              <TabsTrigger key={entry.day} value={String(entry.day)}>
+              <TabsTrigger
+                key={entry.day}
+                value={String(entry.day)}
+                className="h-9 flex-none rounded-full px-4 text-sm font-medium data-active:bg-foreground data-active:text-background"
+              >
                 Day {entry.day}
               </TabsTrigger>
             ))}
           </TabsList>
         </Tabs>
+        <Button
+          type="button"
+          variant="outline"
+          className={petPillOutlineClass}
+          onClick={() => setRouteDialogOpen(true)}
+        >
+          <MapPin aria-hidden="true" />
+          查看当天路线规划
+        </Button>
       </div>
+
+      <DayRouteDialog
+        open={routeDialogOpen}
+        onOpenChange={setRouteDialogOpen}
+        day={day}
+        locations={locations}
+      />
 
       {(printing ? itinerary.days : [day]).map((entry) => (
         <DayDetail
@@ -339,13 +370,16 @@ function ItineraryPage() {
       ))}
 
       {itinerary.unscheduledNames.length > 0 ? (
-        <section aria-label="未排期地点" className="flex flex-col gap-2">
-          <h2 className="text-sm font-medium">未排期</h2>
-          <div className="flex flex-wrap gap-1.5">
+        <section
+          aria-label="未排期地点"
+          className={cn(cardClass, "print:shadow-none print:ring-0")}
+        >
+          <h2 className="text-lg font-medium text-paw-ink">未排期</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
             {itinerary.unscheduledNames.map((name, index) => (
               <span
                 key={`${index}-${name}`}
-                className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground"
+                className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
               >
                 {name}
               </span>
@@ -382,12 +416,12 @@ function ItineraryPage() {
             ))}
             {itinerary.unscheduledNames.length > 0 ? (
               <section aria-label="未排期地点" className="flex flex-col gap-2">
-                <h2 className="text-sm font-medium">未排期</h2>
-                <div className="flex flex-wrap gap-1.5">
+                <h2 className="text-lg font-medium text-paw-ink">未排期</h2>
+                <div className="flex flex-wrap gap-2">
                   {itinerary.unscheduledNames.map((name, index) => (
                     <span
                       key={`${index}-${name}`}
-                      className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground"
+                      className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
                     >
                       {name}
                     </span>
@@ -398,7 +432,7 @@ function ItineraryPage() {
           </div>
         </div>
       ) : null}
-    </main>
+    </PageFrame>
   );
 }
 
@@ -413,46 +447,59 @@ function DayDetail({
 }) {
   const stopCount = day.entries.filter((entry) => entry.kind === "stop").length;
   return (
-    <section aria-label="按天行程" className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-lg font-medium">
+    <section aria-label="按天行程" className={cn(cardClass, "print:shadow-none")}>
+      <img
+        src={pawStickerSm}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute top-5 right-5 w-[38px] select-none print:hidden"
+      />
+      <div className="flex flex-wrap items-baseline justify-between gap-2 pr-12">
+        <p className="text-lg font-medium leading-snug text-paw-ink">
           {day.dateLabel ?? `第 ${day.day} 天`} · {day.city}
         </p>
         <p className="text-xs text-muted-foreground">{stopCount} 个地点</p>
       </div>
 
-      {day.entries.length === 0 ? (
-        <p className="text-sm text-muted-foreground">当天暂无安排</p>
-      ) : (
-        <ol className="flex flex-col">
-          {day.entries.map((entry, index) => (
-            <li key={entry.key} className="flex gap-3">
-              <div className="flex flex-col items-center pt-1.5">
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "size-2.5 shrink-0 rounded-full",
-                    entry.kind === "stop"
-                      ? "bg-primary"
-                      : "border border-border bg-background",
-                  )}
-                />
-                {index < day.entries.length - 1 ? (
-                  <span aria-hidden="true" className="w-px flex-1 bg-border" />
-                ) : null}
-              </div>
+      <div className="mt-4">
+        {day.entries.length === 0 ? (
+          <p className="rounded-2xl bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+            当天暂无安排
+          </p>
+        ) : (
+          <ol className="flex flex-col">
+            {day.entries.map((entry, index) => (
+              <li key={entry.key} className="flex gap-3">
+                <div className="flex flex-col items-center pt-3">
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "size-2.5 shrink-0 rounded-full",
+                      entry.kind === "stop"
+                        ? "bg-paw-accent"
+                        : "border border-paw-accent/40 bg-card",
+                    )}
+                  />
+                  {index < day.entries.length - 1 ? (
+                    <span aria-hidden="true" className="w-px flex-1 bg-border" />
+                  ) : null}
+                </div>
 
-              <div className="min-w-0 flex-1 pb-4">
-                {entry.kind === "stop" ? (
-                  <Card data-testid="itinerary-stop" className="print:break-inside-avoid">
-                    <CardHeader>
-                      <CardTitle className="text-base">{entry.name}</CardTitle>
+                <div className="min-w-0 flex-1 pb-3">
+                  {entry.kind === "stop" ? (
+                    <div
+                      data-testid="itinerary-stop"
+                      className="rounded-2xl bg-muted/40 p-4 print:break-inside-avoid"
+                    >
+                      <p className="text-base font-medium text-paw-ink">
+                        {entry.name}
+                      </p>
                       {entry.address ? (
-                        <CardDescription>{entry.address}</CardDescription>
+                        <p className="mt-0.5 text-sm text-muted-foreground">
+                          {entry.address}
+                        </p>
                       ) : null}
-                    </CardHeader>
-                    <CardContent>
-                      <details open={forceOpen}>
+                      <details open={forceOpen} className="mt-2">
                         <summary className="cursor-pointer text-sm text-muted-foreground select-none">
                           详细携宠政策
                         </summary>
@@ -462,21 +509,21 @@ function DayDetail({
                         poiId={entry.poiId}
                         attractionName={entry.name}
                       />
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <TransportEntry entry={entry} tripId={tripId} />
-                )}
-              </div>
-            </li>
-          ))}
-        </ol>
-      )}
+                    </div>
+                  ) : (
+                    <TransportEntry entry={entry} tripId={tripId} />
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
 
       {day.policyLines.length > 0 ? (
         <div
           data-testid="itinerary-policy"
-          className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground"
+          className="mt-3 rounded-2xl bg-paw-accent-soft/70 px-4 py-3 text-xs text-muted-foreground print:break-inside-avoid"
         >
           <p className="mb-1 font-medium text-foreground">当天提醒</p>
           <ul className="flex flex-col gap-0.5">
@@ -501,7 +548,7 @@ function TransportRuleCard({
     <section
       aria-label="大交通携宠规则"
       className={cn(
-        "flex-col gap-1 rounded-md border px-3 py-2 text-xs text-muted-foreground",
+        "flex-col gap-1 rounded-2xl border border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground",
         printOnly ? "hidden print:flex print:break-inside-avoid" : "flex",
       )}
     >
@@ -555,7 +602,7 @@ function TransportEntry({
   return (
     <div
       data-testid="itinerary-transport"
-      className="flex flex-col gap-1 rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+      className="flex flex-col gap-1 rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground print:break-inside-avoid"
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium text-foreground">

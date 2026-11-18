@@ -28,7 +28,7 @@
   - P4：`docs/ai4se-plugins/20261117-173059-quality-checklist-report.md`（Overall Partial）
   - P5：`docs/ai4se-plugins/20261117-173100-quality-checklist-report.md`（Overall Partial）
 - overall: Partial（roll-up）
-- required_failed: 无 Fail；P4-2、P5-1 为 Partial；G1 Pass、G2 Pass、G3 Conditional Pass（2026-11-18 签署）
+- required_failed: 无 Fail；P4-2 为 Partial（G2 已接受残余风险）；P5 已归档完成；G1 Pass、G2 Pass、G3 Conditional Pass（条件已关闭）
 - skipped_optional: P1-5（explore）、P1-6（evalset）、P5-5（evolve）
 
 ## Next

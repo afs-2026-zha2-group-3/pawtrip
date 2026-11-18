@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as AgentRouteImport } from './routes/agent'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedCitiesRouteImport } from './routes/_authenticated/cities'
@@ -24,6 +25,11 @@ import { Route as AuthenticatedDestinationsAdcodePolicyRouteImport } from './rou
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentRoute = AgentRouteImport.update({
+  id: '/agent',
+  path: '/agent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -89,6 +95,7 @@ const AuthenticatedDestinationsAdcodePolicyRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/agent': typeof AgentRoute
   '/login': typeof LoginRoute
   '/cities': typeof AuthenticatedCitiesRoute
   '/itinerary': typeof AuthenticatedItineraryRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/destinations/$adcode/policy': typeof AuthenticatedDestinationsAdcodePolicyRoute
 }
 export interface FileRoutesByTo {
+  '/agent': typeof AgentRoute
   '/login': typeof LoginRoute
   '/cities': typeof AuthenticatedCitiesRoute
   '/itinerary': typeof AuthenticatedItineraryRoute
@@ -116,6 +124,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/agent': typeof AgentRoute
   '/login': typeof LoginRoute
   '/_authenticated/cities': typeof AuthenticatedCitiesRoute
   '/_authenticated/itinerary': typeof AuthenticatedItineraryRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agent'
     | '/login'
     | '/cities'
     | '/itinerary'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/destinations/$adcode/policy'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/agent'
     | '/login'
     | '/cities'
     | '/itinerary'
@@ -158,6 +169,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authenticated'
+    | '/agent'
     | '/login'
     | '/_authenticated/cities'
     | '/_authenticated/itinerary'
@@ -173,6 +185,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AgentRoute: typeof AgentRoute
   LoginRoute: typeof LoginRoute
 }
 
@@ -183,6 +196,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent': {
+      id: '/agent'
+      path: '/agent'
+      fullPath: '/agent'
+      preLoaderRoute: typeof AgentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -298,6 +318,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AgentRoute: AgentRoute,
   LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport

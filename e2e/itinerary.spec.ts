@@ -146,7 +146,7 @@ test("redirects unauthenticated visitors to login", async ({ page }) => {
   await page.goto("/itinerary");
 
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "登录" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "行程单" })).toHaveCount(0);
 });
 

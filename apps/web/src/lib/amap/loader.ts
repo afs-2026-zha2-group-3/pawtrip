@@ -1,6 +1,19 @@
 export interface AMapMap {
-  setFitView(overlays?: unknown[]): void;
-  setZoomAndCenter(zoom: number, center: [number, number]): void;
+  setFitView(
+    overlays?: unknown[],
+    immediately?: boolean,
+    avoid?: [number, number, number, number],
+    maxZoom?: number,
+  ): void;
+  setZoomAndCenter(
+    zoom: number,
+    center: [number, number],
+    immediately?: boolean,
+    duration?: number,
+  ): void;
+  getZoom(): number;
+  on(event: "complete", handler: () => void): void;
+  resize(): void;
   destroy(): void;
 }
 
@@ -15,11 +28,42 @@ export interface AMapInfoWindow {
   close(): void;
 }
 
+export interface AMapOverlay {
+  setMap(map: AMapMap | null): void;
+}
+
+export interface AMapRouteStep {
+  path: [number, number][];
+}
+
+export interface AMapRoute {
+  distance: number;
+  time: number;
+  steps: AMapRouteStep[];
+}
+
+export interface AMapRouteResult {
+  routes: AMapRoute[];
+}
+
+export interface AMapRouteService {
+  search(
+    origin: [number, number],
+    destination: [number, number],
+    callback: (status: string, result: AMapRouteResult | string) => void,
+  ): void;
+}
+
 export interface AMapNamespace {
   Map: new (container: HTMLElement, options?: Record<string, unknown>) => AMapMap;
   Marker: new (options: Record<string, unknown>) => AMapMarker;
   InfoWindow: new (options?: Record<string, unknown>) => AMapInfoWindow;
   Pixel: new (x: number, y: number) => unknown;
+  plugin(names: string[], callback: () => void): void;
+  Polyline: new (options: Record<string, unknown>) => AMapOverlay;
+  Text: new (options: Record<string, unknown>) => AMapOverlay;
+  Driving: new (options?: Record<string, unknown>) => AMapRouteService;
+  Walking: new (options?: Record<string, unknown>) => AMapRouteService;
 }
 
 declare global {
