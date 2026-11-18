@@ -84,8 +84,9 @@ test("wide desktop (2xl, agent closed) widens the panel and narrows the map with
   await presetAndOpenAttractions(page);
 
   const panel = page.getByTestId("trip-panel");
-  // 面板列由 220px 加宽到 280px
-  expect(await widthOf(panel)).toBeGreaterThanOrEqual(270);
+  // 面板卡片列由 220px 加宽到 280px；trip-panel 是列内容，宽度已扣除卡片内边距与边框。
+  expect(await widthOf(page.getByTestId("trip-panel-column"))).toBeGreaterThanOrEqual(270);
+  expect(await widthOf(panel)).toBeGreaterThanOrEqual(240);
   // 地图列（2xl 关闭态 0.8fr）因面板加宽而较上游更窄（上游约 563px）
   const mapWidth = await widthOf(mapColumn(page));
   expect(mapWidth).toBeLessThan(560);
