@@ -34,7 +34,8 @@ class DestinationController {
 	}
 
 	// 宠物友好：限养数（null 或 >=1）且类型允许且品种允许且肩高允许；
-	// 类型 null=不允许（需求方 2026-11-16 修订）；品种空列表/肩高 null=未配置放行
+	// 类型 null=不允许（需求方 2026-11-16 修订）；品种空列表/肩高 null=未配置放行；
+	// 肩高为犬类口径，仅 DOG 参与筛选
 	private static boolean isPetFriendly(AdministrativeRegion region, PetType petType, Long breedId,
 			Double shoulderHeightCm) {
 		Integer maxPetsPerPerson = region.getMaxPetsPerPerson();
@@ -47,7 +48,8 @@ class DestinationController {
 		if (petType == PetType.DOG && breedId != null && !allowsDogBreed(region, breedId)) {
 			return false;
 		}
-		if (shoulderHeightCm != null && !allowsShoulderHeight(region, shoulderHeightCm)) {
+		if (petType == PetType.DOG && shoulderHeightCm != null
+				&& !allowsShoulderHeight(region, shoulderHeightCm)) {
 			return false;
 		}
 		return true;

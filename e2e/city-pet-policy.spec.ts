@@ -123,11 +123,11 @@ test("does not judge when no pet profile is available", async ({ page }) => {
   await expect(page.getByText(/尚未填写宠物档案/)).toBeVisible();
 });
 
-test("does not judge a pet without a dog breed", async ({ page }) => {
+test("treats a cat without a dog breed as allowed", async ({ page }) => {
   await resetPets(page, null);
   await page.goto(policyUrl("440400"));
 
-  await expect(page.getByText("咪咪 · 无法判定")).toBeVisible();
+  await expect(page.getByText("咪咪 · 友好")).toBeVisible();
 });
 
 test("shows an empty state for a city without policy", async ({ page }) => {

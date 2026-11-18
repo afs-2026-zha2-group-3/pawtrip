@@ -267,6 +267,11 @@ class DestinationApiTest {
 			assertThat(findCandidateOrNull(small, "330100")).isNotNull();
 			assertThat(small.size()).isEqualTo(total);
 
+			// 肩高为犬类口径：45cm 的猫不被 40cm 上限城市排除
+			JsonNode catTall = fetchCandidates(null, true, "CAT", null, 45.0);
+			assertThat(findCandidateOrNull(catTall, "330100")).isNotNull();
+			assertThat(catTall.size()).isEqualTo(total);
+
 			// 响应字段与配置一致
 			JsonNode candidates = fetchCandidates(null);
 			assertThat(findCandidate(candidates, "330100").path("maxSinglePetShoulderHeightCm").asDouble())

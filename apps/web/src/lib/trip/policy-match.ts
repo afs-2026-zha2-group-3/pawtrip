@@ -35,7 +35,7 @@ export function matchCityCandidate(
     return verdict("unfriendly", [`该城市不允许携带${PET_TYPE_LABELS[pet.petType]}`]);
   }
   if (pet.petType === "CAT") {
-    return verdict("unjudgeable", ["城市禁养名单以犬种为主，猫暂无法判定"]);
+    return verdict("friendly", ["城市禁养犬种名单不适用于猫，未限制携带猫"]);
   }
   if (pet.dogBreed == null) {
     return verdict("unjudgeable", ["宠物未填写犬种，无法判定禁养名单"]);
@@ -60,7 +60,10 @@ export function matchCityCandidate(
 
 export function matchCityPolicy(policy: CityPetPolicy, pet: Pet): PolicyVerdict {
   if (pet.petType === "CAT") {
-    return verdict("unjudgeable", ["城市养犬政策不适用于猫，暂无法判定"]);
+    if (!typeAllows(policy.allowedPetTypes, pet)) {
+      return verdict("unfriendly", ["该城市不允许携带猫"]);
+    }
+    return verdict("friendly", ["城市禁养犬种名单不适用于猫，未限制携带猫"]);
   }
   if (pet.dogBreed == null) {
     return verdict("unjudgeable", ["宠物未填写犬种，无法判定禁养名单"]);
@@ -102,6 +105,7 @@ export function matchLocationPolicy(
     );
   }
   if (
+    pet.petType === "DOG" &&
     policies.maxSinglePetShoulderHeightCm != null &&
     pet.shoulderHeightCm > policies.maxSinglePetShoulderHeightCm
   ) {

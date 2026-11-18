@@ -94,6 +94,7 @@ class CityPetPolicyApiTest {
 			.andExpect(jsonPath("$.bannedBreeds", hasItem("比特犬")))
 			.andExpect(jsonPath("$.allowedBreeds", hasSize(7)))
 			.andExpect(jsonPath("$.allowedBreeds", hasItem("柯基犬")))
+			.andExpect(jsonPath("$.allowedPetTypes").value("CAT,DOG"))
 			.andExpect(jsonPath("$.match.breedId").value(18))
 			.andExpect(jsonPath("$.match.breedName").value("比特犬"))
 			.andExpect(jsonPath("$.match.matched").value(true))
