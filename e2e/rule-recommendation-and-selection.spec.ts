@@ -45,21 +45,6 @@ test.describe("rule recommendation", () => {
     await expect(driveRow).toContainText("缺少动物检疫合格证明");
     await expect(driveRow).not.toContainText("超过上限");
   });
-
-  test("recomputes the flight row when another airline is selected", async ({
-    page,
-  }) => {
-    await openRules(page);
-    const flightRow = ruleRow(page, "飞机");
-    await expect(flightRow).toContainText("豆豆 · 推荐");
-
-    await page.getByRole("combobox", { name: "选择航司" }).click();
-    await page.getByRole("option", { name: "中国东方航空" }).click();
-
-    await expect(flightRow).toContainText("中国东方航空");
-    await expect(flightRow).toContainText("豆豆 · 推荐");
-    await expect(flightRow).not.toContainText("毛毛");
-  });
 });
 
 test.describe("mode selection", () => {

@@ -306,6 +306,43 @@ function AttractionsPage() {
     changeType(DEFAULT_TYPE_GROUP);
   };
 
+  const panelFooter =
+    typeGroup === DEFAULT_TYPE_GROUP ? (
+      <>
+        <p
+          data-testid="trip-next-step-hint"
+          className="px-1 text-xs leading-4 text-muted-foreground"
+        >
+          {anchorsLoading || anchors.length === 0
+            ? "先在行程中添加景点，下一步可挑选附近的住宿与餐厅"
+            : "下一步将按离景点最近，推荐 5km 内的住宿与餐厅"}
+        </p>
+        <Button
+          type="button"
+          data-testid="trip-next-step"
+          className="w-full"
+          disabled={anchorsLoading || anchors.length === 0}
+          onClick={enterNearbyLocations}
+        >
+          下一步
+        </Button>
+      </>
+    ) : (
+      <>
+        <p className="px-1 text-xs leading-4 text-muted-foreground">
+          行程已保存，生成行程单查看每日安排
+        </p>
+        <Button
+          type="button"
+          data-testid="trip-create-itinerary"
+          className="w-full"
+          onClick={() => void navigate({ to: "/itinerary" })}
+        >
+          创建行程
+        </Button>
+      </>
+    );
+
   const renderCards = () => (
     <div
       className={cn(
@@ -389,7 +426,7 @@ function AttractionsPage() {
         </div>
 
         <aside className="h-full min-h-0 min-w-0 lg:col-start-1 lg:col-span-1 lg:row-start-2">
-          <TripPanel embedded timeline />
+          <TripPanel embedded timeline footer={panelFooter} />
         </aside>
 
         <section className="min-h-0 min-w-0 overflow-y-auto lg:col-start-2 lg:col-span-1 lg:row-start-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -422,7 +459,12 @@ function AttractionsPage() {
               </>
             ) : (
               <>
-                <Button size="sm" variant="ghost" onClick={backToAttractions}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="bg-[#F5F5F5] hover:bg-[#EBEBEB]"
+                  onClick={backToAttractions}
+                >
                   返回景点选择
                 </Button>
                 <div className="flex items-center gap-2">

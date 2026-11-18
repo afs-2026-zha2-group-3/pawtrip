@@ -33,14 +33,91 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: e2e-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  docs_only:
+    name: Docs-only check
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.compare.outputs.skip }}
+    steps:
+      - name: Compare with the last successful E2E run
+        id: compare
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runE2E = (reason) => {
+              core.setOutput("skip", "false");
+              core.info(`Run E2E: ${reason}`);
+            };
+
+            try {
+              const head = context.payload.pull_request?.head.sha;
+              if (context.eventName !== "pull_request" || !head) {
+                return runE2E("not a pull request");
+              }
+
+              const { owner, repo } = context.repo;
+              const runs = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id: "e2e.yml",
+                event: "pull_request",
+                branch: context.payload.pull_request.head.ref,
+                per_page: 30,
+              });
+              const previous = runs.data.workflow_runs.find(
+                (run) => run.id !== context.runId,
+              );
+              if (!previous) return runE2E("no previous run for this branch");
+              if (previous.head_sha === head) return runE2E("same commit rerun");
+              if (previous.conclusion !== "success") {
+                return runE2E(`previous run ${previous.conclusion ?? "incomplete"}`);
+              }
+
+              const compare = await github.rest.repos.compareCommits({
+                owner,
+                repo,
+                base: previous.head_sha,
+                head,
+              });
+              const files = compare.data.files ?? [];
+              if (compare.data.total_commits === 0 || files.length === 0) {
+                return runE2E("empty comparison");
+              }
+              // The compare API caps the file list; an incomplete diff is not a docs-only proof.
+              if (files.length >= 300) return runE2E("comparison truncated");
+
+              const isDocs = (path) =>
+                typeof path === "string" &&
+                (path.endsWith(".md") ||
+                  path.startsWith("docs/") ||
+                  path.startsWith("openspec/") ||
+                  path.startsWith("requirement-workspace/"));
+              const onlyDocs = files.every((file) =>
+                file.status === "renamed"
+                  ? isDocs(file.filename) && isDocs(file.previous_filename)
+                  : isDocs(file.filename),
+              );
+
+              core.setOutput("skip", onlyDocs ? "true" : "false");
+              core.info(
+                `${files.length} changed file(s) since ${previous.head_sha.slice(0, 8)}; docs-only=${onlyDocs}`,
+              );
+            } catch (error) {
+              core.setOutput("skip", "false");
+              core.warning(`Docs-only check failed; running E2E. ${error.message}`);
+            }
+
   e2e:
     name: Browser E2E
+    needs: docs_only
+    if: always() && needs.docs_only.outputs.skip != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

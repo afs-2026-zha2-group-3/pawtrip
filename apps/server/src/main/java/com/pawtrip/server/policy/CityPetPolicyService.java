@@ -39,7 +39,7 @@ class CityPetPolicyService {
 		return this.policyRepository.findById(adcode)
 			.map((policy) -> coveredPolicy(adcode, region, policy, breedId))
 			.orElseGet(() -> new CityPetPolicyResponses.PetPolicy(adcode, region.getName(), false, null, List.of(),
-					List.of(), List.of(), null, null, null));
+					List.of(), List.of(), region.getAllowedPetTypes(), null, null, null));
 	}
 
 	private CityPetPolicyResponses.PetPolicy coveredPolicy(String adcode, AdministrativeRegion region,
@@ -65,7 +65,7 @@ class CityPetPolicyService {
 		CityPetPolicyResponses.Source source = new CityPetPolicyResponses.Source(policy.getSourceTitle(),
 				policy.getSourceNote());
 		return new CityPetPolicyResponses.PetPolicy(adcode, region.getName(), true, policy.getAreaScope(), policies,
-				bannedBreeds, allowedBreeds, source, policy.getUpdatedMonth(), match);
+				bannedBreeds, allowedBreeds, region.getAllowedPetTypes(), source, policy.getUpdatedMonth(), match);
 	}
 
 	private CityPetPolicyResponses.Match match(Long breedId, List<Long> bannedBreedIds, List<Long> allowedBreedIds) {

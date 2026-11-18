@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSelector } from "@tanstack/react-store";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
@@ -108,9 +108,11 @@ const ACTION_BUTTON_CLASS =
 export function TripPanel({
   embedded = false,
   timeline = false,
+  footer,
 }: {
   embedded?: boolean;
   timeline?: boolean;
+  footer?: ReactNode;
 }) {
   const active = useActiveTrip();
   const draft = useDraftTrip();
@@ -123,10 +125,18 @@ export function TripPanel({
   if (!active && !draft) {
     return null;
   }
-  return <TripPanelContent embedded={embedded} timeline={timeline} />;
+  return <TripPanelContent embedded={embedded} timeline={timeline} footer={footer} />;
 }
 
-function TripPanelContent({ embedded, timeline }: { embedded: boolean; timeline: boolean }) {
+function TripPanelContent({
+  embedded,
+  timeline,
+  footer,
+}: {
+  embedded: boolean;
+  timeline: boolean;
+  footer?: ReactNode;
+}) {
   const active = useActiveTrip();
   const draft = useDraftTrip();
   const expanded = usePanelExpanded();
@@ -560,7 +570,9 @@ function TripPanelContent({ embedded, timeline }: { embedded: boolean; timeline:
                 maxHeight={
                   open
                     ? timeline
-                      ? "calc(100svh - 170px)"
+                      ? footer
+                        ? "calc(100svh - 280px)"
+                        : "calc(100svh - 170px)"
                       : embedded
                         ? 320
                         : "calc(100vh - 18rem)"
@@ -648,6 +660,9 @@ function TripPanelContent({ embedded, timeline }: { embedded: boolean; timeline:
                 重试
               </Button>
             </div>
+          ) : null}
+          {timeline && footer ? (
+            <div className="mt-auto flex shrink-0 flex-col gap-2">{footer}</div>
           ) : null}
         </>
       ) : null}
