@@ -114,6 +114,7 @@ async function updatePetWeight(page: Page, weightKg: number) {
     },
   });
   expect(response.ok()).toBeTruthy();
+  return detail.weightKg;
 }
 
 test.beforeEach(async ({ page }) => {
@@ -214,29 +215,88 @@ test("refreshes template items on profile change and preserves user edits", asyn
   await activateTrip(page);
   await openItinerary(page);
 
+  let previousWeight: number | null = null;
+  try {
+    const dialog = await generateChecklist(page);
+    await dialog.getByRole("checkbox", { name: "勾选 疫苗证明" }).click();
+    await expect(dialog.getByTestId("packing-dialog-progress")).toHaveText(
+      "已打包 1 / 9 件",
+    );
+    await dialog.getByLabel("新物品名称").fill("狗牌");
+    await dialog.getByRole("button", { name: "新增" }).click();
+    await expect(dialog.getByTestId("packing-dialog-progress")).toHaveText(
+      "已打包 1 / 10 件",
+    );
+
+    previousWeight = await updatePetWeight(page, 12);
+
+    await page.reload();
+    await expect(page.getByTestId("packing-progress")).toHaveText(
+      "已打包 1 / 10 件",
+    );
+    const reopened = await openChecklistDialog(page);
+    await expect(reopened.getByText("猫用运输包（M 码）")).toBeVisible();
+    await expect(reopened.getByText("猫用运输包（S 码）")).toHaveCount(0);
+    await expect(
+      reopened.getByRole("checkbox", { name: "勾选 疫苗证明" }),
+    ).toBeChecked();
+    await expect(reopened.getByText("狗牌")).toBeVisible();
+    await expect(reopened.getByTestId("packing-item")).toHaveCount(10);
+  } finally {
+    if (previousWeight !== null) {
+      await updatePetWeight(page, previousWeight);
+    }
+  }
+});
+
+test("opening the checklist dialog keeps the selected day and trip plan", async ({
+  page,
+}) => {
+  const trip = await seedPackingTrip(page);
+  await activateTrip(page);
+  await openItinerary(page);
+
+  const dayTwo = page.getByRole("tab", { name: "Day 2" });
+  await dayTwo.click();
+  await expect(dayTwo).toHaveAttribute("aria-selected", "true");
+
+  let tripWrites = 0;
+  page.on("request", (request) => {
+    if (
+      request.method() === "PUT" &&
+      new URL(request.url()).pathname === `/api/trips/${trip.id}`
+    ) {
+      tripWrites += 1;
+    }
+  });
+
+  const dialog = await openChecklistDialog(page);
+  await expect(dialog.getByText("尚未生成携带清单")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+
+  await expect(dayTwo).toHaveAttribute("aria-selected", "true");
+  expect(tripWrites).toBe(0);
+});
+
+test("hides the checklist entry and dialog when printing", async ({ page }) => {
+  await seedPackingTrip(page);
+  await activateTrip(page);
+  await openItinerary(page);
+
   const dialog = await generateChecklist(page);
-  await dialog.getByRole("checkbox", { name: "勾选 疫苗证明" }).click();
-  await expect(dialog.getByTestId("packing-dialog-progress")).toHaveText(
-    "已打包 1 / 9 件",
-  );
-  await dialog.getByLabel("新物品名称").fill("狗牌");
-  await dialog.getByRole("button", { name: "新增" }).click();
-  await expect(dialog.getByTestId("packing-dialog-progress")).toHaveText(
-    "已打包 1 / 10 件",
-  );
+  await page.emulateMedia({ media: "print" });
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole("button", { name: "携带清单" })).toBeHidden();
+  await expect(page.getByTestId("packing-progress")).toBeHidden();
 
-  await updatePetWeight(page, 12);
-
-  await page.reload();
+  await page.emulateMedia({ media: "screen" });
+  await expect(dialog).toBeVisible();
   await expect(page.getByTestId("packing-progress")).toHaveText(
-    "已打包 1 / 10 件",
+    "已打包 0 / 9 件",
   );
-  const reopened = await openChecklistDialog(page);
-  await expect(reopened.getByText("猫用运输包（M 码）")).toBeVisible();
-  await expect(reopened.getByText("猫用运输包（S 码）")).toHaveCount(0);
-  await expect(
-    reopened.getByRole("checkbox", { name: "勾选 疫苗证明" }),
-  ).toBeChecked();
-  await expect(reopened.getByText("狗牌")).toBeVisible();
-  await expect(reopened.getByTestId("packing-item")).toHaveCount(10);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "携带清单" })).toBeVisible();
+  await expect(page.getByTestId("packing-progress")).toBeVisible();
 });

@@ -25,7 +25,7 @@
 
 ## Impact
 
-- 后端：新增 Flyway `V29__create_trip_packing_checklist.sql`；新增 `packing` 领域（实体、仓库、模板映射、服务、控制器、请求/响应 DTO）；新增错误码 `PACKING_CHECKLIST_NOT_FOUND`、`PACKING_ITEM_NOT_FOUND` 与 `PET_PROFILE_REQUIRED`；行程删除级联删除清单。
+- 后端：新增 Flyway `V30__create_trip_packing_checklist.sql`；新增 `packing` 领域（实体、仓库、模板映射、服务、控制器、请求/响应 DTO）；新增错误码 `PACKING_CHECKLIST_NOT_FOUND`、`PACKING_ITEM_NOT_FOUND` 与 `PET_PROFILE_REQUIRED`；行程删除级联删除清单。
 - 前端：新增 `apps/web/src/queries/packing-checklist.ts`；新增 `apps/web/src/components/trip/packing-checklist-dialog.tsx`；`apps/web/src/routes/_authenticated/itinerary.tsx` 增加入口、进度与弹窗；宠物保存后使清单查询失效以触发档案同步。
 - 测试：后端 `PackingChecklistApiTest`、模板映射单测与迁移测试；前端清单纯函数/查询或组件测试；E2E 覆盖生成、增删改、勾选进度、持久化、档案变更保留自定义与勾选、无档案/未生成引导。
 - 无新增依赖；模板为代码内静态常量，不建模板表、不调用外部服务。

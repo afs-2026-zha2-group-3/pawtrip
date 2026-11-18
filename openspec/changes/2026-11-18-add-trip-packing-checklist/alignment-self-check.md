@@ -26,7 +26,7 @@
 
 | # | 检查项 | 证据 | 结论 |
 |---|---|---|---|
-| 1 | 分类枚举统一大写 `DOCUMENTS/FOOD/TRAVEL/HEALTH/CLEANING` | spec = design D1/D3 = V29 CHECK = 后端枚举/响应 = 前端类型与分组 | Pass |
+| 1 | 分类枚举统一大写 `DOCUMENTS/FOOD/TRAVEL/HEALTH/CLEANING` | spec = design D1/D3 = V30 CHECK = 后端枚举/响应 = 前端类型与分组 | Pass |
 | 2 | 数量规则（主粮 `days×2`、尿垫 `max(1, days)`、1–99） | spec = design D3 = 迁移 CHECK = service 校验 = ATDD T6 | Pass |
 | 3 | 尺寸分档（体重 5/15、肩高 35/55） | spec 场景 = design D3 = `PackingTemplate` = ATDD T6 | Pass |
 | 4 | 模板为代码内静态常量、无 AI/外部服务 | spec 模板需求 = design Non-Goals = ATDD §5 反向 | Pass |
@@ -35,7 +35,7 @@
 | 7 | 属主边界与认证（401 / 他人 404） | spec 场景 = design D2 = A2 | Pass |
 | 8 | 错误码三件套 | spec 降级需求 = design D2 = `ApiErrorCode` = A2/A3/A5 | Pass |
 | 9 | 每行程一份清单、删除行程级联 | spec 生成需求 = design D1 = A9 + 迁移测试 | Pass |
-| 10 | V29 只新增两张表与索引 | design Migration Plan = 迁移测试 = ATDD §4 | Pass |
+| 10 | V30 只新增两张表与索引 | design Migration Plan = 迁移测试 = ATDD §4 | Pass |
 | 11 | 入口与弹窗形态复用路线规划 | spec ti 入口/弹窗 = design D6 = itinerary 同层容器 = E1 | Pass |
 | 12 | 弹窗与导出隔离 | spec ti 导出场景 = design D8 = `print:hidden` = 5.6/5.7 | Pass |
 | 13 | 档案变更后清单查询失效 | design D6 = tasks 4.5 = `-pet-dialogs` 前缀失效 | Pass |

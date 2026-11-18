@@ -356,6 +356,96 @@ class PackingChecklistApiTest {
 		assertThat(this.itemRepository.findAll()).isEmpty();
 	}
 
+	@Test
+	void checklistItemsExposeContractFields() throws Exception {
+		long tripId = createTrip(this.username, "契约行程", this.petId, 3, "high_speed_rail");
+		JsonNode checklist = generate(tripId, this.username, status().isCreated());
+
+		assertThat(checklist.path("tripId").asLong()).isEqualTo(tripId);
+		assertThat(checklist.path("transportMode").asText()).isEqualTo("high_speed_rail");
+		assertThat(checklist.path("totalDays").asInt()).isEqualTo(3);
+		assertThat(checklist.path("createdAt").asText()).isNotBlank();
+		assertThat(checklist.path("updatedAt").asText()).isNotBlank();
+		assertThat(checklist.path("progress").path("total").asInt()).isEqualTo(8);
+
+		JsonNode template = item(checklist, "food");
+		for (String field : List.of("id", "category", "name", "quantity", "checked", "source", "templateKey")) {
+			assertThat(template.has(field)).as("template field %s", field).isTrue();
+		}
+		assertThat(template.path("category").asText()).isEqualTo("FOOD");
+		assertThat(template.path("source").asText()).isEqualTo("TEMPLATE");
+		assertThat(template.path("templateKey").asText()).isEqualTo("food");
+		assertThat(template.path("checked").asBoolean()).isFalse();
+
+		this.mockMvc.perform(post("/api/trips/{tripId}/packing-checklist/items", tripId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"宠物雨衣","category":"TRAVEL","quantity":1}
+							"""))
+			.andExpect(status().isCreated());
+
+		JsonNode custom = null;
+		for (JsonNode candidate : read(tripId).path("items")) {
+			if ("CUSTOM".equals(candidate.path("source").asText())) {
+				custom = candidate;
+			}
+		}
+		assertThat(custom).isNotNull();
+		assertThat(custom.path("templateKey").isNull()).isTrue();
+	}
+
+	@Test
+	void updatesCustomItemNameAndCategory() throws Exception {
+		long tripId = createTrip(this.username, "自定义改名", this.petId, 3, "high_speed_rail");
+		generate(tripId, this.username, status().isCreated());
+		MvcResult added = this.mockMvc.perform(post("/api/trips/{tripId}/packing-checklist/items", tripId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"宠物雨衣","category":"TRAVEL","quantity":1}
+							"""))
+			.andExpect(status().isCreated())
+			.andReturn();
+		long itemId = JSON_MAPPER.readTree(added.getResponse().getContentAsString()).path("id").asLong();
+
+		this.mockMvc.perform(put("/api/trips/{tripId}/packing-checklist/items/{itemId}", tripId, itemId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"宠物背包","category":"HEALTH","quantity":2,"checked":true}
+							"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value("宠物背包"))
+			.andExpect(jsonPath("$.category").value("HEALTH"))
+			.andExpect(jsonPath("$.quantity").value(2))
+			.andExpect(jsonPath("$.checked").value(true));
+
+		JsonNode persisted = item(read(tripId), null, itemId);
+		assertThat(persisted.path("name").asText()).isEqualTo("宠物背包");
+		assertThat(persisted.path("category").asText()).isEqualTo("HEALTH");
+	}
+
+	@Test
+	void reportsFullProgressWhenAllItemsChecked() throws Exception {
+		long tripId = createTrip(this.username, "全量完成", this.petId, 3, "high_speed_rail");
+		JsonNode checklist = generate(tripId, this.username, status().isCreated());
+		int total = checklist.path("progress").path("total").asInt();
+
+		for (JsonNode candidate : checklist.path("items")) {
+			checkItem(tripId, candidate.path("id").asLong(), true);
+		}
+
+		JsonNode completed = read(tripId);
+		assertThat(completed.path("progress").path("checked").asInt()).isEqualTo(total);
+
+		checkItem(tripId, completed.path("items").get(0).path("id").asLong(), false);
+		assertThat(read(tripId).path("progress").path("checked").asInt()).isEqualTo(total - 1);
+	}
+
 	private long createTrip(String owner, String name, long petId, int totalDays, String transportMode)
 			throws Exception {
 		MvcResult result = this.mockMvc.perform(post("/api/trips")

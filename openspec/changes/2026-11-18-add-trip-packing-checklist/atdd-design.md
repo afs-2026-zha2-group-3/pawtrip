@@ -58,6 +58,8 @@
 
 ## 2. 生产代码前先写的验收（红测）
 
+> P4 调整：红绿 TDD 仅用于后端；前端不采用红测先行，直接实现并由 E2E 覆盖关键交互。以下组件红测条目仅作设计留档，不纳入实施。
+
 ### 2.1 API — `PackingChecklistApiTest`（已有 9 项，补 3 项）
 
 已有用例与场景对应：
@@ -107,23 +109,16 @@ T6 boundaryTiersAndScenarioSpecificItems（新增，红测）
    - 狗 + 高铁 → 含 dog-carrier（按体重分档）
 ```
 
-### 2.3 组件 — `packing-checklist-dialog.test.tsx`（已有 4 项，补 5 项）
+### 2.3 组件 — `packing-checklist-dialog.test.tsx`（保留已有 4 项，不新增）
+
+> P4 决策：前端不走 TDD，C5–C9 不实施；加载失败、空态、删除、失败提示与数量回滚由直接实现保证，关键路径由 E2E 覆盖。
 
 ```text
 C1 guidesGenerationAndRendersItemsByCategory        （已有）
 C2 guidesToCreatePetProfileWhenMissing              （已有）
 C3 persistsChecksAndShowsCompletionState            （已有）
 C4 addsCustomItemAndRejectsBlankNames               （已有）
-C5 retriesAfterLoadFailure（新增，红测）
-   GET 首次 500 → 展示「清单加载失败」与「重试」；点击重试后 GET 成功 → 展示物品
-C6 showsEmptyStateAndKeepsAddForm（新增）
-   GET 返回 items=[]、total=0 → 「清单暂无物品，可在下方新增」且新增表单可用
-C7 deletesItemAndRemovesRow（新增）
-   点击「删除 疫苗证明」→ 发出 DELETE；行消失、总数减 1
-C8 showsActionErrorAndKeepsList（新增）
-   PUT 返回 500 → `role=alert` 可读提示；原有物品仍可见、可继续操作
-C9 resetsInvalidQuantityWithoutRequest（新增）
-   数量输入 0 后回车 → 不发出 PUT，输入值回滚为原数量
+C5–C9（不实施，见上）
 ```
 
 ### 2.4 E2E — `e2e/packing-checklist.spec.ts`（已有 3 项，补 3 项断言/用例）
@@ -147,7 +142,7 @@ E6 seedsProfileChangeIsRestored（并入 E3 的 finally）
 | 环境 | 命令 | 说明 |
 |---|---|---|
 | 本地后端 | `cd apps/server && ./mvnw test`（Windows `./mvnw.cmd`） | 先红后绿；定向 `-Dtest=PackingChecklistApiTest,PackingTemplateTest,PackingChecklistSchemaMigrationTest` |
-| 本地前端 | `npm run test -w apps/web` | 先红后绿（组件新增 C5–C9）；同时回归既有 vitest |
+| 本地前端 | `npm run test -w apps/web` | 前端直接实现，不新增红测；回归既有 vitest |
 | 类型/构建 | `npx tsc --noEmit -p apps/web/tsconfig.json`、`npm run build` | 前端契约与构建 |
 | 本地 E2E | `node scripts/run-e2e.mjs e2e/packing-checklist.spec.ts`，再 `node scripts/run-e2e.mjs` | 运行器临时 DB + 全量迁移 |
 | 规格校验 | `npx --no-install openspec validate 2026-11-18-add-trip-packing-checklist --strict` | 工件一致性 |
@@ -169,7 +164,7 @@ E6 seedsProfileChangeIsRestored（并入 E3 的 finally）
 | Non-goal（design / proposal Out） | 反向用例 | 层 |
 |---|---|---|
 | 不做 AI 生成、不调用外部服务 | 后端无新外部客户端与配置；E2E 仅出现本站 API 请求 | 检查 + API |
-| 不做模板管理界面、不建模板表 | V29 仅两张表；无新增管理端路由/接口 | 迁移测试 + 检查 |
+| 不做模板管理界面、不建模板表 | V30 仅两张表；无新增管理端路由/接口 | 迁移测试 + 检查 |
 | 不做出发前未完成提醒/推送 | 无定时任务、通知代码与 UI 入口 | 检查 |
 | 不做一键购买/电商跳转 | 弹窗无购买按钮与外链 | Component |
 | 不做清单分享与独立导出 | 弹窗无导出按钮；入口与进度 `print:hidden` | Component + E2E E5 |

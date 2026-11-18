@@ -27,7 +27,7 @@ US-18 要求按档案与行程场景生成清单并支持增删改与勾选，US
 
 ### 数据模型：清单 + 物品，模板项用状态位实现隐藏/墓碑
 
-`V29__create_trip_packing_checklist.sql` 新建两张表：
+`V30__create_trip_packing_checklist.sql` 新建两张表：
 
 ```sql
 CREATE TABLE trip_packing_checklist (
@@ -185,7 +185,7 @@ TemplateItem(templateKey, category, name, quantity, applicability)
   - `PackingChecklistApiTest`（`@SpringBootTest` + `MockMvc`）：首次生成 201、重复生成 200 且不重置、他人行程 404、未登录 401、未生成 GET 404、无档案 409、增删改校验与持久化、勾选进度、行程删除级联。
   - `PackingTemplateTest`：猫 4.5kg 高铁 3 天（运输包 S、主粮 6、无航空箱/疫苗证明）、狗 18kg 飞机 5 天（航空箱 L、检疫证明、主粮 10）、`hasLeash` 真假、牵引绳尺寸档。
   - 同步测试：档案体重变化更新箱包尺码、天数变化更新主粮、交通切换增减场景项、自定义项/数量覆盖/勾选保留、删除模板项不复活。
-  - `PackingChecklistSchemaMigrationTest`：V29 表、唯一约束、CHECK 约束、FK 级联。
+  - `PackingChecklistSchemaMigrationTest`：V30 表、唯一约束、CHECK 约束、FK 级联。
 - 前端：`packing-checklist-dialog` 组件测试（mock 查询/变更），覆盖生成引导、无档案引导、勾选调用、新增校验、100% 完成态、错误提示；如纯逻辑（分类排序、进度文案）抽为小函数则加单测。
 - E2E `e2e/packing-checklist.spec.ts`：API 创建行程并设置激活行程 → 行程单显示「未生成」→ 打开弹窗生成 → 进度与分类 → 勾选后刷新保留 → 新增/改数量/删除 → 档案体重变化后重开弹窗箱包尺码更新且自定义项与勾选保留。
 - 验证命令：`npm run test -w apps/web`、`npm run build`、`cd apps/server && ./mvnw test`、`node scripts/run-e2e.mjs e2e/packing-checklist.spec.ts`。
@@ -201,7 +201,7 @@ TemplateItem(templateKey, category, name, quantity, applicability)
 
 ## Migration Plan
 
-1. 上线 V29 迁移，仅新增表与索引，不影响既有数据。
+1. 上线 V30 迁移，仅新增表与索引，不影响既有数据。
 2. 后端新接口与前端同时发布；旧客户端不调用新接口，无兼容问题。
 3. 回滚：删除前端入口即可停用；服务端表可保留，重新上线后继续使用。
 
