@@ -1,5 +1,6 @@
 package com.pawtrip.server.location;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -8,8 +9,6 @@ import com.pawtrip.server.error.ApiException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -101,8 +100,40 @@ class LocationQueryService {
 		String coverPhotoUrl = coverPhotos(List.of(location)).get(location.getId());
 		return LocationQueryResponses.LocationDetail.from(location, coverPhotoUrl,
 				businessField(location, poi, "rating"), businessField(location, poi, "keytag"),
-				businessField(location, poi, "business_area"), businessField(location, poi, "opentime_today"),
+				businessField(location, poi, "business_area"), typeName(poi), regionName(poi),
+				openingHours(location, poi), businessField(location, poi, "opentime_today"),
 				businessField(location, poi, "tel"));
+	}
+
+	private static String typeName(JsonNode poi) {
+		String value = text(poi, "type");
+		if (value == null) {
+			return null;
+		}
+		List<String> parts = new ArrayList<>();
+		for (String part : value.split(";")) {
+			String item = part.trim();
+			if (!item.isEmpty() && !parts.contains(item)) {
+				parts.add(item);
+			}
+		}
+		return parts.isEmpty() ? null : String.join("、", parts);
+	}
+
+	private static String regionName(JsonNode poi) {
+		List<String> parts = new ArrayList<>();
+		for (String field : List.of("pname", "cityname", "adname")) {
+			String value = text(poi, field);
+			if (value != null && !parts.contains(value)) {
+				parts.add(value);
+			}
+		}
+		return parts.isEmpty() ? null : String.join("", parts);
+	}
+
+	private String openingHours(PawtripLocation location, JsonNode poi) {
+		String weekly = businessField(location, poi, "opentime_week");
+		return weekly != null ? weekly : businessField(location, poi, "opentime_today");
 	}
 
 	private JsonNode parseJson(String json) {
@@ -155,21 +186,30 @@ class LocationQueryService {
 
 	private LocationQueryResponses.Page<LocationQueryResponses.LocationSummary> databasePage(ValidatedRegion region,
 			String typeGroup, boolean petFriendlyOnly, PageParameters page) {
-		Page<PawtripLocation> result = this.locationRepository.findLocationPage(
-				region == null ? null : region.code(),
-				region == null ? null : region.level(),
-				typeGroup,
-				petFriendlyOnly ? 1 : 0,
-				PageRequest.of(page.page() - 1, page.pageSize()));
-		Map<Long, String> covers = coverPhotos(result.getContent());
+		List<LocationRating> ordered = this.locationRepository
+			.findLocations(region == null ? null : region.code(), region == null ? null : region.level(), typeGroup,
+					petFriendlyOnly ? 1 : 0)
+			.stream()
+			.map(location -> new LocationRating(location, ratingScore(location)))
+			.sorted(Comparator.comparing(LocationRating::rating, Comparator.nullsLast(Comparator.reverseOrder()))
+				.thenComparing(candidate -> candidate.location().getId()))
+			.toList();
+		int from = Math.min((page.page() - 1) * page.pageSize(), ordered.size());
+		int to = Math.min(from + page.pageSize(), ordered.size());
+		List<PawtripLocation> pageItems = ordered.subList(from, to)
+			.stream()
+			.map(LocationRating::location)
+			.toList();
+		Map<Long, String> covers = coverPhotos(pageItems);
+		int totalPages = (ordered.size() + page.pageSize() - 1) / page.pageSize();
 		return new LocationQueryResponses.Page<>(
 				page.page(),
 				page.pageSize(),
-				result.getTotalElements(),
-				result.getTotalPages(),
-				result.hasNext(),
-				result.hasPrevious(),
-				result.getContent().stream()
+				ordered.size(),
+				totalPages,
+				page.page() < totalPages,
+				page.page() > 1,
+				pageItems.stream()
 					.map(location -> LocationQueryResponses.LocationSummary.from(location,
 							covers.get(location.getId()), rating(location), keytag(location), null))
 					.toList());
@@ -192,7 +232,9 @@ class LocationQueryService {
 					distanceMeters(anchor.getLatitude(), anchor.getLongitude(), candidate.getLatitude(),
 							candidate.getLongitude())))
 			.filter(candidate -> candidate.distanceMeters() <= NEARBY_RADIUS_METERS)
-			.sorted(Comparator.comparingDouble(NearbyLocation::distanceMeters)
+			.sorted(Comparator.comparing((NearbyLocation candidate) -> ratingScore(candidate.location()),
+					Comparator.nullsLast(Comparator.reverseOrder()))
+				.thenComparingDouble(NearbyLocation::distanceMeters)
 				.thenComparing(candidate -> candidate.location().getId()))
 			.toList();
 		int from = Math.min((page.page() - 1) * page.pageSize(), nearby.size());
@@ -234,6 +276,20 @@ class LocationQueryService {
 
 	private String rating(PawtripLocation location) {
 		return businessField(location, parseJson(location.getPoiJson()), "rating");
+	}
+
+	private Double ratingScore(PawtripLocation location) {
+		String value = rating(location);
+		if (value == null) {
+			return null;
+		}
+		try {
+			double parsed = Double.parseDouble(value.trim());
+			return Double.isFinite(parsed) ? parsed : null;
+		}
+		catch (NumberFormatException exception) {
+			return null;
+		}
 	}
 
 	private String keytag(PawtripLocation location) {
@@ -292,6 +348,9 @@ class LocationQueryService {
 	}
 
 	private record PageParameters(int page, int pageSize) {
+	}
+
+	private record LocationRating(PawtripLocation location, Double rating) {
 	}
 
 	private record NearbyLocation(PawtripLocation location, double distanceMeters) {

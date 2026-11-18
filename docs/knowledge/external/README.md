@@ -19,6 +19,11 @@ Before editing files for a substantial task:
 - Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
 - Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
 
+### TanStack AI
+
+- 能力与接入要点：见 [tanstack-ai.md](tanstack-ai.md)。OpenAI 兼容服务使用 `@tanstack/ai-openai/compatible` 的 `openaiCompatible`。
+- 官方文档：https://tanstack.com/ai/latest/docs
+
 ### UI
 
 #### shadcn/ui
@@ -121,3 +126,12 @@ Before editing files for a substantial task:
   - Query cancellation:https://tanstack.com/query/latest/docs/framework/react/guides/query-cancellation
   - QueryCache / global error callbacks:https://tanstack.com/query/latest/docs/reference/QueryCache
   - `throwOnError`:https://tanstack.com/query/latest/docs/framework/react/reference/useQuery
+
+## 外部模型服务
+
+### 智谱开放平台（BigModel）
+
+- OpenAI 兼容接口、认证、工具调用与限制：见 [bigmodel.md](bigmodel.md)。
+- Base URL：`https://open.bigmodel.cn/api/paas/v4`；认证 `Authorization: Bearer`；示例模型 `glm-5.3`。
+- 密钥只从服务端环境变量 `BIGMODEL_API_KEY` 读取；自动化测试不得真实调用模型。
+- 文档：https://docs.bigmodel.cn/cn/api/introduction

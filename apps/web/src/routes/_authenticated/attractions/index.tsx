@@ -18,6 +18,7 @@ import {
 import { PolicySubjectNotice } from "@/components/trip/policy-tags";
 import { TripPanel } from "@/components/trip/trip-panel";
 import { petRulesApplyTo } from "@/lib/attraction-pet-rules";
+import { useAgentOpen } from "@/lib/agent/selectors";
 import { cn } from "@/lib/utils";
 import { amapJsKey } from "../../../lib/amap/loader";
 import { ApiError } from "../../../lib/http/api-error";
@@ -48,6 +49,7 @@ function AttractionsPage() {
   const navigate = useNavigate();
   const active = useActiveTrip();
   const policySubjects = usePolicySubjects();
+  const agentOpen = useAgentOpen();
   const totalDays = active?.totalDays ?? 1;
   const [typeGroup, setTypeGroup] = useState(DEFAULT_TYPE_GROUP);
   const [includeWithoutRules, setIncludeWithoutRules] = useState(false);
@@ -280,7 +282,6 @@ function AttractionsPage() {
   const gridItems = clientFilterActive
     ? filteredItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
     : (data?.items ?? []);
-  const gridTotal = clientFilterActive ? filteredItems.length : (data?.totalElements ?? 0);
   const gridTotalPages = clientFilterActive
     ? Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE))
     : (data?.totalPages ?? 1);
@@ -314,7 +315,7 @@ function AttractionsPage() {
         >
           {anchorsLoading || anchors.length === 0
             ? "先在行程中添加景点，下一步可挑选附近的住宿与餐厅"
-            : "下一步将按离景点最近，推荐 5km 内的住宿与餐厅"}
+            : "下一步将按评分推荐 5km 内的住宿与餐厅"}
         </p>
         <Button
           type="button"
@@ -343,7 +344,12 @@ function AttractionsPage() {
     );
 
   const renderCards = () => (
-    <div className="paw-grid grid gap-6 sm:grid-cols-2">
+    <div
+      className={cn(
+        "paw-grid grid gap-6 sm:grid-cols-2",
+        !agentOpen && "2xl:grid-cols-3",
+      )}
+    >
       {gridItems.map((location) => (
         <LocationCard
           key={location.poiId}
@@ -367,7 +373,14 @@ function AttractionsPage() {
     <main className="relative px-4 pb-4 sm:px-6 lg:h-[calc(100svh-80px)] lg:overflow-hidden lg:px-10">
       <div
         data-testid="attractions-layout"
-        className="grid h-full min-h-0 items-start gap-4 lg:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)_minmax(360px,42%)] xl:grid-cols-[220px_minmax(300px,1fr)_minmax(340px,1.08fr)_minmax(260px,340px)]"
+        className={cn(
+          "grid h-full min-h-0 items-start gap-4 lg:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)_minmax(360px,42%)]",
+          // 展开态的 376px 留白 = Agent 面板 400px + right-4 16px - 页面右内边距 40px；
+          // 面板宽度变更时需同步 agent-panel.tsx。
+          agentOpen
+            ? "2xl:grid-cols-[220px_minmax(0,1fr)_minmax(240px,0.85fr)_minmax(0,376px)]"
+            : "2xl:grid-cols-[220px_minmax(0,1fr)_minmax(320px,0.8fr)]",
+        )}
       >
         <div className="flex min-w-0 flex-wrap items-center justify-start gap-4 lg:col-span-3 lg:row-start-1 lg:flex-nowrap xl:col-span-3">
           <TripDateCard />
@@ -416,7 +429,7 @@ function AttractionsPage() {
           <TripPanel embedded timeline footer={panelFooter} />
         </aside>
 
-        <section className="min-h-0 min-w-0 overflow-y-auto lg:col-start-2 lg:col-span-1 lg:row-start-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <section className="h-full min-h-0 min-w-0 overflow-y-auto lg:col-start-2 lg:col-span-1 lg:row-start-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             {typeGroup === DEFAULT_TYPE_GROUP ? (
               <>
@@ -651,11 +664,12 @@ function AttractionsPage() {
           )}
         </aside>
 
-        <aside
-          data-testid="ai-chatbox-slot"
-          aria-label="AI 对话框预留区域"
-          className="hidden h-full min-h-0 rounded-[22px] bg-[#d9d9d9] xl:col-start-4 xl:col-span-1 xl:row-start-2 xl:sticky xl:top-0 xl:block"
-        />
+        {agentOpen ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none hidden 2xl:col-span-1 2xl:col-start-4 2xl:row-start-2 2xl:block"
+          />
+        ) : null}
       </div>
 
       {selectedPoiId ? (

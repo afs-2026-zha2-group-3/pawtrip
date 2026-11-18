@@ -332,6 +332,28 @@ class LocationQueryApiTest {
 	}
 
 	@Test
+	void detailReturnsNaturalLanguageRecommendationFields() throws Exception {
+		PawtripLocation location = new PawtripLocation("poi-recommend", "香炉湾沙滩", "110208", "attraction",
+				"香湾街道情侣中路", 113.58, 22.26, "440402",
+				"""
+				{"type":"风景名胜;风景名胜;海滩","pname":"广东省","cityname":"珠海市","adname":"香洲区"}
+				""",
+				"""
+				{"rating":"4.7","keytag":"海滨浴场","business_area":"吉大","opentime_week":"周一至周日 00:00-24:00"}
+				""", null, null);
+		this.locationRepository.save(location);
+
+		JsonNode body = json(get("/api/locations/poi-recommend").with(user("demo").roles("USER")));
+
+		assertThat(body.path("typeName").asString()).isEqualTo("风景名胜、海滩");
+		assertThat(body.path("regionName").asString()).isEqualTo("广东省珠海市香洲区");
+		assertThat(body.path("rating").asString()).isEqualTo("4.7");
+		assertThat(body.path("keytag").asString()).isEqualTo("海滨浴场");
+		assertThat(body.path("businessArea").asString()).isEqualTo("吉大");
+		assertThat(body.path("openingHours").asString()).isEqualTo("周一至周日 00:00-24:00");
+	}
+
+	@Test
 	void detailReturnsNullsForUnconfiguredPolicies() throws Exception {
 		JsonNode body = json(get("/api/locations/poi-zhu-d").with(user("demo").roles("USER")));
 
@@ -564,7 +586,35 @@ class LocationQueryApiTest {
 	}
 
 	@Test
-	void nearbyFilterReturnsOnlyLocationsWithinFiveKmSortedByDistance() throws Exception {
+	void listsSortByRatingDescendingWithUnratedLocationsLast() throws Exception {
+		this.locationRepository.saveAllAndFlush(List.of(
+				locationWithBusiness("poi-zhu-rated-low", "低分景点", "440400", "{\"rating\":\"3.5\"}"),
+				locationWithBusiness("poi-zhu-rated-high", "高分景点", "440400", "{\"rating\":\"4.9\"}"),
+				locationAt("poi-zhu-restaurant-rated-high", "高分餐厅", "restaurant", "440402", "050000", 113.5,
+						22.103, 1, "DOG", null, null, null, null, null, null, "{\"rating\":\"4.9\"}"),
+				locationAt("poi-zhu-restaurant-rated-low", "低分餐厅", "restaurant", "440402", "050000", 113.5,
+						22.101, 1, "DOG", null, null, null, null, null, null, "{\"rating\":\"3.2\"}")));
+
+		JsonNode attractions = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "attraction")
+				.param("petFriendlyOnly", "false")
+				.with(user("demo").roles("USER")));
+		assertThat(poiIds(attractions)).containsExactly("poi-zhu-rated-high", "poi-zhu-a", "poi-zhu-rated-low",
+				"poi-zhu-b", "poi-zhu-c", "poi-zhu-d", "poi-zhu-e");
+
+		JsonNode nearbyRestaurants = json(get("/api/locations")
+				.param("regionCode", "440400")
+				.param("typeGroup", "restaurant")
+				.param("petFriendlyOnly", "false")
+				.param("nearPoiId", "poi-zhu-a")
+				.with(user("demo").roles("USER")));
+		assertThat(poiIds(nearbyRestaurants)).containsExactly("poi-zhu-restaurant-rated-high",
+				"poi-zhu-restaurant-rated-low", "poi-zhu-restaurant-close", "poi-zhu-restaurant");
+	}
+
+	@Test
+	void nearbyFilterReturnsOnlyLocationsWithinFiveKm() throws Exception {
 		JsonNode body = json(get("/api/locations")
 				.param("regionCode", "440400")
 				.param("typeGroup", "restaurant")

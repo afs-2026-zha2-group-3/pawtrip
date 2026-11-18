@@ -13,6 +13,7 @@ export interface AMapMap {
   ): void;
   getZoom(): number;
   on(event: "complete", handler: () => void): void;
+  resize(): void;
   destroy(): void;
 }
 

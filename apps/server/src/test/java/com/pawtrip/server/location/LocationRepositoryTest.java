@@ -19,7 +19,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -129,7 +128,7 @@ class LocationRepositoryTest {
 	}
 
 	@Test
-	void filtersLocationPagesByRegionAndTypeGroup() {
+	void filtersLocationsByRegionAndTypeGroup() {
 		this.locationRepository.saveAll(List.of(
 				location("poi-hangzhou", "330106", "attraction"),
 				location("poi-ningbo", "330205", "attraction"),
@@ -137,18 +136,16 @@ class LocationRepositoryTest {
 				location("poi-hotel", "330106", "hotel")));
 		this.locationRepository.flush();
 
-		var cityPage = this.locationRepository.findLocationPage(
-				"330100", "city", "attraction", 0, PageRequest.of(0, 10));
-		var provincePage = this.locationRepository.findLocationPage(
-				"330000", "province", "attraction", 0, PageRequest.of(0, 10));
+		var cityLocations = this.locationRepository.findLocations("330100", "city", "attraction", 0);
+		var provinceLocations = this.locationRepository.findLocations("330000", "province", "attraction", 0);
 
-		assertThat(cityPage.getContent()).extracting(PawtripLocation::getPoiId).containsExactly("poi-hangzhou");
-		assertThat(provincePage.getContent()).extracting(PawtripLocation::getPoiId)
+		assertThat(cityLocations).extracting(PawtripLocation::getPoiId).containsExactly("poi-hangzhou");
+		assertThat(provinceLocations).extracting(PawtripLocation::getPoiId)
 			.containsExactly("poi-hangzhou", "poi-ningbo");
 	}
 
 	@Test
-	void enforcesUniquePoiIdsAndUsesDatabasePagingInIdOrder() {
+	void enforcesUniquePoiIds() {
 		this.locationRepository.saveAndFlush(location("poi-1", null, "attraction"));
 		assertThatThrownBy(() -> this.locationRepository.saveAndFlush(location("poi-1", null, "attraction")))
 			.isInstanceOf(JpaSystemException.class)
@@ -157,17 +154,13 @@ class LocationRepositoryTest {
 				location("poi-2", null, "attraction"),
 				location("poi-3", null, "attraction")));
 
-		var firstPage = this.locationRepository.findLocationPage(null, null, null, 0, PageRequest.of(0, 2));
-		var secondPage = this.locationRepository.findLocationPage(null, null, null, 0, PageRequest.of(1, 2));
-
-		assertThat(firstPage.getTotalElements()).isEqualTo(3);
-		assertThat(firstPage.getContent()).extracting(PawtripLocation::getPoiId)
-			.containsExactly("poi-1", "poi-2");
-		assertThat(secondPage.getContent()).extracting(PawtripLocation::getPoiId).containsExactly("poi-3");
+		assertThat(this.locationRepository.findLocations(null, null, null, 0))
+			.extracting(PawtripLocation::getPoiId)
+			.containsExactly("poi-1", "poi-2", "poi-3");
 	}
 
 	@Test
-	void filtersSharedLocationPagesByFriendlyPolicyAndRegion() {
+	void filtersSharedLocationsByFriendlyPolicyAndRegion() {
 		var friendly = location("poi-friendly", "330106", "attraction");
 		friendly.updatePetPolicies("DOG", 1, 8.5, 40.0, true, false, 0L, null);
 		var forbidden = location("poi-forbidden", "330106", "attraction");
@@ -178,19 +171,14 @@ class LocationRepositoryTest {
 		hotel.updatePetPolicies("DOG", 1, null, null, null, null, null, null);
 		this.locationRepository.saveAllAndFlush(List.of(friendly, forbidden, unconfigured, hotel));
 
-		var defaultPage = this.locationRepository.findLocationPage(
-				"330100", "city", "attraction", 1, PageRequest.of(0, 10));
-		var allPage = this.locationRepository.findLocationPage(
-				"330100", "city", "attraction", 0, PageRequest.of(0, 10));
-		var provincePage = this.locationRepository.findLocationPage(
-				"330000", "province", "attraction", 1, PageRequest.of(0, 10));
+		var defaultLocations = this.locationRepository.findLocations("330100", "city", "attraction", 1);
+		var allLocations = this.locationRepository.findLocations("330100", "city", "attraction", 0);
+		var provinceLocations = this.locationRepository.findLocations("330000", "province", "attraction", 1);
 
-		assertThat(defaultPage.getContent()).extracting(PawtripLocation::getPoiId)
-			.containsExactly("poi-friendly");
-		assertThat(allPage.getContent()).extracting(PawtripLocation::getPoiId)
+		assertThat(defaultLocations).extracting(PawtripLocation::getPoiId).containsExactly("poi-friendly");
+		assertThat(allLocations).extracting(PawtripLocation::getPoiId)
 			.containsExactly("poi-friendly", "poi-forbidden", "poi-unconfigured");
-		assertThat(provincePage.getContent()).extracting(PawtripLocation::getPoiId)
-			.containsExactly("poi-friendly");
+		assertThat(provinceLocations).extracting(PawtripLocation::getPoiId).containsExactly("poi-friendly");
 	}
 
 	private static PawtripLocation location(String poiId, String regionCode, String typeGroup) {

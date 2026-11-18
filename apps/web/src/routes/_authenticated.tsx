@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TripPanel } from "../components/trip/trip-panel";
+import { AgentPanel } from "../components/agent/agent-panel";
 import { hydrateTripContext, retryTripHydration } from "../lib/trip/hydrate";
 import { readPersistedActiveTripId } from "../lib/trip/persistence";
 import { scheduleTripSave } from "../lib/trip/save";
@@ -59,10 +60,12 @@ function AuthenticatedShell() {
 
   return (
     <>
-      <div className="min-h-svh [view-transition-name:app-content]">
+      {/* 页头 .paw-header 固定 80px；外壳再撑满 100svh 会让页面多出 80px 空白滚动 */}
+      <div className="min-h-[calc(100svh-80px)] [view-transition-name:app-content]">
         <Outlet />
       </div>
       <TripPanel />
+      <AgentPanel />
       {hydration === "idle" && hasPersistedTrip ? (
         <div
           role="alert"

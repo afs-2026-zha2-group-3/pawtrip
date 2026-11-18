@@ -187,6 +187,20 @@ export function LocationMap({
   }, []);
 
   useEffect(() => {
+    if (status !== "ready") {
+      return;
+    }
+    const container = containerRef.current;
+    const map = mapRef.current;
+    if (!container || !map) {
+      return;
+    }
+    const observer = new ResizeObserver(() => map.resize());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [status]);
+
+  useEffect(() => {
     const handleClick = (event: MouseEvent) => {
       const target = event.target;
       if (!(target instanceof Element)) {
