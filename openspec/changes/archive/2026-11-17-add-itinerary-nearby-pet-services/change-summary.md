@@ -1,7 +1,7 @@
 # Change Summary — add-itinerary-nearby-pet-services（REQ-015）
 
 - 日期：2026-11-17
-- 状态：实现与 CI 已完成；**PR #75 已合并（squash `70c7ca8`）；G1/G2 Pass、G3 Conditional Pass；归档待执行（G3 条件）**
+- 状态：**已归档（2026-11-18）**；PR #75 已合并（squash `70c7ca8`）；G1/G2 Pass、G3 Conditional Pass（条件已关闭）；Living Spec 合并 +1 requirement；KB update Skipped (not configured)
 - PR：[#75](https://github.com/afs-2026-zha2-group-3/pawtrip/pull/75)（head `f160d71`，merged 2026-11-17）
 
 ## Intent
@@ -43,5 +43,5 @@
 
 ## Gaps
 
-- G1 Pass（IO=SUKI、SA=RANLE）、G2 Pass（VL=RANLE）、G3 Conditional Pass（SA=RANLE，2026-11-18）；本 change 为 PR 提交后的补登记，规格与实现顺序倒置。
-- G3 条件：执行 `/sdd:living-merge` 归档；当前 OpenSpec archive 未执行，ADDED requirement 尚未进入 Living Spec。
+- G1 Pass（IO=SUKI、SA=RANLE）、G2 Pass（VL=RANLE）、G3 Conditional Pass（SA=RANLE，2026-11-18；条件“执行归档”已完成并关闭）；本 change 为 PR 提交后的补登记，规格与实现顺序倒置。
+- 归档完成：change 位于 `openspec/changes/archive/2026-11-17-add-itinerary-nearby-pet-services/`；`trip-attractions` 已合并 ADDED「行程景点附近宠物服务」；`openspec validate --all --strict` 27 passed / 0 failed。
