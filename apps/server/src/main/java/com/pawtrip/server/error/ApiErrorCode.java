@@ -14,6 +14,9 @@ public enum ApiErrorCode {
 	CITY_NOT_FOUND(HttpStatus.NOT_FOUND, "City not found"),
 	TRIP_NOT_FOUND(HttpStatus.NOT_FOUND, "Trip not found"),
 	TRIP_ENDED(HttpStatus.CONFLICT, "Trip has ended"),
+	PACKING_CHECKLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "Packing checklist not found"),
+	PACKING_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "Packing item not found"),
+	PET_PROFILE_REQUIRED(HttpStatus.CONFLICT, "Pet profile required"),
 
 	VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Validation failed"),
 	UPSTREAM_FAILURE(HttpStatus.BAD_GATEWAY, "Upstream service failure"),

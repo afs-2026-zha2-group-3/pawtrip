@@ -46,6 +46,7 @@ import {
 import { ApiError } from "@/lib/http/api-error";
 import { photoDataUrl, readPhotoFile } from "@/lib/pet-photo";
 import { tripStatus } from "@/lib/trip/status";
+import { packingChecklistQueryKeys } from "@/queries/packing-checklist";
 import { tripQueryKeys, tripsQueryOptions } from "@/queries/trips";
 import {
   createPetMutationOptions,
@@ -160,6 +161,9 @@ export function PetDialog({
     ...createPetMutationOptions(),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: petQueryKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: packingChecklistQueryKeys.all,
+      });
       onClose();
     },
   });
@@ -167,6 +171,9 @@ export function PetDialog({
     ...updatePetMutationOptions(),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: petQueryKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: packingChecklistQueryKeys.all,
+      });
       onClose();
     },
   });
@@ -565,6 +572,9 @@ export function PetDeleteDialog({
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: petQueryKeys.all }),
         queryClient.invalidateQueries({ queryKey: tripQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: packingChecklistQueryKeys.all,
+        }),
       ]);
       onClose();
     },
