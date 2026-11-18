@@ -315,7 +315,7 @@ function AttractionsPage() {
         >
           {anchorsLoading || anchors.length === 0
             ? "先在行程中添加景点，下一步可挑选附近的住宿与餐厅"
-            : "下一步将按离景点最近，推荐 5km 内的住宿与餐厅"}
+            : "下一步将按评分推荐 5km 内的住宿与餐厅"}
         </p>
         <Button
           type="button"
@@ -429,7 +429,7 @@ function AttractionsPage() {
           <TripPanel embedded timeline footer={panelFooter} />
         </aside>
 
-        <section className="min-h-0 min-w-0 overflow-y-auto lg:col-start-2 lg:col-span-1 lg:row-start-2 lg:self-stretch [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <section className="h-full min-h-0 min-w-0 overflow-y-auto lg:col-start-2 lg:col-span-1 lg:row-start-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             {typeGroup === DEFAULT_TYPE_GROUP ? (
               <>

@@ -147,7 +147,7 @@ export function CityTripDialog({
                   : `行程需为 ${MIN_TRIP_DAYS}–${MAX_TRIP_DAYS} 天，请调整日期。`
                 : startDate
                   ? `已选择 ${startDate} 开始，请再选择结束日期。`
-                  : "在日历上依次选择开始与结束日期。"}
+                  : "在日历上依次选择开始与结束日期（仅可选择今天及以后）。"}
             </p>
           </Field>
 
