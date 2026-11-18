@@ -4,6 +4,7 @@ import {
   completeTripViaApi,
   createTripViaApi,
   csrfHeaders,
+  openTrips,
   pets,
   resetTrips,
   signIn,
