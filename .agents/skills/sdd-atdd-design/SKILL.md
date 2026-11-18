@@ -27,8 +27,11 @@ suites (unit-level TDD is apply-time).
    testable ATDD design → stop; send back to Spec lane / humans.
 2. Classify scenarios with
    [layer-inference.md](../../../vendor/ai4se-plugins/skills/design/atdd-design/references/layer-inference.md) into **API** vs
-   **E2E** (DB-absence → E2E); defer pure-logic / UT items to apply; attach
-   advisory recommended layers; add reverse cases for Non-goals.
+   **E2E**; defer pure-logic and single-component UI items to apply (Defer UT
+   / Defer UT component). E2E only for cross-page / real-browser journeys,
+   each traced to a specific AC; DB-absence → API when provable there. Attach
+   advisory recommended layers; attach Non-goal reverse checks to already
+   planned layers instead of new dedicated E2E cases.
 3. Produce an ATDD design doc following
    [atdd-design-outline.md](../../../vendor/ai4se-plugins/skills/design/atdd-design/references/atdd-design-outline.md):
    API + E2E layers only, what is written before production code, local vs CI

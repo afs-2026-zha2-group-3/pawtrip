@@ -195,7 +195,7 @@ For those, use Playwright Component Testing or end-to-end Playwright/Cypress run
 | Custom hooks | ≥85% |
 | Components (presentational) | ≥80% — behavior, not lines |
 | Container components | ≥70% — golden paths + error states |
-| Pages (E2E covered separately) | Smoke test per route minimum |
+| Pages | 组件测试覆盖视图内行为；E2E 仅覆盖跨页面关键旅程（见 `typescript-testing` 的 E2E 范围与匹配），不做每路由 smoke 最低要求 |
 
 ## Anti-Patterns
 

@@ -602,6 +602,48 @@
 - **THEN** 响应包含可选的 `keytag`、`businessArea`，并保留既有 `coverPhotoUrl`、`rating`
 - **AND** 不包含原始 `photos`、`business` 或 `poi` 字段
 
+### Requirement: 地点浏览与 Agent 面板的自适应布局
+
+地点浏览页 SHALL 在视口宽度 ≥1536px 时根据全局 Agent 面板的开合状态调整桌面布局，且 MUST NOT 改变 Agent 面板的悬浮形态（固定右侧 400px Sheet）。面板收起时，主内容 MUST 为“行程面板 / 地点列表 / 地图”三栏，地点卡片列表 SHALL 每行 3 张，地图 MUST 占据剩余宽度且右缘与页面内容右缘对齐，页面 MUST NOT 保留 AI 占位区域或右侧空白。面板展开时，地点卡片列表 MUST 保持每行 2 张，页面 SHALL 在内容右侧保留不小于 360px 的透明留白承载面板，地图 SHALL 相应收窄且其可见区域 MUST NOT 被面板覆盖。视口宽度 <1536px 时，页面 MUST 保持既有两列卡片布局，不要求为面板让位。布局 MUST 实时响应面板开合，状态仅来自内存。
+
+#### Scenario: 面板收起时三栏三列且无右侧空白
+
+- **GIVEN** 视口为 1920×1080 且存在激活行程
+- **WHEN** 用户打开地点浏览页且 Agent 面板处于收起状态
+- **THEN** 主内容显示行程面板、地点列表与地图三栏
+- **AND** 地点卡片每行显示 3 张
+- **AND** 地图右缘与页面内容右缘对齐
+- **AND** 页面不存在 AI 占位区域或额外右侧空白
+
+#### Scenario: 面板展开时列表两列并为面板让位
+
+- **GIVEN** 视口为 1920×1080 且存在激活行程
+- **WHEN** 用户展开 Agent 面板
+- **THEN** 地点卡片保持每行 2 张
+- **AND** 页面右侧保留不小于 360px 的透明留白
+- **AND** 地图收窄且地图右缘位于面板左缘左侧，不被面板覆盖
+
+#### Scenario: 开合实时切换布局
+
+- **GIVEN** 用户位于地点浏览页
+- **WHEN** 用户通过右下角入口展开或收起 Agent 面板
+- **THEN** 地点浏览页在收起态与展开态布局之间实时切换
+- **AND** 不刷新页面、不丢失当前筛选、分页与搜索条件
+
+#### Scenario: 窄于断点时保持现状
+
+- **GIVEN** 视口宽度小于 1536px 且存在激活行程
+- **WHEN** 用户打开地点浏览页并展开 Agent 面板
+- **THEN** 地点卡片保持每行 2 张
+- **AND** 页面不为面板预留右侧留白
+- **AND** 面板以既有悬浮方式显示
+
+#### Scenario: 地图在列宽变化后保持正确显示
+
+- **GIVEN** 地点页地图已加载
+- **WHEN** Agent 面板开合导致地图列宽度变化
+- **THEN** 地图内容按新宽度重新适配
+- **AND** 瓦片不出现空白或被裁切
 ### Requirement: 行程景点附近宠物服务
 
 行程单中每个已排期景点卡片 SHALL 在“详细携宠政策”折叠区之后提供“附近宠物服务”可折叠栏目，默认收起。展开时页面 SHALL 请求 `GET /api/locations/{poiId}/nearby-services`，收起时 MUST NOT 请求。该接口 MUST 以景点 POI 的 `region_code` 前 4 位（城市级）为范围，返回直线距离最近的宠物医院与宠物用品店各至多 1 家，MUST NOT 应用 5km 距离筛选或宠物友好筛选。每项 MUST 包含 `poiId`、`name`、`address`、`distanceMeters`、`openingHours`，不存在时为 `null`。距离 MUST 使用 Haversine 直线距离并按米取整；距离并列时 MUST 按地点 ID 升序。`openingHours` MUST 优先读取高德快照 `business_json.opentime_week`，缺失时回退 `opentime_today`，都缺失为 `null`。景点经纬度缺失时 MUST 返回 `hospital` 与 `supplies` 均为 `null`，MUST NOT 猜测或回退到其他范围。未知 POI MUST 返回 404。前端 MUST 在加载、失败与无数据时显示明确文案，且 MUST NOT 阻塞卡片其他内容；距离 MUST 以一位小数公里展示为“距{景点名}约 X.Xkm”，地址缺失 SHALL 显示“地址未收录”，营业时间缺失 SHALL 显示“暂无”。
