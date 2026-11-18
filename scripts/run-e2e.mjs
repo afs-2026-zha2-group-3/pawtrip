@@ -269,6 +269,8 @@ async function main() {
       env: {
         ...process.env,
         SERVER_PORT: String(backendPort),
+        // E2E 不依赖高德外网；空 Key 覆盖根目录 .env，避免真实路线估算回填进行程计划。
+        AMAP_API_KEY: "",
         // SQLite 只允许一个写者；E2E 临时库用单连接池串行化访问，避免并发事务的锁升级死锁。
         SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "1",
         SPRING_DATASOURCE_URL: `jdbc:sqlite:${databasePath}?foreign_keys=on&busy_timeout=10000`,
