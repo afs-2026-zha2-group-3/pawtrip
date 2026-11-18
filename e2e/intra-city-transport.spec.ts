@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
+  completeTripViaApi,
   createTripViaApi,
   csrfHeaders,
   pets,
@@ -88,22 +89,16 @@ async function presetTrip(
     plan: { version: 1, days: input.days, unscheduled: input.unscheduled ?? [] },
     transportMode: input.transportMode ?? null,
   });
+  await completeTripViaApi(page, created.id);
   return created.id;
 }
 
 async function activateTrip(page: Page, name: string) {
-  const list = await page.request.get("/api/trips");
-  expect(list.ok()).toBeTruthy();
-  const created = ((await list.json()) as { id: number; name: string }[]).find(
-    (trip) => trip.name === name,
-  );
-  if (!created) throw new Error(`Trip ${name} not found`);
-  await page.evaluate(
-    (tripId) =>
-      window.localStorage.setItem("pawtrip.activeTripId", String(tripId)),
-    created.id,
-  );
-  await page.goto("/");
+  await openTrips(page);
+  await tripCard(page, name).getByRole("button", { name: "编辑" }).click();
+  await expect(page).toHaveURL(/\/attractions$/);
+  await openTrips(page);
+  await expect(tripCard(page, name)).toContainText("编辑中");
   await expect(page.getByTestId("trip-panel")).toBeVisible();
 }
 

@@ -9,7 +9,11 @@ import {
 } from "@/components/ui/dialog";
 import { PolicySubjectNotice, PolicyTags } from "@/components/trip/policy-tags";
 import { matchLocationPolicyForType } from "@/lib/trip/policy-match";
-import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
+import {
+  useActiveTrip,
+  useActiveTripReadOnly,
+  usePolicySubjects,
+} from "@/lib/trip/selectors";
 import { tripActions } from "@/lib/trip/store";
 import { locationBrowseDetailQueryOptions } from "../../../queries/locations";
 import { DaySelect } from "./-day-select";
@@ -28,6 +32,7 @@ export function LocationDetailDialog({
   onClose: () => void;
 }) {
   const active = useActiveTrip();
+  const readOnly = useActiveTripReadOnly();
   const subjects = usePolicySubjects();
   const detail = useQuery({
     ...locationBrowseDetailQueryOptions(poiId),
@@ -93,6 +98,7 @@ export function LocationDetailDialog({
                   totalDays={active.totalDays}
                   onSelectDay={(day) => tripActions.addStop(day, location.poiId)}
                   onSelectUnscheduled={() => tripActions.addStop("unscheduled", location.poiId)}
+                  disabled={readOnly}
                 />
               </div>
             ) : null}

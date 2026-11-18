@@ -56,9 +56,7 @@ async function presetAndOpenAttractions(page: Page) {
   expect(response.ok()).toBeTruthy();
 
   await openTrips(page);
-  await tripCard(page, "珠海宽度").getByRole("button", { name: "激活" }).click();
-  await expect(tripCard(page, "珠海宽度")).toContainText("激活中");
-  await page.getByRole("tab", { name: "地点浏览" }).click();
+  await tripCard(page, "珠海宽度").getByRole("button", { name: "编辑" }).click();
   await expect(page).toHaveURL(/\/attractions$/);
   await expect(page.getByTestId("trip-panel")).toBeVisible();
 }

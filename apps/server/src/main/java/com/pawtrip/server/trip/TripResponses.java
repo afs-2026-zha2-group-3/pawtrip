@@ -8,7 +8,7 @@ public final class TripResponses {
 	}
 
 	public record TripSummary(Long id, String name, String cityAdcode, Long petId, int totalDays, String startDate,
-			String createdAt, String updatedAt) {
+			boolean planCompleted, String createdAt, String updatedAt) {
 
 		static TripSummary from(Trip trip) {
 			return new TripSummary(
@@ -18,6 +18,7 @@ public final class TripResponses {
 					trip.getPetId(),
 					trip.getTotalDays(),
 					trip.getStartDate(),
+					trip.isPlanCompleted(),
 					trip.getCreatedAt(),
 					trip.getUpdatedAt());
 		}
@@ -28,7 +29,7 @@ public final class TripResponses {
 	}
 
 	public record TripDetail(Long id, String name, String cityAdcode, Long petId, int totalDays, String startDate,
-			String transportMode, String createdAt, String updatedAt, JsonNode plan) {
+			String transportMode, boolean planCompleted, String createdAt, String updatedAt, JsonNode plan) {
 
 		static TripDetail from(Trip trip, TripPlanValidator planValidator) {
 			return new TripDetail(
@@ -39,6 +40,7 @@ public final class TripResponses {
 					trip.getTotalDays(),
 					trip.getStartDate(),
 					trip.getTransportMode(),
+					trip.isPlanCompleted(),
 					trip.getCreatedAt(),
 					trip.getUpdatedAt(),
 					planValidator.read(trip.getPlanJson()));

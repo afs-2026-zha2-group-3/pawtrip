@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { expect, test, type Download, type Page } from "@playwright/test";
 import {
+  completeTripViaApi,
   createTripViaApi,
   csrfHeaders,
   pets,
@@ -85,22 +86,14 @@ async function seedItineraryTrip(
     },
   });
   expect(response.ok()).toBeTruthy();
+  await completeTripViaApi(page, trip.id);
   return trip;
 }
 
 async function activateTrip(page: Page, name = DEFAULT_TRIP_NAME) {
-  const list = await page.request.get("/api/trips");
-  expect(list.ok()).toBeTruthy();
-  const created = ((await list.json()) as { id: number; name: string }[]).find(
-    (trip) => trip.name === name,
-  );
-  if (!created) throw new Error(`Trip ${name} not found`);
-  await page.evaluate(
-    (tripId) =>
-      window.localStorage.setItem("pawtrip.activeTripId", String(tripId)),
-    created.id,
-  );
-  await page.goto("/trips");
+  await openTrips(page);
+  await tripCard(page, name).getByRole("button", { name: "查看行程单" }).click();
+  await expect(page).toHaveURL(/\/itinerary$/);
   await expect(page.getByTestId("trip-panel")).toBeVisible();
 }
 
@@ -250,12 +243,9 @@ test("summarizes the active trip by day from the panel entry", async ({
 
 test("opens the itinerary from the active trip card", async ({ page }) => {
   await seedItineraryTrip(page);
-  await activateTrip(page);
+  await openTrips(page);
 
-  const card = tripCard(page, DEFAULT_TRIP_NAME);
-  const entry = card.getByRole("link", { name: "行程单" });
-  await expect(entry).toBeVisible();
-  await entry.click();
+  await tripCard(page, DEFAULT_TRIP_NAME).click();
 
   await expect(page).toHaveURL(/\/itinerary$/);
   await expect(page.getByRole("heading", { name: "行程单" })).toBeVisible();

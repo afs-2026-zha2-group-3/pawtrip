@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.pawtrip.server.auth.AppUser;
@@ -526,6 +527,100 @@ class TripApiTest {
 							"""))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+	}
+
+	@Test
+	void rejectsUpdateForCompletedTripButKeepsReadAndDelete() throws Exception {
+		MvcResult created = this.mockMvc.perform(post("/api/trips")
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"已结束","cityAdcode":"%s","petId":%d,"totalDays":2,"startDate":"2020-01-01"}
+							""".formatted(CITY_ADCODE, this.petId)))
+			.andExpect(status().isCreated())
+			.andReturn();
+		long tripId = JSON_MAPPER.readTree(created.getResponse().getContentAsString()).path("id").asLong();
+
+		this.mockMvc.perform(put("/api/trips/{tripId}", tripId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"改名","totalDays":2,"plan":{"version":1,"days":[],"unscheduled":[]}}
+							"""))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("TRIP_ENDED"));
+
+		this.mockMvc.perform(post("/api/trips/{tripId}/complete", tripId)
+					.with(user(this.username))
+					.with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("TRIP_ENDED"));
+
+		this.mockMvc.perform(get("/api/trips/{tripId}", tripId).with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value("已结束"));
+
+		this.mockMvc.perform(delete("/api/trips/{tripId}", tripId)
+					.with(user(this.username))
+					.with(csrf()))
+			.andExpect(status().isNoContent());
+	}
+
+	@Test
+	void marksPlanCompletedAndKeepsEditingUntilTheTripEnds() throws Exception {
+		long tripId = createTrip(this.username, "完成规划", CITY_ADCODE, this.petId, 2, null);
+
+		this.mockMvc.perform(post("/api/trips/{tripId}/complete", tripId)
+					.with(user(this.username))
+					.with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.planCompleted").value(true));
+
+		this.mockMvc.perform(get("/api/trips").with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].planCompleted").value(true));
+
+		this.mockMvc.perform(post("/api/trips/{tripId}/complete", tripId)
+					.with(user(this.username))
+					.with(csrf()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.planCompleted").value(true));
+
+		this.mockMvc.perform(put("/api/trips/{tripId}", tripId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"完成规划","totalDays":2,"plan":{"version":1,"days":[],"unscheduled":[]}}
+							"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.planCompleted").value(true));
+	}
+
+	@Test
+	void allowsUpdateUntilTheLastDayOfTheTrip() throws Exception {
+		String startDate = LocalDate.now().minusDays(1).toString();
+		MvcResult created = this.mockMvc.perform(post("/api/trips")
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"进行中","cityAdcode":"%s","petId":%d,"totalDays":2,"startDate":"%s"}
+							""".formatted(CITY_ADCODE, this.petId, startDate)))
+			.andExpect(status().isCreated())
+			.andReturn();
+		long tripId = JSON_MAPPER.readTree(created.getResponse().getContentAsString()).path("id").asLong();
+
+		this.mockMvc.perform(put("/api/trips/{tripId}", tripId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"name":"进行中","totalDays":2,"plan":{"version":1,"days":[],"unscheduled":[]}}
+							"""))
+			.andExpect(status().isOk());
 	}
 
 	@Test

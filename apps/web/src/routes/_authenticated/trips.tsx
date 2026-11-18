@@ -1,9 +1,6 @@
-import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, type KeyboardEvent, type MouseEvent } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { PawPrint, Plus, Trash2 } from "lucide-react";
-import pawStickerLg from "@/assets/paw-sticker-lg.png";
-import pawStickerSm from "@/assets/paw-sticker-sm.png";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,15 +14,20 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
-  petCardTitleClass,
-  petLabelClass,
-  petPillOutlineClass,
-  petPillPrimaryClass,
-  petRowClass,
-  petValueClass,
-} from "@/components/pet/pet-profile-card";
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { destinationsQueryOptions } from "@/queries/destinations";
 import { petsQueryOptions } from "@/queries/pets";
 import {
@@ -35,52 +37,89 @@ import {
   tripsQueryOptions,
   type TripSummary,
 } from "@/queries/trips";
-import { useActiveTrip, useDraftTrip } from "@/lib/trip/selectors";
+import {
+  useActiveTrip,
+  useDraftTrip,
+  useSaveStatus,
+  useTripEditing,
+} from "@/lib/trip/selectors";
+import { formatTripDate } from "@/lib/trip/itinerary";
+import {
+  TRIP_STATUS_LABELS,
+  isEditingTrip,
+  tripEndDate,
+  tripStatus,
+  tripStatusOrder,
+  type TripStatus,
+} from "@/lib/trip/status";
 import { tripActions } from "@/lib/trip/store";
 import { TripSectionNav } from "@/components/trip/trip-section-nav";
-import { cn } from "@/lib/utils";
 import { runViewTransition } from "@/lib/view-transition";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/trips")({
   component: TripsPage,
 });
 
-const pillLinkClass = (primary: boolean) =>
-  cn(
-    primary ? petPillPrimaryClass : petPillOutlineClass,
-    "inline-flex items-center justify-center",
-  );
+const STATUS_BADGE_VARIANTS: Record<
+  TripStatus,
+  "default" | "secondary" | "outline"
+> = {
+  pending: "outline",
+  completed: "default",
+  ended: "secondary",
+};
 
-function formatTripDate(iso: string) {
-  const [year, month, day] = iso.split("-");
-  return `${year}年${Number(month)}月${Number(day)}日`;
-}
+type TripFilter = "all" | TripStatus;
+
+const FILTERS: { key: TripFilter; label: string }[] = [
+  { key: "all", label: "全部" },
+  { key: "pending", label: "待完成" },
+  { key: "completed", label: "已完成" },
+  { key: "ended", label: "行程结束" },
+];
 
 function TripsPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const trips = useQuery(tripsQueryOptions());
   const destinations = useQuery(destinationsQueryOptions({}));
   const pets = useQuery(petsQueryOptions());
   const active = useActiveTrip();
+  const editingSession = useTripEditing();
   const draft = useDraftTrip();
+  const save = useSaveStatus();
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [filter, setFilter] = useState<TripFilter>("all");
 
   const cityNames = new Map(
     (destinations.data ?? []).map((city) => [city.adcode, city.name]),
   );
   const petNames = new Map((pets.data ?? []).map((pet) => [pet.id, pet.name]));
 
-  const activate = async (trip: TripSummary) => {
+  const openTrip = async (trip: TripSummary, target: "plan" | "itinerary") => {
     if (draft) {
-      setError("存在未确认草稿，请先在行程面板放弃草稿后再激活。");
+      setError("存在未确认草稿，请先在行程面板放弃草稿后再切换行程。");
       return;
     }
-    if (active) {
-      setError("已有激活行程，请先取消激活再激活其他行程。");
+    if (tripStatus(trip) === "ended" && !trip.planCompleted) {
+      setError("该行程已结束，且没有行程单可查看。");
+      return;
+    }
+    if (active && active.id !== trip.id && save.status === "error") {
+      setError("当前行程有未保存的修改，请先重试保存再切换。");
       return;
     }
     setError(null);
+    const to = target === "plan" ? "/attractions" : "/itinerary";
+    if (active?.id === trip.id) {
+      if (target === "plan") {
+        tripActions.setEditing(true);
+      }
+      await navigate({ to });
+      return;
+    }
     setBusyId(trip.id);
     try {
       const detail = await fetchTripDetail(trip.id);
@@ -95,14 +134,15 @@ function TripsPage() {
           });
         }
       });
+      await navigate({ to });
     } catch {
-      setError("激活行程失败，请稍后重试。");
+      setError("打开行程失败，请稍后重试。");
     } finally {
       setBusyId(null);
     }
   };
 
-  const deactivate = () => {
+  const endEditing = () => {
     runViewTransition(() => tripActions.clearActive());
     setError(null);
   };
@@ -129,195 +169,242 @@ function TripsPage() {
 
   if (trips.isPending) {
     return (
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-8 print:max-w-none print:p-0">
-        <TripSectionNav active="trips" />
-        <div
-          className="h-[420px] animate-pulse rounded-[26px] bg-card/80"
-          aria-busy="true"
-        >
-          <span className="sr-only">正在加载行程…</span>
-        </div>
+      <main className="mx-auto w-full max-w-3xl p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>正在加载行程…</CardTitle>
+          </CardHeader>
+        </Card>
       </main>
     );
   }
 
-  const items = [...(trips.data ?? [])].sort((a, b) => a.id - b.id);
-
-  const createAction =
-    active || draft ? (
-      <Button
-        variant="outline"
-        className={pillLinkClass(false)}
-        disabled
-        title={active ? "已有激活行程" : "存在未确认草稿"}
-      >
-        <Plus aria-hidden="true" />
-        创建新行程
-      </Button>
-    ) : (
-      <Link to="/cities" className={pillLinkClass(false)}>
-        <Plus aria-hidden="true" />
-        创建新行程
-      </Link>
-    );
+  const sorted = [...(trips.data ?? [])].sort((a, b) => {
+    const order =
+      tripStatusOrder(tripStatus(a)) - tripStatusOrder(tripStatus(b));
+    return order !== 0 ? order : a.id - b.id;
+  });
+  const items =
+    filter === "all"
+      ? sorted
+      : sorted.filter((trip) => tripStatus(trip) === filter);
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-8 print:max-w-none print:p-0">
+    <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
       <TripSectionNav active="trips" />
-      {items.length > 0 ? (
-        <div className="flex justify-end">{createAction}</div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-lg font-medium">我的行程</h1>
+        {active ? (
+          <Button variant="outline" size="sm" disabled title="已有编辑中的行程">
+            创建新行程
+          </Button>
+        ) : draft ? (
+          <Button variant="outline" size="sm" disabled title="存在未确认草稿">
+            创建新行程
+          </Button>
+        ) : (
+          <Link to="/cities" className={buttonVariants({ size: "sm" })}>
+            创建新行程
+          </Link>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2" role="group" aria-label="行程状态筛选">
+        {FILTERS.map((entry) => (
+          <Button
+            key={entry.key}
+            size="sm"
+            variant={filter === entry.key ? "default" : "outline"}
+            aria-pressed={filter === entry.key}
+            onClick={() => setFilter(entry.key)}
+          >
+            {entry.label}
+          </Button>
+        ))}
+      </div>
+
+      {draft ? (
+        <Alert>
+          <AlertTitle>存在未确认草稿</AlertTitle>
+          <AlertDescription>
+            草稿仅保存在行程面板中，请先放弃草稿后才能切换行程。
+          </AlertDescription>
+        </Alert>
       ) : null}
-      <div className="flex flex-col gap-6">
-        {draft ? (
-          <Alert>
-            <AlertTitle>存在未确认草稿</AlertTitle>
-            <AlertDescription>
-              草稿仅保存在行程面板中，请先放弃草稿后才能激活其他行程。
-            </AlertDescription>
-          </Alert>
-        ) : null}
 
-        {error ? (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
-        ) : null}
+      {error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
 
-        {items.length === 0 ? (
-          <section className="flex flex-col items-center gap-3 rounded-[26px] bg-muted/40 p-8 text-center">
-            <PawPrint aria-hidden="true" className="size-10 text-muted-foreground/40" />
-            <h2 className="text-lg font-medium leading-[21.6px]">还没有行程</h2>
-            <p className="text-sm text-muted-foreground">
-              先从城市浏览选定城市创建一个行程。
-            </p>
-            <Link to="/cities" className={pillLinkClass(true)}>
+      {items.length === 0 ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>
+              {sorted.length === 0 ? "还没有行程" : "该状态下没有行程"}
+            </EmptyTitle>
+            <EmptyDescription>
+              {sorted.length === 0
+                ? "先从城市浏览选定城市创建一个行程。"
+                : "切换筛选查看其他状态的行程。"}
+            </EmptyDescription>
+          </EmptyHeader>
+          {sorted.length === 0 ? (
+            <Link to="/cities" className={buttonVariants({ size: "sm" })}>
               去创建行程
             </Link>
-          </section>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {items.map((trip) => {
-              const isActive = active?.id === trip.id;
-              return (
-                <section
-                  key={trip.id}
-                  id={`trip-${trip.id}`}
-                  data-testid="trip-card"
-                  className="relative w-full rounded-[26px] bg-card p-6 shadow-pet-card ring-1 ring-foreground/5"
-                >
-                  <img
-                    src={pawStickerLg}
-                    alt=""
-                    aria-hidden="true"
-                    className="pointer-events-none absolute right-6 top-5 w-[72px] select-none"
-                  />
-                  <img
-                    src={pawStickerSm}
-                    alt=""
-                    aria-hidden="true"
-                    className="pointer-events-none absolute right-4 top-[84px] w-[38px] select-none"
-                  />
-                  <div className="flex flex-col gap-6">
-                    <div className="flex flex-wrap items-center gap-2 pr-24">
-                      <h2 className={petCardTitleClass}>{trip.name}</h2>
-                      {isActive ? <Badge>激活中</Badge> : null}
-                    </div>
-
-                    <div className="flex flex-col gap-4">
-                      <TripRow
-                        label="城市"
-                        value={cityNames.get(trip.cityAdcode) ?? trip.cityAdcode}
-                      />
-                      <TripRow label="天数" value={`${trip.totalDays} 天`} />
-                      <TripRow
-                        label="宠物"
-                        value={petNames.get(trip.petId) ?? `宠物 #${trip.petId}`}
-                      />
-                      <TripRow
-                        label="出发日期"
-                        value={trip.startDate ? formatTripDate(trip.startDate) : "未设置"}
-                      />
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-end gap-3">
-                      <AlertDialog>
-                        <AlertDialogTrigger
-                          render={
-                            <Button
-                              variant="outline"
-                              aria-label={`删除 ${trip.name}`}
-                              className="size-9 rounded-full border-border bg-card hover:bg-muted [&_svg:not([class*='size-'])]:size-4"
-                              disabled={busyId === trip.id}
-                            />
-                          }
-                        >
-                          <Trash2 aria-hidden="true" />
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>删除「{trip.name}」？</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {isActive
-                                ? "该行程当前处于激活状态，删除前会先取消激活。此操作不可撤销。"
-                                : "此操作不可撤销。"}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>取消</AlertDialogCancel>
-                            <AlertDialogAction
-                              variant="destructive"
-                              onClick={() => void remove(trip)}
-                            >
-                              删除
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                      {isActive ? (
-                        <>
-                          <Button
-                            variant="outline"
-                            className={petPillOutlineClass}
-                            onClick={deactivate}
-                          >
-                            取消激活
-                          </Button>
-                          <Link to="/itinerary" className={pillLinkClass(false)}>
-                            行程单
-                          </Link>
-                        </>
-                      ) : (
+          ) : null}
+        </Empty>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {items.map((trip) => {
+            const status = tripStatus(trip);
+            const editing = isEditingTrip(
+              trip,
+              editingSession ? (active?.id ?? null) : null,
+            );
+            const endDate = tripEndDate(trip);
+            const canOpen = status !== "ended" || trip.planCompleted;
+            const openCard = () => {
+              if (busyId === trip.id) return;
+              void openTrip(trip, status === "pending" ? "plan" : "itinerary");
+            };
+            const handleClick = (event: MouseEvent<HTMLElement>) => {
+              if ((event.target as HTMLElement).closest("button, a")) return;
+              openCard();
+            };
+            const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              event.preventDefault();
+              openCard();
+            };
+            return (
+              <Card
+                key={trip.id}
+                data-testid="trip-card"
+                role={canOpen ? "button" : undefined}
+                tabIndex={canOpen ? 0 : undefined}
+                aria-label={canOpen ? `${trip.name}（${TRIP_STATUS_LABELS[status]}）` : undefined}
+                onClick={canOpen ? handleClick : undefined}
+                onKeyDown={canOpen ? handleKeyDown : undefined}
+                className={cn(
+                  "transition-colors",
+                  canOpen &&
+                    "cursor-pointer focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                  status === "ended" && "opacity-75",
+                  busyId === trip.id && "pointer-events-none opacity-60",
+                )}
+              >
+                <CardHeader>
+                  <CardTitle className="flex flex-wrap items-center gap-2">
+                    {trip.name}
+                    <Badge variant={STATUS_BADGE_VARIANTS[status]}>
+                      {TRIP_STATUS_LABELS[status]}
+                    </Badge>
+                    {editing ? <Badge variant="outline">编辑中</Badge> : null}
+                  </CardTitle>
+                  <CardDescription>
+                    {cityNames.get(trip.cityAdcode) ?? trip.cityAdcode} · {trip.totalDays} 天 ·{" "}
+                    {petNames.get(trip.petId) ?? `宠物 #${trip.petId}`}
+                  </CardDescription>
+                  {status === "completed" ? (
+                    <CardDescription>
+                      行程单已创建
+                      {endDate
+                        ? `，${formatTripDate(endDate)} 结束前仍可调整。`
+                        : "，可继续调整安排。"}
+                    </CardDescription>
+                  ) : null}
+                  {status === "ended" && endDate ? (
+                    <CardDescription>
+                      {formatTripDate(endDate)} 已结束，仅可查看。
+                      {trip.planCompleted ? "" : "未创建行程单。"}
+                    </CardDescription>
+                  ) : null}
+                </CardHeader>
+                <CardFooter className="gap-2">
+                  {status === "ended" ? (
+                    trip.planCompleted ? (
+                      <Button size="sm" variant="outline" onClick={() => openCard()}>
+                        查看行程单
+                      </Button>
+                    ) : null
+                  ) : (
+                    <>
+                      <Button
+                        size="sm"
+                        variant={status === "completed" ? "outline" : "default"}
+                        disabled={busyId === trip.id}
+                        onClick={() => void openTrip(trip, "plan")}
+                      >
+                        {active?.id === trip.id && editingSession ? "继续编辑" : "编辑"}
+                      </Button>
+                      {trip.planCompleted ? (
                         <Button
-                          className={petPillPrimaryClass}
-                          disabled={Boolean(active) || Boolean(draft) || busyId === trip.id}
-                          onClick={() => void activate(trip)}
+                          size="sm"
+                          variant="outline"
+                          disabled={busyId === trip.id}
+                          onClick={() => void openTrip(trip, "itinerary")}
                         >
-                          激活
+                          查看行程单
                         </Button>
-                      )}
-                    </div>
-                  </div>
-                </section>
-              );
-            })}
-          </div>
-        )}
+                      ) : null}
+                    </>
+                  )}
+                  {active?.id === trip.id && (editingSession || status === "ended") ? (
+                    <Button size="sm" variant="ghost" onClick={endEditing}>
+                      {status === "ended" ? "退出查看" : "结束编辑"}
+                    </Button>
+                  ) : null}
+                  <AlertDialog>
+                    <AlertDialogTrigger
+                      render={<Button size="sm" variant="ghost" disabled={busyId === trip.id} />}
+                    >
+                      删除
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>删除「{trip.name}」？</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {editing
+                            ? "该行程当前处于编辑中，删除前会先结束编辑。此操作不可撤销。"
+                            : "此操作不可撤销。"}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction
+                          variant="destructive"
+                          onClick={() => void remove(trip)}
+                        >
+                          删除
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </CardFooter>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
+      <p className="text-sm text-muted-foreground">
         {active ? (
-          <p className="text-sm text-muted-foreground">
-            当前激活：{active.name}。取消激活后可创建或激活其他行程。
-          </p>
-        ) : null}
-      </div>
+          tripStatus(active) === "ended" ? (
+            `当前查看：${active.name}（行程结束），仅可查看和导出。点其他行程可直接切换。`
+          ) : !editingSession && tripStatus(active) === "completed" ? (
+            `当前查看：${active.name}（已完成）。点「编辑」可继续调整安排，点其他行程可直接切换。`
+          ) : tripStatus(active) === "completed" ? (
+            `当前编辑：${active.name}（已完成）。行程单已创建，结束前仍可调整安排。点其他行程可直接切换。`
+          ) : (
+            `当前编辑：${active.name}（待完成）。选好景点与交通后点击「创建行程单」完成规划。点其他行程可直接切换。`
+          )
+        ) : (
+          "当前没有编辑中的行程。点击卡片开始规划，已完成或结束的行程可查看行程单。"
+        )}
+      </p>
     </main>
-  );
-}
-
-function TripRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className={petRowClass}>
-      <span className={petLabelClass}>{label}</span>
-      <span className={petValueClass}>{value}</span>
-    </div>
   );
 }

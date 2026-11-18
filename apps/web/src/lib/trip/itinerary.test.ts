@@ -46,6 +46,7 @@ const trip: Trip = {
   totalDays: 2,
   startDate: "2026-12-31",
   transportMode: "high_speed_rail",
+  planCompleted: true,
   plan: {
     version: 1,
     days: [

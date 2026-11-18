@@ -64,9 +64,7 @@ async function presetTwoStopTrip(
 
 async function activateAndOpenAttractions(page: Page, name: string) {
   await openTrips(page);
-  await tripCard(page, name).getByRole("button", { name: "激活" }).click();
-  await expect(tripCard(page, name)).toContainText("激活中");
-  await page.getByRole("tab", { name: "地点浏览" }).click();
+  await tripCard(page, name).getByRole("button", { name: "编辑" }).click();
   await expect(page).toHaveURL(/\/attractions$/);
   await expect(page.getByTestId("trip-panel")).toBeVisible();
 }
