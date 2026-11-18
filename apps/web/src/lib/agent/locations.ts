@@ -91,7 +91,7 @@ export function isSameCity(regionCode: string | null, cityAdcode: string): boole
 /**
  * 本地名称匹配：
  * 1. 名称完全相等优先；多个同名候选标记为 ambiguous。
- * 2. 否则匹配名称或地址包含关键词；多个结果标记为 ambiguous，由模型引导用户消歧。
+ * 2. 否则匹配名称、地址或地点标签包含关键词；多个结果标记为 ambiguous，由模型引导用户消歧。
  * 3. 空关键词返回前若干条目录项。
  */
 export function matchLocationCatalog(
@@ -114,7 +114,8 @@ export function matchLocationCatalog(
   const partial = items.filter((item) => {
     const name = item.name.toLowerCase();
     const address = item.address?.toLowerCase() ?? "";
-    return name.includes(keyword) || address.includes(keyword);
+    const keytag = item.keytag?.toLowerCase() ?? "";
+    return name.includes(keyword) || address.includes(keyword) || keytag.includes(keyword);
   });
   return {
     candidates: partial.slice(0, limit),

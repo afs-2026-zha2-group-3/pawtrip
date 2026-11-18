@@ -115,7 +115,11 @@ describe("agent client tools", () => {
           const page = Number(parsed.searchParams.get("page") ?? "1");
           const items =
             page === 1
-              ? [location("a", "珠海渔女"), location("b", "珠海渔女"), location("c", "海滨公园")]
+              ? [
+                  location("a", "珠海渔女"),
+                  location("b", "珠海渔女"),
+                  { ...location("c", "海滨公园"), keytag: "滨海公园", rating: "4.2" },
+                ]
               : [];
           return json({
             page,
@@ -136,6 +140,14 @@ describe("agent client tools", () => {
             keytag: "海滨浴场",
             businessArea: "吉大",
             openingHours: "周一至周日 00:00-24:00",
+            openTime: "09:00-17:00",
+            tel: "0756-1234567",
+          });
+        }
+        if (url.startsWith("/api/locations/plain")) {
+          return json({
+            ...location("plain", "无附加信息地点"),
+            openingHours: "周一至周五 09:00-17:00",
           });
         }
         if (url.startsWith("/api/locations/other-city")) {
@@ -160,6 +172,8 @@ describe("agent client tools", () => {
     expect(output.status).toBe("ok");
     expect(output.ambiguous).toBe(true);
     expect(output.candidates?.map((candidate) => candidate.poiId)).toEqual(["a", "b"]);
+    expect(output.candidates?.[0]).not.toHaveProperty("keytag");
+    expect(output.candidates?.[0]).not.toHaveProperty("rating");
     expect(output.targetTripId).toBe(4);
     expect(agentStore.state.allowedPoi).toEqual({ tripId: 4, poiIds: ["a", "b"] });
   });
@@ -207,10 +221,41 @@ describe("agent client tools", () => {
     expect(output.keytag).toBe("海滨浴场");
     expect(output.businessArea).toBe("吉大");
     expect(output.openingHours).toBe("周一至周日 00:00-24:00");
+    expect(output.openTime).toBe("09:00-17:00");
+    expect(output.tel).toBe("0756-1234567");
     expect("typeCode" in output).toBe(false);
     expect("typeGroup" in output).toBe(false);
     expect("regionCode" in output).toBe(false);
     expect("petPolicies" in output).toBe(false);
+  });
+
+  it("matches candidates by tag and includes tag and rating", async () => {
+    const tools = createAgentClientTools(new QueryClient());
+    const output = await tool<FindLocationsOutput>(tools, "find_locations").execute(
+      { query: "滨海公园" },
+      context,
+    );
+
+    expect(output.status).toBe("ok");
+    expect(output.candidates).toHaveLength(1);
+    expect(output.candidates?.[0]).toMatchObject({
+      poiId: "c",
+      keytag: "滨海公园",
+      rating: "4.2",
+    });
+  });
+
+  it("omits missing today hours and phone from details", async () => {
+    const tools = createAgentClientTools(new QueryClient());
+    const output = await tool<GetLocationDetailOutput>(tools, "get_location_detail").execute(
+      { poiId: "plain" },
+      context,
+    );
+
+    expect(output.status).toBe("ok");
+    expect(output.openingHours).toBe("周一至周五 09:00-17:00");
+    expect(output).not.toHaveProperty("openTime");
+    expect(output).not.toHaveProperty("tel");
   });
 
   it("reads the latest store plan with names and a revision", async () => {

@@ -4,7 +4,7 @@ import { AGENT_ALLOWED_TOOL_NAMES } from "./constants";
 export const findLocationsTool = toolDefinition({
   name: "find_locations",
   description:
-    "按当前激活行程城市查询 Pawtrip 已收录地点。只返回真实 poiId；名称不唯一时 ambiguous=true，需要让用户消歧。",
+    "按当前激活行程城市查询 Pawtrip 已收录地点，匹配覆盖名称、地址与地点标签。只返回真实 poiId，并在可用时包含标签与评分；名称不唯一时 ambiguous=true，需要让用户消歧。",
   inputSchema: {
     type: "object",
     properties: {
@@ -25,7 +25,7 @@ export const findLocationsTool = toolDefinition({
 export const getLocationDetailTool = toolDefinition({
   name: "get_location_detail",
   description:
-    "读取一个 Pawtrip 已收录地点的推荐信息（自然语言类型、区域、评分、标签、商圈、营业时间）与确定性宠物政策结论。",
+    "读取一个 Pawtrip 已收录地点的推荐信息（自然语言类型、区域、评分、标签、商圈、每周营业时间、今日营业时间与电话）与确定性宠物政策结论。",
   inputSchema: {
     type: "object",
     properties: {

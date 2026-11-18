@@ -6,7 +6,12 @@ import {
   matchLocationCatalog,
 } from "./locations";
 
-function summary(poiId: string, name: string, address: string | null = null): LocationSummary {
+function summary(
+  poiId: string,
+  name: string,
+  address: string | null = null,
+  keytag: string | null = null,
+): LocationSummary {
   return {
     poiId,
     name,
@@ -22,7 +27,7 @@ function summary(poiId: string, name: string, address: string | null = null): Lo
     distanceMeters: null,
     coverPhotoUrl: null,
     rating: null,
-    keytag: null,
+    keytag,
     petPolicies: {
       allowedPetTypes: "DOG",
       maxPetsPerPerson: 1,
@@ -99,6 +104,21 @@ describe("agent location catalog", () => {
     const empty = matchLocationCatalog(items, "不存在");
     expect(empty.candidates).toEqual([]);
     expect(empty.totalMatched).toBe(0);
+  });
+
+  it("matches locations by keytag and flags ambiguous tag matches", () => {
+    const items = [
+      summary("e", "香炉湾", null, "海滨浴场"),
+      summary("f", "其他公园"),
+      summary("g", "某沙滩", null, "海滨浴场"),
+    ];
+
+    const tagged = matchLocationCatalog(items, "海滨浴场");
+    expect(tagged.candidates.map((item) => item.poiId)).toEqual(["e", "g"]);
+    expect(tagged.ambiguous).toBe(true);
+
+    const none = matchLocationCatalog(items, "不存在的标签");
+    expect(none.candidates).toEqual([]);
   });
 
   it("treats a district region code as the same city", () => {

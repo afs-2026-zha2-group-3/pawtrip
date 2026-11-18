@@ -43,7 +43,7 @@ export function createAgentClientTools(queryClient: QueryClient) {
       if (!trip) {
         return {
           status: "invalid_target",
-          message: "请先在 Trips 页面创建或激活行程，再查找地点。",
+          message: "请先在我的行程页面创建或激活行程，再查找地点。",
         };
       }
       const regionCode = trip.cityAdcode;
@@ -126,6 +126,8 @@ export function createAgentClientTools(queryClient: QueryClient) {
         keytag: detail.keytag ?? null,
         businessArea: detail.businessArea ?? null,
         openingHours: detail.openingHours ?? null,
+        ...(detail.openTime != null ? { openTime: detail.openTime } : {}),
+        ...(detail.tel != null ? { tel: detail.tel } : {}),
         policy: pet ? matchLocationPolicy(detail.petPolicies, pet) : null,
       };
     }),
@@ -135,7 +137,7 @@ export function createAgentClientTools(queryClient: QueryClient) {
       if (!trip) {
         return {
           status: "no_active_trip",
-          message: "当前没有激活行程，请先在 Trips 页面创建或激活。",
+          message: "当前没有激活行程，请先在我的行程页面创建或激活。",
         };
       }
       const plan = normalizePlan(trip.plan, trip.totalDays);
@@ -293,7 +295,15 @@ function tripRevision(trip: Trip, saveRevision: number): string {
 }
 
 function toCandidate(
-  item: { poiId: string; name: string; typeGroup: string; address: string | null; petPolicies: LocationBrowseDetail["petPolicies"] },
+  item: {
+    poiId: string;
+    name: string;
+    typeGroup: string;
+    address: string | null;
+    keytag?: string | null;
+    rating?: string | null;
+    petPolicies: LocationBrowseDetail["petPolicies"];
+  },
   pet: Pet | null,
 ): AgentLocationCandidate {
   return {
@@ -301,6 +311,8 @@ function toCandidate(
     name: item.name,
     typeGroup: item.typeGroup,
     address: item.address,
+    ...(item.keytag != null ? { keytag: item.keytag } : {}),
+    ...(item.rating != null ? { rating: item.rating } : {}),
     policy: pet ? matchLocationPolicy(item.petPolicies, pet) : null,
   };
 }

@@ -2,9 +2,11 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   createTripViaApi,
   csrfHeaders,
+  openTrips,
   pets,
   resetTrips,
   signIn,
+  tripCard,
 } from "./trip-helpers";
 
 const ZHUHAI = "440400";
@@ -24,8 +26,8 @@ function creationDialog(page: Page) {
 }
 
 async function openTripsAndActivate(page: Page, name: string) {
-  await page.getByRole("tab", { name: "Trips" }).click();
-  const card = page.getByTestId("trip-card").filter({ hasText: name });
+  await openTrips(page);
+  const card = tripCard(page, name);
   await card.getByRole("button", { name: "激活" }).click();
   await expect(card).toContainText("激活中");
 }

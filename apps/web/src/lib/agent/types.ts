@@ -1,11 +1,13 @@
 import type { PolicyVerdict } from "@/lib/trip/policy-match";
 import type { TransportMode } from "@/data/transport-rules";
 import type { TripPlan } from "@/lib/trip/types";
+import type { PetPersonality, PetPreference } from "@/queries/pets";
 
 export interface AgentTripCity {
   adcode: string;
   name: string;
   province: string;
+  featureTags: string[];
 }
 
 export interface AgentPetContext {
@@ -17,6 +19,8 @@ export interface AgentPetContext {
   hasLeash: boolean;
   hasVaccinationProof: boolean;
   dogBreedName: string | null;
+  preferences: PetPreference[];
+  personality: PetPersonality | null;
 }
 
 export interface AgentContext {
@@ -57,6 +61,8 @@ export interface AgentLocationCandidate {
   name: string;
   typeGroup: string;
   address: string | null;
+  keytag?: string | null;
+  rating?: string | null;
   policy: PolicyVerdict | null;
 }
 
@@ -83,6 +89,8 @@ export interface GetLocationDetailOutput {
   keytag?: string | null;
   businessArea?: string | null;
   openingHours?: string | null;
+  openTime?: string | null;
+  tel?: string | null;
   policy?: PolicyVerdict | null;
   message?: string;
 }

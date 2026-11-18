@@ -89,8 +89,13 @@ export function AgentPanel() {
     if (!adcode) return null;
     const candidate = (destinations.data ?? []).find((item) => item.adcode === adcode);
     return candidate
-      ? { adcode: candidate.adcode, name: candidate.name, province: candidate.province }
-      : { adcode, name: adcode, province: "" };
+      ? {
+          adcode: candidate.adcode,
+          name: candidate.name,
+          province: candidate.province,
+          featureTags: candidate.featureTags ?? [],
+        }
+      : { adcode, name: adcode, province: "", featureTags: [] };
   }, [destinations.data, active?.cityAdcode]);
 
   const agentContext = useMemo(
@@ -308,6 +313,7 @@ export function AgentPanel() {
                     adcode: flow.city.adcode,
                     name: flow.city.name,
                     province: flow.city.province,
+                    featureTags: flow.city.featureTags ?? [],
                   },
                   totalDays: trip.totalDays,
                   petId: trip.petId,
