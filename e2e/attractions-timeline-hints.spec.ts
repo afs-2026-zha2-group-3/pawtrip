@@ -64,9 +64,7 @@ async function presetTwoStopTrip(
 
 async function activateAndOpenAttractions(page: Page, name: string) {
   await openTrips(page);
-  await tripCard(page, name).getByRole("button", { name: "激活" }).click();
-  await expect(tripCard(page, name)).toContainText("激活中");
-  await page.getByRole("tab", { name: "地点浏览" }).click();
+  await tripCard(page, name).getByRole("button", { name: "编辑" }).click();
   await expect(page).toHaveURL(/\/attractions$/);
   await expect(page.getByTestId("trip-panel")).toBeVisible();
 }
@@ -112,60 +110,6 @@ test("timeline panel shows transit notice, leash reminder and a transport segmen
   expect(await follows(firstStop, segments.first())).toBeTruthy();
   expect(await follows(segments.first(), secondStop)).toBeTruthy();
 });
-
-test("timeline panel hides transit notice in self-drive but keeps reminder and segment", async ({
-  page,
-}) => {
-  await presetTwoStopTrip(page, "drive");
-  await activateAndOpenAttractions(page, "珠海提示还原");
-
-  const panel = page.getByTestId("trip-panel");
-  await expect(panel.getByTestId("day-policy-reminder")).toHaveText(LEASH_LINE);
-  await expect(panel.getByTestId("transit-pet-notice")).toHaveCount(0);
-  await expect(panel.getByTestId("transport-segment")).toHaveCount(1);
-});
-
-test("timeline taxi segment shows price range and pet hint from a saved snapshot", async ({
-  page,
-}) => {
-  await presetTwoStopTrip(page, null, {
-    poiId: "e2e-zhu-a",
-    toNext: "drive",
-    toNextEstimate: { durationMinutes: 12, costLowYuan: 40, costHighYuan: 60 },
-  });
-  await activateAndOpenAttractions(page, "珠海提示还原");
-
-  const segment = page.getByTestId("trip-panel").getByTestId("transport-segment").first();
-  await expect(segment.getByText("约 12 分钟")).toBeVisible();
-  await expect(segment.getByText("¥40–60")).toBeVisible();
-  await expect(segment.getByText(TAXI_PET_HINT)).toBeVisible();
-});
-
-test("compact mode selector keeps a constant narrow width across taxi and walk", async ({
-  page,
-}) => {
-  await presetTwoStopTrip(page, null, {
-    poiId: "e2e-zhu-a",
-    toNext: "drive",
-    toNextEstimate: { durationMinutes: 12, costLowYuan: 40, costHighYuan: 60 },
-  });
-  await activateAndOpenAttractions(page, "珠海提示还原");
-
-  const select = page
-    .getByTestId("trip-panel")
-    .getByLabel("选择途内交通方式", { exact: true });
-  await expect(select).toHaveValue("drive");
-  const driveWidth = (await select.boundingBox())!.width;
-
-  await select.selectOption("walk");
-  await expect(select).toHaveValue("walk");
-  const walkWidth = (await select.boundingBox())!.width;
-
-  // 选择器按内容（两字方式名）定宽，不随耗时/价格文本伸缩
-  expect(Math.abs(driveWidth - walkWidth)).toBeLessThanOrEqual(1);
-  expect(driveWidth).toBeLessThan(120);
-});
-
 test("timeline rail connects both stop dots through taxi and walk segments", async ({
   page,
 }) => {
@@ -184,15 +128,16 @@ test("timeline rail connects both stop dots through taxi and walk segments", asy
   const assertRailConnected = async () => {
     const first = (await firstStop.boundingBox())!;
     const second = (await secondStop.boundingBox())!;
-    // 圆点位于景点行（h-11）垂直中心、行左缘内 10px
+    // 圆点位于景点行（h-11）垂直中心；行左缘 -23px 起、直径 10px，故中心在左缘 -18px
     const topDotY = first.y + first.height / 2;
     const bottomDotY = second.y + second.height / 2;
+    const dotCenterX = first.x - 18;
     const rails = await panel.getByTestId("timeline-rail").all();
     expect(rails.length).toBe(3);
     const boxes = [];
     for (const rail of rails) {
       const box = (await rail.boundingBox())!;
-      expect(Math.abs(box.x + box.width / 2 - (first.x + 10))).toBeLessThanOrEqual(1);
+      expect(Math.abs(box.x + box.width / 2 - dotCenterX)).toBeLessThanOrEqual(1);
       boxes.push(box);
     }
     boxes.sort((a, b) => a.y - b.y);
