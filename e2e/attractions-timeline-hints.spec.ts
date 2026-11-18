@@ -110,3 +110,52 @@ test("timeline panel shows transit notice, leash reminder and a transport segmen
   expect(await follows(firstStop, segments.first())).toBeTruthy();
   expect(await follows(segments.first(), secondStop)).toBeTruthy();
 });
+test("timeline rail connects both stop dots through taxi and walk segments", async ({
+  page,
+}) => {
+  await presetTwoStopTrip(page, null, {
+    poiId: "e2e-zhu-a",
+    toNext: "drive",
+    toNextEstimate: { durationMinutes: 12, costLowYuan: 40, costHighYuan: 60 },
+  });
+  await activateAndOpenAttractions(page, "珠海提示还原");
+
+  const panel = page.getByTestId("trip-panel");
+  const firstStop = panel.locator('[data-stop-id="d1:0:e2e-zhu-a"]');
+  const secondStop = panel.locator('[data-stop-id="d1:1:e2e-zhu-b"]');
+  const select = panel.getByLabel("选择途内交通方式", { exact: true });
+
+  const assertRailConnected = async () => {
+    const first = (await firstStop.boundingBox())!;
+    const second = (await secondStop.boundingBox())!;
+    // 圆点位于景点行（h-11）垂直中心；行左缘 -23px 起、直径 10px，故中心在左缘 -18px
+    const topDotY = first.y + first.height / 2;
+    const bottomDotY = second.y + second.height / 2;
+    const dotCenterX = first.x - 18;
+    const rails = await panel.getByTestId("timeline-rail").all();
+    expect(rails.length).toBe(3);
+    const boxes = [];
+    for (const rail of rails) {
+      const box = (await rail.boundingBox())!;
+      expect(Math.abs(box.x + box.width / 2 - dotCenterX)).toBeLessThanOrEqual(1);
+      boxes.push(box);
+    }
+    boxes.sort((a, b) => a.y - b.y);
+    expect(Math.abs(boxes[0].y - topDotY)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(boxes[boxes.length - 1].y + boxes[boxes.length - 1].height - bottomDotY),
+    ).toBeLessThanOrEqual(1);
+    for (let index = 1; index < boxes.length; index += 1) {
+      expect(boxes[index].y).toBeLessThanOrEqual(boxes[index - 1].y + boxes[index - 1].height + 1);
+    }
+  };
+
+  await expect(select).toHaveValue("drive");
+  await expect(panel.getByText(TAXI_PET_HINT)).toBeVisible();
+  await assertRailConnected();
+  await panel.screenshot({ path: "test-results/timeline-rail-taxi.png" });
+
+  await select.selectOption("walk");
+  await expect(select).toHaveValue("walk");
+  await assertRailConnected();
+});

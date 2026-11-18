@@ -165,7 +165,8 @@ function CopyableField({
         type="button"
         variant="outline"
         size="xs"
-        className="shrink-0"
+        className="shrink-0 print:hidden"
+        data-export-hidden
         aria-label={copyAriaLabel}
         onClick={() => void handleCopy()}
       >

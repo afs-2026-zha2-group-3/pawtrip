@@ -76,6 +76,8 @@ interface StopRow {
   name: string;
   /** 体型超限警示：展示在该景点行下方（2026-11-17 修订） */
   sizeWarning: string | null;
+  connectPrev: boolean;
+  connectNext: boolean;
 }
 
 interface SegmentRow {
@@ -187,6 +189,7 @@ function TripPanelContent({
       );
       const segments = buildDaySegments(stops, active.transportMode);
       stops.forEach((stop, index) => {
+        const segment = segments[index];
         next.push({
           kind: "stop",
           id: stopKey(day, index, stop.poiId),
@@ -195,8 +198,9 @@ function TripPanelContent({
           poiId: stop.poiId,
           name: locations[stop.poiId]?.name ?? stop.poiId,
           sizeWarning: warningByPoi.get(stop.poiId) ?? null,
+          connectPrev: index > 0 && !segments[index - 1]?.samePoi,
+          connectNext: segment ? !segment.samePoi : false,
         });
-        const segment = segments[index];
         if (segment) {
           next.push({
             kind: "segment",
@@ -643,7 +647,26 @@ function TripPanelContent({
                   }
                   // 行容器为横向 flex：纵向包裹使警示独占景点下方一行
                   return (
-                    <div className="flex w-full min-w-0 flex-col gap-1">
+                    <div
+                      className={cn(
+                        "flex w-full min-w-0 flex-col gap-1",
+                        timeline && "relative",
+                      )}
+                    >
+                      {timeline && row.connectPrev ? (
+                        <span
+                          aria-hidden="true"
+                          data-testid="timeline-rail"
+                          className="pointer-events-none absolute -top-[6px] left-[9px] h-[28px] w-[2px] bg-paw-accent"
+                        />
+                      ) : null}
+                      {timeline && row.connectNext ? (
+                        <span
+                          aria-hidden="true"
+                          data-testid="timeline-rail"
+                          className="pointer-events-none absolute top-[22px] -bottom-[6px] left-[9px] w-[2px] bg-paw-accent"
+                        />
+                      ) : null}
                       <SortableStop
                         row={row}
                         timeline={timeline}
@@ -653,7 +676,10 @@ function TripPanelContent({
                       {row.sizeWarning ? (
                         <p
                           data-testid="stop-size-warning"
-                          className="px-1 text-xs text-amber-600"
+                          className={cn(
+                            "text-xs text-amber-600",
+                            timeline ? "pl-7" : "px-1",
+                          )}
                         >
                           {row.sizeWarning}
                         </p>
