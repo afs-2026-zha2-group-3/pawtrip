@@ -149,8 +149,19 @@ async function installFakeAmap(page: Page) {
       Walking: service("walking"),
     };
   });
+  // 段行会用服务端估算回填并持久化，导致路线时间与假 AMap 不一致；阻断估算以隔离被测路径。
+  await page.route("**/api/trips/*/route-estimate**", (route) =>
+    route.fulfill({
+      status: 400,
+      contentType: "application/problem+json",
+      body: JSON.stringify({ detail: "route estimate disabled in e2e" }),
+    }),
+  );
   // addInitScript 只对后续文档加载生效；signIn 之后是 SPA 路由，需整页刷新注入假 AMap。
   await page.reload();
+  await page.waitForSelector("html[data-app-ready='true']", {
+    timeout: 15_000,
+  });
   await expect(page.getByRole("tab", { name: "城市浏览" }).first()).toBeVisible({
     timeout: 15_000,
   });
