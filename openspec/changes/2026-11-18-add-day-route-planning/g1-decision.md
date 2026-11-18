@@ -1,7 +1,7 @@
 # G1 decision — add-day-route-planning
 
 - Gate: G1（Align）
-- Change id: `add-day-route-planning`（REQ-015 行程单当天路线规划）
+- Change id: `add-day-route-planning`（REQ-016 行程单当天路线规划）
 - Status: 已签署（2026-11-18）
 - Inputs:
   - `proposal.md`、`specs/trip-itinerary/spec.md`（ADDED，5 需求 14 场景）、`specs/location-management/spec.md`（ADDED，1 需求 3 场景）
@@ -10,7 +10,7 @@
   - `tasks.md`（8 组 27 项，1.1–1.3 红测先行并写明失败预期）
   - 对齐自检：`alignment-self-check.md`（6/6 需求四方追溯 + 21/21 横切检查 Pass）
   - P3 质量清单：`docs/ai4se-plugins/20261118-100049-quality-checklist-report.md`（P3-1–P3-4 全 Pass，Stage Overall Pass）
-  - 上游需求：`requirement-workspace/requirements/REQ-015-day-route-planning.md`（S1–S8、AC-1–AC-7，7 blocking + 3 non-blocking OQ 全部 resolved，DoR BLOCKER=0）；`requirement-workspace/intents/REQ-015-day-route-planning.md`；`analysis/REQ-015/{impact-brief,deep-dive}.md`
+  - 上游需求：`requirement-workspace/requirements/REQ-016-day-route-planning.md`（S1–S8、AC-1–AC-7，7 blocking + 3 non-blocking OQ 全部 resolved，DoR BLOCKER=0）；`requirement-workspace/intents/REQ-016-day-route-planning.md`；`analysis/REQ-016/{impact-brief,deep-dive}.md`
   - 校验：`openspec validate 2026-11-18-add-day-route-planning --strict` 通过（2026-11-18）
 - Findings:
   - 范围：delta 与 proposal What Changes 一致，单 Change 交付连贯能力（Day 标签行入口 + 路线弹窗 + 高德算路绘制 + 距离时长标注 + 降级空态 + 详情坐标字段）；用户 2026-11-18 明确排除天气，全工件无天气残留；Out 项（天气、地点重排、后端路线 API、transit/cycling 算路、写回行程计划、进入 PDF/图片导出、管理端改动）未混入规格。

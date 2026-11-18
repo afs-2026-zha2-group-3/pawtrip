@@ -267,7 +267,8 @@ function RootDocument({ children }: { children: ReactNode }) {
     pathname === "/cities" ||
     pathname === "/trips" ||
     pathname === "/itinerary" ||
-    pathname === "/transport-rules";
+    pathname === "/transport-rules" ||
+    pathname === "/login";
 
   return (
     <html lang="en" suppressHydrationWarning>

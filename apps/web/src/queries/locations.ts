@@ -83,6 +83,7 @@ export interface NearbyPetService {
   address: string | null;
   distanceMeters: number;
   openingHours: string | null;
+  tel: string | null;
 }
 
 export interface NearbyPetServices {

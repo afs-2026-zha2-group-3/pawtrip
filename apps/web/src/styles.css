@@ -274,6 +274,73 @@
   }
 }
 
+@keyframes map-shimmer {
+  from {
+    background-position: 160% 0, 0 0, 0 0;
+  }
+  to {
+    background-position: -60% 0, 0 0, 0 0;
+  }
+}
+
+.map-skeleton {
+  background-color: var(--muted);
+  background-image:
+    linear-gradient(100deg, transparent 35%, rgb(255 255 255 / 0.55) 50%, transparent 65%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 44px,
+      color-mix(in srgb, var(--border) 55%, transparent) 44px 45px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 44px,
+      color-mix(in srgb, var(--border) 55%, transparent) 44px 45px
+    );
+  background-size:
+    220% 100%,
+    auto,
+    auto;
+  animation: map-shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes map-pulse {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.map-pulse {
+  animation: map-pulse 1.8s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
+}
+
+@keyframes map-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-skeleton,
+  .map-pulse {
+    animation: none;
+  }
+}
+
 ::view-transition-group(app-content),
 ::view-transition-group(trip-panel) {
   animation-duration: 280ms;

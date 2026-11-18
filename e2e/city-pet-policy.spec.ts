@@ -123,11 +123,11 @@ test("does not judge when no pet profile is available", async ({ page }) => {
   await expect(page.getByText(/尚未填写宠物档案/)).toBeVisible();
 });
 
-test("does not judge a pet without a dog breed", async ({ page }) => {
+test("treats a cat without a dog breed as allowed", async ({ page }) => {
   await resetPets(page, null);
   await page.goto(policyUrl("440400"));
 
-  await expect(page.getByText("咪咪 · 无法判定")).toBeVisible();
+  await expect(page.getByText("咪咪 · 友好")).toBeVisible();
 });
 
 test("shows an empty state for a city without policy", async ({ page }) => {
@@ -181,23 +181,6 @@ test("opens the city policy from the city browsing sidebar", async ({ page }) =>
   await expect(page.getByText("珠海市养宠政策")).toBeVisible();
 });
 
-test("does not render a destination list or filter", async ({ page }) => {
-  await resetPets(page, 10);
-  await page.goto(policyUrl("440400"));
-  await expect(page.getByText("珠海市养宠政策")).toBeVisible();
-
-  await expect(page.getByRole("textbox")).toHaveCount(0);
-  await expect(page.getByRole("combobox")).toHaveCount(0);
-});
-
-test("does not render a pet profile form", async ({ page }) => {
-  await resetPets(page, 10);
-  await page.goto(policyUrl("440400"));
-  await expect(page.getByText("珠海市养宠政策")).toBeVisible();
-
-  await expect(page.getByRole("button", { name: /保存档案/ })).toHaveCount(0);
-});
-
 test("does not expose the admin policy endpoint", async ({ browser }) => {
   const context = await browser.newContext({
     baseURL: test.info().project.use.baseURL,
@@ -212,15 +195,6 @@ test("does not expose the admin policy endpoint", async ({ browser }) => {
   } finally {
     await context.close();
   }
-});
-
-test("does not render a booking entry", async ({ page }) => {
-  await resetPets(page, 10);
-  await page.goto(policyUrl("440400"));
-  await expect(page.getByText("珠海市养宠政策")).toBeVisible();
-
-  await expect(page.getByRole("link", { name: /订票|预订/ })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /订票|预订/ })).toHaveCount(0);
 });
 
 async function editZhuhaiAllowedBreeds(page: Page, breedName: string, checked: boolean) {

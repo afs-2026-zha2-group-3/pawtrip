@@ -263,6 +263,6 @@ test("anonymous visitors are redirected to login from the admin city route", asy
   await page.goto("/admin/cities");
 
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "登录" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "城市管理", level: 1 })).toHaveCount(0);
 });

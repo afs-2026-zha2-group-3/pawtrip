@@ -154,6 +154,44 @@ const fixtures = [
 		reservationRequired: null,
 	},
 	{
+		poiId: "e2e-zhu-hospital",
+		name: "珠海宠物医院",
+		typeCode: "090700",
+		typeGroup: "pet-hospital",
+		address: "珠海市香洲区情侣中路88号",
+		longitude: 113.5,
+		latitude: 22.11,
+		regionCode: "440402",
+		allowedPetTypes: null,
+		maxPetsPerPerson: null,
+		maxSinglePetWeightKg: null,
+		maxSinglePetShoulderHeightCm: null,
+		leashRequired: null,
+		vaccinationProofRequired: null,
+		extraFeeCents: null,
+		reservationRequired: null,
+		business: { tel: "0756-8886666", opentime_week: "周一至周日 00:00-24:00" },
+	},
+	{
+		poiId: "e2e-zhu-supplies",
+		name: "珠海宠物用品店",
+		typeCode: "061211",
+		typeGroup: "pet-supplies",
+		address: null,
+		longitude: 113.5,
+		latitude: 22.12,
+		regionCode: "440402",
+		allowedPetTypes: null,
+		maxPetsPerPerson: null,
+		maxSinglePetWeightKg: null,
+		maxSinglePetShoulderHeightCm: null,
+		leashRequired: null,
+		vaccinationProofRequired: null,
+		extraFeeCents: null,
+		reservationRequired: null,
+		business: { opentime_today: "24小时营业" },
+	},
+	{
 		poiId: "e2e-restaurant-close",
 		name: "最近餐厅",
 		typeCode: "050000",
@@ -371,6 +409,12 @@ const locationIdByPoiId = db.prepare(
 	"SELECT id FROM pawtrip_location WHERE poi_id = ?",
 );
 
+function businessJson(fixture) {
+	const business = { ...(fixture.business ?? {}) };
+	if (fixture.rating) business.rating = fixture.rating;
+	return Object.keys(business).length > 0 ? JSON.stringify(business) : "{}";
+}
+
 db.exec("BEGIN IMMEDIATE");
 try {
 	// Flyway V19 seeds Zhuhai demo locations into this temporary database; E2E specs expect only fixtures.
@@ -386,7 +430,7 @@ try {
 			fixture.longitude ?? null,
 			fixture.latitude ?? null,
 			fixture.regionCode,
-			fixture.rating ? JSON.stringify({ rating: fixture.rating }) : "{}",
+			businessJson(fixture),
 			fixture.allowedPetTypes,
 			fixture.maxPetsPerPerson,
 			fixture.maxSinglePetWeightKg,

@@ -1,155 +1,69 @@
-# REQ-015 Deep Dive — 行程单当天路线规划
+# REQ-015 Deep-dive — 行程单景点附近宠物服务与医院/用品店免筛选
 
-- 上游需求：[REQ-015 行程单当天路线规划](../../requirements/REQ-015-day-route-planning.md)
-- Impact Brief：[impact-brief.md](impact-brief.md)
-- OpenSpec change：`openspec/changes/2026-11-18-add-day-route-planning/`
-- 日期：2026-11-18
-- 范围：`/itinerary` 当天路线入口与弹窗、高德 JS 路线绘制与标注、用户端地点详情坐标字段；不含天气、路线优化、计划写入、后端算路接口、导出包含路线
+> 说明：本文件为 P1 补充登记时的实现复盘。PR #75 已提交，以下结论以 2026-11-17 代码与 CI 证据为准，不重新发明需求。
 
-## 1. 数据契约
+## 1. 关键设计判断
 
-### 1.1 坐标字段（后端 → 前端）
+| # | 问题 | 结论 | 依据 |
+|---|---|---|---|
+| D1 | “附近”半径 | 同城最近，不用 5km | 用户明确：周边没有服务时 5km 会空白；同城取最近保证栏目可用 |
+| D2 | 每类数量 | 各 1 家 | 行程卡片空间有限，只给最近决策点 |
+| D3 | 距离口径 | Haversine 直线距离，四舍五入到米，前端一位小数 km | 复用 REQ-012 既有 `distanceMeters` 与 `formatDistanceKm` |
+| D4 | 排序并列 | 距离相同按地点 `id` 升序 | 保证接口结果稳定、可测试 |
+| D5 | 城市范围 | 景点 `regionCode` 前 4 位（city 级） | 复用 `findLocations(regionCode, "city", ...)` |
+| D6 | 营业时间 | `opentime_week` → `opentime_today` → `null` → UI “暂无” | 高德快照字段；无实时调用 |
+| D7 | 无坐标景点 | 直接返回两个 `null`，不猜测 | 无法计算距离；前端显示“暂无附近宠物服务” |
+| D8 | 懒加载 | `details` 展开时才 `enabled` 查询 | 避免行程页一次性 N 次请求 |
+| D9 | 医院/用品店免筛选位置 | 后端 SQL + 前端查询参数双保险 | 后端保证接口语义；前端避免无意义的 `petFriendlyOnly` 请求与开关 |
+| D10 | 未配置政策的医院/用品店 | 视为“不限宠物/友好” | 用户诉求是基础服务始终可用；避免“未配置”被误读为禁止 |
+| D11 | 管理端是否受影响 | 否 | 仅公开列表查询条件变化；管理端仍按类型读取全部地点 |
+| D12 | 与 REQ-012 的关系 | 共用地点接口与测试文件，合并一个 PR | 用户确认；拆分会产生重复改动与冲突 |
 
-| 业务概念 | API 字段 | 类型 | 来源 | 空值语义 |
-|---|---|---|---|---|
-| 经度 | `longitude` | `number \| null`（Java `Double`） | `pawtrip_location.longitude` | 未保存 = `null` |
-| 纬度 | `latitude` | `number \| null`（Java `Double`） | `pawtrip_location.latitude` | 未保存 = `null` |
+## 2. 接口契约
 
-- 仅扩展 `GET /api/locations/{poiId}` 的 `LocationDetail`；其余字段、状态码、认证行为不变。
-- 不新增列表字段（`LocationSummary` 已有坐标）；不新增接口；无迁移。
-- 后端只读数据库，不调用高德；响应不包含原始 POI、`business` 或照片列表。
-- 前端 `LocationBrowseDetail` 增加同名可空字段；旧缓存对象缺字段时视为 `null`。
+`GET /api/locations/{poiId}/nearby-services`
 
-### 1.2 路线段输入（纯函数）
+- 鉴权：登录用户。
+- 200：
 
-输入来自当天行程条目与地点详情缓存：
-
-| 字段 | 来源 | 用途 |
-|---|---|---|
-| `poiId` | `TripStop.poiId` | 编号、去重判断、坐标查找 |
-| 顺序 | `day.entries` 中的 `stop` 顺序 | 折线与编号顺序，不做重排 |
-| `displayMode` | 相邻两 stop 之间的 `transport` 条目 | `walk` → 步行；`drive`/`self_drive` → 驾车 |
-| `toNextEstimate.durationMinutes` | 前一个 stop | 时长优先值（可缺） |
-| `longitude` / `latitude` | `LocationBrowseDetail` | 算路端点；任一缺失则该段不可算 |
-
-输出建议形态（命名由 design/实现定稿）：
-
-```ts
-type DayRouteSegment =
-  | {
-      kind: "route";
-      fromPoiId: string;
-      toPoiId: string;
-      mode: "walk" | "drive";
-      from: { longitude: number; latitude: number };
-      to: { longitude: number; latitude: number };
-      savedDurationMinutes: number | null;
-    }
-  | { kind: "skip"; fromPoiId: string; toPoiId: string }
-  | { kind: "unroutable"; fromPoiId: string; toPoiId: string; missingPoiIds: string[] };
+```json
+{
+  "hospital": {
+    "poiId": "poi-zhu-hospital",
+    "name": "宠物医院",
+    "address": "测试地址",
+    "distanceMeters": 1112,
+    "openingHours": "周一至周日 09:00-20:00"
+  },
+  "supplies": {
+    "poiId": "poi-zhu-supplies",
+    "name": "宠物用品店",
+    "address": "测试地址",
+    "distanceMeters": 2224,
+    "openingHours": "24小时营业"
+  }
+}
 ```
 
-### 1.3 高德算路结果映射
+- 任一类别无结果或景点无坐标：对应字段为 `null`。
+- POI 不存在：404（`LOCATION_NOT_FOUND`）。
 
-| 高德字段 | 用途 | 规则 |
+## 3. 异常与降级
+
+| 场景 | 行为 |
+|---|---|
+| 展开后加载中 | “正在查找附近宠物服务…” |
+| 请求失败 | “暂时无法获取附近宠物服务”，卡片其余内容不受影响 |
+| 两类都为空 | “暂无附近宠物服务” |
+| 地址为空 | “地址未收录” |
+| 营业时间为空 | “暂无” |
+
+## 4. 风险与未决
+
+| # | 风险 | 处置 |
 |---|---|---|
-| `routes[0].distance` | 距离 | 米；`< 1000` → 「N 米」，`>= 1000` → `(m/1000).toFixed(1)` 公里 |
-| `routes[0].time` | 兜底时长 | 秒；`Math.ceil(seconds / 60)` 分钟 |
-| `routes[0].steps[].path` | 折线几何 | 拼接各 step 的 `[lng, lat]` 点列，绘制 `AMap.Polyline` |
-| 该段 `toNextEstimate.durationMinutes` | 优先时长 | 存在即展示，忽略算路时长（距离仍取算路） |
-
-不传 `map`/`panel` 给插件，避免自动绘制；折线与文本自行创建与销毁。
-
-## 2. 边界分支
-
-| 规则 | 分支 | 行为 | rationale |
-|---|---|---|---|
-| 入口 | 当前选中天变化 | 按钮始终作用于最新 `selectedDay`；弹窗内内容随打开时的天确定 | design D1 |
-| 入口 | 关闭弹窗 | 保持当前天；不保存、不写计划 | 只读边界 |
-| 段构造 | 相邻同 `poiId` | 标记跳过，不发算路 | 无位移，避免无效请求 |
-| 段构造 | 任一端点缺坐标 | 该段不绘制；收集缺失地点名称提示 | 不伪造坐标 |
-| 段构造 | 两端坐标齐全 | 按 `displayMode` 生成 route 段 | 方式跟随行程单 |
-| 段构造 | `transit` | 已在 `displayToNext` 归一为 `drive`/`self_drive`，不单独分支 | 与时间线一致 |
-| 距离 | `distance < 1000` | 「N 米」 | 需求已定 |
-| 距离 | `distance >= 1000` | 一位小数公里 | 需求已定 |
-| 时长 | 有快照 | 快照分钟 | 与时间线一致 |
-| 时长 | 无快照 | 算路秒向上取整 | 避免显示 0 分钟 |
-| 时长 | 算路 61 秒 | 2 分钟 | 向上取整 |
-| 高德 | JS Key 未配置 | 「地图未配置」占位；不发算路 | 与地点页一致 |
-| 高德 | 单段失败 | 该段不绘制并提示；其他段继续 | 非阻塞降级 |
-| 高德 | 全部段失败 | 展示失败提示；地图可保留地点标记 | 非阻塞 |
-| 高德 | 迟到回调 | 弹窗关闭后忽略，不更新已销毁地图 | 防实例泄漏 |
-| 空态 | 当天 0 地点 | 「当天暂无地点」；不发请求 | 需求已定 |
-| 空态 | 当天 1 地点 | 编号标记 + 「当天只有一个地点，无需路线」 | 需求已定 |
-| 地图 | 打开/关闭 | 创建与销毁地图、清空 overlay | 防泄漏 |
-| 导出 | 打印/图片 | 弹窗不进入导出路径 | 需求已定 |
-| 计划 | 查看路线 | 不调用 `tripActions` 写操作、不触发保存 | 需求已定 |
-
-## 3. 跨 REQ 一致性
-
-| 能力 / 需求 | 关系 | 结论 |
-|---|---|---|
-| REQ-011 / trip-route-estimate | `toNext`、`toNextEstimate` 快照与交通段展示 | 只读消费；不改变方式选择、快照写入或时间线 |
-| REQ-012 / trip-attractions + 地图 | 高德 JS 加载、地图降级、地点详情 | 复用 loader 与降级语义；扩展插件与折线，不改变地点页行为 |
-| REQ-013 / 地点卡片媒体 | `LocationBrowseDetail` 字段 | 只增可空坐标；封面/评分/商圈/营业时间/电话不变 |
-| trip-itinerary | Day 切换、时间线、导出 | 新增入口与弹窗；Day 切换与导出行为不变 |
-| trip-planning / trip-context | 计划结构与激活行程 | 不修改计划结构、不写库 |
-| location-management | 用户端地点详情 | 新增坐标要求；管理员接口与列表不变 |
-| 天气 | 无 | 明确排除，不引入 `AMap.Weather` 或任何天气依赖 |
-
-## 4. 展示契约
-
-| 触发 / 界面 | 内容 | 状态 |
-|---|---|---|
-| `/itinerary` Day 标签行 | 右侧按钮「查看当天路线规划」 | 始终可见；作用于当前选中天 |
-| 路线弹窗标题 | 「第 N 天路线规划」；有开始日期时展示该天日期 | 描述可带城市 |
-| 地图 | 编号标记 1..N；按段折线（驾车/步行配色区分） | 顺序与行程单一致，不重排 |
-| 折线标注 | 「距离 · 时长」，如「1.2 公里 · 20 分钟」 | 每段一条；位置由实现定稿 |
-| 算路中 | 轻量加载提示 | 不阻塞关闭 |
-| 缺坐标 | 「部分地点缺少坐标」类提示 | 非阻塞；涉及段不绘制 |
-| 缺 Key | 「地图未配置」占位 | 与地点页一致 |
-| 单段失败 | 「部分路段路线获取失败」类提示 | 其他段继续 |
-| 无地点 | 「当天暂无地点」 | 不发请求 |
-| 单地点 | 编号标记 + 「当天只有一个地点，无需路线」 | 不发请求 |
-| 导出 PDF/图片 | 不包含地图、折线、标注 | 与既有导出一致 |
-
-## 5. 测试计划
-
-### 后端 API
-
-- `GET /api/locations/{poiId}` 对坐标齐全地点返回 `longitude`/`latitude`（如 `113.5`/`22.1`）。
-- 无坐标地点两字段均为 `null`，其余字段与响应结构不变。
-- 响应仍不含原始 POI、`business`、照片列表；未认证 401 不变。
-- 详情读取不触发高德调用（以现有测试边界或 mock 端口证明）。
-
-### 前端纯函数
-
-- 段构造：顺序保持；不同 `poiId` 生成 route 段；同 `poiId` 生成 skip；缺坐标生成 unroutable。
-- 方式映射：`walk` → 步行；`drive`/`self_drive` → 驾车；`transit` 经 `displayToNext` 归一。
-- 距离格式：850 → 「850 米」；1234 → 「1.2 公里」；1000 → 「1.0 公里」。
-- 时长：快照 20 分钟优先；无快照 61 秒 → 2 分钟；0 秒 → 0 分钟（或按实现定稿，需单测固定）。
-- 空态输入：0 个/1 个 stop 不产生 route 段。
-
-### E2E
-
-- 打开 `/itinerary`，激活种子行程；Day 标签行右侧按钮存在。
-- 选中 Day 2 点击按钮 → 出现「第 2 天路线规划」弹窗；关闭后仍选中 Day 2。
-- 无高德 Key 的 CI 环境：弹窗展示地图未配置占位；行程单其他内容可用。
-- 当天只有一个地点/无地点的种子场景展示对应空态（按夹具可行性）。
-- 导出 PDF/图片不包含路线弹窗内容（回归既有导出用例）。
-
-### 命令
-
-- 后端：`./mvnw test`（或定向 `LocationQueryApiTest`）。
-- 前端：`npm test` / `npx vitest run`（按仓库脚本）、`npx tsc --noEmit -p apps/web/tsconfig.json`。
-- E2E：仓库既有 `scripts/run-e2e.mjs` 与 Playwright 命令。
-
-## 6. Probe log / DoR 复核（⑨–⑫）
-
-| 项 | 结论 | 依据 |
-|---|---|---|
-| ⑨ 数据契约 | 坐标字段来源、类型、空值、响应边界已定义；路线段输入输出与高德映射明确 | 第 1 节；`PawtripLocation`、`LocationDetail`、design D2–D4 |
-| ⑩ 边界分支 | 同地点、缺坐标、缺 Key、单段失败、空态、迟到回调、导出隔离已枚举 | 第 2 节 |
-| ⑪ 跨 REQ | 与 REQ-011/012/013、trip-itinerary、trip-planning、location-management 无冲突；天气明确排除 | 第 3 节 |
-| ⑫ 展示与测试 | 入口/弹窗/标注/降级/空态契约明确；三层测试计划覆盖 AC-1…AC-7 | 第 4、5 节 |
-| BLOCKER | 0 | 无阻塞性未知依赖 |
+| R1 | 仅展示各 1 家，距离较远时信息价值有限 | 已列为后续扩展（多候选/阈值） |
+| R2 | 无电话与导航 | Non-goal；后续可评估 |
+| R3 | 营业时间可能过期 | 数据来自已保存快照；实时校验为 Non-goal |
+| R4 | 同城最近可能跨区但仍是同城 | 符合已确认口径；不额外限制行政区 |
+| R5 | Living Spec 尚未包含附近服务需求 | 本 change 的 ADDED requirement 在归档时合并 |

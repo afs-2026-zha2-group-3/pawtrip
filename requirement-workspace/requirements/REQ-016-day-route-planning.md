@@ -1,16 +1,16 @@
 ---
-id: REQ-015
+id: REQ-016
 title: 行程单当天路线规划
 status: ready-for-split
 discovery: Go (2026-11-18)
 sources:
-  - ../intents/REQ-015-day-route-planning.md
+  - ../intents/REQ-016-day-route-planning.md
   - openspec/specs/trip-itinerary/spec.md
   - openspec/specs/location-management/spec.md
   - openspec/specs/trip-planning/spec.md
 ---
 
-# REQ-015：行程单当天路线规划
+# REQ-016：行程单当天路线规划
 
 ## Discovery Decision
 
@@ -18,7 +18,7 @@ Go（2026-11-18，light intake）— 候选能力明确：在既有 `/itinerary`
 
 ## 六字段
 
-1. **id**：REQ-015
+1. **id**：REQ-016
 2. **statement**：已登录用户在 `/itinerary` 行程单中选择某一天后，可点击 Day 标签行右侧「查看当天路线规划」打开该天路线弹窗；弹窗按行程单当天地点顺序展示编号标记，并对相邻两个不同 `poiId` 且坐标齐全的地点，按该段显示交通方式调用高德 JS 路线规划（步行段用 `AMap.Walking`、打车与驾车段用 `AMap.Driving`），以返回路径绘制折线；每条折线标注距离（取高德算路米数，按「N 米」或「N.N 公里」展示）与时长（优先取该段已保存的 `toNextEstimate.durationMinutes`，无快照时取高德算路秒数向上取整）；坐标由 `GET /api/locations/{poiId}` 新增的可空 `longitude`/`latitude` 提供（只读 `pawtrip_location`）；全程只读，不修改行程计划、不写库、不影响 PDF/图片导出；缺坐标、缺高德 JS Key、单段算路失败时给出非阻塞提示且不伪造路线；当天无地点或仅一个地点时展示明确空态且不发起算路。
 3. **actors**：
    - 已登录用户：在行程单中查看某天路线、距离与时长，据以调整出行预期
@@ -36,7 +36,7 @@ Go（2026-11-18，light intake）— 候选能力明确：在既有 `/itinerary`
    - AC-6：`GET /api/locations/{poiId}` 在既有字段上返回可空 `longitude`/`latitude`，值直接来自已保存地点记录；缺失为 `null`；不调用高德、不下发原始 POI/`business`/照片列表
    - AC-7：路线弹窗不进入 PDF 与图片导出；行程计划、交通方式选择、政策提醒、既有导出行为均不变
 6. **links to evidence**：
-   - 意图与已决口径：[intents/REQ-015-day-route-planning.md](../intents/REQ-015-day-route-planning.md)
+   - 意图与已决口径：[intents/REQ-016-day-route-planning.md](../intents/REQ-016-day-route-planning.md)
    - 行程单页面与 Day 切换：`apps/web/src/routes/_authenticated/itinerary.tsx:84`、`:277-291`、`:381`
    - 行程模型与交通方式：`apps/web/src/lib/trip/types.ts`、`apps/web/src/lib/trip/itinerary.ts:47`、`:86`、`apps/web/src/lib/trip/plan.ts:13-20`
    - 交通快照：`TripStop.toNextEstimate`（`durationMinutes`/费用区间）；REQ-011 Living Spec `trip-route-estimate`
@@ -44,8 +44,8 @@ Go（2026-11-18，light intake）— 候选能力明确：在既有 `/itinerary`
    - 用户端详情：`apps/server/src/main/java/com/pawtrip/server/location/LocationQueryResponses.java:76`、`LocationQueryService.java:99-102`；前端 `apps/web/src/queries/locations.ts:62`
    - 地图能力：`apps/web/src/lib/amap/loader.ts`；`apps/web/src/routes/_authenticated/attractions/-location-map.tsx`
    - 弹窗组件：`apps/web/src/components/ui/dialog.tsx`
-   - 影响分析：[analysis/REQ-015/impact-brief.md](../analysis/REQ-015/impact-brief.md)
-   - Deep-dive：[analysis/REQ-015/deep-dive.md](../analysis/REQ-015/deep-dive.md)
+   - 影响分析：[analysis/REQ-016/impact-brief.md](../analysis/REQ-016/impact-brief.md)
+   - Deep-dive：[analysis/REQ-016/deep-dive.md](../analysis/REQ-016/deep-dive.md)
 
 ## Ready 形状
 
@@ -184,10 +184,10 @@ Go（2026-11-18，light intake）— 候选能力明确：在既有 `/itinerary`
 | BLOCKER | resolved | Open Questions | 7 个 blocking OQ（入口/展示/方式/坐标/口径/天气/只读） | 2026-11-18 与用户确认并随 design 批准，全部 resolved |
 | WARNING | resolved | NB-1…NB-3 | 3 个非阻塞细节（降级呈现/空态文案/标注形态） | 2026-11-18 逐项定稿，design.md 已覆盖 |
 
-基础 8 项自检：①意图清晰 ✓ ②actors 与权限边界 ✓ ③范围有界（In/Out）✓ ④场景具体（S1–S8）✓ ⑤异常/边界（缺坐标、缺 Key、单段失败、同地点、无地点、单地点）✓ ⑥结果可验证（路线/距离/时长/提示可观察）✓ ⑦依赖与触点（地点详情坐标、高德 JS、行程快照、弹窗组件）✓ ⑧blocking OQ=0 ✓。⑨数据契约 ✓ ⑩边界分支 ✓ ⑪跨 REQ 一致性 ✓ ⑫展示与测试 ✓（2026-11-18 deep-dive 完成，见 `analysis/REQ-015/deep-dive.md` 第 6 节）。BLOCKER 数：0。影响分析 blocker：0；建议单 change `2026-11-18-add-day-route-planning`（规模 M，无迁移、无新依赖、1 个后端契约扩展 + 前端弹窗/地图）。
+基础 8 项自检：①意图清晰 ✓ ②actors 与权限边界 ✓ ③范围有界（In/Out）✓ ④场景具体（S1–S8）✓ ⑤异常/边界（缺坐标、缺 Key、单段失败、同地点、无地点、单地点）✓ ⑥结果可验证（路线/距离/时长/提示可观察）✓ ⑦依赖与触点（地点详情坐标、高德 JS、行程快照、弹窗组件）✓ ⑧blocking OQ=0 ✓。⑨数据契约 ✓ ⑩边界分支 ✓ ⑪跨 REQ 一致性 ✓ ⑫展示与测试 ✓（2026-11-18 deep-dive 完成，见 `analysis/REQ-016/deep-dive.md` 第 6 节）。BLOCKER 数：0。影响分析 blocker：0；建议单 change `2026-11-18-add-day-route-planning`（规模 M，无迁移、无新依赖、1 个后端契约扩展 + 前端弹窗/地图）。
 
 ## 修订记录
 
 ### 2026-11-18 初版
 
-- 依据用户对话与已批准的 OpenSpec design 建立 REQ-015；天气已排除；坐标经地点详情只读下发；路线与标注仅前端计算，不写回计划。
+- 依据用户对话与已批准的 OpenSpec design 建立 REQ-016；天气已排除；坐标经地点详情只读下发；路线与标注仅前端计算，不写回计划。

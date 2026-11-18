@@ -1,6 +1,6 @@
 # ATDD design — 2026-11-18-add-day-route-planning
 
-- Change：`2026-11-18-add-day-route-planning`（REQ-015 行程单当天路线规划）
+- Change：`2026-11-18-add-day-route-planning`（REQ-016 行程单当天路线规划）
 - 输入：`specs/trip-itinerary/spec.md`（5 需求 / 14 场景）、`specs/location-management/spec.md`（1 需求 / 3 场景）、`design.md`（D1–D6）、P1 需求与 impact brief
 - 范围：只设计 API 与 E2E 验收层；纯逻辑与组件级 TDD 留给 `/sdd:atdd-apply`
 - Rules 对齐：`@rule:java-testing`（JUnit5 + AssertJ + MockMvc + 独立 SQLite）、`@rule:typescript-testing`（Vitest + Playwright）；沿用现有测试产品与 CI，不新建 CI 语义

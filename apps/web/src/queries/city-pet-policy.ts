@@ -18,6 +18,7 @@ export type CityPetPolicy = {
   policies: string[];
   bannedBreeds: string[];
   allowedBreeds: string[];
+  allowedPetTypes: string | null;
   source: CityPetPolicySource | null;
   updatedMonth: string | null;
   match: CityPetPolicyMatch | null;

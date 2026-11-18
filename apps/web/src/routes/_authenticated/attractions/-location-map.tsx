@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { LoaderCircle, MapPinned } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LocationSummary } from "../../../queries/locations";
 import {
@@ -10,6 +11,10 @@ import {
 } from "../../../lib/amap/loader";
 
 type MapStatus = "loading" | "ready" | "missing-key" | "error";
+
+const FOCUS_ZOOM = 15;
+const CAMERA_DURATION_MS = 600;
+const TILE_READY_TIMEOUT_MS = 4000;
 
 interface LocationMapProps {
   points: LocationSummary[];
@@ -49,7 +54,7 @@ function infoHtml(
     point.distanceMeters != null && anchorName
       ? `<div style="margin-top:4px;color:#666">距${escapeHtml(anchorName)}约 ${(point.distanceMeters / 1000).toFixed(1)}km</div>`
       : "";
-  return `<div style="min-width:180px;padding:2px 4px 14px;font-size:12px;line-height:1.5">
+  return `<div style="min-width:180px;padding:2px 4px 14px;font-size:12px;line-height:1.5;animation:map-card-in 180ms cubic-bezier(0.22,1,0.36,1) both">
     <div style="font-weight:600;font-size:13px">${escapeHtml(point.name)}</div>
     <div style="color:#666">${escapeHtml(typeLabel)} · ${escapeHtml(point.address ?? "地址未收录")}</div>
     ${distance}
@@ -67,6 +72,33 @@ function MapFallback({ title, description }: { title: string; description: strin
     >
       <p className="text-sm font-medium">{title}</p>
       <p className="max-w-xs text-xs text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+function MapLoadingOverlay({ visible, label }: { visible: boolean; label: string }) {
+  return (
+    <div
+      aria-hidden={!visible}
+      className={cn(
+        "pointer-events-none absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-500 ease-out",
+        visible ? "opacity-100" : "opacity-0",
+      )}
+    >
+      <div
+        className={cn(
+          "map-skeleton absolute inset-0",
+          !visible && "[animation-play-state:paused]",
+        )}
+      />
+      <div className="relative flex flex-col items-center gap-3 rounded-2xl border border-border/60 bg-card/85 px-7 py-6 shadow-lg backdrop-blur-sm">
+        <span className="relative flex size-10 items-center justify-center">
+          <span className="map-pulse absolute inset-0 rounded-full bg-primary/10" />
+          <span className="absolute size-12 animate-spin rounded-full border-2 border-primary/15 border-t-primary/80 [animation-duration:1.1s] motion-reduce:animate-none" />
+          <MapPinned className="size-5 text-primary" />
+        </span>
+        <p className="text-xs font-medium tracking-wide text-muted-foreground">{label}</p>
+      </div>
     </div>
   );
 }
@@ -94,6 +126,7 @@ export function LocationMap({
   const anchorNameRef = useRef(anchorName);
   const showInfoWindowRef = useRef(showInfoWindow);
   const [status, setStatus] = useState<MapStatus>("loading");
+  const [tilesReady, setTilesReady] = useState(false);
 
   pointsRef.current = points;
   onSelectRef.current = onSelect;
@@ -107,17 +140,29 @@ export function LocationMap({
 
   useEffect(() => {
     let cancelled = false;
+    let readyTimer: number | undefined;
     loadAmap()
       .then((amap) => {
         if (cancelled || !containerRef.current) {
           return;
         }
         amapRef.current = amap;
-        mapRef.current = new amap.Map(containerRef.current, {
+        const map = new amap.Map(containerRef.current, {
           zoom: 12,
           center: [113.58, 22.27],
           viewMode: "2D",
         });
+        mapRef.current = map;
+        map.on("complete", () => {
+          if (!cancelled) {
+            setTilesReady(true);
+          }
+        });
+        readyTimer = window.setTimeout(() => {
+          if (!cancelled) {
+            setTilesReady(true);
+          }
+        }, TILE_READY_TIMEOUT_MS);
         setStatus("ready");
       })
       .catch((error: unknown) => {
@@ -130,6 +175,7 @@ export function LocationMap({
       });
     return () => {
       cancelled = true;
+      window.clearTimeout(readyTimer);
       markersRef.current.forEach((marker) => marker.setMap(null));
       markersRef.current.clear();
       infoWindowRef.current?.close();
@@ -161,7 +207,7 @@ export function LocationMap({
   }, []);
 
   useEffect(() => {
-    if (status !== "ready") {
+    if (status !== "ready" || !tilesReady) {
       return;
     }
     const map = mapRef.current;
@@ -172,7 +218,10 @@ export function LocationMap({
     markersRef.current.forEach((marker) => marker.setMap(null));
     markersRef.current.clear();
     infoWindowRef.current?.close();
-    infoWindowRef.current = new amap.InfoWindow({ offset: new amap.Pixel(0, -28) });
+    infoWindowRef.current = new amap.InfoWindow({
+      offset: new amap.Pixel(0, -28),
+      autoMove: false,
+    });
     const markers: AMapMarker[] = [];
     for (const point of pointsRef.current) {
       if (point.longitude == null || point.latitude == null) {
@@ -188,12 +237,12 @@ export function LocationMap({
       markers.push(marker);
     }
     if (markers.length > 0) {
-      map.setFitView(markers);
+      map.setFitView(markers, false, [56, 56, 56, 56], FOCUS_ZOOM);
     }
-  }, [status, pointsKey]);
+  }, [status, tilesReady, pointsKey]);
 
   useEffect(() => {
-    if (status !== "ready") {
+    if (status !== "ready" || !tilesReady) {
       return;
     }
     const map = mapRef.current;
@@ -210,14 +259,23 @@ export function LocationMap({
       infoWindow.close();
       return;
     }
-    map.setZoomAndCenter(15, [point.longitude, point.latitude]);
+    const position: [number, number] = [point.longitude, point.latitude];
+    map.setZoomAndCenter(
+      Math.max(FOCUS_ZOOM, map.getZoom()),
+      position,
+      false,
+      CAMERA_DURATION_MS,
+    );
     if (!showInfoWindowRef.current) {
       infoWindow.close();
       return;
     }
     infoWindow.setContent(infoHtml(point, typeLabelRef.current, anchorNameRef.current));
-    infoWindow.open(map, [point.longitude, point.latitude]);
-  }, [status, focusPoiId, pointsKey, typeLabel, anchorName, showInfoWindow]);
+    infoWindow.open(map, position);
+  }, [status, tilesReady, focusPoiId, pointsKey, typeLabel, anchorName, showInfoWindow]);
+
+  const busy = status === "loading" || !tilesReady;
+  const refreshing = !busy && loading;
 
   if (status === "missing-key") {
     return (
@@ -246,12 +304,20 @@ export function LocationMap({
         data-testid="location-map"
         aria-label="地点地图"
       />
-      {status === "loading" || loading ? (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/60 text-xs text-muted-foreground">
-          正在加载地图…
-        </div>
-      ) : null}
-      {status === "ready" && !loading && points.length === 0 ? (
+      <MapLoadingOverlay visible={busy} label="正在加载地图…" />
+      <div
+        aria-hidden={!refreshing}
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center transition-opacity duration-300",
+          refreshing ? "opacity-100" : "opacity-0",
+        )}
+      >
+        <span className="flex items-center gap-2 rounded-full border bg-card/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
+          <LoaderCircle className="size-3.5 animate-spin [animation-duration:0.9s] motion-reduce:animate-none" />
+          正在更新点位…
+        </span>
+      </div>
+      {status === "ready" && !busy && !refreshing && points.length === 0 ? (
         <div className="pointer-events-none absolute inset-x-0 top-2 text-center text-xs text-muted-foreground">
           当前筛选暂无地图点位
         </div>

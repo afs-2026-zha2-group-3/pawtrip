@@ -93,7 +93,7 @@ class LocationQueryService {
 			openingHours = businessField(location, poi, "opentime_today");
 		}
 		return new LocationQueryResponses.NearbyService(location.getPoiId(), location.getName(),
-				location.getAddress(), distanceMeters, openingHours);
+				location.getAddress(), distanceMeters, openingHours, businessField(location, poi, "tel"));
 	}
 
 	private LocationQueryResponses.LocationDetail toDetail(PawtripLocation location) {

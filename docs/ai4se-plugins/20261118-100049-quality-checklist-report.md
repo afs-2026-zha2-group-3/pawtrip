@@ -4,7 +4,7 @@
 **Root:** C:\Users\TANTA6\.qoder\worktrees\app\68339d\pawtrip
 **Stages:** p3
 **Focus:** full-stage
-**Change:** 2026-11-18-add-day-route-planning（REQ-015 行程单当天路线规划）
+**Change:** 2026-11-18-add-day-route-planning（REQ-016 行程单当天路线规划）
 
 ## Summary
 
