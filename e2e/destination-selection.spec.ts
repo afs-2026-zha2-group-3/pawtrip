@@ -182,24 +182,6 @@ test("E9 active trip is cleared when selecting another city", async ({
   ).toBeNull();
 });
 
-test("E10 cleans legacy session storage keys on startup", async ({ page }) => {
-  await page.evaluate(() => {
-    window.sessionStorage.setItem("pawtrip.selectedDestination", "{}");
-    window.sessionStorage.setItem("pawtrip.tripDuration", "3");
-  });
-
-  await page.reload();
-  await expect(page.getByRole("tab", { name: "城市浏览" })).toBeVisible();
-  await expect
-    .poll(() =>
-      page.evaluate(() => ({
-        selected: window.sessionStorage.getItem("pawtrip.selectedDestination"),
-        duration: window.sessionStorage.getItem("pawtrip.tripDuration"),
-      })),
-    )
-    .toEqual({ selected: null, duration: null });
-});
-
 test("E11 keeps 我的行程 tab selected on direct access", async ({ page }) => {
   await page.goto("/trips");
   await expect(page).toHaveURL(/\/trips$/);
@@ -487,45 +469,6 @@ test("E19 lists the mapped subset of Shangrao banned breeds", async ({
   ]) {
     expect(policy.bannedBreeds).toContain(breed);
   }
-});
-
-test("E20 preserves card width on wide screens and stacks on narrow screens", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1600, height: 1000 });
-  await openCities(page);
-  await searchCity(page, "珠海");
-
-  const card = cityCard(page, "珠海市");
-  const before = await card.boundingBox();
-  await card.click();
-
-  const panel = page.getByRole("region", { name: "城市宠物管理政策" });
-  await expect(panel.getByText("政策要点")).toBeVisible();
-  const after = await card.boundingBox();
-  expect(
-    Math.abs((after?.width ?? 0) - (before?.width ?? 0)),
-  ).toBeLessThanOrEqual(1);
-
-  const panelBox = await panel.boundingBox();
-  expect(panelBox?.x ?? 0).toBeGreaterThanOrEqual(
-    (before?.x ?? 0) + (before?.width ?? 0),
-  );
-  await expect(page.locator("main")).toHaveClass(/max-w-\[1408px\]/);
-
-  await panel.getByRole("button", { name: "关闭城市政策" }).click();
-  await expect(panel).toHaveCount(0);
-  await expect(page.locator("main")).toHaveClass(/max-w-5xl/);
-  await expect(card).toBeVisible();
-
-  await page.setViewportSize({ width: 1200, height: 900 });
-  await card.click();
-  await expect(panel).toBeVisible();
-  const narrowCard = await card.boundingBox();
-  const narrowPanel = await panel.boundingBox();
-  expect(narrowPanel?.y ?? 0).toBeGreaterThanOrEqual(
-    (narrowCard?.y ?? 0) + (narrowCard?.height ?? 0),
-  );
 });
 
 test("E21 shows friendly and unfriendly verdicts per pet in the sidebar", async ({

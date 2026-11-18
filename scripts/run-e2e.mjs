@@ -2,7 +2,7 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -16,7 +16,7 @@ const backendPort = 18080;
 const frontendPort = 3100;
 const maxWorkers = 8;
 const requestedWorkers = Number(
-  process.env.PAWTRIP_E2E_WORKERS ?? (process.env.CI ? 2 : 4),
+  process.env.PAWTRIP_E2E_WORKERS ?? (process.env.CI ? 2 : 8),
 );
 const workerCount = Math.min(
   Number.isInteger(requestedWorkers) && requestedWorkers > 0
@@ -36,6 +36,70 @@ function fingerprintFile(path) {
     if (error.code === "ENOENT") return null;
     throw error;
   }
+}
+
+// 后端源码指纹：pom.xml + src 全树。命中缓存时直接 java -jar，跳过 Maven 编译启动。
+async function fingerprintServerSources() {
+  const hash = createHash("sha256");
+  hash.update(readFileSync(join(serverRoot, "pom.xml")));
+  async function walk(directory) {
+    const entries = await readdir(directory, { withFileTypes: true });
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      const entryPath = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        await walk(entryPath);
+      } else {
+        hash.update(entryPath.slice(serverRoot.length));
+        hash.update(await readFile(entryPath));
+      }
+    }
+  }
+  await walk(join(serverRoot, "src"));
+  return hash.digest("hex");
+}
+
+async function findExecutableJar() {
+  const targetDirectory = join(serverRoot, "target");
+  let entries;
+  try {
+    entries = await readdir(targetDirectory);
+  } catch {
+    return null;
+  }
+  const jar = entries.find(
+    (name) => name.endsWith(".jar") && !name.endsWith(".original.jar"),
+  );
+  return jar ? join(targetDirectory, jar) : null;
+}
+
+async function ensureBackendJar() {
+  const fingerprint = await fingerprintServerSources();
+  const cachePath = join(serverRoot, "target", "e2e-jar.sha256");
+  const jarPath = await findExecutableJar();
+  let cached = null;
+  try {
+    cached = await readFile(cachePath, "utf8");
+  } catch {
+    // 缓存缺失时重建。
+  }
+  if (jarPath && cached === fingerprint) {
+    console.log("[e2e] 后端源码未变化，复用已构建 jar。");
+    return jarPath;
+  }
+  const mavenCommand = process.platform === "win32" ? "mvnw.cmd" : "./mvnw";
+  const buildExitCode = await runProcess(
+    mavenCommand,
+    ["-B", "-Dmaven.test.skip=true", "package"],
+    { cwd: serverRoot, shell: process.platform === "win32" },
+  );
+  if (buildExitCode !== 0) {
+    throw new Error(`E2E backend build failed with exit code ${buildExitCode}.`);
+  }
+  const builtJar = await findExecutableJar();
+  if (!builtJar) throw new Error("E2E backend jar missing after package.");
+  await writeFile(cachePath, fingerprint);
+  return builtJar;
 }
 
 function startProcess(command, args, options = {}) {
@@ -252,6 +316,9 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 
 async function main() {
   let exitCode = 1;
+  const startedAt = Date.now();
+  const mark = (label) =>
+    console.log(`[e2e] ${label}（+${((Date.now() - startedAt) / 1000).toFixed(1)}s）`);
   const mainDatabaseBefore = fingerprintFile(mainDatabasePath);
 
   try {
@@ -263,8 +330,12 @@ async function main() {
     console.log(`[e2e] 临时数据库: ${databasePath}`);
     console.log(`[e2e] Playwright workers: ${workerCount}`);
 
-    const mavenCommand = process.platform === "win32" ? "mvnw.cmd" : "./mvnw";
-    const backend = startProcess(mavenCommand, ["-B", "spring-boot:run"], {
+    const backendJar = await ensureBackendJar();
+    mark("后端 jar 就绪");
+    const javaCommand = process.env.JAVA_HOME
+      ? join(process.env.JAVA_HOME, "bin", process.platform === "win32" ? "java.exe" : "java")
+      : "java";
+    const backend = startProcess(javaCommand, ["-jar", backendJar], {
       cwd: serverRoot,
       env: {
         ...process.env,
@@ -273,7 +344,6 @@ async function main() {
         SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "1",
         SPRING_DATASOURCE_URL: `jdbc:sqlite:${databasePath}?foreign_keys=on&busy_timeout=10000`,
       },
-      shell: process.platform === "win32",
     });
 
     const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
@@ -308,6 +378,7 @@ PAWTRIP_API_BASE_URL: `http://127.0.0.1:${backendPort}`,
         "E2E frontend",
       ),
     ]);
+    mark("前后端就绪");
 
     const seedExitCode = await runProcess(
       process.execPath,
@@ -328,6 +399,7 @@ PAWTRIP_API_BASE_URL: `http://127.0.0.1:${backendPort}`,
     if (attractionSeedExitCode !== 0) {
       throw new Error(`E2E attraction seeding failed with exit code ${attractionSeedExitCode}.`);
     }
+    mark("种子数据就绪");
 
     const playwrightArgs = process.argv.slice(2);
     const playwrightEnv = {
@@ -342,6 +414,7 @@ PAWTRIP_API_BASE_URL: `http://127.0.0.1:${backendPort}`,
       ["run", "test:e2e:playwright", "--", ...playwrightArgs],
       { env: playwrightEnv, shell: process.platform === "win32" },
     );
+    mark("Playwright 执行结束");
   } catch (error) {
     console.error(error);
     exitCode = 1;

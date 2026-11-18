@@ -363,6 +363,22 @@ class LocationQueryApiTest {
 	}
 
 	@Test
+	void detailReturnsCoordinatesForSavedLocation() throws Exception {
+		JsonNode body = json(get("/api/locations/poi-zhu-a").with(user("demo").roles("USER")));
+
+		assertThat(body.path("longitude").asDouble()).isEqualTo(113.5);
+		assertThat(body.path("latitude").asDouble()).isEqualTo(22.1);
+	}
+
+	@Test
+	void detailReturnsNullCoordinatesWhenMissing() throws Exception {
+		JsonNode body = json(get("/api/locations/poi-zhu-c").with(user("demo").roles("USER")));
+
+		assertThat(body.path("longitude").isNull()).isTrue();
+		assertThat(body.path("latitude").isNull()).isTrue();
+	}
+
+	@Test
 	void detailReturnsMapCardSummaryFields() throws Exception {
 		PawtripLocation card = new PawtripLocation("poi-card", "卡片酒店", "100000", "hotel", "情侣路",
 				113.5, 22.1, "440402",

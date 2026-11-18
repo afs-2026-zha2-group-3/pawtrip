@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
 const ITEM_CLASS =
-  "rounded-md px-3 py-1 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
+  "rounded-full px-4 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
 const ACTIVE_CLASS = "bg-background text-foreground shadow-sm";
 const INACTIVE_CLASS = "text-muted-foreground hover:text-foreground";
 
@@ -15,7 +15,7 @@ export function TripSectionNav({
   return (
     <nav
       aria-label="行程视图"
-      className="flex w-fit items-center gap-1 rounded-lg bg-muted p-1 print:hidden"
+      className="flex w-fit items-center gap-1 rounded-full bg-muted p-1 print:hidden"
     >
       <Link
         to="/trips"

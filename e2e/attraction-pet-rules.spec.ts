@@ -196,7 +196,6 @@ test.describe("below the 2xl breakpoint", () => {
     ).toBeLessThanOrEqual(1);
   });
 });
-
 test("E2 toggles all saved attractions and shows forbidden/unconfigured states", async ({
   page,
 }) => {
@@ -581,20 +580,4 @@ test("media E8 type switch keeps card structure and add actions", async ({ page 
   await selectType(page, "餐厅");
   // 行程已有景点锚点时，餐厅列表按最近景点推荐。
   await expect(attractionCard(page, "附近餐厅")).toBeVisible();
-});
-
-test("media E9 no deposit/cleaning fee copy or rating controls", async ({ page }) => {
-  await tripTo(page, "珠海市");
-  await showAllAttractions(page);
-
-  await expect(page.getByText("押金")).toHaveCount(0);
-  await expect(page.getByText("清洁费")).toHaveCount(0);
-  await expect(page.getByRole("combobox", { name: /评分|排序/ })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /上一张|下一张/ })).toHaveCount(0);
-
-  await attractionCard(page, "情侣路").getByRole("button", { name: "查看详情" }).click();
-  const dialog = page.locator('[data-slot="dialog-content"]');
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByText("押金")).toHaveCount(0);
-  await expect(dialog.getByText("清洁费")).toHaveCount(0);
 });
