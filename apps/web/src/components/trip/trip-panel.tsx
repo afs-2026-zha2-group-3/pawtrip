@@ -380,7 +380,7 @@ function TripPanelContent({
       className={cn(
         "flex min-w-0 flex-col gap-2 text-card-foreground",
         timeline
-          ? "h-full min-h-0 w-full overflow-hidden border-r border-[#E5E5E5] pr-3"
+          ? "h-full min-h-0 w-full overflow-hidden"
           : embedded
             ? "w-full rounded-xl border bg-card p-3"
             : "z-50 rounded-xl border bg-card shadow-xl [view-transition-name:trip-panel]",
@@ -393,34 +393,17 @@ function TripPanelContent({
     >
       <div className="flex shrink-0 items-start justify-between gap-2">
         {timeline ? (
+          // 地点浏览页左栏面板头部：标题居左、大交通选择器居右；保存状态与行程单入口不再展示。
           <div className="flex w-full min-w-0 items-center justify-between gap-2">
-            <h2 className="text-sm leading-5 font-medium text-paw-ink">每日景点行程</h2>
+            <h2 className="shrink-0 text-sm leading-5 font-medium text-paw-ink">每日景点行程</h2>
             {active ? (
-              <div className="flex shrink-0 items-center gap-1.5">
-                <TransportModePicker
-                  value={active.transportMode}
-                  pet={activePet}
-                  petState={petState}
-                  onChange={(mode) => tripActions.setTransportMode(mode)}
-                  disabled={readOnly}
-                />
-                <span
-                  className={TAG_CLASS}
-                  data-testid="save-status"
-                  data-status={save.status}
-                >
-                  {saveStatusText}
-                </span>
-                {active.planCompleted ? (
-                  <Link
-                    to="/itinerary"
-                    data-testid="itinerary-link"
-                    className="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  >
-                    行程单
-                  </Link>
-                ) : null}
-              </div>
+              <TransportModePicker
+                value={active.transportMode}
+                pet={activePet}
+                petState={petState}
+                onChange={(mode) => tripActions.setTransportMode(mode)}
+                disabled={readOnly}
+              />
             ) : null}
           </div>
         ) : (

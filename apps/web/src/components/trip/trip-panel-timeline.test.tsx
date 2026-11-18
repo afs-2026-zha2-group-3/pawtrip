@@ -162,13 +162,6 @@ afterEach(() => {
 });
 
 describe("timeline panel restores trip-panel hints and transport", () => {
-  it("shows the save status and itinerary entry in the panel header", async () => {
-    renderTimeline({ planCompleted: true });
-
-    expect(await screen.findByTestId("save-status")).toBeTruthy();
-    expect(screen.getByTestId("itinerary-link").textContent).toBe("行程单");
-  });
-
   it("shows the transit notice, day policy reminder and a transport segment between stops", async () => {
     const { container } = renderTimeline({});
 
@@ -227,11 +220,13 @@ describe("timeline panel restores trip-panel hints and transport", () => {
     const trigger = screen.getByTestId("transport-mode-tag");
     expect(trigger.textContent).toContain("大交通 · 高铁");
 
+    // 标题居左、大交通选择器居右，同处面板头部行。
     const heading = screen.getByRole("heading", { name: "每日景点行程" });
+    const header = heading.parentElement!;
+    expect(header.contains(trigger)).toBeTruthy();
     expect(
       heading.compareDocumentPosition(trigger) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(heading.parentElement?.contains(trigger)).toBeTruthy();
   });
 
   it("changes the transport mode from the timeline picker", async () => {
