@@ -30,6 +30,7 @@ function trip(overrides: Partial<Omit<Trip, "startDate">> = {}): Trip {
     totalDays: 1,
     startDate: null,
     transportMode: "drive",
+    planCompleted: false,
     plan: { version: 1, days: [{ day: 1, stops: [] }], unscheduled: [] },
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",

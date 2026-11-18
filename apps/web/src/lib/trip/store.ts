@@ -13,6 +13,7 @@ import {
   type StopContainer,
   type StopRef,
 } from "./plan";
+import { isTripEnded } from "./status";
 import type {
   DraftTrip,
   HydrationStatus,
@@ -31,6 +32,7 @@ const initialCache: TripCache = { city: null, pets: {}, locations: {} };
 export const initialTripState: TripState = {
   draft: null,
   active: null,
+  editing: false,
   cache: initialCache,
   panel: { expanded: false },
   save: { status: "idle" },
@@ -46,6 +48,10 @@ function update(updater: (state: TripState) => TripState): void {
 
 function bumpRevision(state: TripState): Pick<TripState, "saveRevision"> {
   return { saveRevision: state.saveRevision + 1 };
+}
+
+function isLocked(state: TripState): boolean {
+  return state.active != null && isTripEnded(state.active);
 }
 
 function withDay(plan: TripPlan, day: number): TripPlan["days"] {
@@ -73,13 +79,17 @@ export const tripActions = {
   },
   setActive(trip: Trip): void {
     persistActiveTripId(trip.id);
-    update((state) => ({ ...state, active: trip, hydration: "ready" }));
+    update((state) => ({ ...state, active: trip, editing: true, hydration: "ready" }));
+  },
+  setEditing(editing: boolean): void {
+    update((state) => (state.editing === editing ? state : { ...state, editing }));
   },
   clearActive(): void {
     removePersistedActiveTripId();
     update((state) => ({
       ...state,
       active: null,
+      editing: false,
       panel: { expanded: false },
       hydration: state.hydration === "missing" ? "missing" : "ready",
     }));
@@ -91,7 +101,7 @@ export const tripActions = {
   },
   addStop(container: StopContainer, poiId: string): void {
     update((state) => {
-      if (!state.active) return state;
+      if (!state.active || isLocked(state)) return state;
       const plan = state.active.plan;
       if (container === "unscheduled") {
         if (stoppablePoiIds(plan).has(poiId)) return state;
@@ -126,7 +136,7 @@ export const tripActions = {
   },
   moveStop(from: StopRef, to: StopRef): void {
     update((state) => {
-      if (!state.active) return state;
+      if (!state.active || isLocked(state)) return state;
       const plan = state.active.plan;
       const stop = takeStop(plan, from);
       if (!stop) return state;
@@ -144,7 +154,7 @@ export const tripActions = {
   },
   removeStop(ref: StopRef): void {
     update((state) => {
-      if (!state.active) return state;
+      if (!state.active || isLocked(state)) return state;
       const removed = takeStop(state.active.plan, ref);
       if (!removed) return state;
       return {
@@ -156,7 +166,9 @@ export const tripActions = {
   },
   setTransportMode(transportMode: TransportMode): void {
     update((state) => {
-      if (!state.active || state.active.transportMode === transportMode) return state;
+      if (!state.active || isLocked(state) || state.active.transportMode === transportMode) {
+        return state;
+      }
       return {
         ...state,
         active: { ...state.active, transportMode },
@@ -170,7 +182,7 @@ export const tripActions = {
     estimate: ToNextEstimate | null,
   ): void {
     update((state) => {
-      if (!state.active) return state;
+      if (!state.active || isLocked(state)) return state;
       const plan = state.active.plan;
       const stop = scheduledStop(plan, ref);
       if (!stop) return state;
@@ -186,7 +198,7 @@ export const tripActions = {
   },
   backfillStopEstimate(ref: StopRef, estimate: ToNextEstimate): void {
     update((state) => {
-      if (!state.active) return state;
+      if (!state.active || isLocked(state)) return state;
       const plan = state.active.plan;
       const stop = scheduledStop(plan, ref);
       if (!stop || !stop.toNext || stop.toNextEstimate) return state;
@@ -202,7 +214,7 @@ export const tripActions = {
   },
   setPlan(plan: TripPlan): void {
     update((state) =>
-      state.active
+      state.active && !isLocked(state)
         ? { ...state, active: { ...state.active, plan } }
         : state,
     );
@@ -214,7 +226,7 @@ export const tripActions = {
         : state,
     );
   },
-  setPanelExpanded(expanded: boolean): void {
+setPanelExpanded(expanded: boolean): void {
     update((state) => ({ ...state, panel: { expanded } }));
   },
   setSaveStatus(status: SaveStatus, message?: string): void {

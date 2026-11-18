@@ -45,6 +45,7 @@ import {
   useHydrationStatus,
   useTripCity,
 } from "@/lib/trip/selectors";
+import { isTripEnded } from "@/lib/trip/status";
 import { tripActions, tripStore } from "@/lib/trip/store";
 import { cn } from "@/lib/utils";
 import { destinationsQueryOptions } from "@/queries/destinations";
@@ -121,6 +122,13 @@ function ItineraryPage() {
   }, [active, locations]);
 
   useEffect(() => {
+    // 查看行程单即结束编辑态：返回「我的行程」不再显示「编辑中」，需从卡片重新编辑。
+    if (active?.planCompleted) {
+      tripActions.setEditing(false);
+    }
+  }, [active?.id, active?.planCompleted]);
+
+  useEffect(() => {
     requested.current.clear();
   }, [active?.id]);
 
@@ -175,7 +183,7 @@ function ItineraryPage() {
             还没有可查看的行程单
           </h2>
           <p className="max-w-md text-sm text-muted-foreground">
-            先创建并激活一个行程，行程单会按天汇总地点、交通与提醒。
+            先创建或打开一个行程，行程单会按天汇总地点、交通与提醒。
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link to="/cities" className={pillLinkClass(true)}>
@@ -185,6 +193,28 @@ function ItineraryPage() {
               查看我的行程
             </Link>
           </div>
+        </section>
+      </PageFrame>
+    );
+  }
+
+  if (!active.planCompleted) {
+    return (
+      <PageFrame above={<TripSectionNav active="itinerary" />}>
+        <section className="flex flex-col items-center gap-3 rounded-[26px] bg-muted/40 p-8 text-center">
+          <PawPrint
+            aria-hidden="true"
+            className="size-10 text-muted-foreground/40"
+          />
+          <h2 className="text-lg font-medium leading-[21.6px]">
+            尚未创建行程单
+          </h2>
+          <p className="max-w-md text-sm text-muted-foreground">
+            先在计划中选好景点与交通，点击「创建行程单」后再查看。
+          </p>
+          <Link to="/attractions" className={pillLinkClass(true)}>
+            继续规划
+          </Link>
         </section>
       </PageFrame>
     );
@@ -215,6 +245,7 @@ function ItineraryPage() {
     ? getRuleForMode(active.transportMode)
     : null;
   const trip = active;
+  const ended = isTripEnded(active);
 
   async function exportImages() {
     setImageExportError(null);
@@ -239,13 +270,20 @@ function ItineraryPage() {
   return (
     <PageFrame above={<TripSectionNav active="itinerary" />}>
 
-      <header className="flex flex-wrap items-end justify-between gap-3">
+<header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h1 className={petCardTitleClass}>行程单</h1>
           <p className="text-base font-medium text-foreground">{active.name}</p>
           <p className="text-sm text-muted-foreground">
             {cityName} · {meta}
           </p>
+          {ended ? (
+            <p role="status" className="text-sm text-amber-600">
+              该行程
+              {endDate ? `已于 ${formatTripDate(endDate) ?? endDate} ` : "已"}
+              结束，仅可查看与导出，无法继续编辑。
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap justify-end gap-3 print:hidden">

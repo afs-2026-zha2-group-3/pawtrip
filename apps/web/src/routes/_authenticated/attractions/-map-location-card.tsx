@@ -6,7 +6,11 @@ import { PolicyTags } from "@/components/trip/policy-tags";
 import { petRulesApplyTo } from "@/lib/attraction-pet-rules";
 import { formatDistanceKm } from "@/lib/distance";
 import { matchLocationPolicyForType } from "@/lib/trip/policy-match";
-import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
+import {
+  useActiveTrip,
+  useActiveTripReadOnly,
+  usePolicySubjects,
+} from "@/lib/trip/selectors";
 import { tripActions } from "@/lib/trip/store";
 import { cn } from "@/lib/utils";
 import {
@@ -77,6 +81,7 @@ export function MapLocationCard({
   onClose: () => void;
 }) {
   const active = useActiveTrip();
+  const readOnly = useActiveTripReadOnly();
   const subjects = usePolicySubjects();
   const [tab, setTab] = useState<"detail" | "policy">("detail");
   const detail = useQuery({
@@ -142,6 +147,7 @@ export function MapLocationCard({
         totalDays={active.totalDays}
         onSelectDay={(day) => tripActions.addStop(day, poiId)}
         onSelectUnscheduled={() => tripActions.addStop("unscheduled", poiId)}
+        disabled={readOnly}
       />
     </div>
   ) : null;
