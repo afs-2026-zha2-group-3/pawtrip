@@ -164,6 +164,14 @@ function TripPanelContent({
     : petsQuery.isError
       ? "error"
       : "ready";
+  const saveStatusText =
+    save.status === "saving"
+      ? "保存中…"
+      : save.status === "saved"
+        ? "已保存"
+        : save.status === "error"
+          ? "保存失败"
+          : "已同步";
 
   const rows = useMemo<PanelRow[]>(() => {
     if (!active) return [];
@@ -234,6 +242,8 @@ function TripPanelContent({
         poiId: stop.poiId,
         name: locations[stop.poiId]?.name ?? stop.poiId,
         sizeWarning: null,
+        connectPrev: false,
+        connectNext: false,
       });
     });
     return next;
@@ -386,13 +396,31 @@ function TripPanelContent({
           <div className="flex w-full min-w-0 items-center justify-between gap-2">
             <h2 className="text-sm leading-5 font-medium text-paw-ink">每日景点行程</h2>
             {active ? (
-              <TransportModePicker
-                value={active.transportMode}
-                pet={activePet}
-                petState={petState}
-                onChange={(mode) => tripActions.setTransportMode(mode)}
-                disabled={readOnly}
-              />
+              <div className="flex shrink-0 items-center gap-1.5">
+                <TransportModePicker
+                  value={active.transportMode}
+                  pet={activePet}
+                  petState={petState}
+                  onChange={(mode) => tripActions.setTransportMode(mode)}
+                  disabled={readOnly}
+                />
+                <span
+                  className={TAG_CLASS}
+                  data-testid="save-status"
+                  data-status={save.status}
+                >
+                  {saveStatusText}
+                </span>
+                {active.planCompleted ? (
+                  <Link
+                    to="/itinerary"
+                    data-testid="itinerary-link"
+                    className="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    行程单
+                  </Link>
+                ) : null}
+              </div>
             ) : null}
           </div>
         ) : (
@@ -410,13 +438,7 @@ function TripPanelContent({
                   disabled={readOnly}
                 />
                 <span className={TAG_CLASS} data-testid="save-status" data-status={save.status}>
-                  {save.status === "saving"
-                    ? "保存中…"
-                    : save.status === "saved"
-                      ? "已保存"
-                      : save.status === "error"
-                        ? "保存失败"
-                        : "已同步"}
+                  {saveStatusText}
                 </span>
                 {active?.planCompleted ? (
                   <Link
@@ -644,13 +666,23 @@ function TripPanelContent({
                   }
                   if (row.kind === "segment") {
                     return (
-                      <TransportSegmentRow
-                        tripId={active!.id}
-                        stopRef={{ container: row.container, index: row.index }}
-                        segment={row.segment}
-                        transportMode={active!.transportMode}
-                        compact={timeline}
-                      />
+                      <div className={cn(timeline && "relative")}>
+                        {timeline ? (
+                          <span
+                            aria-hidden="true"
+                            data-testid="timeline-rail"
+                            className="pointer-events-none absolute -top-[6px] -bottom-[6px] left-[9px] z-0 w-[2px] bg-paw-accent"
+                          />
+                        ) : null}
+                        <div className={cn(timeline && "ml-7")}>
+                          <TransportSegmentRow
+                            tripId={active!.id}
+                            stopRef={{ container: row.container, index: row.index }}
+                            segment={row.segment}
+                            transportMode={active!.transportMode}
+                          />
+                        </div>
+                      </div>
                     );
                   }
                   // 行容器为横向 flex：纵向包裹使警示独占景点下方一行

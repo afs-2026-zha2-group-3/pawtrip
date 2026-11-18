@@ -87,8 +87,9 @@ test("timeline panel shows transit notice, leash reminder and a transport segmen
   const segments = panel.getByTestId("transport-segment");
   await expect(segments).toHaveCount(1);
   await expect(panel.getByLabel("选择途内交通方式", { exact: true })).toBeVisible();
-  // US-73：未选择方式时不显示耗时
+  // CI 无高德 Key：默认打车估算失败，段行展示兜底文案而非耗时。
   await expect(panel.getByText(/约 \d+ 分钟/)).toHaveCount(0);
+  await expect(panel.getByText("估算暂不可用")).toBeVisible();
 
   // 顺序与行程面板一致：公交提示 → 政策提醒 → 首个景点 → 交通段 → 第二个景点
   const notice = panel.getByTestId("transit-pet-notice");
@@ -123,7 +124,8 @@ test("timeline rail connects both stop dots through taxi and walk segments", asy
   const panel = page.getByTestId("trip-panel");
   const firstStop = panel.locator('[data-stop-id="d1:0:e2e-zhu-a"]');
   const secondStop = panel.locator('[data-stop-id="d1:1:e2e-zhu-b"]');
-  const select = panel.getByLabel("选择途内交通方式", { exact: true });
+  const segment = panel.getByTestId("transport-segment").first();
+  const select = segment.getByRole("combobox", { name: "选择途内交通方式" });
 
   const assertRailConnected = async () => {
     const first = (await firstStop.boundingBox())!;
@@ -150,12 +152,12 @@ test("timeline rail connects both stop dots through taxi and walk segments", asy
     }
   };
 
-  await expect(select).toHaveValue("drive");
+  await expect(segment.getByTestId("segment-mode")).toHaveText("打车");
   await expect(panel.getByText(TAXI_PET_HINT)).toBeVisible();
   await assertRailConnected();
-  await panel.screenshot({ path: "test-results/timeline-rail-taxi.png" });
 
-  await select.selectOption("walk");
-  await expect(select).toHaveValue("walk");
+  await select.click();
+  await page.getByRole("option", { name: "步行", exact: true }).click();
+  await expect(segment.getByTestId("segment-mode")).toHaveText("步行");
   await assertRailConnected();
 });
