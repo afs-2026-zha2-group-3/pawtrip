@@ -92,7 +92,7 @@ test.describe("app shell scrolling", () => {
     });
 
     await openTrips(page);
-    await tripCard(page, tripName).getByRole("button", { name: "激活" }).click();
+    await tripCard(page, tripName).getByRole("button", { name: "编辑" }).click();
     await expect(page.getByTestId("trip-panel")).toBeVisible();
     await page.getByRole("tab", { name: "地点浏览" }).click();
     await expect(page).toHaveURL(/\/attractions$/);

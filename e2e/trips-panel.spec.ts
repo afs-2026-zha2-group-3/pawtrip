@@ -156,6 +156,10 @@ test("groups trips by status, filters them, and supports editing and delete", as
   await expect(page).toHaveURL(/\/itinerary$/);
   await openTrips(page);
   await expect(tripCard(page, "已完成行程")).not.toContainText("编辑中");
+  // 浮动行程面板固定在左下角，先把卡片滚到视口中央再点击，避免被面板遮挡。
+  await tripCard(page, "已完成行程").evaluate((element) =>
+    element.scrollIntoView({ block: "center" }),
+  );
   await tripCard(page, "已完成行程").getByRole("button", { name: "编辑" }).click();
   await expect(page).toHaveURL(/\/attractions$/);
 
