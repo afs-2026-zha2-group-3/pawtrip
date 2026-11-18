@@ -316,7 +316,11 @@ test("E15 selecting a city shows its policy in the sidebar", async ({ page }) =>
   ).toBeVisible();
   await expect(page.getByText("禁养犬种名单").first()).toBeVisible();
   await expect(page.locator("#banned-breeds")).toBeInViewport();
-  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  expect(
+    await page
+      .getByTestId("app-scroll")
+      .evaluate((element) => element.scrollTop),
+  ).toBeGreaterThan(0);
   await expect(
     page.getByText("仅列出部分示例，完整名单请查阅当地政府通告。"),
   ).toBeVisible();
