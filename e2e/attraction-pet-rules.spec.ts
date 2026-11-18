@@ -14,6 +14,10 @@ function attractionCard(page: Page, name: string) {
   });
 }
 
+function locationCardGrid(page: Page) {
+  return attractionCard(page, "情侣路").locator("xpath=..");
+}
+
 async function openAttractions(page: Page) {
   await page.getByRole("tab", { name: "地点浏览" }).click();
   await expect(page).toHaveURL(/\/attractions$/);
@@ -72,6 +76,126 @@ test("E1 trip city shows pet-friendly attractions", async ({ page }) => {
   await expect(attractionCard(page, "珠海某酒店")).toHaveCount(0);
 });
 
+test.describe("agent panel layout integration", () => {
+  test.use({
+    viewport: { width: 1920, height: 1080 },
+    reducedMotion: "reduce",
+  });
+
+  test("collapsed agent panel shows three card columns and a flush-right map", async ({
+    page,
+  }) => {
+    await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
+    await showAllAttractions(page);
+
+    const grid = locationCardGrid(page);
+    const cards = grid.locator('[data-slot="card"]');
+    await expect(cards).toHaveCount(5);
+
+    const [first, second, third] = await Promise.all([
+      cards.nth(0).boundingBox(),
+      cards.nth(1).boundingBox(),
+      cards.nth(2).boundingBox(),
+    ]);
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    expect(third).not.toBeNull();
+    expect(Math.abs(first!.y - third!.y)).toBeLessThanOrEqual(1);
+    expect(third!.x).toBeGreaterThan(second!.x + second!.width - 1);
+
+    await expect(page.getByTestId("ai-chatbox-slot")).toHaveCount(0);
+
+    const layout = await page.getByTestId("attractions-layout").boundingBox();
+    const map = await page.getByTestId("location-map-placeholder").boundingBox();
+    expect(layout).not.toBeNull();
+    expect(map).not.toBeNull();
+    expect(
+      Math.abs(map!.x + map!.width - (layout!.x + layout!.width)),
+    ).toBeLessThanOrEqual(1);
+  });
+
+  test("expanded agent panel keeps two card columns and leaves map space", async ({
+    page,
+  }) => {
+    await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
+    await showAllAttractions(page);
+
+    const cards = locationCardGrid(page).locator('[data-slot="card"]');
+    await expect(cards).toHaveCount(5);
+
+    await page.getByTestId("agent-fab").click();
+    await expect(page.getByTestId("agent-panel")).toBeVisible();
+
+    const [first, second, third] = await Promise.all([
+      cards.nth(0).boundingBox(),
+      cards.nth(1).boundingBox(),
+      cards.nth(2).boundingBox(),
+    ]);
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    expect(third).not.toBeNull();
+    expect(Math.abs(first!.y - second!.y)).toBeLessThanOrEqual(1);
+    expect(third!.y).toBeGreaterThanOrEqual(first!.y + first!.height - 1);
+
+    const map = await page.getByTestId("location-map-placeholder").boundingBox();
+    const panel = await page.getByTestId("agent-panel").boundingBox();
+    expect(map).not.toBeNull();
+    expect(panel).not.toBeNull();
+    expect(map!.x + map!.width).toBeLessThanOrEqual(panel!.x - 8);
+    await expect(page.getByRole("checkbox", { name: "显示全部地点" })).toBeChecked();
+
+    await page.getByRole("button", { name: "关闭 Agent 面板" }).click();
+    await expect(page.getByTestId("agent-panel")).toHaveCount(0);
+    await expect(page.getByRole("checkbox", { name: "显示全部地点" })).toBeChecked();
+
+    const layout = await page.getByTestId("attractions-layout").boundingBox();
+    const restoredMap = await page.getByTestId("location-map-placeholder").boundingBox();
+    const restoredThird = await cards.nth(2).boundingBox();
+    expect(layout).not.toBeNull();
+    expect(restoredMap).not.toBeNull();
+    expect(restoredThird).not.toBeNull();
+    expect(Math.abs(first!.y - restoredThird!.y)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(
+        restoredMap!.x + restoredMap!.width - (layout!.x + layout!.width),
+      ),
+    ).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe("below the 2xl breakpoint", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  test("the agent panel does not reserve space", async ({ page }) => {
+    await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
+    await showAllAttractions(page);
+
+    const cards = locationCardGrid(page).locator('[data-slot="card"]');
+    await expect(cards).toHaveCount(5);
+
+    await page.getByTestId("agent-fab").click();
+    await expect(page.getByTestId("agent-panel")).toBeVisible();
+
+    const [first, second, third] = await Promise.all([
+      cards.nth(0).boundingBox(),
+      cards.nth(1).boundingBox(),
+      cards.nth(2).boundingBox(),
+    ]);
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    expect(third).not.toBeNull();
+    expect(Math.abs(first!.y - second!.y)).toBeLessThanOrEqual(1);
+    expect(third!.y).toBeGreaterThanOrEqual(first!.y + first!.height - 1);
+
+    const layout = await page.getByTestId("attractions-layout").boundingBox();
+    const map = await page.getByTestId("location-map-placeholder").boundingBox();
+    expect(layout).not.toBeNull();
+    expect(map).not.toBeNull();
+    expect(
+      Math.abs(map!.x + map!.width - (layout!.x + layout!.width)),
+    ).toBeLessThanOrEqual(1);
+  });
+});
 test("E2 toggles all saved attractions and shows forbidden/unconfigured states", async ({
   page,
 }) => {

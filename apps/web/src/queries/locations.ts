@@ -68,11 +68,14 @@ export interface LocationBrowseDetail {
   longitude?: number | null;
   latitude?: number | null;
   regionCode: string | null;
+  typeName?: string | null;
+  regionName?: string | null;
   petPolicies: PetPolicies;
   coverPhotoUrl: string | null;
   rating: string | null;
   keytag?: string | null;
   businessArea?: string | null;
+  openingHours?: string | null;
   openTime?: string | null;
   tel?: string | null;
 }

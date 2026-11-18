@@ -31,11 +31,16 @@ export function cancelScheduledTripSave(): void {
   }
 }
 
-export async function flushTripSave(): Promise<void> {
+export interface TripSaveOutcome {
+  ok: boolean;
+  status?: number;
+}
+
+export async function flushTripSave(): Promise<TripSaveOutcome> {
   const state = tripStore.state;
   const active = state.active;
   if (!active) {
-    return;
+    return { ok: true };
   }
   const plan = normalizePlan(active.plan, active.totalDays);
   if (plan !== active.plan) {
@@ -53,7 +58,7 @@ export async function flushTripSave(): Promise<void> {
       transportMode: active.transportMode,
     });
     if (version !== requestVersion) {
-      return;
+      return { ok: true };
     }
     if (tripStore.state.saveRevision === revisionAtStart) {
       tripActions.setActive(updated);
@@ -61,15 +66,17 @@ export async function flushTripSave(): Promise<void> {
     if (!timer) {
       tripActions.setSaveStatus("saved");
     }
+    return { ok: true };
   } catch (error) {
     if (version !== requestVersion) {
-      return;
+      return { ok: true };
     }
     if (error instanceof ApiError && error.status === 400) {
       await restoreFromServer(active.id, version);
-      return;
+      return { ok: false, status: 400 };
     }
     tripActions.setSaveStatus("error", "保存失败，请稍后重试。");
+    return { ok: false, status: error instanceof ApiError ? error.status : undefined };
   }
 }
 
