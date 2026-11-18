@@ -25,6 +25,33 @@ type RouteFailure = "none" | "partial" | "all";
 const DRIVE_COLOR = "#f97316";
 const WALK_COLOR = "#2563eb";
 
+function escapeHtml(value: string) {
+  return value.replace(
+    /[&<>"']/g,
+    (char) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[char] ?? char,
+  );
+}
+
+function stopLabelContent(stop: { number: number; name: string }) {
+  return [
+    '<div style="display:flex;align-items:center;gap:4px;white-space:nowrap;">',
+    '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 4px;border-radius:6px;background:#2563eb;color:#ffffff;font-size:12px;font-weight:600;">',
+    String(stop.number),
+    "</span>",
+    '<span style="padding:2px 8px;border:1px solid #d4d4d8;border-radius:9999px;background:#ffffff;color:#18181b;font-size:12px;">',
+    escapeHtml(stop.name),
+    "</span>",
+    "</div>",
+  ].join("");
+}
+
 function RouteFallback({ title }: { title: string }) {
   return (
     <div
@@ -124,7 +151,7 @@ export function DayRouteMap({ route }: { route: DayRoute }) {
         position: [stop.longitude, stop.latitude],
         title: stop.name,
         label: {
-          content: String(stop.number),
+          content: stopLabelContent(stop),
           direction: "center",
         },
       });
