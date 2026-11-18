@@ -3,6 +3,8 @@ import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { createQueryClient } from "./lib/query-client";
 import { routeTree } from "./routeTree.gen";
 
+// Temporary marker used to verify the docs-only E2E guard (PR to be closed).
+
 export function getRouter() {
   const queryClient = createQueryClient();
 
