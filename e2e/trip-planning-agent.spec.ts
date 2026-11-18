@@ -28,7 +28,7 @@ function creationDialog(page: Page) {
 async function openTripsAndActivate(page: Page, name: string) {
   await openTrips(page);
   const card = tripCard(page, name);
-  await card.getByRole("button", { name: "激活" }).click();
+  await card.getByRole("button", { name: "激活", exact: true }).click();
   await expect(card).toContainText("激活中");
 }
 
