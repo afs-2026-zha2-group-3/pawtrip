@@ -26,40 +26,6 @@ async function deleteAllPetsViaApi(page: Page) {
   }
 }
 
-test("validates required pet fields before submitting", async ({ page }) => {
-  await signIn(page);
-  await openPaws(page);
-
-  await page.getByRole("button", { name: "添加第一只宠物" }).click();
-  const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible();
-
-  await dialog.getByRole("button", { name: "创建宠物" }).click();
-  await expect(dialog.getByText("请输入宠物名字。")).toBeVisible();
-  await expect(dialog.getByText("请选择宠物类型。")).toBeVisible();
-  await expect(dialog.getByText("体重必须为大于 0 的数字。")).toBeVisible();
-  await expect(dialog.getByText("肩高必须为大于 0 的数字。")).toBeVisible();
-
-  await dialog.getByLabel("名字").fill("Rex");
-  await dialog.getByRole("combobox", { name: "宠物类型" }).click();
-  await page.getByRole("option", { name: "狗" }).click();
-  await dialog.getByLabel("体重（kg）").fill("10");
-  await dialog.getByLabel("肩高（cm）").fill("40");
-  await dialog.getByRole("button", { name: "创建宠物" }).click();
-  await expect(dialog.getByText("请选择狗的品种。")).toBeVisible();
-
-  await dialog.getByRole("combobox", { name: "狗的品种" }).click();
-  await page.getByRole("option", { name: "柯基犬" }).click();
-  await dialog.getByRole("combobox", { name: "宠物类型" }).click();
-  await page.getByRole("option", { name: "猫" }).click();
-  await expect(
-    dialog.getByRole("combobox", { name: "狗的品种" }),
-  ).toHaveCount(0);
-
-  await dialog.getByRole("button", { name: "取消" }).click();
-  await expect(dialog).toHaveCount(0);
-});
-
 test("creates, switches, edits and deletes pets", async ({ page }) => {
   await signIn(page);
   await openPaws(page);

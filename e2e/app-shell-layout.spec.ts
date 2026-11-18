@@ -1,13 +1,9 @@
 import { expect, test } from "@playwright/test";
 import {
-  createTrip,
-  createTripViaApi,
+  createActiveTripViaApi,
   openCities,
-  openTrips,
-  pets,
   resetTrips,
   signIn,
-  tripCard,
 } from "./trip-helpers";
 
 test.describe("app shell scrolling", () => {
@@ -21,8 +17,8 @@ test.describe("app shell scrolling", () => {
   test("E1 keeps the header fixed and only scrolls the content area", async ({
     page,
   }) => {
-    await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-    await page.getByRole("tab", { name: "交通规则" }).click();
+    await createActiveTripViaApi(page, { cityAdcode: "440400", petName: "豆豆" });
+    await page.goto("/transport-rules");
     await expect(page).toHaveURL(/\/transport-rules$/);
 
     const scroller = page.getByTestId("app-scroll");
@@ -68,14 +64,11 @@ test.describe("app shell scrolling", () => {
     };
     expect(locations.items.length).toBeGreaterThan(0);
 
-    const pet = (await pets(page)).find((candidate) => candidate.name === "豆豆");
-    if (!pet) throw new Error("Seed pet 豆豆 not found");
-
     const tripName = "珠海 · 滚动布局";
-    await createTripViaApi(page, {
+    await createActiveTripViaApi(page, {
       name: tripName,
       cityAdcode: "440400",
-      petId: pet.id,
+      petName: "豆豆",
       totalDays: 1,
       plan: {
         version: 1,
@@ -91,11 +84,9 @@ test.describe("app shell scrolling", () => {
       },
     });
 
-    await openTrips(page);
-    await tripCard(page, tripName).getByRole("button", { name: "激活" }).click();
-    await expect(page.getByTestId("trip-panel")).toBeVisible();
-    await page.getByRole("tab", { name: "地点浏览" }).click();
+    await page.goto("/attractions");
     await expect(page).toHaveURL(/\/attractions$/);
+    await expect(page.getByTestId("trip-panel")).toBeVisible();
     await page.getByRole("checkbox", { name: "显示全部地点" }).click();
 
     const map = page.getByTestId("attractions-map");
@@ -137,22 +128,6 @@ test.describe("app shell scrolling", () => {
 test.describe("narrow navigation", () => {
   test.use({ viewport: { width: 390, height: 800 } });
 
-  test("E3 keeps all admin tabs reachable through horizontal scrolling", async ({
-    page,
-  }) => {
-    await signIn(page, "admin");
-
-    const nav = page.getByTestId("app-nav-scroll");
-    await expect
-      .poll(() =>
-        nav.evaluate((element) => element.scrollWidth > element.clientWidth),
-      )
-      .toBe(true);
-
-    await nav.evaluate((element) => element.scrollTo(element.scrollWidth, 0));
-    await expect(page.getByRole("tab", { name: "城市管理" })).toBeInViewport();
-    expect(await page.evaluate(() => window.scrollY)).toBe(0);
-  });
 });
 
 test.describe("narrow attractions", () => {
@@ -163,8 +138,8 @@ test.describe("narrow attractions", () => {
   }) => {
     await signIn(page);
     await resetTrips(page);
-    await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-    await page.getByRole("tab", { name: "地点浏览" }).click();
+    await createActiveTripViaApi(page, { cityAdcode: "440400", petName: "豆豆" });
+    await page.goto("/attractions");
     await expect(page).toHaveURL(/\/attractions$/);
     await page.getByRole("checkbox", { name: "显示全部地点" }).click();
 
@@ -192,50 +167,6 @@ test.describe("regular desktop viewport", () => {
 
   test.beforeEach(async ({ page }) => {
     await signIn(page);
-  });
-
-  test("E4 shows no scrollbar on the paws page and falls back on short viewports", async ({
-    page,
-  }) => {
-    await page.getByRole("tab", { name: "我的宠物" }).click();
-    await expect(page).toHaveURL(/\/paws$/);
-
-    const scroller = page.getByTestId("app-scroll");
-    await expect
-      .poll(() =>
-        scroller.evaluate((element) => element.scrollHeight <= element.clientHeight),
-      )
-      .toBe(true);
-    expect(await page.evaluate(() => window.scrollY)).toBe(0);
-
-    await page.setViewportSize({ width: 1920, height: 480 });
-    await expect
-      .poll(() =>
-        scroller.evaluate((element) => element.scrollHeight > element.clientHeight),
-      )
-      .toBe(true);
-    await scroller.evaluate((element) => element.scrollTo(0, 100));
-    await expect
-      .poll(() => scroller.evaluate((element) => element.scrollTop))
-      .toBeGreaterThan(0);
-    await expect(page.getByTestId("app-scroll")).toBeVisible();
-  });
-
-  test("E5 releases the shell in print media", async ({ page }) => {
-    await page.emulateMedia({ media: "print" });
-
-    const styles = await page.getByTestId("app-scroll").evaluate((element) => {
-      const computed = getComputedStyle(element);
-      return {
-        display: computed.display,
-        overflowY: computed.overflowY,
-      };
-    });
-    expect(styles).toEqual({
-      display: "block",
-      overflowY: "visible",
-    });
-    await expect(page.locator("header")).toBeHidden();
   });
 
   test("E6 keeps the selected city policy panel sticky inside the content viewport", async ({

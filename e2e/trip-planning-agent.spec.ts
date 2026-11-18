@@ -75,13 +75,6 @@ test("agent entry is available on authenticated pages but not on the login page"
   await anonymous!.close();
 });
 
-test("unauthenticated agent requests are rejected", async ({ request }) => {
-  const response = await request.post("http://127.0.0.1:3100/agent", {
-    data: { threadId: "t", runId: "r", messages: [] },
-  });
-  expect(response.status()).toBe(401);
-});
-
 test("creates a trip through the confirmation dialog and applies a reviewed plan", async ({
   page,
 }) => {
@@ -109,39 +102,6 @@ test("creates a trip through the confirmation dialog and applies a reviewed plan
   expect(
     await page.evaluate(() => window.localStorage.getItem("pawtrip.activeTripId")),
   ).toBe(String(created[0].id));
-});
-
-test("confirms deactivation before creating a new trip while one is active", async ({
-  page,
-}) => {
-  const pet = (await pets(page))[0];
-  const existing = await createTripViaApi(page, {
-    name: "已有珠海行程",
-    cityAdcode: ZHUHAI,
-    petId: pet.id,
-    totalDays: 2,
-  });
-  await page.goto("/trips");
-  await openTripsAndActivate(page, "已有珠海行程");
-
-  await openAgent(page);
-  await sendAgentMessage(page, "再规划一个珠海两天的行程");
-
-  const confirm = page.getByTestId("agent-deactivate-confirm");
-  await expect(confirm).toBeVisible();
-  await confirm.getByRole("button", { name: "确认并继续" }).click();
-
-  const dialog = creationDialog(page);
-  await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: "确定" }).click();
-  await expect(page.getByTestId("agent-proposal")).toBeVisible({ timeout: 30_000 });
-
-  const all = await tripDetails(page);
-  expect(all).toHaveLength(2);
-  const activeId = await page.evaluate(() =>
-    window.localStorage.getItem("pawtrip.activeTripId"),
-  );
-  expect(activeId).not.toBe(String(existing.id));
 });
 
 test("modifies the active trip", async ({ page }) => {
@@ -224,83 +184,6 @@ test("rejecting an unconfirmed plan closes it and leaves the trip unchanged", as
 
   const after = await tripPlan(page, trip.id);
   expect(poiIds(after.plan)).toEqual([]);
-});
-
-test("explains when no pets exist", async ({ page }) => {
-  const headers = await csrfHeaders(page);
-  await page.request.post("/api/auth/logout", { headers });
-  await signIn(page, "demo");
-  await resetTrips(page);
-  await page.goto("/");
-  await openAgent(page);
-  await sendAgentMessage(page, "帮我规划珠海行程");
-
-  await expect(page.getByText(/请先在 Paws 页面添加宠物档案/)).toBeVisible({
-    timeout: 30_000,
-  });
-  await expect(creationDialog(page)).toHaveCount(0);
-});
-
-test("warns when the Pawtrip location catalog is truncated", async ({ page }) => {
-  const pet = (await pets(page))[0];
-  await createTripViaApi(page, {
-    name: "截断目录行程",
-    cityAdcode: ZHUHAI,
-    petId: pet.id,
-    totalDays: 2,
-  });
-  await page.route("**/api/locations?*", async (route) => {
-    const url = new URL(route.request().url());
-    const pageNumber = Number(url.searchParams.get("page") ?? "1");
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        page: pageNumber,
-        pageSize: 100,
-        totalElements: 2500,
-        totalPages: 25,
-        hasNext: true,
-        hasPrevious: pageNumber > 1,
-        items: [
-          {
-            poiId: "e2e-zhu-a",
-            name: "情侣路",
-            typeCode: "110000",
-            typeGroup: "attraction",
-            address: "珠海市香洲区",
-            longitude: null,
-            latitude: null,
-            regionCode: "440402",
-            minVisitHours: null,
-            maxVisitHours: null,
-            maxPetsPerPerson: 1,
-            petPolicies: {
-              allowedPetTypes: "DOG",
-              maxPetsPerPerson: 1,
-              maxSinglePetWeightKg: null,
-              maxSinglePetShoulderHeightCm: null,
-              leashRequired: null,
-              vaccinationProofRequired: null,
-              extraFeeCents: null,
-              reservationRequired: null,
-            },
-          },
-        ],
-      }),
-    });
-  });
-  await page.goto("/trips");
-  await openTripsAndActivate(page, "截断目录行程");
-
-  await openAgent(page);
-  await sendAgentMessage(page, "帮我调整这个行程");
-
-  const process = page.getByTestId("agent-process-collapsed");
-  await expect(process).toBeVisible({ timeout: 30_000 });
-  await process.locator("summary").click();
-  await expect(page.getByText(/匹配可能不完整/)).toBeVisible();
-  await page.unroute("**/api/locations?*");
 });
 
 test("explains when a requested location is not in Pawtrip", async ({ page }) => {

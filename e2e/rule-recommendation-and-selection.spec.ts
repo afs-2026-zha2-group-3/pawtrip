@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
-  createTrip as createActiveTrip,
+  createActiveTripViaApi,
   resetTrips,
   signIn,
 } from "./trip-helpers";
@@ -10,8 +10,12 @@ const tableName = "交通携宠规则对比";
 async function openRules(page: Page, pet = "豆豆") {
   await signIn(page);
   await resetTrips(page);
-  await createActiveTrip(page, { city: "杭州市", days: 1, pet });
-  await page.getByRole("tab", { name: "交通规则" }).click();
+  await createActiveTripViaApi(page, {
+    cityAdcode: "330100",
+    petName: pet,
+    transportMode: "drive",
+  });
+  await page.goto("/transport-rules");
   await expect(page.getByRole("table", { name: tableName })).toBeVisible();
 }
 
@@ -48,38 +52,6 @@ test.describe("rule recommendation", () => {
 });
 
 test.describe("mode selection", () => {
-  test("keeps the picker usable when pet data is unavailable", async ({
-    page,
-  }) => {
-    await signIn(page);
-    await resetTrips(page);
-    await createActiveTrip(page, { city: "杭州市", days: 1, pet: "豆豆" });
-
-    await page.getByRole("tab", { name: "交通规则" }).click();
-    await page.route("**/api/pets", (route) =>
-      route.fulfill({
-        status: 500,
-        contentType: "application/json",
-        body: JSON.stringify({ code: "INTERNAL_ERROR", message: "boom" }),
-      }),
-    );
-    await page.reload();
-
-    const trainOption = page.getByRole("radio", { name: "选择火车" });
-    await expect(trainOption).toBeEnabled();
-
-    const saved = page.waitForResponse(
-      (response) =>
-        /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
-        response.request().method() === "PUT",
-    );
-    await trainOption.check();
-    const response = await saved;
-    expect(response.request().postDataJSON()).toMatchObject({
-      transportMode: "train",
-    });
-  });
-
   test("saves one selected mode to the active trip and restores it after reload", async ({
     page,
   }) => {

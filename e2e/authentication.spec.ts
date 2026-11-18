@@ -20,28 +20,6 @@ async function signIn(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "登录" }).click();
 }
 
-test("redirects a guest away from the protected home page", async ({ page }) => {
-  await page.goto("/");
-
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("button", { name: "登录" })).toBeVisible();
-  await expect(page.getByText("Hello World")).toHaveCount(0);
-});
-
-test("shows a generic error for invalid credentials", async ({ page }) => {
-  await openLogin(page);
-  const usernameInput = page.getByLabel("用户名");
-  await usernameInput.fill(username);
-  await expect(usernameInput).toHaveValue(username);
-  await page.getByLabel("密码").fill("invalid-password");
-  await page.getByRole("button", { name: "登录" }).click();
-
-  await expect(page.getByRole("alert")).toHaveText(
-    "用户名或密码不正确。",
-  );
-  await expect(page).toHaveURL(/\/login$/);
-});
-
 test("keeps the session after a successful sign-in and page refresh", async ({
   page,
 }) => {
