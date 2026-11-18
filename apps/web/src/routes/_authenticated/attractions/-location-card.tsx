@@ -145,7 +145,7 @@ export function LocationCard({
         ) : null}
       </div>
       <div
-        className="flex flex-wrap items-center justify-between gap-2"
+        className="mt-auto flex flex-wrap items-center justify-between gap-2"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center gap-1.5">
