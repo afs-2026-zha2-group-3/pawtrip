@@ -83,7 +83,11 @@ function jsonResponse(data: unknown, status = 200): Response {
   });
 }
 
-function tripWith(plan: TripPlan, transportMode: TransportMode | null = null): Trip {
+function tripWith(
+  plan: TripPlan,
+  transportMode: TransportMode | null = null,
+  planCompleted = false,
+): Trip {
   return {
     id: 7,
     name: "珠海 · 3天 · 毛毛",
@@ -92,7 +96,7 @@ function tripWith(plan: TripPlan, transportMode: TransportMode | null = null): T
     totalDays: 3,
     startDate: null,
     transportMode,
-    planCompleted: false,
+    planCompleted,
     plan,
     createdAt: "2026-11-17T00:00:00Z",
     updatedAt: "2026-11-17T00:00:00Z",
@@ -115,8 +119,15 @@ function renderTimeline(options: {
   locations?: LocationBrowseDetail[];
   transportMode?: TransportMode | null;
   plan?: TripPlan;
+  planCompleted?: boolean;
 }) {
-  tripActions.setActive(tripWith(options.plan ?? twoStopPlan(), options.transportMode ?? null));
+  tripActions.setActive(
+    tripWith(
+      options.plan ?? twoStopPlan(),
+      options.transportMode ?? null,
+      options.planCompleted ?? false,
+    ),
+  );
   for (const detail of options.locations ?? [
     location("poi-a", "景点A", { leashRequired: true }),
     location("poi-b", "景点B"),
@@ -209,11 +220,13 @@ describe("timeline panel restores trip-panel hints and transport", () => {
     const trigger = screen.getByTestId("transport-mode-tag");
     expect(trigger.textContent).toContain("大交通 · 高铁");
 
+    // 标题居左、大交通选择器居右，同处面板头部行。
     const heading = screen.getByRole("heading", { name: "每日景点行程" });
+    const header = heading.parentElement!;
+    expect(header.contains(trigger)).toBeTruthy();
     expect(
       heading.compareDocumentPosition(trigger) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(trigger.parentElement).toBe(heading.parentElement);
   });
 
   it("changes the transport mode from the timeline picker", async () => {

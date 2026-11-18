@@ -4,12 +4,14 @@
 
 <!-- ai4se-verify-commands -->
 npm run build
+npm run test -w apps/web
 cd apps/server && ./mvnw test
 CI=true npm run test:e2e
 
 ## Static
 
 - `npm run build`：前端类型检查与生产构建。
+- `npm run test -w apps/web`：前端单元测试。
 
 ## Runtime
 

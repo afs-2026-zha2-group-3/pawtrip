@@ -45,6 +45,9 @@ import {
 } from "@/components/pet/pet-profile-card";
 import { ApiError } from "@/lib/http/api-error";
 import { photoDataUrl, readPhotoFile } from "@/lib/pet-photo";
+import { tripStatus } from "@/lib/trip/status";
+import { packingChecklistQueryKeys } from "@/queries/packing-checklist";
+import { tripQueryKeys, tripsQueryOptions } from "@/queries/trips";
 import {
   createPetMutationOptions,
   deletePetMutationOptions,
@@ -158,6 +161,9 @@ export function PetDialog({
     ...createPetMutationOptions(),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: petQueryKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: packingChecklistQueryKeys.all,
+      });
       onClose();
     },
   });
@@ -165,6 +171,9 @@ export function PetDialog({
     ...updatePetMutationOptions(),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: petQueryKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: packingChecklistQueryKeys.all,
+      });
       onClose();
     },
   });
@@ -552,17 +561,44 @@ export function PetDeleteDialog({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
+  const tripsQuery = useQuery({
+    ...tripsQueryOptions(),
+    throwOnError: false,
+    staleTime: 0,
+  });
   const mutation = useMutation({
     ...deletePetMutationOptions(),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: petQueryKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: petQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: tripQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: packingChecklistQueryKeys.all,
+        }),
+      ]);
       onClose();
     },
   });
+  const petTrips = (tripsQuery.data ?? []).filter(
+    (trip) => trip.petId === pet.id,
+  );
+  const ongoingTrips = petTrips.filter((trip) => tripStatus(trip) !== "ended");
+  const endedTrips = petTrips.filter((trip) => tripStatus(trip) === "ended");
+  const blockedMessage =
+    ongoingTrips.length > 0
+      ? `该宠物正在被行程${ongoingTrips.map((trip) => `「${trip.name}」`).join("")}使用，暂时无法删除。请先删除这些行程，或等待行程结束后再试。`
+      : null;
+  const cascadeMessage =
+    endedTrips.length > 0
+      ? `删除后，引用该宠物的已结束行程${endedTrips.map((trip) => `「${trip.name}」`).join("")}也会一并删除。`
+      : null;
   const error = mutation.error
-    ? mutation.error instanceof ApiError && mutation.error.isRetryable
-      ? "网络异常，请稍后重试。"
-      : "删除失败，请稍后重试。"
+    ? mutation.error instanceof ApiError && mutation.error.code === "PET_IN_USE"
+      ? (blockedMessage ??
+        "该宠物正在被行程使用，暂时无法删除。请先删除相关行程，或等待行程结束后再试。")
+      : mutation.error instanceof ApiError && mutation.error.isRetryable
+        ? "网络异常，请稍后重试。"
+        : "删除失败，请稍后重试。"
     : null;
 
   return (
@@ -579,16 +615,20 @@ export function PetDeleteDialog({
           <AlertDialogTitle>删除宠物？</AlertDialogTitle>
           <AlertDialogDescription>
             “{pet.name}”将从你的宠物列表中移除，此操作无法撤销。
+            {cascadeMessage && !blockedMessage ? cascadeMessage : null}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error ? <FieldError>{error}</FieldError> : null}
+        {blockedMessage ? <FieldError>{blockedMessage}</FieldError> : null}
+        {error && error !== blockedMessage ? (
+          <FieldError>{error}</FieldError>
+        ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={mutation.isPending}>
             取消
           </AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || blockedMessage !== null}
             onClick={() => mutation.mutate(pet.id)}
           >
             {mutation.isPending ? "删除中…" : "删除"}

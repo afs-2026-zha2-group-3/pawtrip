@@ -164,6 +164,14 @@ function TripPanelContent({
     : petsQuery.isError
       ? "error"
       : "ready";
+  const saveStatusText =
+    save.status === "saving"
+      ? "保存中…"
+      : save.status === "saved"
+        ? "已保存"
+        : save.status === "error"
+          ? "保存失败"
+          : "已同步";
 
   const rows = useMemo<PanelRow[]>(() => {
     if (!active) return [];
@@ -234,6 +242,8 @@ function TripPanelContent({
         poiId: stop.poiId,
         name: locations[stop.poiId]?.name ?? stop.poiId,
         sizeWarning: null,
+        connectPrev: false,
+        connectNext: false,
       });
     });
     return next;
@@ -370,7 +380,7 @@ function TripPanelContent({
       className={cn(
         "flex min-w-0 flex-col gap-2 text-card-foreground",
         timeline
-          ? "h-full min-h-0 w-full overflow-hidden border-r border-[#E5E5E5] pr-3"
+          ? "h-full min-h-0 w-full overflow-hidden"
           : embedded
             ? "w-full rounded-xl border bg-card p-3"
             : "z-50 rounded-xl border bg-card shadow-xl [view-transition-name:trip-panel]",
@@ -383,8 +393,9 @@ function TripPanelContent({
     >
       <div className="flex shrink-0 items-start justify-between gap-2">
         {timeline ? (
+          // 地点浏览页左栏面板头部：标题居左、大交通选择器居右；保存状态与行程单入口不再展示。
           <div className="flex w-full min-w-0 items-center justify-between gap-2">
-            <h2 className="text-sm leading-5 font-medium text-paw-ink">每日景点行程</h2>
+            <h2 className="shrink-0 text-sm leading-5 font-medium text-paw-ink">每日景点行程</h2>
             {active ? (
               <TransportModePicker
                 value={active.transportMode}
@@ -410,13 +421,7 @@ function TripPanelContent({
                   disabled={readOnly}
                 />
                 <span className={TAG_CLASS} data-testid="save-status" data-status={save.status}>
-                  {save.status === "saving"
-                    ? "保存中…"
-                    : save.status === "saved"
-                      ? "已保存"
-                      : save.status === "error"
-                        ? "保存失败"
-                        : "已同步"}
+                  {saveStatusText}
                 </span>
                 {active?.planCompleted ? (
                   <Link
@@ -644,13 +649,23 @@ function TripPanelContent({
                   }
                   if (row.kind === "segment") {
                     return (
-                      <TransportSegmentRow
-                        tripId={active!.id}
-                        stopRef={{ container: row.container, index: row.index }}
-                        segment={row.segment}
-                        transportMode={active!.transportMode}
-                        compact={timeline}
-                      />
+                      <div className={cn(timeline && "relative")}>
+                        {timeline ? (
+                          <span
+                            aria-hidden="true"
+                            data-testid="timeline-rail"
+                            className="pointer-events-none absolute -top-[6px] -bottom-[6px] left-[9px] z-0 w-[2px] bg-paw-accent"
+                          />
+                        ) : null}
+                        <div className={cn(timeline && "ml-7")}>
+                          <TransportSegmentRow
+                            tripId={active!.id}
+                            stopRef={{ container: row.container, index: row.index }}
+                            segment={row.segment}
+                            transportMode={active!.transportMode}
+                          />
+                        </div>
+                      </div>
                     );
                   }
                   // 行容器为横向 flex：纵向包裹使警示独占景点下方一行

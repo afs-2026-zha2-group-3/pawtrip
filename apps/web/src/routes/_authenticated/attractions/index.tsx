@@ -430,7 +430,7 @@ function AttractionsPage() {
       <div
         data-testid="attractions-layout"
         className={cn(
-          "grid min-h-0 items-stretch gap-4 lg:h-full lg:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[280px_minmax(0,1fr)_minmax(320px,36%)]",
+          "grid min-h-0 items-stretch gap-4 lg:h-full lg:grid-rows-[minmax(0,1fr)] lg:grid-cols-[280px_minmax(0,1fr)_minmax(320px,36%)]",
           // 展开态的 376px 留白 = Agent 面板 400px + right-4 16px - 页面右内边距 40px；
           // 面板宽度变更时需同步 agent-panel.tsx。
           agentOpen
@@ -438,10 +438,18 @@ function AttractionsPage() {
             : "2xl:grid-cols-[280px_minmax(0,1fr)_minmax(320px,0.8fr)]",
         )}
       >
-        <div className="flex min-w-0 flex-wrap items-center justify-start gap-4 lg:col-span-3 lg:row-start-1 lg:flex-nowrap xl:col-span-3">
+        <aside className="flex min-h-0 min-w-0 flex-col gap-3 rounded-[22px] border border-paw-line bg-card p-4 shadow-[0_2px_8px_0_rgba(38,31,18,0.04)] lg:col-start-1 lg:col-span-1 lg:row-start-1 lg:h-full">
           <TripDateCard />
+          <div className="min-h-0 flex-1">
+            <TripPanel embedded timeline footer={panelFooter} />
+          </div>
+        </aside>
 
-          <div className="flex min-w-0 flex-nowrap items-center gap-3 overflow-hidden">
+        <section
+          data-testid="location-list"
+          className="min-h-0 min-w-0 rounded-[22px] border border-paw-line bg-card p-4 shadow-[0_2px_8px_0_rgba(38,31,18,0.04)] lg:col-start-2 lg:col-span-1 lg:row-start-1 lg:overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <div className="mb-3 flex min-w-0 flex-nowrap items-center gap-3 overflow-hidden">
             <h1 className="shrink-0 whitespace-nowrap text-2xl leading-8 font-medium">
               {typeGroup === DEFAULT_TYPE_GROUP ? "景点" : typeLabel}
             </h1>
@@ -466,16 +474,7 @@ function AttractionsPage() {
               </div>
             ) : null}
           </div>
-        </div>
 
-        <aside className="min-h-0 min-w-0 lg:col-start-1 lg:col-span-1 lg:row-start-2 lg:h-full">
-          <TripPanel embedded timeline footer={panelFooter} />
-        </aside>
-
-        <section
-          data-testid="location-list"
-          className="min-h-0 min-w-0 lg:col-start-2 lg:col-span-1 lg:row-start-2 lg:overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             {typeGroup === DEFAULT_TYPE_GROUP ? (
               <>
@@ -682,7 +681,7 @@ function AttractionsPage() {
 
         <aside
           data-testid="attractions-map"
-          className="relative min-h-0 lg:col-start-3 lg:col-span-1 lg:row-start-2 lg:h-full"
+          className="relative min-h-0 lg:col-start-3 lg:col-span-1 lg:row-start-1 lg:h-full"
         >
           {gated ? (
             <div
@@ -729,7 +728,7 @@ function AttractionsPage() {
         {agentOpen ? (
           <div
             aria-hidden="true"
-            className="pointer-events-none hidden 2xl:col-span-1 2xl:col-start-4 2xl:row-start-2 2xl:block"
+            className="pointer-events-none hidden 2xl:col-span-1 2xl:col-start-4 2xl:row-start-1 2xl:block"
           />
         ) : null}
       </div>

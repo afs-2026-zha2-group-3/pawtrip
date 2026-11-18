@@ -296,6 +296,42 @@ class PetApiTest {
 	}
 
 	@Test
+	void deletesPetReferencedOnlyByEndedTrips() throws Exception {
+		long petId = createPet(this.username, "Mimi");
+		long tripId = createTripForPet(petId, "已结束行程", "2020-01-01");
+
+		this.mockMvc.perform(delete("/api/pets/{petId}", petId)
+					.with(user(this.username))
+					.with(csrf()))
+			.andExpect(status().isNoContent());
+
+		this.mockMvc.perform(get("/api/pets/{petId}", petId).with(user(this.username)))
+			.andExpect(status().isNotFound());
+		this.mockMvc.perform(get("/api/trips/{tripId}", tripId).with(user(this.username)))
+			.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void refusesToDeletePetWhenAnyReferencingTripIsOngoing() throws Exception {
+		long petId = createPet(this.username, "Mimi");
+		createTripForPet(petId, "已结束行程", "2020-01-01");
+		createTripForPet(petId, "进行中行程", null);
+
+		this.mockMvc.perform(delete("/api/pets/{petId}", petId)
+					.with(user(this.username))
+					.with(csrf()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("PET_IN_USE"))
+			.andExpect(jsonPath("$.detail").value("Pet is referenced by trip(s): 进行中行程"));
+
+		this.mockMvc.perform(get("/api/pets/{petId}", petId).with(user(this.username)))
+			.andExpect(status().isOk());
+		this.mockMvc.perform(get("/api/trips").with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(2));
+	}
+
+	@Test
 	void requiresAuthenticationForPetEndpoints() throws Exception {
 		this.mockMvc.perform(get("/api/pets"))
 			.andExpect(status().isUnauthorized())
@@ -495,14 +531,22 @@ class PetApiTest {
 	}
 
 	private void createTripForPet(long petId) throws Exception {
-		this.mockMvc.perform(post("/api/trips")
+		createTripForPet(petId, "带宠物行程", null);
+	}
+
+	private long createTripForPet(long petId, String name, String startDate) throws Exception {
+		String startDateField = startDate == null ? ""
+				: ",\"startDate\":\"%s\"".formatted(startDate);
+		MvcResult result = this.mockMvc.perform(post("/api/trips")
 					.with(user(this.username))
 					.with(csrf())
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
-							{"name":"带宠物行程","cityAdcode":"330100","petId":%d,"totalDays":1}
-							""".formatted(petId)))
-			.andExpect(status().isCreated());
+							{"name":"%s","cityAdcode":"330100","petId":%d,"totalDays":1%s}
+							""".formatted(name, petId, startDateField)))
+			.andExpect(status().isCreated())
+			.andReturn();
+		return JSON_MAPPER.readTree(result.getResponse().getContentAsString()).path("id").asLong();
 	}
 
 	private long createPet(String owner, String name) throws Exception {

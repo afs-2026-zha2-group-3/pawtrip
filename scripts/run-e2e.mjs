@@ -74,6 +74,11 @@ async function findExecutableJar() {
 }
 
 async function ensureBackendJar() {
+  const providedJar = process.env.PAWTRIP_E2E_SERVER_JAR;
+  if (providedJar) {
+    console.log(`[e2e] 使用预构建后端 jar: ${resolve(providedJar)}`);
+    return resolve(providedJar);
+  }
   const fingerprint = await fingerprintServerSources();
   const cachePath = join(serverRoot, "target", "e2e-jar.sha256");
   const jarPath = await findExecutableJar();

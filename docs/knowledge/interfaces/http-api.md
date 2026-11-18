@@ -27,7 +27,7 @@ area: interfaces
 | GET | `/api/pets/{id}` | 本人宠物详情 |
 | POST | `/api/pets` | 创建宠物，成功 `201` + `Location` |
 | PUT | `/api/pets/{id}` | 替换本人宠物 |
-| DELETE | `/api/pets/{id}` | 删除本人宠物；被 trip 引用时 `409 PET_IN_USE` |
+| DELETE | `/api/pets/{id}` | 删除本人宠物；存在未结束的引用行程时 `409 PET_IN_USE`（`detail` 列出行程名）；仅被已结束行程引用时一并删除这些行程 |
 | GET | `/api/dog-breeds` | 犬种目录（20 条），含 `officialAggressive` |
 | GET | `/api/locations/types` | 共享地点类型目录：景点 `110000`、住宿 `100000`、宠物医院 `090700`、宠物用品店 `061211`、餐厅 `050000` |
 | GET | `/api/locations` | 共享已保存地点分页列表；参数见下 |
@@ -104,7 +104,7 @@ area: interfaces
 | `LOCATION_CONFLICT` | 409 | 地点写入冲突 |
 | `REGION_NOT_FOUND` | 404 | 行政区/城市不存在 |
 | `PET_NOT_FOUND` | 404 | 宠物不存在或不属于当前用户 |
-| `PET_IN_USE` | 409 | 宠物被行程引用，不可删除 |
+| `PET_IN_USE` | 409 | 宠物被未结束的行程引用，不可删除（`detail` 含行程名） |
 | `CITY_NOT_FOUND` | 404 | 城市政策查询的行政区不存在 |
 | `TRIP_NOT_FOUND` | 404 | 行程不存在或不属于当前用户 |
 | `VALIDATION_ERROR` | 400 | 参数、政策值或计划校验失败 |

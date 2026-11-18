@@ -1,6 +1,7 @@
 package com.pawtrip.server.trip;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -80,6 +81,15 @@ public class Trip {
 	public void markPlanCompleted() {
 		this.planCompleted = true;
 		this.updatedAt = Instant.now().toString();
+	}
+
+	// 结束日为开始日期 + 天数 - 1；无开始日期的行程永不自动结束。
+	public boolean isEnded(LocalDate today) {
+		if (this.startDate == null) {
+			return false;
+		}
+		LocalDate endDate = LocalDate.parse(this.startDate).plusDays(this.totalDays - 1L);
+		return endDate.isBefore(today);
 	}
 
 	public Long getId() {
