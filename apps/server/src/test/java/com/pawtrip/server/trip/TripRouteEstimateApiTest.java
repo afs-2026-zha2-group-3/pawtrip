@@ -113,7 +113,7 @@ class TripRouteEstimateApiTest {
 		AppUser user = this.appUserRepository.save(new AppUser(this.username, "hash", true));
 		this.appUserRepository.save(new AppUser(this.otherUsername, "hash", true));
 		this.petId = this.petRepository
-			.save(new Pet(user.getId(), "Mimi", PetType.CAT, 4.5, 25.0, true, true, null, null))
+			.save(new Pet(user.getId(), "Mimi", PetType.CAT, 4.5, 25.0, true, true, null, null, null, null))
 			.getId();
 		this.locationRepository.save(new PawtripLocation(POI_ONE, "西湖", "110000", "attraction", "杭州",
 				120.0, 30.0, CITY_ADCODE, "{}", "{}", 1, 3));

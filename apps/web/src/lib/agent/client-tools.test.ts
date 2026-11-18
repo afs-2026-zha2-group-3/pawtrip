@@ -22,6 +22,8 @@ const pet: Pet = {
   hasVaccinationProof: true,
   photo: null,
   dogBreed: null,
+  preferences: [],
+  personality: null,
 };
 
 const trip = {

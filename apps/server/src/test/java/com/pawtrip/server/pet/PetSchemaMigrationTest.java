@@ -34,7 +34,7 @@ class PetSchemaMigrationTest {
 		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
 			assertThat(columns(connection, "pet")).containsExactlyInAnyOrder(
 					"id", "user_id", "name", "pet_type", "weight_kg", "shoulder_height_cm", "has_leash",
-					"has_vaccination_proof", "photo", "dog_breed_id");
+					"has_vaccination_proof", "photo", "dog_breed_id", "preferences", "personality");
 
 			long catId = insertPet(connection, userId, "Mimi", "CAT", 4.5, 25.0, 1, 1);
 			insertPet(connection, userId, "Rex", "DOG", 18.25, 60.0, 0, 0);
@@ -198,6 +198,86 @@ class PetSchemaMigrationTest {
 					ResultSet result = statement.executeQuery("SELECT COUNT(*) FROM pet")) {
 				assertThat(result.next()).isTrue();
 				assertThat(result.getInt(1)).isZero();
+			}
+		}
+	}
+
+	@Test
+	void addsNullablePreferencesAndPersonalityWithoutChangingExistingPets(@TempDir Path tempDir) throws SQLException {
+		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("existing-pet-preferences.db") + "?foreign_keys=on";
+		Flyway.configure().dataSource(jdbcUrl, null, null).target("25").load().migrate();
+
+		long petId;
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			long userId = insertUser(connection, "preference-owner");
+			petId = insertPet(connection, userId, "Mimi", "CAT", 4.5, 25.0, 1, 1);
+		}
+
+		Flyway.configure().dataSource(jdbcUrl, null, null).load().migrate();
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			assertThat(columns(connection, "pet")).contains("preferences", "personality");
+
+			try (PreparedStatement query = connection.prepareStatement(
+					"SELECT preferences, personality FROM pet WHERE id = ?")) {
+				query.setLong(1, petId);
+				try (ResultSet result = query.executeQuery()) {
+					assertThat(result.next()).isTrue();
+					assertThat(result.getString("preferences")).isNull();
+					assertThat(result.getString("personality")).isNull();
+				}
+			}
+
+			try (PreparedStatement update = connection.prepareStatement(
+					"UPDATE pet SET preferences = ?, personality = ? WHERE id = ?")) {
+				update.setString(1, "SWIMMING,GRASS_RUNNING");
+				update.setString(2, "ENERGETIC");
+				update.setLong(3, petId);
+				update.executeUpdate();
+			}
+
+			try (PreparedStatement query = connection.prepareStatement(
+					"SELECT preferences, personality FROM pet WHERE id = ?")) {
+				query.setLong(1, petId);
+				try (ResultSet result = query.executeQuery()) {
+					assertThat(result.next()).isTrue();
+					assertThat(result.getString("preferences")).isEqualTo("SWIMMING,GRASS_RUNNING");
+					assertThat(result.getString("personality")).isEqualTo("ENERGETIC");
+				}
+			}
+		}
+	}
+
+	@Test
+	void addsRegionFeatureTagsWithSeedCities(@TempDir Path tempDir) throws SQLException {
+		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("region-feature-tags.db") + "?foreign_keys=on";
+		Flyway.configure().dataSource(jdbcUrl, null, null).load().migrate();
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			assertThat(columns(connection, "administrative_region")).contains("feature_tags");
+
+			assertThat(featureTags(connection, "440400")).isEqualTo("COASTAL");
+			assertThat(featureTags(connection, "330100")).isEqualTo("LAKE,CITY_PARK");
+			assertThat(featureTags(connection, "460200")).isEqualTo("COASTAL");
+			assertThat(featureTags(connection, "654300")).isEqualTo("GRASSLAND,SNOW,MOUNTAIN");
+			assertThat(featureTags(connection, "440200")).isNull();
+
+			try (Statement statement = connection.createStatement();
+					ResultSet result = statement.executeQuery(
+							"SELECT COUNT(*) FROM administrative_region WHERE feature_tags IS NOT NULL")) {
+				assertThat(result.next()).isTrue();
+				assertThat(result.getInt(1)).isEqualTo(48);
+			}
+		}
+	}
+
+	private static String featureTags(Connection connection, String adcode) throws SQLException {
+		try (PreparedStatement query = connection.prepareStatement(
+				"SELECT feature_tags FROM administrative_region WHERE adcode = ?")) {
+			query.setString(1, adcode);
+			try (ResultSet result = query.executeQuery()) {
+				assertThat(result.next()).isTrue();
+				return result.getString("feature_tags");
 			}
 		}
 	}

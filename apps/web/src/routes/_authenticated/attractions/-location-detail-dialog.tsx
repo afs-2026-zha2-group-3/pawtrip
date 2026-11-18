@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -93,14 +92,8 @@ export function LocationDetailDialog({
                   label="添加到行程"
                   totalDays={active.totalDays}
                   onSelectDay={(day) => tripActions.addStop(day, location.poiId)}
+                  onSelectUnscheduled={() => tripActions.addStop("unscheduled", location.poiId)}
                 />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => tripActions.addStop("unscheduled", location.poiId)}
-                >
-                  暂不排期
-                </Button>
               </div>
             ) : null}
           </div>

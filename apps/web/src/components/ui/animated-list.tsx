@@ -55,6 +55,7 @@ export interface AnimatedListProps {
   maxHeight?: number | string;
   className?: string;
   itemClassName?: string;
+  itemRim?: boolean;
   style?: CSSProperties;
 }
 
@@ -201,6 +202,7 @@ export function AnimatedList({
   maxHeight = 440,
   className = "",
   itemClassName = "",
+  itemRim = true,
   style,
 }: AnimatedListProps) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -683,7 +685,7 @@ export function AnimatedList({
                 className={
                   selectable
                     ? `${ITEM_CLASS} ${itemClassName}`.trim()
-                    : HEADER_CLASS
+                    : `${HEADER_CLASS} ${itemClassName}`.trim()
                 }
                 role={selectable ? "option" : "presentation"}
                 aria-selected={selectable ? isSelected : undefined}
@@ -729,7 +731,7 @@ export function AnimatedList({
                     )}
                   </>
                 )}
-                {selectable && (
+                {selectable && itemRim && (
                   <span className={RIM_CLASS} aria-hidden="true" />
                 )}
               </div>

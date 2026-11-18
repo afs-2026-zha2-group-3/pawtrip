@@ -77,7 +77,12 @@ export const tripActions = {
   },
   clearActive(): void {
     removePersistedActiveTripId();
-    update((state) => ({ ...state, active: null, hydration: state.hydration === "missing" ? "missing" : "ready" }));
+    update((state) => ({
+      ...state,
+      active: null,
+      panel: { expanded: false },
+      hydration: state.hydration === "missing" ? "missing" : "ready",
+    }));
   },
   clearTripContext(): void {
     removePersistedActiveTripId();
@@ -206,6 +211,17 @@ export const tripActions = {
     update((state) =>
       state.active
         ? { ...state, active: { ...state.active, plan }, ...bumpRevision(state) }
+        : state,
+    );
+  },
+  setStartDate(startDate: string | null): void {
+    update((state) =>
+      state.active && state.active.startDate !== startDate
+        ? {
+            ...state,
+            active: { ...state.active, startDate },
+            ...bumpRevision(state),
+          }
         : state,
     );
   },

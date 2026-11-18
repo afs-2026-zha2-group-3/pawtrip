@@ -3,6 +3,16 @@ import { request } from "../lib/http/request";
 
 export type PetType = "CAT" | "DOG";
 
+// REQ-014 词表（design D1，与后端 PetPreference/PetPersonality 枚举镜像）
+export type PetPreference =
+  | "SWIMMING"
+  | "HIKING"
+  | "GRASS_RUNNING"
+  | "CITY_WALKING"
+  | "SNOW_PLAY";
+
+export type PetPersonality = "ENERGETIC" | "CALM" | "TIMID";
+
 export interface DogBreed {
   id: number;
   name: string;
@@ -19,6 +29,8 @@ export interface Pet {
   hasVaccinationProof: boolean;
   photo: string | null;
   dogBreed: DogBreed | null;
+  preferences: PetPreference[];
+  personality: PetPersonality | null;
 }
 
 export interface SavePetInput {
@@ -30,6 +42,8 @@ export interface SavePetInput {
   hasVaccinationProof: boolean;
   photo: string | null;
   dogBreedId: number | null;
+  preferences: PetPreference[];
+  personality: PetPersonality | null;
 }
 
 export const petQueryKeys = {

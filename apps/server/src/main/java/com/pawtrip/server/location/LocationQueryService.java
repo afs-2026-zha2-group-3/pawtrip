@@ -103,7 +103,8 @@ class LocationQueryService {
 		return LocationQueryResponses.LocationDetail.from(location, coverPhotoUrl,
 				businessField(location, poi, "rating"), businessField(location, poi, "keytag"),
 				businessField(location, poi, "business_area"), typeName(poi), regionName(poi),
-				openingHours(location, poi));
+				openingHours(location, poi), businessField(location, poi, "opentime_today"),
+				businessField(location, poi, "tel"));
 	}
 
 	private static String typeName(JsonNode poi) {
@@ -203,7 +204,7 @@ class LocationQueryService {
 				result.hasPrevious(),
 				result.getContent().stream()
 					.map(location -> LocationQueryResponses.LocationSummary.from(location,
-							covers.get(location.getId()), rating(location), null))
+							covers.get(location.getId()), rating(location), keytag(location), null))
 					.toList());
 	}
 
@@ -234,7 +235,7 @@ class LocationQueryService {
 		List<LocationQueryResponses.LocationSummary> items = pageItems.stream()
 			.map(candidate -> LocationQueryResponses.LocationSummary.from(candidate.location(),
 					covers.get(candidate.location().getId()), rating(candidate.location()),
-					Math.round(candidate.distanceMeters())))
+					keytag(candidate.location()), Math.round(candidate.distanceMeters())))
 			.toList();
 		int totalPages = (nearby.size() + page.pageSize() - 1) / page.pageSize();
 		return new LocationQueryResponses.Page<>(
@@ -266,6 +267,10 @@ class LocationQueryService {
 
 	private String rating(PawtripLocation location) {
 		return businessField(location, parseJson(location.getPoiJson()), "rating");
+	}
+
+	private String keytag(PawtripLocation location) {
+		return businessField(location, parseJson(location.getPoiJson()), "keytag");
 	}
 
 	private String businessField(PawtripLocation location, JsonNode poi, String field) {

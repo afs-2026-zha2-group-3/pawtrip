@@ -22,6 +22,7 @@ function summary(poiId: string, name: string, address: string | null = null): Lo
     distanceMeters: null,
     coverPhotoUrl: null,
     rating: null,
+    keytag: null,
     petPolicies: {
       allowedPetTypes: "DOG",
       maxPetsPerPerson: 1,

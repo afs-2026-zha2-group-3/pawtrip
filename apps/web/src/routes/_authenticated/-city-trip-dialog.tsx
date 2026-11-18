@@ -89,16 +89,17 @@ export function CityTripDialog({
         cityAdcode: city.adcode,
         petId: pet.id,
         totalDays: days,
-city,
+        city,
         startDate,
       });
       if (navigateOnCreate) {
         onClose();
-        await navigate({ to: "/attractions" });
+        await navigate({ to: "/transport-rules" });
       } else {
         onCreated?.(trip);
         onClose();
-      }    } catch {
+      }
+    } catch {
       setError("创建行程失败，请稍后重试。");
     } finally {
       setSubmitting(false);
@@ -116,7 +117,7 @@ city,
         <DialogHeader>
           <DialogTitle>创建行程</DialogTitle>
           <DialogDescription>
-            确认目的地与出行日期后，即可开始选择景点。
+            确认目的地与出行日期后，请先选择大交通，再开始选择景点。
           </DialogDescription>
         </DialogHeader>
 

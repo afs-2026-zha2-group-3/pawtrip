@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { PawPrint } from "lucide-react";
+import { Check } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,15 +17,11 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Field,
   FieldDescription,
   FieldError,
-  FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -37,6 +33,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  PetProfileCard,
+  petCardTitleClass,
+  petLabelClass,
+  petPillOutlineClass,
+  petPillPrimaryClass,
+  petRowClass,
+  personalityLabels,
+  preferenceLabels,
+} from "@/components/pet/pet-profile-card";
 import { ApiError } from "@/lib/http/api-error";
 import { photoDataUrl, readPhotoFile } from "@/lib/pet-photo";
 import {
@@ -46,14 +52,23 @@ import {
   petQueryKeys,
   updatePetMutationOptions,
   type Pet,
+  type PetPersonality,
+  type PetPreference,
   type PetType,
   type SavePetInput,
 } from "@/queries/pets";
 
-const petTypeLabels: Record<PetType, string> = {
-  CAT: "猫",
-  DOG: "狗",
-};
+// REQ-014 词表键（design D1/D8，键与后端枚举镜像；标签文案见 pet-profile-card）
+const preferenceKeys: PetPreference[] = [
+  "SWIMMING",
+  "HIKING",
+  "GRASS_RUNNING",
+  "CITY_WALKING",
+  "SNOW_PLAY",
+];
+
+// 性格 Select 的「未设置」哨兵值，仅 UI 使用，提交时映射 null（design D8）
+const PERSONALITY_UNSET = "UNSET";
 
 type PetDraft = {
   name: string;
@@ -64,6 +79,8 @@ type PetDraft = {
   hasLeash: boolean;
   hasVaccinationProof: boolean;
   photo: string | null;
+  preferences: PetPreference[];
+  personality: PetPersonality | typeof PERSONALITY_UNSET;
 };
 
 type DraftErrors = Partial<
@@ -72,6 +89,11 @@ type DraftErrors = Partial<
     string
   >
 >;
+
+const underlineInputClass =
+  "h-auto rounded-none border-0 border-b border-input bg-transparent px-0 py-1 shadow-none focus-visible:border-foreground focus-visible:ring-0 dark:bg-transparent";
+const underlineSelectClass =
+  "h-auto w-full rounded-none border-0 border-b border-input bg-transparent px-0 py-1 shadow-none focus-visible:border-foreground focus-visible:ring-0 data-[size=default]:h-auto dark:bg-transparent";
 
 function draftFromPet(pet: Pet | null): PetDraft {
   return {
@@ -83,6 +105,8 @@ function draftFromPet(pet: Pet | null): PetDraft {
     hasLeash: pet?.hasLeash ?? false,
     hasVaccinationProof: pet?.hasVaccinationProof ?? false,
     photo: pet?.photo ?? null,
+    preferences: pet?.preferences ?? [],
+    personality: pet?.personality ?? PERSONALITY_UNSET,
   };
 }
 
@@ -121,17 +145,11 @@ function mutationErrorMessage(error: unknown): string | null {
 export function PetDialog({
   initialPet,
   onClose,
-  onRequestDelete,
 }: {
   initialPet: Pet | null;
   onClose: () => void;
-  onRequestDelete: (pet: Pet) => void;
 }) {
   const queryClient = useQueryClient();
-  const [pet, setPet] = useState<Pet | null>(initialPet);
-  const [mode, setMode] = useState<"view" | "edit">(
-    initialPet ? "view" : "edit",
-  );
   const [draft, setDraft] = useState<PetDraft>(() => draftFromPet(initialPet));
   const [errors, setErrors] = useState<DraftErrors>({});
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -145,13 +163,9 @@ export function PetDialog({
   });
   const updateMutation = useMutation({
     ...updatePetMutationOptions(),
-    onSuccess: async (updated) => {
-      setPet(updated);
-      setDraft(draftFromPet(updated));
-      setMode("view");
-      setErrors({});
-      setPhotoError(null);
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: petQueryKeys.all });
+      onClose();
     },
   });
 
@@ -172,24 +186,12 @@ export function PetDialog({
     updateMutation.reset();
   }
 
-  function startEdit() {
-    setDraft(draftFromPet(pet));
-    setErrors({});
-    setPhotoError(null);
-    updateMutation.reset();
-    setMode("edit");
-  }
-
-  function cancelEdit() {
-    if (!pet) {
-      onClose();
-      return;
-    }
-    setDraft(draftFromPet(pet));
-    setErrors({});
-    setPhotoError(null);
-    updateMutation.reset();
-    setMode("view");
+  function togglePreference(key: PetPreference, checked: boolean) {
+    updateDraft({
+      preferences: checked
+        ? [...draft.preferences, key]
+        : draft.preferences.filter((preference) => preference !== key),
+    });
   }
 
   async function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
@@ -227,16 +229,17 @@ export function PetDialog({
       photo: draft.photo,
       dogBreedId:
         draft.petType === "DOG" ? Number(draft.dogBreedId) : null,
+      preferences: draft.preferences,
+      personality:
+        draft.personality === PERSONALITY_UNSET ? null : draft.personality,
     };
 
-    if (pet) {
-      updateMutation.mutate({ id: pet.id, input });
+    if (initialPet) {
+      updateMutation.mutate({ id: initialPet.id, input });
     } else {
       createMutation.mutate(input);
     }
   }
-
-  const editing = mode === "edit" || !pet;
 
   return (
     <Dialog
@@ -247,109 +250,108 @@ export function PetDialog({
         }
       }}
     >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {pet ? (editing ? `编辑 ${pet.name}` : pet.name) : "添加宠物"}
-          </DialogTitle>
-          <DialogDescription>
-            {editing ? "填写宠物资料并保存。" : "查看宠物资料，或进入编辑。"}
-          </DialogDescription>
-        </DialogHeader>
-
-        {editing ? (
-          <form className="flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
-            <FieldGroup>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel htmlFor="pet-name">名字</FieldLabel>
-                  <Input
-                    id="pet-name"
-                    value={draft.name}
-                    aria-invalid={Boolean(errors.name)}
-                    onChange={(event) => updateDraft({ name: event.target.value })}
-                  />
-                  {errors.name ? <FieldError>{errors.name}</FieldError> : null}
-                </Field>
-
-                <Field>
-                  <FieldLabel htmlFor="pet-type">类型</FieldLabel>
-                  <Select
-                    value={draft.petType}
-                    onValueChange={(value) => {
-                      if (value === "CAT") {
-                        updateDraft({ petType: value, dogBreedId: "" });
-                      } else if (value === "DOG") {
-                        updateDraft({ petType: value });
-                      }
-                    }}
-                  >
-                    <SelectTrigger
-                      id="pet-type"
-                      aria-label="宠物类型"
-                      aria-invalid={Boolean(errors.petType)}
-                      className="w-full"
-                    >
-                      <SelectValue>
-                        {(value: string | null) =>
-                          value === "CAT" ? "猫" : value === "DOG" ? "狗" : "选择类型"
-                        }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectItem value="CAT">猫</SelectItem>
-                        <SelectItem value="DOG">狗</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  {errors.petType ? (
-                    <FieldError>{errors.petType}</FieldError>
-                  ) : null}
-                </Field>
-
-                <Field>
-                  <FieldLabel htmlFor="pet-weight">体重（kg）</FieldLabel>
-                  <Input
-                    id="pet-weight"
-                    type="number"
-                    inputMode="decimal"
-                    step="0.1"
-                    min="0"
-                    value={draft.weightKg}
-                    aria-invalid={Boolean(errors.weightKg)}
-                    onChange={(event) =>
-                      updateDraft({ weightKg: event.target.value })
-                    }
-                  />
-                  {errors.weightKg ? (
-                    <FieldError>{errors.weightKg}</FieldError>
-                  ) : null}
-                </Field>
-
-                <Field>
-                  <FieldLabel htmlFor="pet-height">肩高（cm）</FieldLabel>
-                  <Input
-                    id="pet-height"
-                    type="number"
-                    inputMode="decimal"
-                    step="0.1"
-                    min="0"
-                    value={draft.shoulderHeightCm}
-                    aria-invalid={Boolean(errors.shoulderHeightCm)}
-                    onChange={(event) =>
-                      updateDraft({ shoulderHeightCm: event.target.value })
-                    }
-                  />
-                  {errors.shoulderHeightCm ? (
-                    <FieldError>{errors.shoulderHeightCm}</FieldError>
-                  ) : null}
-                </Field>
+      <DialogContent
+        showCloseButton={false}
+        className="max-w-3xl gap-0 rounded-[26px] bg-transparent p-0 shadow-none ring-0"
+      >
+        <DialogDescription className="sr-only">
+          填写宠物资料并保存。
+        </DialogDescription>
+        <form onSubmit={handleSubmit} noValidate>
+          <PetProfileCard
+            title={
+              <DialogTitle className={petCardTitleClass}>
+                {initialPet ? `${initialPet.name}的档案` : "添加宠物"}
+              </DialogTitle>
+            }
+            photo={photoPreview}
+            photoAlt="宠物照片预览"
+            onPhotoSelect={handlePhotoChange}
+            photoError={photoError}
+            footer={
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={petPillOutlineClass}
+                  disabled={pending}
+                  onClick={onClose}
+                >
+                  取消
+                </Button>
+                <Button
+                  type="submit"
+                  className={petPillPrimaryClass}
+                  disabled={pending}
+                >
+                  <Check aria-hidden="true" />
+                  {pending ? "保存中…" : initialPet ? "保存" : "创建宠物"}
+                </Button>
+              </>
+            }
+          >
+            <div className={petRowClass}>
+              <FieldLabel htmlFor="pet-name" className={petLabelClass}>
+                名字
+              </FieldLabel>
+              <div className="flex flex-col gap-1">
+                <Input
+                  id="pet-name"
+                  className={underlineInputClass}
+                  value={draft.name}
+                  aria-invalid={Boolean(errors.name)}
+                  onChange={(event) => updateDraft({ name: event.target.value })}
+                />
+                {errors.name ? <FieldError>{errors.name}</FieldError> : null}
               </div>
+            </div>
 
-              {draft.petType === "DOG" ? (
-                <Field>
-                  <FieldLabel htmlFor="pet-breed">品种</FieldLabel>
+            <div className={petRowClass}>
+              <FieldLabel htmlFor="pet-type" className={petLabelClass}>
+                类型
+              </FieldLabel>
+              <div className="flex flex-col gap-1">
+                <Select
+                  value={draft.petType}
+                  onValueChange={(value) => {
+                    if (value === "CAT") {
+                      updateDraft({ petType: value, dogBreedId: "" });
+                    } else if (value === "DOG") {
+                      updateDraft({ petType: value });
+                    }
+                  }}
+                >
+                  <SelectTrigger
+                    id="pet-type"
+                    aria-label="宠物类型"
+                    aria-invalid={Boolean(errors.petType)}
+                    className={underlineSelectClass}
+                  >
+                    <SelectValue>
+                      {(value: string | null) =>
+                        value === "CAT" ? "猫" : value === "DOG" ? "狗" : "选择类型"
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="CAT">猫</SelectItem>
+                      <SelectItem value="DOG">狗</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {errors.petType ? (
+                  <FieldError>{errors.petType}</FieldError>
+                ) : null}
+              </div>
+            </div>
+
+            {draft.petType === "DOG" ? (
+              <div className={petRowClass}>
+                <FieldLabel htmlFor="pet-breed" className={petLabelClass}>
+                  品种
+                </FieldLabel>
+                <div className="flex flex-col gap-1">
                   <Select
                     value={draft.dogBreedId}
                     onValueChange={(value) => {
@@ -362,7 +364,7 @@ export function PetDialog({
                       id="pet-breed"
                       aria-label="狗的品种"
                       aria-invalid={Boolean(errors.dogBreedId)}
-                      className="w-full"
+                      className={underlineSelectClass}
                     >
                       <SelectValue>
                         {(value: string | null) =>
@@ -391,144 +393,154 @@ export function PetDialog({
                   {errors.dogBreedId ? (
                     <FieldError>{errors.dogBreedId}</FieldError>
                   ) : null}
-                </Field>
-              ) : null}
-
-              <div className="flex flex-wrap gap-6">
-                <Field>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="pet-leash"
-                      checked={draft.hasLeash}
-                      onCheckedChange={(checked) =>
-                        updateDraft({ hasLeash: checked })
-                      }
-                    />
-                    <FieldLabel htmlFor="pet-leash">有牵引绳</FieldLabel>
-                  </div>
-                </Field>
-                <Field>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="pet-vaccination"
-                      checked={draft.hasVaccinationProof}
-                      onCheckedChange={(checked) =>
-                        updateDraft({ hasVaccinationProof: checked })
-                      }
-                    />
-                    <FieldLabel htmlFor="pet-vaccination">有免疫证明</FieldLabel>
-                  </div>
-                </Field>
+                </div>
               </div>
+            ) : null}
 
-              <Field>
-                <FieldLabel htmlFor="pet-photo">照片</FieldLabel>
+            <div className={petRowClass}>
+              <FieldLabel htmlFor="pet-weight" className={petLabelClass}>
+                体重（kg）
+              </FieldLabel>
+              <div className="flex flex-col gap-1">
                 <Input
-                  id="pet-photo"
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif,image/webp"
-                  onChange={handlePhotoChange}
+                  id="pet-weight"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.1"
+                  min="0"
+                  className={underlineInputClass}
+                  value={draft.weightKg}
+                  aria-invalid={Boolean(errors.weightKg)}
+                  onChange={(event) =>
+                    updateDraft({ weightKg: event.target.value })
+                  }
                 />
-                <FieldDescription>
-                  可选，支持 JPEG、PNG、GIF、WebP，最大 5MB。
-                </FieldDescription>
-                {photoError ? <FieldError>{photoError}</FieldError> : null}
-                {photoPreview ? (
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={photoPreview}
-                      alt="宠物照片预览"
-                      className="h-24 w-24 rounded-lg object-cover"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateDraft({ photo: null })}
-                    >
-                      移除照片
-                    </Button>
-                  </div>
+                {errors.weightKg ? (
+                  <FieldError>{errors.weightKg}</FieldError>
                 ) : null}
-              </Field>
-            </FieldGroup>
+              </div>
+            </div>
+
+            <div className={petRowClass}>
+              <FieldLabel htmlFor="pet-height" className={petLabelClass}>
+                肩高（cm）
+              </FieldLabel>
+              <div className="flex flex-col gap-1">
+                <Input
+                  id="pet-height"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.1"
+                  min="0"
+                  className={underlineInputClass}
+                  value={draft.shoulderHeightCm}
+                  aria-invalid={Boolean(errors.shoulderHeightCm)}
+                  onChange={(event) =>
+                    updateDraft({ shoulderHeightCm: event.target.value })
+                  }
+                />
+                {errors.shoulderHeightCm ? (
+                  <FieldError>{errors.shoulderHeightCm}</FieldError>
+                ) : null}
+              </div>
+            </div>
+
+            <div className={petRowClass}>
+              <FieldLabel className={petLabelClass}>喜好（可选）</FieldLabel>
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                {preferenceKeys.map((key) => (
+                  <span key={key} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`pet-preference-${key.toLowerCase()}`}
+                      checked={draft.preferences.includes(key)}
+                      onCheckedChange={(checked) =>
+                        togglePreference(key, checked)
+                      }
+                    />
+                    <FieldLabel
+                      htmlFor={`pet-preference-${key.toLowerCase()}`}
+                    >
+                      {preferenceLabels[key]}
+                    </FieldLabel>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className={petRowClass}>
+              <FieldLabel htmlFor="pet-personality" className={petLabelClass}>
+                性格（可选）
+              </FieldLabel>
+              <div className="flex flex-col gap-1">
+                <Select
+                  value={draft.personality}
+                  onValueChange={(value) => {
+                    if (typeof value === "string") {
+                      updateDraft({
+                        personality: value as PetDraft["personality"],
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger
+                    id="pet-personality"
+                    aria-label="宠物性格"
+                    className={underlineSelectClass}
+                  >
+                    <SelectValue>
+                      {(value: string | null) =>
+                        value && value !== PERSONALITY_UNSET
+                          ? personalityLabels[value as PetPersonality]
+                          : "未设置"
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value={PERSONALITY_UNSET}>
+                        未设置
+                      </SelectItem>
+                      {(Object.keys(personalityLabels) as PetPersonality[]).map(
+                        (key) => (
+                          <SelectItem key={key} value={key}>
+                            {personalityLabels[key]}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-x-8 gap-y-3">
+              <span className="flex items-center gap-2">
+                <Checkbox
+                  id="pet-leash"
+                  checked={draft.hasLeash}
+                  onCheckedChange={(checked) =>
+                    updateDraft({ hasLeash: checked })
+                  }
+                />
+                <FieldLabel htmlFor="pet-leash">有牵引绳</FieldLabel>
+              </span>
+              <span className="flex items-center gap-2">
+                <Checkbox
+                  id="pet-vaccination"
+                  checked={draft.hasVaccinationProof}
+                  onCheckedChange={(checked) =>
+                    updateDraft({ hasVaccinationProof: checked })
+                  }
+                />
+                <FieldLabel htmlFor="pet-vaccination">有免疫证明</FieldLabel>
+              </span>
+            </div>
 
             {saveError ? <FieldError>{saveError}</FieldError> : null}
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={pending}
-                onClick={cancelEdit}
-              >
-                取消
-              </Button>
-              <Button type="submit" disabled={pending}>
-                {pending ? "保存中…" : pet ? "保存" : "创建宠物"}
-              </Button>
-            </DialogFooter>
-          </form>
-        ) : (
-          <>
-            <PetDetails pet={pet} photo={photoPreview} />
-            <DialogFooter>
-              <Button variant="outline" onClick={onClose}>
-                关闭
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => onRequestDelete(pet)}
-              >
-                删除
-              </Button>
-              <Button onClick={startEdit}>编辑</Button>
-            </DialogFooter>
-          </>
-        )}
+          </PetProfileCard>
+        </form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function PetDetails({ pet, photo }: { pet: Pet; photo: string | null }) {
-  return (
-    <div className="flex flex-col gap-5">
-      {photo ? (
-        <img
-          src={photo}
-          alt={`${pet.name}的照片`}
-          className="h-56 w-full rounded-xl object-cover"
-        />
-      ) : (
-        <div className="flex h-56 items-center justify-center rounded-xl bg-gradient-to-br from-muted to-secondary">
-          <PawPrint
-            aria-hidden="true"
-            className="size-16 text-muted-foreground/40"
-          />
-        </div>
-      )}
-      <dl className="grid gap-3 text-sm sm:grid-cols-[7rem_1fr]">
-        <dt className="font-medium">名字</dt>
-        <dd>{pet.name}</dd>
-        <dt className="font-medium">类型</dt>
-        <dd>{petTypeLabels[pet.petType]}</dd>
-        {pet.petType === "DOG" ? (
-          <>
-            <dt className="font-medium">品种</dt>
-            <dd>{pet.dogBreed?.name ?? "未设置"}</dd>
-          </>
-        ) : null}
-        <dt className="font-medium">体重</dt>
-        <dd>{pet.weightKg} kg</dd>
-        <dt className="font-medium">肩高</dt>
-        <dd>{pet.shoulderHeightCm} cm</dd>
-        <dt className="font-medium">牵引绳</dt>
-        <dd>{pet.hasLeash ? "有" : "无"}</dd>
-        <dt className="font-medium">免疫证明</dt>
-        <dd>{pet.hasVaccinationProof ? "有" : "无"}</dd>
-      </dl>
-    </div>
   );
 }
 

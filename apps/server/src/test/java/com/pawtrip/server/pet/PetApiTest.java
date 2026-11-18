@@ -15,6 +15,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
@@ -297,6 +302,196 @@ class PetApiTest {
 			.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
 		this.mockMvc.perform(get("/api/pets/1"))
 			.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void createsUpdatesAndClearsPreferencesAndPersonality() throws Exception {
+		MvcResult result = this.mockMvc.perform(post("/api/pets")
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
+						 "hasLeash":true,"hasVaccinationProof":true,
+						 "preferences":["SWIMMING","GRASS_RUNNING"],"personality":"ENERGETIC"}
+						"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.preferences.length()").value(2))
+			.andExpect(jsonPath("$.preferences[0]").value("SWIMMING"))
+			.andExpect(jsonPath("$.preferences[1]").value("GRASS_RUNNING"))
+			.andExpect(jsonPath("$.personality").value("ENERGETIC"))
+			.andReturn();
+		long petId = JSON_MAPPER.readTree(result.getResponse().getContentAsString()).path("id").asLong();
+
+		this.mockMvc.perform(get("/api/pets/{petId}", petId).with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.preferences[0]").value("SWIMMING"))
+			.andExpect(jsonPath("$.preferences[1]").value("GRASS_RUNNING"))
+			.andExpect(jsonPath("$.personality").value("ENERGETIC"));
+
+		this.mockMvc.perform(put("/api/pets/{petId}", petId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
+						 "hasLeash":true,"hasVaccinationProof":true,
+						 "preferences":["CITY_WALKING"],"personality":"CALM"}
+						"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.preferences.length()").value(1))
+			.andExpect(jsonPath("$.preferences[0]").value("CITY_WALKING"))
+			.andExpect(jsonPath("$.personality").value("CALM"));
+
+		this.mockMvc.perform(get("/api/pets").with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].preferences[0]").value("CITY_WALKING"))
+			.andExpect(jsonPath("$[0].personality").value("CALM"));
+
+		MvcResult cleared = this.mockMvc.perform(put("/api/pets/{petId}", petId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
+						 "hasLeash":true,"hasVaccinationProof":true,
+						 "preferences":[],"personality":null}
+						"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.preferences.length()").value(0))
+			.andReturn();
+		JsonNode clearedBody = JSON_MAPPER.readTree(cleared.getResponse().getContentAsString());
+		assertThat(clearedBody.path("personality").isNull()).isTrue();
+	}
+
+	@Test
+	void rejectsUnknownPreferenceOrPersonalityKeysWithoutPersisting() throws Exception {
+		assertInvalidPet("""
+				{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
+				 "hasLeash":true,"hasVaccinationProof":true,"preferences":["FLYING"]}
+				""");
+		assertInvalidPet("""
+				{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
+				 "hasLeash":true,"hasVaccinationProof":true,"personality":"WILD"}
+				""");
+		assertThat(this.petRepository.count()).isZero();
+
+		long petId = createPet(this.username, "Mimi");
+		this.mockMvc.perform(put("/api/pets/{petId}", petId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
+						 "hasLeash":true,"hasVaccinationProof":true,
+						 "preferences":["SWIMMING"],"personality":"CALM"}
+						"""))
+			.andExpect(status().isOk());
+
+		this.mockMvc.perform(put("/api/pets/{petId}", petId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
+						 "hasLeash":true,"hasVaccinationProof":true,
+						 "preferences":["SWIMMING","UNKNOWN"],"personality":"CALM"}
+						"""))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+		this.mockMvc.perform(put("/api/pets/{petId}", petId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
+						 "hasLeash":true,"hasVaccinationProof":true,
+						 "preferences":["SWIMMING"],"personality":"WILD"}
+						"""))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+		this.mockMvc.perform(get("/api/pets/{petId}", petId).with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.preferences.length()").value(1))
+			.andExpect(jsonPath("$.preferences[0]").value("SWIMMING"))
+			.andExpect(jsonPath("$.personality").value("CALM"));
+	}
+
+	@Test
+	void deduplicatesPreferenceKeys() throws Exception {
+		this.mockMvc.perform(post("/api/pets")
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
+						 "hasLeash":true,"hasVaccinationProof":true,
+						 "preferences":["SWIMMING","SWIMMING","GRASS_RUNNING","SWIMMING"]}
+						"""))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.preferences.length()").value(2))
+			.andExpect(jsonPath("$.preferences[0]").value("SWIMMING"))
+			.andExpect(jsonPath("$.preferences[1]").value("GRASS_RUNNING"));
+	}
+
+	@Test
+	void treatsOmittedOrEmptyPreferencesAndPersonalityAsUnset() throws Exception {
+		long petId = createPet(this.username, "Mimi");
+		MvcResult omitted = this.mockMvc.perform(get("/api/pets/{petId}", petId).with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.preferences.length()").value(0))
+			.andReturn();
+		assertThat(JSON_MAPPER.readTree(omitted.getResponse().getContentAsString())
+				.path("personality").isNull()).isTrue();
+
+		MvcResult empty = this.mockMvc.perform(put("/api/pets/{petId}", petId)
+					.with(user(this.username))
+					.with(csrf())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+						{"name":"Mimi","petType":"CAT","weightKg":4.5,"shoulderHeightCm":25.0,
+						 "hasLeash":true,"hasVaccinationProof":true,
+						 "preferences":[],"personality":null}
+						"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.preferences.length()").value(0))
+			.andReturn();
+		assertThat(JSON_MAPPER.readTree(empty.getResponse().getContentAsString())
+				.path("personality").isNull()).isTrue();
+	}
+
+	@Test
+	void readsLegacyPetRowsWithNullPreferencesAndPersonality() throws Exception {
+		long userId = this.appUserRepository.findByUsername(this.username).orElseThrow().getId();
+		long petId;
+		try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + DB_PATH + "?foreign_keys=on");
+				PreparedStatement insert = connection.prepareStatement(
+						"INSERT INTO pet (user_id, name, pet_type, weight_kg, shoulder_height_cm, has_leash, "
+								+ "has_vaccination_proof) VALUES (?, 'Legacy', 'CAT', 3.0, 20.0, 1, 0)",
+						Statement.RETURN_GENERATED_KEYS)) {
+			insert.setLong(1, userId);
+			insert.executeUpdate();
+			try (ResultSet keys = insert.getGeneratedKeys()) {
+				assertThat(keys.next()).isTrue();
+				petId = keys.getLong(1);
+			}
+		}
+
+		this.mockMvc.perform(get("/api/pets").with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(1))
+			.andExpect(jsonPath("$[0].name").value("Legacy"))
+			.andExpect(jsonPath("$[0].preferences.length()").value(0));
+
+		MvcResult detail = this.mockMvc.perform(get("/api/pets/{petId}", petId).with(user(this.username)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value("Legacy"))
+			.andExpect(jsonPath("$.weightKg").value(3.0))
+			.andExpect(jsonPath("$.preferences.length()").value(0))
+			.andReturn();
+		assertThat(JSON_MAPPER.readTree(detail.getResponse().getContentAsString())
+				.path("personality").isNull()).isTrue();
 	}
 
 	private void createTripForPet(long petId) throws Exception {

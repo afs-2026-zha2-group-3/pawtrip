@@ -27,7 +27,7 @@ test("defaults to a one-day trip when start and end are the same day", async ({
 
   await confirmTripDialog(page);
   const panel = page.getByTestId("trip-panel");
-  await expect(panel).toContainText("1 天");
+  await expect(panel).toContainText("Day 1");
 
   await withTripPanelNotBlocking(page, async () => {
     await page.getByRole("combobox", { name: "添加到行程" }).first().click();
@@ -47,7 +47,7 @@ test("derives the duration from the selected date range", async ({ page }) => {
   expect(detail.totalDays).toBe(3);
 
   const panel = page.getByTestId("trip-panel");
-  await expect(panel).toContainText("3 天");
+  await expect(panel).toContainText("Day 3");
 
   await withTripPanelNotBlocking(page, async () => {
     await page.getByRole("combobox", { name: "添加到行程" }).first().click();

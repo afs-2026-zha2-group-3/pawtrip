@@ -16,10 +16,19 @@ export async function signIn(page: Page, username = workerUsername()) {
   });
   expect(response.ok()).toBeTruthy();
 
+  const hydratedAuth = page.waitForResponse(
+    (request) =>
+      new URL(request.url()).pathname === "/api/auth/me" &&
+      request.request().method() === "GET" &&
+      request.ok(),
+  );
   await page.goto("/");
-  // SSR 已输出导航标签，需等客户端脚本完成注水，后续点击才会触发路由。
-  await page.waitForLoadState("networkidle");
-  await expect(page.getByRole("tab", { name: "城市浏览" })).toBeVisible();
+  // 以客户端 auth 查询完成作为注水完成信号，不依赖 networkidle。
+  // 页面会持续发起 React Query 请求，networkidle 在并发 E2E 下并不稳定。
+  await hydratedAuth;
+  await expect(page.getByRole("tab", { name: "城市浏览" }).first()).toBeVisible({
+    timeout: 15_000,
+  });
 }
 
 export async function csrfHeaders(page: Page): Promise<Record<string, string>> {
@@ -51,7 +60,13 @@ export function cityCard(page: Page, cityName: string) {
 export async function openCities(page: Page) {
   await page.getByRole("tab", { name: "城市浏览" }).click();
   await expect(page).toHaveURL(/\/cities$/);
-  await expect(page.getByText(/共 \d+ 个候选/)).toBeVisible();
+  await expect(page.getByText(/共 \d+ 个候选/)).toBeVisible({ timeout: 15_000 });
+}
+
+export async function searchCity(page: Page, keyword: string) {
+  const search = page.getByRole("textbox", { name: "搜索城市" });
+  await search.fill(keyword);
+  await expect(page.getByText("共 1 个候选")).toBeVisible();
 }
 
 function isoDate(offsetDays: number): string {
@@ -63,7 +78,8 @@ function isoDate(offsetDays: number): string {
 }
 
 export async function openTripDialog(page: Page, cityName: string) {
-  await cityCard(page, cityName).getByRole("button", { name: "选定" }).click();
+  await searchCity(page, cityName);
+  await cityCard(page, cityName).getByRole("button", { name: "Pick" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText(cityName).first()).toBeVisible();
@@ -114,6 +130,13 @@ export async function confirmTripDialog(page: Page) {
   const response = await created;
   expect(response.status()).toBe(201);
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/transport-rules$/);
+  await page.getByRole("radio", { name: "选择自驾" }).check();
+  await expect(page.getByTestId("save-status")).toHaveAttribute(
+    "data-status",
+    "saved",
+  );
+  await page.getByRole("button", { name: "确认大交通并选择地点" }).click();
   await expect(page).toHaveURL(/\/attractions$/);
 }
 
@@ -142,7 +165,7 @@ export async function openTrips(page: Page) {
       new URL(response.url()).pathname === "/api/trips" &&
       response.request().method() === "GET",
   );
-  await page.getByRole("tab", { name: "Trips" }).click();
+  await page.getByRole("tab", { name: "我的行程" }).click();
   await expect(page).toHaveURL(/\/trips$/);
   await list;
 }

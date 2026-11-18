@@ -13,6 +13,8 @@ const pet = (id: number, name: string): Pet => ({
   hasVaccinationProof: true,
   photo: null,
   dogBreed: null,
+  preferences: [],
+  personality: null,
 });
 
 const activeTrip = (petId: number): Trip => ({

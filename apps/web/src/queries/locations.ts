@@ -49,6 +49,7 @@ export interface LocationSummary {
   petPolicies: PetPolicies;
   coverPhotoUrl: string | null;
   rating: string | null;
+  keytag: string | null;
 }
 
 export interface LocationListParams extends PaginationParams {
@@ -73,6 +74,8 @@ export interface LocationBrowseDetail {
   keytag?: string | null;
   businessArea?: string | null;
   openingHours?: string | null;
+  openTime?: string | null;
+  tel?: string | null;
 }
 
 export interface NearbyPetService {

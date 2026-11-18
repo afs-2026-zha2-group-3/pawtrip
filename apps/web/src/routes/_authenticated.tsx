@@ -10,12 +10,9 @@ import { readPersistedActiveTripId } from "../lib/trip/persistence";
 import { scheduleTripSave } from "../lib/trip/save";
 import {
   useActiveTrip,
-  useDraftTrip,
   useHydrationStatus,
-  usePanelExpanded,
   useSaveRevision,
 } from "../lib/trip/selectors";
-import { cn } from "../lib/utils";
 import { authQueryOptions } from "../queries/auth";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -42,10 +39,7 @@ function AuthenticatedLayout() {
 
 function AuthenticatedShell() {
   const queryClient = useQueryClient();
-  const expanded = usePanelExpanded();
   const activeId = useActiveTrip()?.id ?? null;
-  const draft = useDraftTrip();
-  const panelVisible = activeId != null || draft != null;
   const revision = useSaveRevision();
   const hydration = useHydrationStatus();
   const [hasPersistedTrip, setHasPersistedTrip] = useState(false);
@@ -66,12 +60,7 @@ function AuthenticatedShell() {
 
   return (
     <>
-      <div
-        className={cn(
-          "min-h-svh [view-transition-name:app-content]",
-          expanded && panelVisible && "lg:pl-[380px]",
-        )}
-      >
+      <div className="min-h-svh [view-transition-name:app-content]">
         <Outlet />
       </div>
       <TripPanel />

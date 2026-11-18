@@ -37,6 +37,7 @@ describe("matchesCityPetPolicy", () => {
     allowedPetTypes: "CAT,DOG",
     allowedDogBreedIds: [],
     maxSinglePetShoulderHeightCm: null,
+    featureTags: [],
     ...overrides,
   });
 

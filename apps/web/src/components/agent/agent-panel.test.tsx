@@ -266,6 +266,7 @@ describe("AgentPanel", () => {
         allowedPetTypes: "DOG",
         allowedDogBreedIds: [],
         maxSinglePetShoulderHeightCm: null,
+        featureTags: [],
       },
       startDate: "2026-12-01",
       endDate: "2026-12-02",

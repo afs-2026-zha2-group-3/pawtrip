@@ -58,6 +58,7 @@ export function deriveDayPolicy(
   return { leash, sizeWarnings };
 }
 
+// 当天汇总行仅保留牵引绳提醒；体型超限警示改在对应景点行下方展示（2026-11-17 修订）
 export function dayPolicyLines(reminder: DayPolicyReminder): string[] {
   const lines: string[] = [];
   if (reminder.leash === "required") {
@@ -65,14 +66,17 @@ export function dayPolicyLines(reminder: DayPolicyReminder): string[] {
   } else if (reminder.leash === "required-no-leash") {
     lines.push("当天需携带牵引绳（档案未登记牵引绳，请自备）");
   }
-  for (const warning of reminder.sizeWarnings) {
-    const limits = [
-      warning.weightLimitKg != null ? `≤${warning.weightLimitKg}kg` : null,
-      warning.heightLimitCm != null ? `≤${warning.heightLimitCm}cm` : null,
-    ]
-      .filter((part) => part != null)
-      .join("/");
-    lines.push(`您的宠物超出景点 ${warning.name} 限制（${limits}）`);
-  }
   return lines;
+}
+
+// 体型超限警示文案：点名宠物与景点、列出超限维度；宠物名缺失时退化为无名版本
+export function sizeWarningLine(warning: DaySizeWarning, petName: string | null): string {
+  const limits = [
+    warning.weightLimitKg != null ? `≤${warning.weightLimitKg}kg` : null,
+    warning.heightLimitCm != null ? `≤${warning.heightLimitCm}cm` : null,
+  ]
+    .filter((part) => part != null)
+    .join("/");
+  const subject = petName ? `您的宠物「${petName}」` : "您的宠物";
+  return `${subject}超出景点 ${warning.name} 限制（${limits}）`;
 }
