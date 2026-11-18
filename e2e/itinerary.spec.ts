@@ -420,9 +420,7 @@ test("exports all days through the print dialog", async ({ page }) => {
   await expect(page.getByText("12月2日 周三 · 珠海市")).toBeVisible();
   await expect(firstStop.getByText("8.5 kg", { exact: true })).toBeVisible();
   await expect(firstStop.getByText("不需要", { exact: true })).toBeVisible();
-  await expect(
-    firstStop.getByText("10.5 元 / 只 / 次", { exact: true }),
-  ).toBeVisible();
+  await expect(firstStop.getByText("10.5 元 / 只 / 次")).toHaveCount(0);
   await expect(page.getByTestId("itinerary-transport")).toContainText(
     "途内交通 · 打车",
   );
