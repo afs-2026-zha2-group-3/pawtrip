@@ -82,7 +82,7 @@ class LocationQueryApiTest {
 						null, null, null, null, null, null, null),
 				locationAt("poi-zhu-hospital", "宠物医院", "pet-hospital", "440402", "090700", 113.5, 22.11, null,
 						null, null, null, null, null, null, null,
-						"{\"opentime_week\":\"周一至周日 09:00-20:00\",\"opentime_today\":\"09:00-20:00\"}"),
+						"{\"opentime_week\":\"周一至周日 09:00-20:00\",\"opentime_today\":\"09:00-20:00\",\"tel\":\"0756-1234567\"}"),
 				locationAt("poi-zhu-supplies", "宠物用品店", "pet-supplies", "440402", "061211", 113.5, 22.12, null,
 						null, null, null, null, null, null, null, "{\"opentime_today\":\"24小时营业\"}"),
 				locationAt("poi-zhu-hospital-far", "远处宠物医院", "pet-hospital", "440402", "090700", 113.6, 22.2,
@@ -397,11 +397,13 @@ class LocationQueryApiTest {
 		assertThat(hospital.path("address").asString()).isEqualTo("测试地址");
 		assertThat(hospital.path("distanceMeters").asLong()).isCloseTo(1112L, within(5L));
 		assertThat(hospital.path("openingHours").asString()).isEqualTo("周一至周日 09:00-20:00");
+		assertThat(hospital.path("tel").asString()).isEqualTo("0756-1234567");
 
 		JsonNode supplies = body.path("supplies");
 		assertThat(supplies.path("poiId").asString()).isEqualTo("poi-zhu-supplies");
 		assertThat(supplies.path("distanceMeters").asLong()).isCloseTo(2224L, within(5L));
 		assertThat(supplies.path("openingHours").asString()).isEqualTo("24小时营业");
+		assertThat(supplies.path("tel").isNull()).isTrue();
 	}
 
 	@Test
