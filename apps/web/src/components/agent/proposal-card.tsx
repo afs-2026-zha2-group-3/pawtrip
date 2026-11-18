@@ -35,7 +35,7 @@ export function ProposalCard({
   return (
     <Card
       data-testid="agent-proposal"
-      className="max-h-[50%] min-h-0 gap-3 border-primary/30"
+      className="min-h-0 flex-1 gap-3 border-primary/30"
     >
       <CardHeader className="shrink-0 gap-1">
         <CardTitle className="text-sm">待确认方案</CardTitle>

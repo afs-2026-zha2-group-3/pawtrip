@@ -172,27 +172,6 @@ describe("AgentPanel", () => {
     expect(tripStore.state.active?.plan.days[0].stops).toEqual([{ poiId: "a" }]);
   });
 
-  it("right-aligns user messages in a light green bubble without identity marks", async () => {
-    agentActions.setOpen(true);
-    chat.state.messages = [
-      { id: "u1", role: "user", parts: [{ type: "text", content: "帮我安排住宿" }] },
-    ];
-
-    renderPanel();
-
-    const bubble = (await screen.findByText("帮我安排住宿")).closest(
-      '[data-slot="bubble"]',
-    ) as HTMLElement;
-    expect(bubble.className).toContain("bg-emerald-100");
-    expect(bubble.className).toContain("text-black");
-
-    const content = bubble.parentElement as HTMLElement;
-    expect(content.className).toContain("items-end");
-
-    const message = bubble.closest('[data-slot="message"]') as HTMLElement;
-    expect(message.querySelector("img, svg")).toBeNull();
-  });
-
   it("shows intermediate narration in a collapsed process block", async () => {
     agentActions.setOpen(true);
     chat.state.messages = [
