@@ -105,3 +105,8 @@
 ## Waiver
 
 N/A — no waiver（Overall = Partial，非 Fail；未请求人工 Waiver）。
+
+## Post-archive addendum（2026-11-18）
+
+- V5 已闭环：change 已归档，`trip-attractions` 合并「行程景点附近宠物服务」，`openspec validate --all --strict` 27 passed / 0 failed。
+- V3 剩余缺口（请求失败态、距离并列、专用 E2E）仍由 `followups.md` 跟踪；本报告 Overall 保持 Partial 作为归档前事实记录。
