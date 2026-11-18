@@ -90,7 +90,7 @@ test.describe("agent panel layout integration", () => {
 
     const grid = locationCardGrid(page);
     const cards = grid.locator('[data-slot="card"]');
-    await expect(cards).toHaveCount(5);
+    await expect(cards).toHaveCount(7);
 
     const [first, second, third] = await Promise.all([
       cards.nth(0).boundingBox(),
@@ -121,7 +121,7 @@ test.describe("agent panel layout integration", () => {
     await showAllAttractions(page);
 
     const cards = locationCardGrid(page).locator('[data-slot="card"]');
-    await expect(cards).toHaveCount(5);
+    await expect(cards).toHaveCount(7);
 
     await page.getByTestId("agent-fab").click();
     await expect(page.getByTestId("agent-panel")).toBeVisible();
@@ -171,7 +171,7 @@ test.describe("below the 2xl breakpoint", () => {
     await showAllAttractions(page);
 
     const cards = locationCardGrid(page).locator('[data-slot="card"]');
-    await expect(cards).toHaveCount(5);
+    await expect(cards).toHaveCount(7);
 
     await page.getByTestId("agent-fab").click();
     await expect(page.getByTestId("agent-panel")).toBeVisible();
@@ -460,6 +460,23 @@ test("media E1 card shows first cover photo and rating", async ({ page }) => {
   const rating = card.getByTestId("location-rating");
   await expect(rating).toBeVisible();
   await expect(rating).toContainText("4.6");
+});
+
+test("media E1b card cover is inset from the card top and side edges", async ({ page }) => {
+  await tripTo(page, "珠海市");
+
+  const card = attractionCard(page, "情侣路");
+  const cover = card.getByRole("img", { name: "情侣路", exact: true });
+  await expect
+    .poll(() => cover.evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBeGreaterThan(0);
+  const cardBox = await card.boundingBox();
+  const coverBox = await cover.boundingBox();
+  expect(cardBox).not.toBeNull();
+  expect(coverBox).not.toBeNull();
+  // 图片不贴顶/贴边：与卡片边缘保留内边距（p-3 = 12px）
+  expect(coverBox!.y - cardBox!.y).toBeGreaterThanOrEqual(8);
+  expect(coverBox!.x - cardBox!.x).toBeGreaterThanOrEqual(8);
 });
 
 test("media E2 card without photo shows neutral placeholder", async ({ page }) => {

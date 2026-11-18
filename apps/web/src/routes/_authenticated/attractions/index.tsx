@@ -374,12 +374,12 @@ function AttractionsPage() {
       <div
         data-testid="attractions-layout"
         className={cn(
-          "grid h-full min-h-0 items-start gap-4 lg:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)_minmax(360px,42%)]",
+          "grid h-full min-h-0 items-start gap-4 lg:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[280px_minmax(0,1fr)_minmax(320px,36%)]",
           // 展开态的 376px 留白 = Agent 面板 400px + right-4 16px - 页面右内边距 40px；
           // 面板宽度变更时需同步 agent-panel.tsx。
           agentOpen
-            ? "2xl:grid-cols-[220px_minmax(0,1fr)_minmax(240px,0.85fr)_minmax(0,376px)]"
-            : "2xl:grid-cols-[220px_minmax(0,1fr)_minmax(320px,0.8fr)]",
+            ? "2xl:grid-cols-[280px_minmax(0,1fr)_minmax(240px,0.85fr)_minmax(0,376px)]"
+            : "2xl:grid-cols-[280px_minmax(0,1fr)_minmax(320px,0.8fr)]",
         )}
       >
         <div className="flex min-w-0 flex-wrap items-center justify-start gap-4 lg:col-span-3 lg:row-start-1 lg:flex-nowrap xl:col-span-3">
@@ -429,7 +429,7 @@ function AttractionsPage() {
           <TripPanel embedded timeline footer={panelFooter} />
         </aside>
 
-        <section className="min-h-0 min-w-0 overflow-y-auto lg:col-start-2 lg:col-span-1 lg:row-start-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <section className="min-h-0 min-w-0 overflow-y-auto lg:col-start-2 lg:col-span-1 lg:row-start-2 lg:self-stretch [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             {typeGroup === DEFAULT_TYPE_GROUP ? (
               <>

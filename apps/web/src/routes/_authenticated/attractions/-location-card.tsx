@@ -63,12 +63,14 @@ export function LocationCard({
         highlighted && "border-paw-accent",
       )}
     >
-      <LocationCover
-        coverPhotoUrl={location.coverPhotoUrl}
-        name={location.name}
-        typeLabel={typeLabel}
-        className="aspect-[2.3] rounded-[14px]"
-      />
+      <div>
+        <LocationCover
+          coverPhotoUrl={location.coverPhotoUrl}
+          name={location.name}
+          typeLabel={typeLabel}
+          className="aspect-[2.3] rounded-[14px]"
+        />
+      </div>
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="min-w-0 flex-1 truncate text-base leading-6 font-medium text-paw-ink">
