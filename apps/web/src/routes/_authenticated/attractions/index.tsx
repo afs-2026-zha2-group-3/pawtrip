@@ -314,7 +314,7 @@ function AttractionsPage() {
         >
           {anchorsLoading || anchors.length === 0
             ? "先在行程中添加景点，下一步可挑选附近的住宿与餐厅"
-            : "下一步将按离景点最近，推荐 5km 内的住宿与餐厅"}
+            : "下一步将按评分推荐 5km 内的住宿与餐厅"}
         </p>
         <Button
           type="button"
