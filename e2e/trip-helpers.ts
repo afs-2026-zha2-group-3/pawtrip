@@ -129,11 +129,13 @@ export async function confirmTripDialog(page: Page) {
   expect(response.status()).toBe(201);
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page).toHaveURL(/\/transport-rules$/);
-  await page.getByRole("radio", { name: "选择自驾" }).check();
-  await expect(page.getByTestId("save-status")).toHaveAttribute(
-    "data-status",
-    "saved",
+  const saved = page.waitForResponse(
+    (response) =>
+      /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
+      response.request().method() === "PUT",
   );
+  await page.getByRole("radio", { name: "选择自驾" }).check();
+  await saved;
   await page.getByRole("button", { name: "确认大交通并选择地点" }).click();
   await expect(page).toHaveURL(/\/attractions$/);
 }

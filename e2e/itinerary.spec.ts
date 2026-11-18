@@ -95,7 +95,7 @@ async function activateTrip(page: Page, name = DEFAULT_TRIP_NAME) {
   await openTrips(page);
   await tripCard(page, name).getByRole("button", { name: "查看行程单" }).click();
   await expect(page).toHaveURL(/\/itinerary$/);
-  await expect(page.getByTestId("trip-panel")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "行程单" })).toBeVisible();
 }
 
 async function stubWindowPrint(page: Page) {
@@ -150,12 +150,9 @@ test("redirects unauthenticated visitors to login", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "行程单" })).toHaveCount(0);
 });
 
-test("summarizes the active trip by day from the panel entry", async ({
-  page,
-}) => {
+test("summarizes the active trip by day", async ({ page }) => {
   await seedItineraryTrip(page);
   await activateTrip(page);
-  await page.getByTestId("itinerary-link").click();
 
   await expect(page).toHaveURL(/\/itinerary$/);
   await expect(page.getByRole("heading", { name: "行程单" })).toBeVisible();

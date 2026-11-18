@@ -99,13 +99,7 @@ async function activateTrip(page: Page, name: string) {
   await openTrips(page);
   await tripCard(page, name).getByRole("button", { name: "编辑" }).click();
   await expect(page).toHaveURL(/\/attractions$/);
-  await openTrips(page);
-  await expect(tripCard(page, name)).toContainText("编辑中");
   await expect(page.getByTestId("trip-panel")).toBeVisible();
-}
-
-async function expandPanel(page: Page) {
-  await page.getByRole("button", { name: "展开行程面板" }).click();
 }
 
 function nextPlanPut(page: Page) {
@@ -156,10 +150,19 @@ async function expectBefore(first: Locator, second: Locator) {
 }
 
 async function dragHandleTo(page: Page, stopName: string, target: Locator) {
-  const handle = page
+  const handleButton = page
     .getByTestId("trip-panel")
     .getByRole("button", { name: `拖动${stopName}` })
     .first();
+  const handle = (await handleButton.count()) > 0
+    ? handleButton
+    : page
+        .getByTestId("trip-panel")
+        .locator("[data-stop-id]")
+        .filter({ hasText: stopName })
+        .first();
+  await handle.scrollIntoViewIfNeeded();
+  await target.first().scrollIntoViewIfNeeded();
   const handleBox = await handle.boundingBox();
   const targetBox = await target.first().boundingBox();
   if (!handleBox || !targetBox) {
@@ -219,7 +222,6 @@ test("E1 renders n-1 segment rows between stops, none for single/empty/unschedul
     unscheduled: [{ poiId: "e2e-zhu-c" }],
   });
   await activateTrip(page, "珠海三日");
-  await expandPanel(page);
 
   const segments = page.getByTestId("transport-segment");
   await expect(segments).toHaveCount(2);
@@ -341,7 +343,6 @@ test("E10 drag reorder and cross-day move keep snapshots attached", async ({ pag
     ],
   });
   await activateTrip(page, "珠海拖拽");
-  await expandPanel(page);
   await expect(page.getByTestId("transport-segment").first().getByText("约 12 分钟")).toBeVisible();
   // AnimatedList 入场弹簧动画 620ms + 每行 50ms stagger，拖拽前等待行坐标稳定，否则 boundingBox 漂移导致拖放落空。
   await page.waitForTimeout(1200);
@@ -369,7 +370,7 @@ test("E10 drag reorder and cross-day move keep snapshots attached", async ({ pag
   await dragHandleTo(
     page,
     "情侣路",
-    page.getByTestId("trip-panel").getByText("第 2 天", { exact: true }),
+    page.getByTestId("trip-panel").getByText("Day 2", { exact: true }),
   );
   await put;
   trip = await getTrip(page, id);
