@@ -233,14 +233,24 @@ API SHALL 以 JSON 对象承载计划，结构为 `{version, days, unscheduled}`
 
 ### Requirement: 宠物删除冲突保护
 
-删除被任一 trip 引用的宠物 SHALL 失败并返回 `409 PET_IN_USE`，宠物与引用它的 trip MUST 保持存在。删除未被 trip 引用的宠物 SHALL 保持既有成功行为。
+删除被 trip 引用的宠物时，服务端 SHALL 区分引用行程的状态：存在未结束的引用行程时 MUST 失败并返回 `409 PET_IN_USE`，`detail` MUST 列出这些行程名称，宠物与全部引用行程保持存在；仅被已结束行程引用时 SHALL 删除宠物并一并删除这些已结束行程。未设置开始日期的行程视为未结束。删除未被 trip 引用的宠物 SHALL 保持既有成功行为。
 
-#### Scenario: 被行程引用的宠物不可删除
+#### Scenario: 被未结束行程引用的宠物不可删除
 
-- **GIVEN** 一只宠物被至少一个 trip 引用
+- **GIVEN** 一只宠物被至少一个未结束的 trip 引用
 - **WHEN** 用户请求删除该宠物
 - **THEN** 返回 `409` 与 `code=PET_IN_USE`
+- **AND** `detail` 包含未结束行程的名称
 - **AND** 宠物仍可通过 `GET /api/pets/{id}` 读取
+- **AND** 全部引用行程仍存在
+
+#### Scenario: 仅被已结束行程引用的宠物可删除
+
+- **GIVEN** 一只宠物只被已结束的 trip 引用
+- **WHEN** 用户请求删除该宠物
+- **THEN** 返回 `204`
+- **AND** 宠物详情返回 `404`
+- **AND** 这些已结束行程一并删除，详情返回 `404 TRIP_NOT_FOUND`
 
 #### Scenario: 未被引用的宠物仍可删除
 
