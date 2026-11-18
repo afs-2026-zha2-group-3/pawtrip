@@ -25,7 +25,7 @@
     6. 弹窗反复打开会重新算路，暂不缓存（SA 知悉，地图实例关闭即销毁，design Risks）
 - Decision: **Pass**
 - Conditions + owners: 无（Pass）。上述 6 项为非阻塞知悉项，已有归属或运行期降级，不构成 Gate 条件
-- Approvers: IO=SUKI；SA=RANLE（沿用 REQ-014/REQ-012 G1 签署先例，2026-11-18 用户指示落签）
+- Approvers: IO=kitty；SA=kitty（用户指定同一人签署，沿袭 REQ-011 G1 先例，2026-11-18）
 - Timestamp: 2026-11-18
 
 > 本记录为人工 G1 决定的落盘，不构成 G2/G3 授权。下一步：P4 `/sdd:atdd-apply`（按 `tasks.md` 1.1–1.3 红测先行）。
