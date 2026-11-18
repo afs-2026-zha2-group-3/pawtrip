@@ -13,6 +13,7 @@ public enum ApiErrorCode {
 	PET_IN_USE(HttpStatus.CONFLICT, "Pet is referenced by a trip"),
 	CITY_NOT_FOUND(HttpStatus.NOT_FOUND, "City not found"),
 	TRIP_NOT_FOUND(HttpStatus.NOT_FOUND, "Trip not found"),
+	TRIP_ENDED(HttpStatus.CONFLICT, "Trip has ended"),
 
 	VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Validation failed"),
 	UPSTREAM_FAILURE(HttpStatus.BAD_GATEWAY, "Upstream service failure"),

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
+  completeTripViaApi,
   createTripViaApi,
   csrfHeaders,
   openTrips,
@@ -48,14 +49,14 @@ async function seedHospitalTrip(page: Page) {
     },
   });
   expect(response.ok()).toBeTruthy();
+  await completeTripViaApi(page, trip.id);
 }
 
 async function openHospitalServices(page: Page) {
   await openTrips(page);
-  await tripCard(page, TRIP_NAME).getByRole("button", { name: "激活" }).click();
-  await expect(page.getByTestId("trip-panel")).toBeVisible();
-  await page.getByTestId("itinerary-link").click();
+  await tripCard(page, TRIP_NAME).getByRole("button", { name: "查看行程单" }).click();
   await expect(page).toHaveURL(/\/itinerary$/);
+  await expect(page.getByTestId("trip-panel")).toBeVisible();
 
   const stop = page.getByTestId("itinerary-stop").first();
   await expect(stop).toContainText("情侣路");

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
+  completeTripViaApi,
   createTripViaApi,
   csrfHeaders,
   openTrips,
@@ -49,6 +50,8 @@ function route(distance: number, time: number): FakeRoute {
 }
 
 async function installFakeAmap(page: Page) {
+  // 本地 .env 可能带真实高德 Key，阻断后端估算，保证标签只来自假 AMap。
+  await page.route("**/api/trips/*/route-estimate*", (route) => route.abort());
   await page.addInitScript(() => {
     // 打印导出用例复用同一初始化脚本，避免测试内再触发整页刷新。
     window.print = () => {};
@@ -158,7 +161,14 @@ async function installFakeAmap(page: Page) {
     }),
   );
   // addInitScript 只对后续文档加载生效；signIn 之后是 SPA 路由，需整页刷新注入假 AMap。
+  const hydratedAuth = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/auth/me" &&
+      response.request().method() === "GET" &&
+      response.ok(),
+  );
   await page.reload();
+  await hydratedAuth;
   await page.waitForSelector("html[data-app-ready='true']", {
     timeout: 15_000,
   });
@@ -209,13 +219,12 @@ async function seedRouteTrip(page: Page, days: RouteStop[][]) {
     },
   });
   expect(response.ok()).toBeTruthy();
+  await completeTripViaApi(page, trip.id);
 }
 
 async function activateTrip(page: Page) {
   await openTrips(page);
-  await tripCard(page, TRIP_NAME).getByRole("button", { name: "激活" }).click();
-  await expect(page.getByTestId("trip-panel")).toBeVisible();
-  await page.getByTestId("itinerary-link").click();
+  await tripCard(page, TRIP_NAME).getByRole("button", { name: "查看行程单" }).click();
   await expect(page).toHaveURL(/\/itinerary$/);
 }
 

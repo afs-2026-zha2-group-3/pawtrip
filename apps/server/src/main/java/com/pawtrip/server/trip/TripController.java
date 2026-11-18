@@ -54,6 +54,11 @@ class TripController {
 		return ResponseEntity.created(URI.create("/api/trips/" + trip.id())).body(trip);
 	}
 
+	@PostMapping("/{tripId}/complete")
+	TripResponses.TripDetail complete(@PathVariable Long tripId, Authentication authentication) {
+		return this.tripService.complete(authentication.getName(), tripId);
+	}
+
 	@PutMapping("/{tripId}")
 	TripResponses.TripDetail update(@PathVariable Long tripId, @RequestBody TripRequests.SaveTrip request,
 			Authentication authentication) {

@@ -91,6 +91,7 @@ function tripWith(plan: TripPlan, transportMode: TransportMode | null = null): T
     totalDays: 3,
     startDate: null,
     transportMode,
+    planCompleted: false,
     plan,
     createdAt: "2026-11-17T00:00:00Z",
     updatedAt: "2026-11-17T00:00:00Z",

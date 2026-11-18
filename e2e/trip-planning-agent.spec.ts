@@ -28,8 +28,10 @@ function creationDialog(page: Page) {
 async function openTripsAndActivate(page: Page, name: string) {
   await openTrips(page);
   const card = tripCard(page, name);
-  await card.getByRole("button", { name: "激活", exact: true }).click();
-  await expect(card).toContainText("激活中");
+await card.getByRole("button", { name: "编辑" }).click();
+  await expect(page).toHaveURL(/\/attractions$/);
+  await openTrips(page);
+  await expect(card).toContainText("编辑中");
 }
 
 async function tripDetails(page: Page) {

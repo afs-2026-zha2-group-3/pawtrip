@@ -70,9 +70,22 @@ class TripService {
 	}
 
 	@Transactional
+	TripResponses.TripDetail complete(String username, long tripId) {
+		Trip existing = findOwnedTrip(userId(username), tripId);
+		if (isEnded(existing)) {
+			throw new ApiException(ApiErrorCode.TRIP_ENDED, "Ended trips are read-only");
+		}
+		existing.markPlanCompleted();
+		return TripResponses.TripDetail.from(this.tripRepository.save(existing), this.planValidator);
+	}
+
+	@Transactional
 	TripResponses.TripDetail update(String username, long tripId, TripRequests.SaveTrip request) {
 		Long userId = userId(username);
 		Trip existing = findOwnedTrip(userId, tripId);
+		if (isEnded(existing)) {
+			throw new ApiException(ApiErrorCode.TRIP_ENDED, "Ended trips are read-only");
+		}
 		ValidatedTrip validated = validate(userId, request, false);
 		existing.update(validated.name(), validated.totalDays(), validated.startDate(), validated.planJson(),
 				validated.transportMode());
@@ -160,6 +173,15 @@ class TripService {
 		if (!existing.containsAll(poiIds)) {
 			throw invalid();
 		}
+	}
+
+	// 结束日为开始日期 + 天数 - 1；无开始日期的行程永不自动结束。
+	private static boolean isEnded(Trip trip) {
+		if (trip.getStartDate() == null) {
+			return false;
+		}
+		LocalDate endDate = LocalDate.parse(trip.getStartDate()).plusDays(trip.getTotalDays() - 1L);
+		return endDate.isBefore(LocalDate.now());
 	}
 
 	private Trip findOwnedTrip(Long userId, long tripId) {

@@ -41,6 +41,9 @@ public class Trip {
 	@Column(name = "plan_json", nullable = false)
 	private String planJson;
 
+	@Column(name = "plan_completed", nullable = false)
+	private boolean planCompleted;
+
 	@Column(name = "created_at", nullable = false)
 	private String createdAt;
 
@@ -74,6 +77,11 @@ public class Trip {
 		this.updatedAt = Instant.now().toString();
 	}
 
+	public void markPlanCompleted() {
+		this.planCompleted = true;
+		this.updatedAt = Instant.now().toString();
+	}
+
 	public Long getId() {
 		return this.id;
 	}
@@ -104,6 +112,10 @@ public class Trip {
 
 	public String getPlanJson() {
 		return this.planJson;
+	}
+
+	public boolean isPlanCompleted() {
+		return this.planCompleted;
 	}
 
 	public String getTransportMode() {

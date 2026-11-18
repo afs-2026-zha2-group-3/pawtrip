@@ -466,6 +466,23 @@ test("media E1 card shows first cover photo and rating", async ({ page }) => {
   await expect(rating).toContainText("4.6");
 });
 
+test("media E1b card cover is inset from the card top and side edges", async ({ page }) => {
+  await tripTo(page, "珠海市");
+
+  const card = attractionCard(page, "情侣路");
+  const cover = card.getByRole("img", { name: "情侣路", exact: true });
+  await expect
+    .poll(() => cover.evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBeGreaterThan(0);
+  const cardBox = await card.boundingBox();
+  const coverBox = await cover.boundingBox();
+  expect(cardBox).not.toBeNull();
+  expect(coverBox).not.toBeNull();
+  // 图片不贴顶/贴边：与卡片边缘保留内边距（p-3 = 12px）
+  expect(coverBox!.y - cardBox!.y).toBeGreaterThanOrEqual(8);
+  expect(coverBox!.x - cardBox!.x).toBeGreaterThanOrEqual(8);
+});
+
 test("media E2 card without photo shows neutral placeholder", async ({ page }) => {
   await tripTo(page, "珠海市");
   await showAllAttractions(page);
