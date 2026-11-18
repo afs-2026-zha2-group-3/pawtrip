@@ -359,6 +359,17 @@ function TransportRulesPage() {
     );
   }
 
+  const confirmTransportButton = (
+    <Button
+      variant="outline"
+      className="rounded-full"
+      disabled={active.transportMode === null}
+      onClick={() => void navigate({ to: "/attractions" })}
+    >
+      {active.transportMode === null ? "请选择大交通方式" : "确认大交通并选择地点"}
+    </Button>
+  );
+
   return (
     <main className="mx-auto w-full max-w-[1662px] px-4 py-6 sm:px-6">
       <div className={cn(panelClass, "flex flex-col gap-6")}>
@@ -382,11 +393,14 @@ function TransportRulesPage() {
                 已根据宠物体重和携宠规则，为你整理适合的交通方式。
               </p>
             </div>
-            {driveRecommended ? (
-              <span className={cn(chipClass, "bg-card text-[#F76B15]")}>
-                优先推荐自驾
-              </span>
-            ) : null}
+            <div className="flex flex-wrap items-center gap-3">
+              {driveRecommended ? (
+                <span className={cn(chipClass, "bg-card text-[#F76B15]")}>
+                  优先推荐自驾
+                </span>
+              ) : null}
+              {confirmTransportButton}
+            </div>
           </section>
         ) : null}
 
@@ -425,15 +439,9 @@ function TransportRulesPage() {
           </TableBody>
         </Table>
 
-        <div className="flex justify-end">
-          <Button
-            className="rounded-full"
-            disabled={active.transportMode === null}
-            onClick={() => void navigate({ to: "/attractions" })}
-          >
-            {active.transportMode === null ? "请选择大交通方式" : "确认大交通并选择地点"}
-          </Button>
-        </div>
+        {showRecommendation ? null : (
+          <div className="flex justify-end">{confirmTransportButton}</div>
+        )}
 
         <section
           aria-label="规则说明"

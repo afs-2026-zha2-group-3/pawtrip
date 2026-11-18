@@ -18,7 +18,7 @@ export function TripDateCard() {
   const end = start ? addDays(start, active.totalDays - 1) : null;
 
   return (
-    <div className="w-fit max-w-[544px] rounded-[22px] bg-card px-5 py-3 shadow-[0_2px_4px_-2px_rgba(0,0,0,0.1),0_4px_6px_-1px_rgba(0,0,0,0.1)]">
+    <div className="w-full min-w-0 shrink-0">
       <div className="flex min-w-0 flex-col items-start gap-0.5">
         <h2 className="w-full min-w-0 truncate text-lg leading-7 font-medium text-foreground">
           {active.name}

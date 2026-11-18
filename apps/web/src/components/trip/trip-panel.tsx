@@ -380,7 +380,7 @@ function TripPanelContent({
       className={cn(
         "flex min-w-0 flex-col gap-2 text-card-foreground",
         timeline
-          ? "h-full min-h-0 w-full overflow-hidden border-r border-[#E5E5E5] pr-3"
+          ? "h-full min-h-0 w-full overflow-hidden"
           : embedded
             ? "w-full rounded-xl border bg-card p-3"
             : "z-50 rounded-xl border bg-card shadow-xl [view-transition-name:trip-panel]",

@@ -70,13 +70,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function AppHeader() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const plainHeader =
-    pathname === "/paws" ||
-    pathname === "/cities" ||
-    pathname === "/transport-rules" ||
-    pathname === "/trips" ||
-    pathname === "/itinerary";
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const isClient = typeof window !== "undefined";
   const auth = useQuery({ ...authQueryOptions, enabled: isClient });
@@ -91,9 +84,7 @@ function AppHeader() {
   });
 
   return (
-    <header
-      className={`paw-header relative flex shrink-0 items-center justify-center py-2 pr-24 pl-24 print:hidden${plainHeader ? " paw-header-plain" : ""}`}
-    >
+    <header className="paw-header relative flex shrink-0 items-center justify-center py-2 pr-24 pl-24 print:hidden">
       <div
         data-testid="app-nav-scroll"
         className="w-full min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -113,11 +104,7 @@ function AppHeader() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className={
-                  pathname === "/paws" || plainHeader
-                    ? "absolute right-4 h-8 rounded-full bg-card px-4 shadow-sm ring-1 ring-foreground/5"
-                    : "absolute right-4"
-                }
+                className="absolute right-4 h-8 rounded-full bg-card px-4 shadow-sm ring-1 ring-foreground/5"
                 disabled={logoutMutation.isPending}
               />
             }
@@ -271,13 +258,6 @@ function NotFoundComponent() {
 
 function RootDocument({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const petPatternBody =
-    pathname === "/paws" ||
-    pathname === "/cities" ||
-    pathname === "/trips" ||
-    pathname === "/itinerary" ||
-    pathname === "/transport-rules" ||
-    pathname === "/login";
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -287,9 +267,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       <body
         className={`${
           pathname === "/login" ? "min-h-svh" : "flex h-dvh flex-col overflow-hidden"
-        } ${
-          petPatternBody ? "bg-pet-pattern" : "bg-background"
-        } text-foreground antialiased`}
+        } bg-pet-fade text-foreground antialiased`}
       >
         {pathname === "/login" ? null : <AppHeader />}
         {children}
