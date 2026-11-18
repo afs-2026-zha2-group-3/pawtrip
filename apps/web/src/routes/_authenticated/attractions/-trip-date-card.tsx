@@ -23,7 +23,7 @@ export function TripDateCard() {
         <h2 className="w-full min-w-0 truncate text-lg leading-7 font-medium text-foreground">
           {active.name}
         </h2>
-<div className="flex items-center gap-2 text-sm text-foreground">
+        <div className="flex items-center gap-2 text-sm text-foreground">
           <span className="tabular-nums">{start ?? "未设置出发日期"}</span>
           <ArrowRight aria-hidden="true" className="size-4" />
           <span className="tabular-nums">{end ?? `共 ${active.totalDays} 天`}</span>

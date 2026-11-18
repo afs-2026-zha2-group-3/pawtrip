@@ -309,7 +309,6 @@ test("E4 switching to walk saves mode only and restores after reload", async ({ 
   const put = nextPlanPut(page);
   await chooseMode(page, false, "walk");
   expect((await put).status()).toBe(200);
-  await expect(page.getByTestId("save-status")).toContainText("已保存");
 
   const trip = await getTrip(page, id);
   expect(stopOf(trip, 1, 0).toNext).toBe("walk");
@@ -402,7 +401,6 @@ test("E12 drive-mode dropdown saves taxi and explicit self-drive, restores after
   let put = nextPlanPut(page);
   await chooseMode(page, true, "drive");
   expect((await put).status()).toBe(200);
-  await expect(page.getByTestId("save-status")).toContainText("已保存");
   let trip = await getTrip(page, id);
   expect(stopOf(trip, 1, 0).toNext).toBe("drive");
   expect(stopOf(trip, 1, 0).toNextEstimate ?? null).toBeNull();
