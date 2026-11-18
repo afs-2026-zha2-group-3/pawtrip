@@ -9,8 +9,12 @@ out of this document — UT belongs to `/sdd:atdd-apply`.
 1. **ATDD layers in scope** — which **API** and **E2E** layers apply for this
    change. Use [layer-inference.md](../../../../vendor/ai4se-plugins/skills/design/atdd-design/references/layer-inference.md) to classify scenarios.
    Frame strictly as ATDD (failing acceptance / API checks guide
-   implementation). Do **not** specify unit-test suites here; list any
-   pure-logic items as **Deferred to `/sdd:atdd-apply` (unit-level TDD)**.
+   implementation). Do **not** specify unit-test suites here; list pure-logic
+   items as **Deferred to `/sdd:atdd-apply` (unit-level TDD)** and
+   single-component / single-view UI behavior as **Defer UT (component)**.
+   Every E2E item must cite the AC / scenario it proves; E2E is reserved for
+   cross-page / real-browser journeys that API and component layers cannot
+   prove.
 2. **What is written before production code** — acceptance / API examples or
    checks authored (or stubbed red) before feature code. Prefer scenarios
    classified as API or E2E.

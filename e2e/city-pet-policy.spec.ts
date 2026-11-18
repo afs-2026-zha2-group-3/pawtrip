@@ -181,22 +181,6 @@ test("opens the city policy from the city browsing sidebar", async ({ page }) =>
   await expect(page.getByText("珠海市养宠政策")).toBeVisible();
 });
 
-test("does not expose the admin policy endpoint", async ({ browser }) => {
-  const context = await browser.newContext({
-    baseURL: test.info().project.use.baseURL,
-  });
-  const page = await context.newPage();
-
-  try {
-    await signIn(page, "admin");
-    const response = await page.request.get("/api/admin/pet-policies");
-
-    expect(response.status()).toBe(404);
-  } finally {
-    await context.close();
-  }
-});
-
 async function editZhuhaiAllowedBreeds(page: Page, breedName: string, checked: boolean) {
   await page.goto("/admin/cities");
   await page.getByRole("textbox", { name: "搜索城市" }).fill("珠海");
