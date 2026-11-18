@@ -644,6 +644,7 @@
 - **WHEN** Agent 面板开合导致地图列宽度变化
 - **THEN** 地图内容按新宽度重新适配
 - **AND** 瓦片不出现空白或被裁切
+
 ### Requirement: 行程景点附近宠物服务
 
 行程单中每个已排期景点卡片 SHALL 在“详细携宠政策”折叠区之后提供“附近宠物服务”可折叠栏目，默认收起。展开时页面 SHALL 请求 `GET /api/locations/{poiId}/nearby-services`，收起时 MUST NOT 请求。该接口 MUST 以景点 POI 的 `region_code` 前 4 位（城市级）为范围，返回直线距离最近的宠物医院与宠物用品店各至多 1 家，MUST NOT 应用 5km 距离筛选或宠物友好筛选。每项 MUST 包含 `poiId`、`name`、`address`、`distanceMeters`、`openingHours`，不存在时为 `null`。距离 MUST 使用 Haversine 直线距离并按米取整；距离并列时 MUST 按地点 ID 升序。`openingHours` MUST 优先读取高德快照 `business_json.opentime_week`，缺失时回退 `opentime_today`，都缺失为 `null`。景点经纬度缺失时 MUST 返回 `hospital` 与 `supplies` 均为 `null`，MUST NOT 猜测或回退到其他范围。未知 POI MUST 返回 404。前端 MUST 在加载、失败与无数据时显示明确文案，且 MUST NOT 阻塞卡片其他内容；距离 MUST 以一位小数公里展示为“距{景点名}约 X.Xkm”，地址缺失 SHALL 显示“地址未收录”，营业时间缺失 SHALL 显示“暂无”。

@@ -226,18 +226,7 @@ export const tripActions = {
         : state,
     );
   },
-  setStartDate(startDate: string | null): void {
-    update((state) =>
-      state.active && !isLocked(state) && state.active.startDate !== startDate
-        ? {
-            ...state,
-            active: { ...state.active, startDate },
-            ...bumpRevision(state),
-          }
-        : state,
-    );
-  },
-  setPanelExpanded(expanded: boolean): void {
+setPanelExpanded(expanded: boolean): void {
     update((state) => ({ ...state, panel: { expanded } }));
   },
   setSaveStatus(status: SaveStatus, message?: string): void {

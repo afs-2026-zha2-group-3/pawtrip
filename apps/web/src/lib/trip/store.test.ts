@@ -66,7 +66,6 @@ describe("trip store", () => {
 
     tripActions.addStop(1, "poi-a");
     tripActions.setTransportMode("flight");
-    tripActions.setStartDate("2020-01-05");
 
     expect(tripStore.state.active?.plan.days).toEqual([]);
     expect(tripStore.state.active?.transportMode).toBeNull();
