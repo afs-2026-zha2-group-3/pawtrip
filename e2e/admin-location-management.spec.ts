@@ -779,6 +779,6 @@ test("anonymous visitors are redirected to login from the admin location route",
   await page.goto("/admin/locations");
 
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "登录" })).toBeVisible();
   await expect(page.locator("main").getByRole("heading", { name: "地点管理" })).toHaveCount(0);
 });
