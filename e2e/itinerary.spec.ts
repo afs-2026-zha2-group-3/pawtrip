@@ -607,3 +607,57 @@ test("shows an error when image generation fails", async ({ page }) => {
     "true",
   );
 });
+
+async function openNearbyServices(page: Page) {
+  const stop = page.getByTestId("itinerary-stop").first();
+  await stop.getByText("附近宠物服务").click();
+  await expect(
+    stop.getByRole("button", { name: "复制珠海宠物医院电话" }),
+  ).toBeVisible();
+}
+
+test("hides copy buttons in the PDF print view", async ({ page }) => {
+  await stubWindowPrint(page);
+  await seedItineraryTrip(page);
+  await activateTrip(page);
+  await page.goto("/itinerary");
+  await openNearbyServices(page);
+
+  const copyButtons = page.locator('button[aria-label^="复制"]');
+  await expect(copyButtons).toHaveCount(2);
+
+  await openExportView(page);
+
+  for (const button of await copyButtons.all()) {
+    await expect(button).toBeHidden();
+  }
+  await expect(page.getByText("0756-8886666").first()).toBeVisible();
+});
+
+test("keeps copy buttons out of the image export surface", async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.toBlob;
+    HTMLCanvasElement.prototype.toBlob = function (
+      callback: BlobCallback,
+      ...args: unknown[]
+    ) {
+      window.setTimeout(() => {
+        original.call(this, callback, ...(args as [string?, number?]));
+      }, 1500);
+    };
+  });
+  await seedItineraryTrip(page);
+  await activateTrip(page);
+  await page.goto("/itinerary");
+  await openNearbyServices(page);
+
+  await page.getByRole("button", { name: "导出图片" }).click();
+
+  const surface = page.getByTestId("image-export-surface");
+  await expect(surface).toBeAttached();
+  await expect(surface.locator('button[aria-label^="复制"]')).toHaveCount(0);
+  await expect(surface.getByText("附近宠物服务").first()).toBeAttached();
+  await expect(page.getByRole("button", { name: "导出图片" })).toBeEnabled({
+    timeout: 20_000,
+  });
+});
