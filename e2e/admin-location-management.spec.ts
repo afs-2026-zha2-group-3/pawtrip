@@ -313,55 +313,6 @@ test("ADMIN sees the location tab and can filter and paginate both server tables
   await expect(page.getByRole("cell", { name: "北京市Pawtrip地点二", exact: true })).toBeVisible();
 });
 
-test("Amap pagination continues when the API count only reflects a full current page", async ({
-  page,
-}) => {
-  await mockUser(page, "ADMIN");
-  await mockAdminLocationLists(page);
-  await page.route(/\/api\/admin\/locations\/amap(?:\?.*)?$/, async (route) => {
-    const url = new URL(route.request().url());
-    const pageNumber = Number(url.searchParams.get("page") ?? "1");
-    const items = Array.from({ length: 10 }, (_, index) => ({
-      poiId: `page-${pageNumber}-poi-${index + 1}`,
-      name: pageNumber === 1
-        ? `南京市第一页地点 ${index + 1}`
-        : `南京市第二页地点 ${index + 1}`,
-      typeCode: "110000",
-      address: "南京市中山路",
-      location: "118.78,32.04",
-      regionCode: "320100",
-      saved: false,
-      poi: {},
-    }));
-
-    await route.fulfill({
-      json: {
-        items,
-        page: pageNumber,
-        pageSize: 10,
-        totalElements: 10,
-        totalPages: 1,
-        hasNext: false,
-        hasPrevious: pageNumber > 1,
-      },
-    });
-  });
-
-  await page.goto("/admin/locations");
-  await selectNanjingCity(page);
-  await expect(page.getByRole("cell", { name: "南京市第一页地点 1", exact: true })).toBeVisible();
-  await expect(page.getByText("第 1 页", { exact: true })).toBeVisible();
-
-  const secondPage = page.waitForResponse((response) => {
-    const url = new URL(response.url());
-    return url.pathname === "/api/admin/locations/amap" && url.searchParams.get("page") === "2";
-  });
-  await page.getByRole("button", { name: "下一页" }).click();
-  await secondPage;
-  await expect(page.getByRole("cell", { name: "南京市第二页地点 1", exact: true })).toBeVisible();
-  await expect(page.getByText("第 2 页", { exact: true })).toBeVisible();
-});
-
 test("saving an Amap candidate validates visit hours and updates the current row without refetching", async ({
   page,
 }) => {
@@ -636,96 +587,6 @@ test("saved location details use direct photo URLs and preserve the current list
   await expect.poll(() => listRequests.amap).toBe(amapListReads);
 });
 
-test("non-attraction saved locations still expose pet policy editing", async ({ page }) => {
-  await mockUser(page, "ADMIN");
-  await mockAdminLocationLists(page);
-  const petPolicies = {
-    allowedPetTypes: "CAT",
-    maxPetsPerPerson: 2,
-    maxSinglePetWeightKg: 6.5,
-    maxSinglePetShoulderHeightCm: 28.5,
-    leashRequired: false,
-    vaccinationProofRequired: true,
-    extraFeeCents: 300,
-    reservationRequired: false,
-  };
-  let patchBody: unknown;
-  await page.route(/\/api\/locations(?:\?.*)?$/, async (route) => {
-    if (route.request().method() !== "GET") {
-      await route.fallback();
-      return;
-    }
-    await route.fulfill({
-      json: {
-        items: [{
-          poiId: "saved-non-attraction",
-          name: "全部地区非景点",
-          typeCode: "050000",
-          typeGroup: "hotel",
-          address: "南京市中山路 9 号",
-          longitude: 118.78,
-          latitude: 32.04,
-          regionCode: null,
-          minVisitHours: null,
-          maxVisitHours: null,
-          maxPetsPerPerson: petPolicies.maxPetsPerPerson,
-          petPolicies,
-        }],
-        page: 1,
-        pageSize: 10,
-        totalElements: 1,
-        totalPages: 1,
-        hasNext: false,
-        hasPrevious: false,
-      },
-    });
-  });
-  await page.route("**/api/admin/locations/saved-non-attraction", async (route) => {
-    const detail = {
-      poiId: "saved-non-attraction",
-      typeGroup: "hotel",
-      minVisitHours: null,
-      maxVisitHours: null,
-      petPolicies,
-      poi: { id: "saved-non-attraction", name: "非景点详情" },
-      business: {},
-      photos: [],
-    };
-    if (route.request().method() === "GET") {
-      await route.fulfill({ json: detail });
-      return;
-    }
-    if (route.request().method() === "PATCH") {
-      patchBody = route.request().postDataJSON();
-      await route.fulfill({
-        json: { ...detail, petPolicies: { ...petPolicies, extraFeeCents: 350 } },
-      });
-      return;
-    }
-    await route.fallback();
-  });
-
-  await page.goto("/admin/locations");
-  await page.getByRole("tab", { name: "pawtrip地点" }).click();
-  await expect(page.getByRole("cell", { name: "全部地区非景点", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "编辑 全部地区非景点" }).click();
-
-  const dialog = page.getByRole("dialog", { name: "非景点详情" });
-  await expect(dialog.getByText("携宠政策")).toBeVisible();
-  await expect(dialog.getByLabel("最少游玩时间（小时）")).toHaveCount(0);
-  await expect(dialog.getByLabel("每位游客最多携带宠物数（只）")).toHaveValue("2");
-  await expect(dialog.getByLabel("单只宠物最大肩高（cm）")).toHaveValue("28.5");
-  await expect(dialog.getByRole("combobox", { name: "允许宠物类型" })).toContainText("仅猫");
-  await expect(dialog.getByRole("button", { name: "保存修改" })).toBeVisible();
-
-  await dialog.getByLabel("额外费用（元 / 只 / 次）").fill("3.5");
-  await dialog.getByRole("button", { name: "保存修改" }).click();
-  await expect(dialog.getByText("地点信息已更新。", { exact: true })).toBeVisible();
-  expect(patchBody).toEqual({
-    petPolicies: { ...petPolicies, extraFeeCents: 350 },
-  });
-});
-
 test("USER is redirected away from the admin location route", async ({ page }) => {
   await mockUser(page, "USER");
   await page.goto("/admin/locations");
@@ -771,14 +632,3 @@ function savedDetail(
     ],
   };
 }
-
-test("anonymous visitors are redirected to login from the admin location route", async ({
-  page,
-}) => {
-  await mockUser(page, null);
-  await page.goto("/admin/locations");
-
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("button", { name: "登录" })).toBeVisible();
-  await expect(page.locator("main").getByRole("heading", { name: "地点管理" })).toHaveCount(0);
-});

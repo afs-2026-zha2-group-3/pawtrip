@@ -27,7 +27,7 @@ class TripSchemaMigrationTest {
 		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
 			assertThat(columns(connection, "trip")).containsExactlyInAnyOrder(
 					"id", "user_id", "name", "city_adcode", "pet_id", "total_days", "start_date", "plan_json",
-					"created_at", "updated_at", "transport_mode");
+					"created_at", "updated_at", "transport_mode", "plan_completed");
 			assertThat(indexNames(connection, "trip")).contains("idx_trip_user_id");
 
 			long userId = insertUser(connection, "trip-owner");

@@ -40,6 +40,7 @@ function tripWith(stops: TripStop[], transportMode: TransportMode | null = null)
     totalDays: 3,
     startDate: null,
     transportMode,
+    planCompleted: false,
     plan,
     createdAt: "2026-11-17T00:00:00Z",
     updatedAt: "2026-11-17T00:00:00Z",
@@ -219,6 +220,69 @@ describe("mode selection", () => {
 
     expect(screen.getByText("点击此处选择小交通")).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "选择途内交通方式" })).toBeTruthy();
+  });
+
+  it("hides the duration in compact mode when no valid mode is selected", () => {
+    // 已存驾车段切到公共交通后，驾车不在选项内 → 选择器回到占位（未选择），耗时须隐藏
+    renderRow({
+      compact: true,
+      stop: { poiId: "poi-a", toNext: "self_drive", toNextEstimate: DRIVE_SNAPSHOT },
+    });
+
+    expect(screen.getByText("点击此处选择小交通")).toBeTruthy();
+    expect(screen.queryByText(/分钟/)).toBeNull();
+  });
+
+  it("shows the duration in compact mode once a mode is selected", () => {
+    renderRow({
+      compact: true,
+      stop: { poiId: "poi-a", toNext: "drive", toNextEstimate: DRIVE_SNAPSHOT },
+    });
+
+    expect(screen.getByText("约 25 分钟")).toBeTruthy();
+  });
+
+  it("shows the taxi price range and pet hint in compact mode for a taxi segment", () => {
+    renderRow({
+      compact: true,
+      stop: { poiId: "poi-a", toNext: "drive", toNextEstimate: DRIVE_SNAPSHOT },
+    });
+
+    expect(screen.getByText("¥40–60")).toBeTruthy();
+    expect(screen.getByText(TAXI_PET_HINT)).toBeTruthy();
+  });
+
+  it("shows ¥0 and no pet hint in compact mode for a walking segment", () => {
+    renderRow({
+      compact: true,
+      stop: { poiId: "poi-a", toNext: "walk", toNextEstimate: { durationMinutes: 508, costLowYuan: 0, costHighYuan: 0 } },
+    });
+
+    expect(screen.getByText("¥0")).toBeTruthy();
+    expect(screen.queryByText(TAXI_PET_HINT)).toBeNull();
+  });
+
+  it("shows no price or pet hint in compact mode for a self-drive segment", () => {
+    renderRow({
+      compact: true,
+      transportMode: "drive",
+      stop: { poiId: "poi-a", toNext: "self_drive", toNextEstimate: { durationMinutes: 47, costLowYuan: 0, costHighYuan: 0 } },
+    });
+
+    expect(screen.getByText("约 47 分钟")).toBeTruthy();
+    expect(screen.queryByText(/¥/)).toBeNull();
+    expect(screen.queryByText(TAXI_PET_HINT)).toBeNull();
+  });
+
+  it("shows no price or pet hint in compact mode when no mode is selected", () => {
+    renderRow({
+      compact: true,
+      stop: { poiId: "poi-a", toNext: "self_drive", toNextEstimate: DRIVE_SNAPSHOT },
+    });
+
+    expect(screen.getByText("点击此处选择小交通")).toBeTruthy();
+    expect(screen.queryByText(/¥/)).toBeNull();
+    expect(screen.queryByText(TAXI_PET_HINT)).toBeNull();
   });
 
   it("offers only taxi and walking for public transport", async () => {

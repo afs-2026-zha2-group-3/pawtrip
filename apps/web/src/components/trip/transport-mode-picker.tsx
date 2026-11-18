@@ -19,11 +19,13 @@ export function TransportModePicker({
   pet,
   petState,
   onChange,
+  disabled = false,
 }: {
   value: TransportMode | null;
   pet: PetSnapshot | null;
   petState: "loading" | "error" | "ready";
   onChange: (mode: TransportMode) => void;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const options = transportModeOptions(pet);
@@ -36,9 +38,16 @@ export function TransportModePicker({
         : "暂无宠物档案，仅可选择方式";
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (!disabled) setOpen(next);
+      }}
+    >
       <PopoverTrigger
         type="button"
+        disabled={disabled}
+        title={disabled ? "行程已结束，无法修改大交通" : undefined}
         aria-label={
           value
             ? `大交通方式：${transportModeLabels[value]}`
@@ -90,14 +99,7 @@ export function TransportModePicker({
               )}
             >
               <span className="flex items-center justify-between gap-2">
-                <span className="flex items-baseline gap-1.5">
-                  <span className="text-sm font-medium">{option.label}</span>
-                  {option.carrierName ? (
-                    <span className="text-xs text-muted-foreground">
-                      按{option.carrierName}
-                    </span>
-                  ) : null}
-                </span>
+                <span className="text-sm font-medium">{option.label}</span>
                 <span className="flex items-center gap-1">
                   {option.verdict ? (
                     <span

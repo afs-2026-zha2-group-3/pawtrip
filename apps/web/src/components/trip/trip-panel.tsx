@@ -47,6 +47,7 @@ import { dayPolicyLines, deriveDayPolicy, sizeWarningLine } from "@/lib/trip/day
 import { retryTripSave } from "@/lib/trip/save";
 import {
   useActiveTrip,
+  useActiveTripReadOnly,
   useDraftTrip,
   usePanelExpanded,
   useSaveStatus,
@@ -75,6 +76,8 @@ interface StopRow {
   name: string;
   /** 体型超限警示：展示在该景点行下方（2026-11-17 修订） */
   sizeWarning: string | null;
+  connectPrev: boolean;
+  connectNext: boolean;
 }
 
 interface SegmentRow {
@@ -138,6 +141,7 @@ function TripPanelContent({
   footer?: ReactNode;
 }) {
   const active = useActiveTrip();
+  const readOnly = useActiveTripReadOnly();
   const draft = useDraftTrip();
   const expanded = usePanelExpanded();
   const [listOpen, setListOpen] = useState(true);
@@ -155,6 +159,11 @@ function TripPanelContent({
   const activePet = active
     ? (petsQuery.data ?? []).find((pet) => pet.id === active.petId) ?? null
     : null;
+  const petState: "loading" | "error" | "ready" = petsQuery.isPending
+    ? "loading"
+    : petsQuery.isError
+      ? "error"
+      : "ready";
 
   const rows = useMemo<PanelRow[]>(() => {
     if (!active) return [];
@@ -169,12 +178,12 @@ function TripPanelContent({
         endIndex: stops.length,
         count: stops.length,
       });
-      if (!timeline && showTransitNotice(stops, active.transportMode)) {
+      if (showTransitNotice(stops, active.transportMode)) {
         next.push({ kind: "notice", id: `transit-notice-${day}`, container: day });
       }
       const dayPolicy = deriveDayPolicy(stops, locations, activePet);
       const policyLines = dayPolicyLines(dayPolicy);
-      if (!timeline && policyLines.length > 0) {
+      if (policyLines.length > 0) {
         next.push({ kind: "policy", id: `day-policy-${day}`, container: day, lines: policyLines });
       }
       const warningByPoi = new Map(
@@ -185,6 +194,7 @@ function TripPanelContent({
       );
       const segments = buildDaySegments(stops, active.transportMode);
       stops.forEach((stop, index) => {
+        const segment = segments[index];
         next.push({
           kind: "stop",
           id: stopKey(day, index, stop.poiId),
@@ -193,8 +203,9 @@ function TripPanelContent({
           poiId: stop.poiId,
           name: locations[stop.poiId]?.name ?? stop.poiId,
           sizeWarning: warningByPoi.get(stop.poiId) ?? null,
+          connectPrev: index > 0 && !segments[index - 1]?.samePoi,
+          connectNext: segment ? !segment.samePoi : false,
         });
-        const segment = segments[index];
         if (segment) {
           next.push({
             kind: "segment",
@@ -284,6 +295,7 @@ function TripPanelContent({
 
   const handleDragEnd = (event: DragEndEvent) => {
     setDragId(null);
+    if (readOnly) return;
     const source = stopRows.find((row) => row.id === String(event.active.id));
     const target = rows.find((row) => row.id === String(event.over?.id));
     if (!source || !target) return;
@@ -299,6 +311,7 @@ function TripPanelContent({
   };
 
   const removeStop = (row: StopRow) => {
+    if (readOnly) return;
     tripActions.removeStop({ container: row.container, index: row.index });
   };
 
@@ -370,8 +383,17 @@ function TripPanelContent({
     >
       <div className="flex shrink-0 items-start justify-between gap-2">
         {timeline ? (
-          <div className="flex min-w-0 items-center">
+          <div className="flex w-full min-w-0 items-center justify-between gap-2">
             <h2 className="text-sm leading-5 font-medium text-paw-ink">每日景点行程</h2>
+            {active ? (
+              <TransportModePicker
+                value={active.transportMode}
+                pet={activePet}
+                petState={petState}
+                onChange={(mode) => tripActions.setTransportMode(mode)}
+                disabled={readOnly}
+              />
+            ) : null}
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-1.5">
@@ -383,14 +405,9 @@ function TripPanelContent({
                 <TransportModePicker
                   value={active.transportMode}
                   pet={activePet}
-                  petState={
-                    petsQuery.isPending
-                      ? "loading"
-                      : petsQuery.isError
-                        ? "error"
-                        : "ready"
-                  }
+                  petState={petState}
                   onChange={(mode) => tripActions.setTransportMode(mode)}
+                  disabled={readOnly}
                 />
                 <span className={TAG_CLASS} data-testid="save-status" data-status={save.status}>
                   {save.status === "saving"
@@ -401,13 +418,15 @@ function TripPanelContent({
                         ? "保存失败"
                         : "已同步"}
                 </span>
-                <Link
-                  to="/itinerary"
-                  data-testid="itinerary-link"
-                  className="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  行程单
-                </Link>
+                {active?.planCompleted ? (
+                  <Link
+                    to="/itinerary"
+                    data-testid="itinerary-link"
+                    className="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    行程单
+                  </Link>
+                ) : null}
               </>
             ) : draft ? (
               <>
@@ -436,6 +455,15 @@ function TripPanelContent({
           </Button>
         ) : null}
       </div>
+
+      {readOnly ? (
+        <p
+          role="status"
+          className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
+        >
+          行程已结束，仅可查看，无法修改行程内容。
+        </p>
+      ) : null}
 
       {draft ? (
         <div className="flex flex-col gap-3">
@@ -627,16 +655,39 @@ function TripPanelContent({
                   }
                   // 行容器为横向 flex：纵向包裹使警示独占景点下方一行
                   return (
-                    <div className="flex w-full min-w-0 flex-col gap-1">
+                    <div
+                      className={cn(
+                        "flex w-full min-w-0 flex-col gap-1",
+                        timeline && "relative",
+                      )}
+                    >
+                      {timeline && row.connectPrev ? (
+                        <span
+                          aria-hidden="true"
+                          data-testid="timeline-rail"
+                          className="pointer-events-none absolute -top-[6px] left-[9px] h-[28px] w-[2px] bg-paw-accent"
+                        />
+                      ) : null}
+                      {timeline && row.connectNext ? (
+                        <span
+                          aria-hidden="true"
+                          data-testid="timeline-rail"
+                          className="pointer-events-none absolute top-[22px] -bottom-[6px] left-[9px] w-[2px] bg-paw-accent"
+                        />
+                      ) : null}
                       <SortableStop
                         row={row}
                         timeline={timeline}
                         onRemove={() => removeStop(row)}
+                        disabled={readOnly}
                       />
                       {row.sizeWarning ? (
                         <p
                           data-testid="stop-size-warning"
-                          className="px-1 text-xs text-amber-600"
+                          className={cn(
+                            "text-xs text-amber-600",
+                            timeline ? "pl-7" : "px-1",
+                          )}
                         >
                           {row.sizeWarning}
                         </p>
@@ -698,14 +749,17 @@ function SortableStop({
   row,
   timeline,
   onRemove,
+  disabled = false,
 }: {
   row: StopRow;
   timeline: boolean;
   onRemove: () => void;
+  disabled?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
       id: row.id,
+      disabled,
       data: {
         kind: "stop",
         container: row.container,
@@ -717,8 +771,8 @@ function SortableStop({
     <div
       ref={setNodeRef}
       data-stop-id={row.id}
-      {...(timeline ? attributes : {})}
-      {...(timeline ? listeners : {})}
+      {...(timeline && !disabled ? attributes : {})}
+      {...(timeline && !disabled ? listeners : {})}
       className={cn(
         timeline
           ? "relative ml-7 flex h-11 w-[calc(100%-1.75rem)] touch-none items-center gap-2 rounded-xl border border-[#E5E5E5] bg-card px-3 text-sm font-medium text-paw-ink after:absolute after:top-1/2 after:left-[-23px] after:z-10 after:size-2.5 after:-translate-y-1/2 after:rounded-full after:border-2 after:border-paw-accent after:bg-card"
@@ -732,7 +786,7 @@ function SortableStop({
         transition: transition ?? undefined,
       }}
     >
-      {!timeline ? (
+      {!timeline && !disabled ? (
         <button
           type="button"
           {...attributes}
@@ -748,6 +802,8 @@ function SortableStop({
       <button
         type="button"
         aria-label={`移除${row.name}`}
+        disabled={disabled}
+        title={disabled ? "行程已结束，无法移除地点" : undefined}
         className={cn(ACTION_BUTTON_CLASS, "relative z-10")}
         onClick={(event) => {
           event.stopPropagation();

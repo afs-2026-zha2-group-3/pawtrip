@@ -2,11 +2,21 @@ import { useQuery } from "@tanstack/react-query";
 import { useSelector } from "@tanstack/react-store";
 import { petsQueryOptions } from "@/queries/pets";
 import { resolvePolicySubjects, type PolicySubjects } from "./policy-subjects";
+import { isTripEnded } from "./status";
 import { tripStore } from "./store";
 import type { DraftTrip, HydrationStatus, Trip, TripCity, TripSaveState } from "./types";
 
 export function useActiveTrip(): Trip | null {
   return useSelector(tripStore, (state) => state.active);
+}
+
+export function useTripEditing(): boolean {
+  return useSelector(tripStore, (state) => state.editing);
+}
+
+export function useActiveTripReadOnly(): boolean {
+  const active = useActiveTrip();
+  return active != null && isTripEnded(active);
 }
 
 export function useDraftTrip(): DraftTrip | null {

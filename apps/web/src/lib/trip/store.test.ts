@@ -12,6 +12,7 @@ function activeTrip(totalDays = 3): Trip {
     totalDays,
     startDate: null,
     transportMode: null,
+    planCompleted: false,
     plan: { version: 1, days: [], unscheduled: [] },
     createdAt: "2026-11-16T00:00:00Z",
     updatedAt: "2026-11-16T00:00:00Z",
@@ -38,11 +39,38 @@ describe("trip store", () => {
   it("clears the active trip and collapses its panel", () => {
     tripActions.setActive(activeTrip());
     tripActions.setPanelExpanded(true);
+    expect(tripStore.state.editing).toBe(true);
 
     tripActions.clearActive();
 
     expect(tripStore.state.active).toBeNull();
     expect(tripStore.state.panel.expanded).toBe(false);
+    expect(tripStore.state.editing).toBe(false);
+  });
+
+  it("ends the editing state without clearing the active trip", () => {
+    tripActions.setActive(activeTrip());
+
+    tripActions.setEditing(false);
+
+    expect(tripStore.state.editing).toBe(false);
+    expect(tripStore.state.active?.id).toBe(7);
+
+    tripActions.setEditing(true);
+    expect(tripStore.state.editing).toBe(true);
+  });
+
+  it("keeps a completed trip read-only", () => {
+    tripActions.setActive({ ...activeTrip(2), startDate: "2020-01-01" });
+    const revision = tripStore.state.saveRevision;
+
+    tripActions.addStop(1, "poi-a");
+    tripActions.setTransportMode("flight");
+
+    expect(tripStore.state.active?.plan.days).toEqual([]);
+    expect(tripStore.state.active?.transportMode).toBeNull();
+    expect(tripStore.state.active?.startDate).toBe("2020-01-01");
+    expect(tripStore.state.saveRevision).toBe(revision);
   });
 
   it("updates transport mode and increments the save revision only when it changes", () => {

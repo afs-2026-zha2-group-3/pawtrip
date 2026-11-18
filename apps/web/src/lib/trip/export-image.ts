@@ -10,6 +10,10 @@ export function imageFileName(tripName: string): string {
   return `${safe || "行程单"}-行程单.png`;
 }
 
+export function exportImageFilter(node: HTMLElement): boolean {
+  return !node.hasAttribute?.("data-export-hidden");
+}
+
 export async function elementToPngBlob(node: HTMLElement): Promise<Blob> {
   const blob = await toBlob(node, {
     backgroundColor: "#ffffff",
@@ -17,6 +21,7 @@ export async function elementToPngBlob(node: HTMLElement): Promise<Blob> {
     pixelRatio: 1,
     cacheBust: true,
     skipFonts: true,
+    filter: exportImageFilter,
   });
   if (!blob) {
     throw new Error("图片生成失败");

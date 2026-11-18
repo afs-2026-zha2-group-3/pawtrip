@@ -9,6 +9,7 @@ export interface TripSummary {
   petId: number;
   totalDays: number;
   startDate: string | null;
+  planCompleted: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -95,6 +96,10 @@ export function updateTrip(id: number, input: SaveTripInput): Promise<Trip> {
       transportMode: input.transportMode,
     },
   });
+}
+
+export function completeTrip(id: number): Promise<Trip> {
+  return request<Trip>(`/api/trips/${id}/complete`, { method: "POST" });
 }
 
 export function deleteTrip(id: number): Promise<void> {

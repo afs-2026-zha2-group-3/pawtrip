@@ -1,5 +1,6 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { imageFileName } from "./export-image";
+import { exportImageFilter, imageFileName } from "./export-image";
 
 describe("imageFileName", () => {
   it("sanitizes the trip name", () => {
@@ -9,5 +10,16 @@ describe("imageFileName", () => {
 
   it("falls back when the trip name is empty", () => {
     expect(imageFileName("   ")).toBe("行程单-行程单.png");
+  });
+});
+
+describe("exportImageFilter", () => {
+  it("excludes nodes marked data-export-hidden and keeps others", () => {
+    const hidden = document.createElement("button");
+    hidden.setAttribute("data-export-hidden", "");
+    const visible = document.createElement("p");
+
+    expect(exportImageFilter(hidden)).toBe(false);
+    expect(exportImageFilter(visible)).toBe(true);
   });
 });

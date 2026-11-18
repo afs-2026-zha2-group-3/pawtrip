@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +24,10 @@ import { amapJsKey } from "../../../lib/amap/loader";
 import { ApiError } from "../../../lib/http/api-error";
 import { useScheduledAttractionAnchors } from "../../../lib/trip/anchors";
 import { useActiveTrip, usePolicySubjects } from "../../../lib/trip/selectors";
-import { tripActions } from "../../../lib/trip/store";
+import { cancelScheduledTripSave, flushTripSave } from "../../../lib/trip/save";
+import { isTripEnded } from "../../../lib/trip/status";
+import { tripActions, tripStore } from "../../../lib/trip/store";
+import { completeTrip, tripQueryKeys } from "../../../queries/trips";
 import {
   locationTypesQueryOptions,
   locationsQueryOptions,
@@ -47,6 +50,7 @@ const NEARBY_TYPE_GROUPS = new Set(["hotel", "restaurant"]);
 function AttractionsPage() {
   const isClient = typeof window !== "undefined";
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const active = useActiveTrip();
   const policySubjects = usePolicySubjects();
   const agentOpen = useAgentOpen();
@@ -61,6 +65,8 @@ function AttractionsPage() {
   const [activeKeytag, setActiveKeytag] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [keyword, setKeyword] = useState("");
+  const [completing, setCompleting] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
   const mapEnabled = Boolean(amapJsKey());
   const { anchors, loading: anchorsLoading } = useScheduledAttractionAnchors(active);
 
@@ -306,6 +312,32 @@ function AttractionsPage() {
     changeType(DEFAULT_TYPE_GROUP);
   };
 
+  const createItinerary = async () => {
+    if (!active || completing) {
+      return;
+    }
+    setCompleteError(null);
+    setCompleting(true);
+    try {
+      cancelScheduledTripSave();
+      await flushTripSave();
+      if (tripStore.state.save.status === "error") {
+        setCompleteError("行程保存失败，请重试后再创建行程单。");
+        return;
+      }
+      const updated = await completeTrip(active.id);
+      tripActions.setActive(updated);
+      await queryClient.invalidateQueries({ queryKey: tripQueryKeys.all });
+      await navigate({ to: "/itinerary" });
+    } catch {
+      setCompleteError("创建行程单失败，请稍后重试。");
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  const activeEnded = active ? isTripEnded(active) : false;
+
   const panelFooter =
     typeGroup === DEFAULT_TYPE_GROUP ? (
       <>
@@ -327,10 +359,10 @@ function AttractionsPage() {
           下一步
         </Button>
       </>
-    ) : (
+    ) : active?.planCompleted ? (
       <>
         <p className="px-1 text-xs leading-4 text-muted-foreground">
-          行程已保存，生成行程单查看每日安排
+          行程单已创建，仍可继续调整安排
         </p>
         <Button
           type="button"
@@ -338,7 +370,31 @@ function AttractionsPage() {
           className="w-full"
           onClick={() => void navigate({ to: "/itinerary" })}
         >
-          创建行程
+          查看行程单
+        </Button>
+      </>
+    ) : activeEnded ? (
+      <p className="px-1 text-xs leading-4 text-muted-foreground">
+        行程已结束，未创建行程单。
+      </p>
+    ) : (
+      <>
+        <p className="px-1 text-xs leading-4 text-muted-foreground">
+          行程已保存，创建行程单查看每日安排
+        </p>
+        {completeError ? (
+          <p role="alert" className="px-1 text-xs leading-4 text-destructive">
+            {completeError}
+          </p>
+        ) : null}
+        <Button
+          type="button"
+          data-testid="trip-create-itinerary"
+          className="w-full"
+          disabled={completing}
+          onClick={() => void createItinerary()}
+        >
+          {completing ? "正在创建…" : "创建行程单"}
         </Button>
       </>
     );
@@ -374,12 +430,12 @@ function AttractionsPage() {
       <div
         data-testid="attractions-layout"
         className={cn(
-          "grid min-h-0 items-stretch gap-4 lg:h-full lg:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)_minmax(360px,42%)]",
+          "grid min-h-0 items-stretch gap-4 lg:h-full lg:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[280px_minmax(0,1fr)_minmax(320px,36%)]",
           // 展开态的 376px 留白 = Agent 面板 400px + right-4 16px - 页面右内边距 40px；
           // 面板宽度变更时需同步 agent-panel.tsx。
           agentOpen
-            ? "2xl:grid-cols-[220px_minmax(0,1fr)_minmax(240px,0.85fr)_minmax(0,376px)]"
-            : "2xl:grid-cols-[220px_minmax(0,1fr)_minmax(320px,0.8fr)]",
+            ? "2xl:grid-cols-[280px_minmax(0,1fr)_minmax(240px,0.85fr)_minmax(0,376px)]"
+            : "2xl:grid-cols-[280px_minmax(0,1fr)_minmax(320px,0.8fr)]",
         )}
       >
         <div className="flex min-w-0 flex-wrap items-center justify-start gap-4 lg:col-span-3 lg:row-start-1 lg:flex-nowrap xl:col-span-3">
@@ -409,19 +465,6 @@ function AttractionsPage() {
                 ))}
               </div>
             ) : null}
-          </div>
-          <div className="relative ml-auto w-[210px] shrink-0">
-            <Search
-              aria-hidden="true"
-              className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              aria-label="搜索地点"
-              placeholder="搜索..."
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              className="h-9 w-full rounded-full pr-3 pl-9 text-sm"
-            />
           </div>
         </div>
 
@@ -528,6 +571,19 @@ function AttractionsPage() {
                 </Select>
               </div>
             ) : null}
+            <div className="relative ml-auto w-[210px] shrink-0">
+              <Search
+                aria-hidden="true"
+                className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                aria-label="搜索地点"
+                placeholder="搜索..."
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                className="h-9 w-full rounded-full pr-3 pl-9 text-sm"
+              />
+            </div>
           </div>
 
           <div className="mt-4">

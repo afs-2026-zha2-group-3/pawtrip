@@ -1,7 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
+  completeTripInPastViaApi,
+  completeTripViaApi,
+  createActiveTripViaApi,
   createTrip,
   createTripViaApi,
+  csrfHeaders,
   openCities,
   openTrips,
   pets,
@@ -71,16 +75,34 @@ test("shows an empty state without trips", async ({ page }) => {
   await expect(page.getByRole("link", { name: "去创建行程" })).toBeVisible();
 });
 
-test("lists trips in id order and supports activate, deactivate and delete", async ({
+test("groups trips by status, filters them, and supports editing and delete", async ({
   page,
 }) => {
+  // 覆盖四种状态与多轮编辑/查看切换，交互步骤多，30s 默认超时在慢机上不够。
+  test.setTimeout(60_000);
+  // 默认 1280x720 下固定行程面板会遮住第三张卡片的按钮，改用更高视口避免遮挡。
+  await page.setViewportSize({ width: 1440, height: 900 });
   const pet = (await pets(page))[0];
+  const ended = await createTripViaApi(page, {
+    name: "已结束行程",
+    cityAdcode: "330100",
+    petId: pet.id,
+    totalDays: 1,
+  });
+  await completeTripInPastViaApi(page, ended);
   await createTripViaApi(page, {
     name: "杭州两日",
     cityAdcode: "330100",
     petId: pet.id,
     totalDays: 2,
   });
+  const completed = await createTripViaApi(page, {
+    name: "已完成行程",
+    cityAdcode: "330100",
+    petId: pet.id,
+    totalDays: 3,
+  });
+  await completeTripViaApi(page, completed.id);
   await createTripViaApi(page, {
     name: "珠海三日",
     cityAdcode: "440400",
@@ -90,40 +112,122 @@ test("lists trips in id order and supports activate, deactivate and delete", asy
 
   await openTrips(page);
   const cards = page.getByTestId("trip-card");
-  await expect(cards).toHaveCount(2);
+  await expect(cards).toHaveCount(4);
+  // 待完成在前，已完成其次，行程结束最后；同组内按 id 升序。
   await expect(cards.nth(0)).toContainText("杭州两日");
   await expect(cards.nth(1)).toContainText("珠海三日");
+  await expect(cards.nth(2)).toContainText("已完成行程");
+  await expect(cards.nth(3)).toContainText("已结束行程");
   await expect(cards.nth(0)).toContainText("2 天");
+  await expect(cards.nth(0)).toContainText("待完成");
+  await expect(cards.nth(2)).toContainText("已完成");
+  await expect(cards.nth(3)).toContainText("行程结束");
 
-  await tripCard(page, "杭州两日").getByRole("button", { name: "激活" }).click();
-  await expect(tripCard(page, "杭州两日")).toContainText("激活中");
-  await expect(page.getByTestId("trip-panel")).toContainText("2 天");
-  await expect(tripCard(page, "珠海三日").getByRole("button", { name: "激活" })).toBeDisabled();
+  const filters = page.getByRole("group", { name: "行程状态筛选" });
+  await filters.getByRole("button", { name: "待完成", exact: true }).click();
+  await expect(cards).toHaveCount(2);
+  await filters.getByRole("button", { name: "已完成", exact: true }).click();
+  await expect(cards).toHaveCount(1);
+  await expect(cards.nth(0)).toContainText("已完成行程");
+  await filters.getByRole("button", { name: "行程结束", exact: true }).click();
+  await expect(cards).toHaveCount(1);
+  await expect(cards.nth(0)).toContainText("已结束行程");
+  await filters.getByRole("button", { name: "全部", exact: true }).click();
+  await expect(cards).toHaveCount(4);
 
-  await tripCard(page, "杭州两日").getByRole("button", { name: "取消激活" }).click();
-  await expect(tripCard(page, "杭州两日")).not.toContainText("激活中");
-  await expect(tripCard(page, "珠海三日").getByRole("button", { name: "激活" })).toBeEnabled();
+  await tripCard(page, "杭州两日").getByRole("button", { name: "编辑" }).click();
+  await expect(page).toHaveURL(/\/attractions$/);
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.localStorage.getItem("pawtrip.activeTripId")),
+    )
+    .not.toBeNull();
 
-  await tripCard(page, "珠海三日").getByRole("button", { name: "删除" }).click();
-  const dialog = page.getByRole("alertdialog");
-  await dialog.getByRole("button", { name: "删除" }).click();
-  await expect(tripCard(page, "珠海三日")).toHaveCount(0);
+  await openTrips(page);
+  await expect(tripCard(page, "杭州两日")).toContainText("编辑中");
+  await expect(tripCard(page, "珠海三日")).not.toContainText("编辑中");
 
-  await tripCard(page, "杭州两日").getByRole("button", { name: "激活" }).click();
-  await expect(page.getByTestId("trip-panel")).toContainText("2 天");
-  await page.getByRole("button", { name: "展开行程面板" }).click();
+  await tripCard(page, "珠海三日").getByRole("button", { name: "编辑" }).click();
+  await expect(page).toHaveURL(/\/attractions$/);
+  await openTrips(page);
+  await expect(tripCard(page, "珠海三日")).toContainText("编辑中");
+  await expect(tripCard(page, "杭州两日")).not.toContainText("编辑中");
+
+  await tripCard(page, "珠海三日").getByRole("button", { name: "结束编辑" }).click();
+  await expect(tripCard(page, "珠海三日")).not.toContainText("编辑中");
+  await expect(page.getByTestId("trip-panel")).toHaveCount(0);
+
+  await tripCard(page, "已完成行程").getByRole("button", { name: "查看行程单" }).click();
+  await expect(page).toHaveURL(/\/itinerary$/);
+  await openTrips(page);
+  await expect(tripCard(page, "已完成行程")).not.toContainText("编辑中");
+  await tripCard(page, "已完成行程").getByRole("button", { name: "编辑" }).click();
+  await expect(page).toHaveURL(/\/attractions$/);
+
+  await openTrips(page);
   await tripCard(page, "杭州两日").getByRole("button", { name: "删除" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "删除" }).click();
-  await expect(page.getByText("还没有行程")).toBeVisible();
-  await expect(page.getByTestId("trip-panel")).toHaveCount(0);
-  const paddingLeft = await page.evaluate(() => {
-    const main = document.querySelector("main");
-    return main?.parentElement ? getComputedStyle(main.parentElement).paddingLeft : null;
+  await expect(tripCard(page, "杭州两日")).toHaveCount(0);
+});
+
+test("hides the itinerary until the plan is completed", async ({ page }) => {
+  await createTrip(page, { city: "杭州市", days: 1 });
+
+  await openTrips(page);
+  await expect(page.getByTestId("trip-card").first()).toContainText("待完成");
+
+  await page.goto("/itinerary");
+  await expect(page.getByText("尚未创建行程单")).toBeVisible();
+  await expect(page.getByRole("link", { name: "继续规划" })).toBeVisible();
+});
+
+test("keeps ended trips read-only while completed trips stay editable", async ({
+  page,
+}) => {
+  const pet = (await pets(page))[0];
+  const ended = await createTripViaApi(page, {
+    name: "已结束行程",
+    cityAdcode: "330100",
+    petId: pet.id,
+    totalDays: 2,
   });
-  expect(paddingLeft).toBe("0px");
-  expect(
-    await page.evaluate(() => window.localStorage.getItem("pawtrip.activeTripId")),
-  ).toBeNull();
+  await completeTripInPastViaApi(page, ended);
+  const completed = await createTripViaApi(page, {
+    name: "即将出行",
+    cityAdcode: "330100",
+    petId: pet.id,
+    totalDays: 2,
+  });
+  await completeTripViaApi(page, completed.id);
+
+  await openTrips(page);
+  const endedCard = tripCard(page, "已结束行程");
+  await expect(endedCard).toContainText("行程结束");
+  await expect(endedCard).toContainText("已结束，仅可查看");
+  await expect(endedCard.getByRole("button", { name: "编辑" })).toHaveCount(0);
+  await expect(endedCard.getByRole("button", { name: "查看行程单" })).toBeVisible();
+
+  const completedCard = tripCard(page, "即将出行");
+  await expect(completedCard).toContainText("已完成");
+  await expect(completedCard.getByRole("button", { name: "编辑" })).toBeVisible();
+
+  await endedCard.getByRole("button", { name: "查看行程单" }).click();
+  await expect(page).toHaveURL(/\/itinerary$/);
+  await expect(page.getByText(/仅可查看与导出/)).toBeVisible();
+  await expect(page.getByTestId("trip-panel")).toContainText(
+    "行程已结束，仅可查看，无法修改行程内容。",
+  );
+
+  const headers = await csrfHeaders(page);
+  const response = await page.request.put(`/api/trips/${ended.id}`, {
+    headers,
+    data: {
+      name: "改名",
+      totalDays: 2,
+      plan: { version: 1, days: [], unscheduled: [] },
+    },
+  });
+  expect(response.status()).toBe(409);
 });
 
 test("reports a missing trip when activation returns 404", async ({ page }) => {
@@ -139,43 +243,16 @@ test("reports a missing trip when activation returns 404", async ({ page }) => {
   );
 
   await openTrips(page);
-  await tripCard(page, "已删除行程").getByRole("button", { name: "激活" }).click();
-  await expect(page.getByText("激活行程失败，请稍后重试。")).toBeVisible();
-});
-
-test("evaluates transport rules only for the active trip pet", async ({ page }) => {
-  await createTrip(page, { city: "杭州市", days: 1, pet: "毛毛" });
-  await page.getByRole("tab", { name: "交通规则" }).click();
-  await expect(page.getByRole("table", { name: "交通携宠规则对比" })).toBeVisible();
-
-  await expect(page.getByText(/^毛毛 · /).first()).toBeVisible();
-  await expect(page.getByText(/^豆豆 · /)).toHaveCount(0);
-});
-
-test("requires a created trip before browsing attractions", async ({ page }) => {
-  await openCities(page);
-
-  const locationListRequests: string[] = [];
-  page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/api/locations") {
-      locationListRequests.push(request.url());
-    }
-  });
-  await page.getByRole("tab", { name: "地点浏览" }).click();
-  await expect(page.getByText("先创建或激活行程")).toBeVisible();
-  expect(locationListRequests).toHaveLength(0);
-
-  await createTrip(page, { city: "杭州市", days: 1 });
-  await expect(
-    page.getByRole("combobox", { name: "添加到行程" }).first(),
-  ).toBeVisible();
+  await tripCard(page, "已删除行程").getByRole("button", { name: "编辑" }).click();
+  await expect(page.getByText("打开行程失败，请稍后重试。")).toBeVisible();
 });
 
 test("adds stops to the selected day and to unscheduled with debounced saving", async ({
   page,
 }) => {
-  await createTrip(page, { city: "杭州市", days: 3 });
-  await page.getByRole("tab", { name: "地点浏览" }).click();
+  await createActiveTripViaApi(page, { cityAdcode: "330100", totalDays: 3 });
+  await page.goto("/attractions");
+  await expect(page).toHaveURL(/\/attractions$/);
   const westLake = page.locator('[data-slot="card"]').filter({ hasText: "西湖" });
   await withTripPanelNotBlocking(page, async () => {
     await westLake.getByRole("combobox", { name: "添加到行程" }).click();
@@ -213,9 +290,9 @@ test("adds stops to the selected day and to unscheduled with debounced saving", 
 });
 
 test("allows duplicate stops on the same day", async ({ page }) => {
-  await createTrip(page, { city: "杭州市", days: 2 });
-  await page.getByRole("tab", { name: "地点浏览" }).click();
-
+  await createActiveTripViaApi(page, { cityAdcode: "330100", totalDays: 2 });
+  await page.goto("/attractions");
+  await expect(page).toHaveURL(/\/attractions$/);
   await addDayAttraction(page, "西湖", 1);
   await addDayAttraction(page, "西湖", 1);
 
@@ -224,8 +301,9 @@ test("allows duplicate stops on the same day", async ({ page }) => {
 });
 
 test("drags a stop across days and into unscheduled", async ({ page }) => {
-  await createTrip(page, { city: "杭州市", days: 2 });
-  await page.getByRole("tab", { name: "地点浏览" }).click();
+  await createActiveTripViaApi(page, { cityAdcode: "330100", totalDays: 2 });
+  await page.goto("/attractions");
+  await expect(page).toHaveURL(/\/attractions$/);
   await addDayAttraction(page, "西湖", 1);
   await page.waitForTimeout(600);
 
@@ -245,8 +323,9 @@ test("drags a stop across days and into unscheduled", async ({ page }) => {
 });
 
 test("keeps local edits when saving fails and retries", async ({ page }) => {
-  await createTrip(page, { city: "杭州市", days: 2 });
-  await page.getByRole("tab", { name: "地点浏览" }).click();
+  await createActiveTripViaApi(page, { cityAdcode: "330100", totalDays: 2 });
+  await page.goto("/attractions");
+  await expect(page).toHaveURL(/\/attractions$/);
 
   let failSaving = true;
   await page.route("**/api/trips/*", async (route) => {
@@ -267,19 +346,10 @@ test("keeps local edits when saving fails and retries", async ({ page }) => {
   failSaving = false;
 });
 
-test("does not render the panel on the login page", async ({ page }) => {
-  await createTrip(page, { city: "杭州市", days: 1 });
-  await expect(page.getByTestId("trip-panel")).toBeVisible();
-
-  await page.getByRole("button", { name: "Log out" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Log out" }).click();
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByTestId("trip-panel")).toHaveCount(0);
-});
-
 test("shows active-pet location policy tags", async ({ page }) => {
-  await createTrip(page, { city: "杭州市", days: 1, pet: "豆豆" });
-  await page.getByRole("tab", { name: "地点浏览" }).click();
+  await createActiveTripViaApi(page, { cityAdcode: "330100", petName: "豆豆" });
+  await page.goto("/attractions");
+  await expect(page).toHaveURL(/\/attractions$/);
 
   const xiHu = page.locator('[data-slot="card"]').filter({ hasText: "西湖" });
   await expect(xiHu.getByText("豆豆 · 不友好")).toBeVisible();

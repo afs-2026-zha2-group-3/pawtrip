@@ -4,7 +4,11 @@ import { PolicyTags } from "@/components/trip/policy-tags";
 import { policyNoteParts } from "@/lib/location-summary";
 import { formatDistanceKm } from "@/lib/distance";
 import { matchLocationPolicyForType, violatedLimitTags } from "@/lib/trip/policy-match";
-import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
+import {
+  useActiveTrip,
+  useActiveTripReadOnly,
+  usePolicySubjects,
+} from "@/lib/trip/selectors";
 import { cn } from "@/lib/utils";
 import type { LocationSummary } from "../../../queries/locations";
 import { DaySelect } from "./-day-select";
@@ -40,6 +44,7 @@ export function LocationCard({
 }) {
   const subjects = usePolicySubjects();
   const active = useActiveTrip();
+  const readOnly = useActiveTripReadOnly();
   const addedDays = active
     ? active.plan.days
         .filter((entry) => entry.stops.some((stop) => stop.poiId === location.poiId))
@@ -72,12 +77,14 @@ export function LocationCard({
         highlighted && "border-paw-accent",
       )}
     >
-      <LocationCover
-        coverPhotoUrl={location.coverPhotoUrl}
-        name={location.name}
-        typeLabel={typeLabel}
-        className="aspect-[2.3] rounded-[14px]"
-      />
+      <div>
+        <LocationCover
+          coverPhotoUrl={location.coverPhotoUrl}
+          name={location.name}
+          typeLabel={typeLabel}
+          className="aspect-[2.3] rounded-[14px]"
+        />
+      </div>
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="min-w-0 flex-1 truncate text-base leading-6 font-medium text-paw-ink">
@@ -138,7 +145,7 @@ export function LocationCard({
         ) : null}
       </div>
       <div
-        className="flex flex-wrap items-center justify-between gap-2"
+        className="mt-auto flex flex-wrap items-center justify-between gap-2"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center gap-1.5">
@@ -152,6 +159,7 @@ export function LocationCard({
             totalDays={totalDays}
             onSelectDay={onAddStop}
             onSelectUnscheduled={onAddUnscheduled}
+            disabled={readOnly}
           />
         </div>
       </div>

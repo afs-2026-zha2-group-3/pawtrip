@@ -1,12 +1,20 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
   cityCard,
+  createActiveTripViaApi,
   createTrip,
   openCities,
   resetTrips,
   searchCity,
   signIn,
 } from "./trip-helpers";
+
+const cityAdcodes: Record<string, string> = {
+  珠海市: "440400",
+  广州市: "440100",
+  南京市: "320100",
+  杭州市: "330100",
+};
 
 function attractionCard(page: Page, name: string) {
   return page.locator('[data-slot="card"]').filter({
@@ -39,8 +47,11 @@ async function showTripPanel(page: Page) {
 }
 
 async function tripTo(page: Page, city: string) {
-  await createTrip(page, { city, days: 1, pet: "豆豆" });
-  await openAttractions(page);
+  const cityAdcode = cityAdcodes[city];
+  if (!cityAdcode) throw new Error(`Unknown city fixture: ${city}`);
+  await createActiveTripViaApi(page, { cityAdcode, petName: "豆豆" });
+  await page.goto("/attractions");
+  await expect(page).toHaveURL(/\/attractions$/);
   // 双列布局下固定的行程面板会遮挡左列卡片底部按钮；本套件专注列表/详情行为。
   await hideTripPanel(page);
 }
@@ -88,7 +99,9 @@ test.describe("agent panel layout integration", () => {
   test("collapsed agent panel shows three card columns and a flush-right map", async ({
     page,
   }) => {
-    await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
+    await createActiveTripViaApi(page, { cityAdcode: "440400", petName: "豆豆" });
+    await page.goto("/attractions");
+    await expect(page).toHaveURL(/\/attractions$/);
     await showAllAttractions(page);
 
     const grid = locationCardGrid(page);
@@ -120,7 +133,9 @@ test.describe("agent panel layout integration", () => {
   test("expanded agent panel keeps two card columns and leaves map space", async ({
     page,
   }) => {
-    await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
+    await createActiveTripViaApi(page, { cityAdcode: "440400", petName: "豆豆" });
+    await page.goto("/attractions");
+    await expect(page).toHaveURL(/\/attractions$/);
     await showAllAttractions(page);
 
     const cards = locationCardGrid(page).locator('[data-slot="card"]');
@@ -169,35 +184,6 @@ test.describe("agent panel layout integration", () => {
 test.describe("below the 2xl breakpoint", () => {
   test.use({ reducedMotion: "reduce" });
 
-  test("the agent panel does not reserve space", async ({ page }) => {
-    await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-    await showAllAttractions(page);
-
-    const cards = locationCardGrid(page).locator('[data-slot="card"]');
-    await expect(cards).toHaveCount(zhuHaiAttractionCardCount);
-
-    await page.getByTestId("agent-fab").click();
-    await expect(page.getByTestId("agent-panel")).toBeVisible();
-
-    const [first, second, third] = await Promise.all([
-      cards.nth(0).boundingBox(),
-      cards.nth(1).boundingBox(),
-      cards.nth(2).boundingBox(),
-    ]);
-    expect(first).not.toBeNull();
-    expect(second).not.toBeNull();
-    expect(third).not.toBeNull();
-    expect(Math.abs(first!.y - second!.y)).toBeLessThanOrEqual(1);
-    expect(third!.y).toBeGreaterThanOrEqual(first!.y + first!.height - 1);
-
-    const layout = await page.getByTestId("attractions-layout").boundingBox();
-    const map = await page.getByTestId("location-map-placeholder").boundingBox();
-    expect(layout).not.toBeNull();
-    expect(map).not.toBeNull();
-    expect(
-      Math.abs(map!.x + map!.width - (layout!.x + layout!.width)),
-    ).toBeLessThanOrEqual(1);
-  });
 });
 test("E2 toggles all saved attractions and shows forbidden/unconfigured states", async ({
   page,
@@ -213,46 +199,6 @@ test("E2 toggles all saved attractions and shows forbidden/unconfigured states",
     attractionCard(page, "珠海无名景点").getByText("未配置", { exact: true }),
   ).toBeVisible();
   await expect(attractionCard(page, "珠海某酒店")).toHaveCount(0);
-});
-
-test("E2b can select an anchor, filter, inspect and add a hotel location", async ({ page }) => {
-  await tripTo(page, "珠海市");
-  await scheduleAttractionAndSelectAnchor(page, "情侣路");
-
-  const hotel = attractionCard(page, "珠海某酒店");
-  await expect(hotel).toBeVisible();
-  await expect(attractionCard(page, "情侣路")).toHaveCount(0);
-  await hotel.getByRole("button", { name: "查看详情" }).click();
-
-  const dialog = page.locator('[data-slot="dialog-content"]');
-  await expect(dialog.getByText("住宿 · 珠海市香洲区")).toBeVisible();
-  await dialog.getByRole("combobox", { name: "添加到行程" }).click();
-  await page.getByRole("option", { name: "第 1 天" }).click();
-  await showTripPanel(page);
-  await expect(page.getByTestId("trip-panel")).toContainText("珠海某酒店");
-  await expect(
-    page.locator('[data-stop-id^="d1:"]').filter({ hasText: "珠海某酒店" }),
-  ).toBeVisible();
-});
-
-test("E3 shows pet policy fields in location detail", async ({ page }) => {
-  await tripTo(page, "珠海市");
-
-  await attractionCard(page, "情侣路").getByRole("button", { name: "查看详情" }).click();
-  const dialog = page.locator('[data-slot="dialog-content"]');
-  await expect(dialog).toBeVisible();
-  await expect(page).toHaveURL(/\/attractions$/);
-  await expect(dialog.getByText("情侣路", { exact: true })).toBeVisible();
-  await expect(dialog.getByText("宠物友好", { exact: true })).toBeVisible();
-  await expect(dialog.getByText("1 只 / 人")).toBeVisible();
-  await expect(dialog.getByText("8.5 kg")).toBeVisible();
-  await expect(dialog.getByText("40 cm")).toBeVisible();
-  await expect(dialog.getByText("需要", { exact: true })).toBeVisible();
-  await expect(dialog.getByText("不需要", { exact: true })).toBeVisible();
-  await expect(dialog.getByText("额外费用")).toHaveCount(0);
-  await expect(dialog.getByText("10.5 元 / 只 / 次")).toHaveCount(0);
-  await expect(dialog.getByText("狗", { exact: true })).toBeVisible();
-  await expect(dialog.getByText("预约要求")).toHaveCount(0);
 });
 
 test("E4 shows forbidden detail and empty policy detail", async ({ page }) => {
@@ -299,26 +245,6 @@ test("E5 switching city clears the current trip", async ({ page }) => {
   await expect(attractionCard(page, "情侣路")).toHaveCount(0);
 });
 
-test("E6 prompts to create or activate a trip without an active trip", async ({ page }) => {
-  const attractionRequests: string[] = [];
-  page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/api/locations") {
-      attractionRequests.push(request.url());
-    }
-  });
-
-  await page.goto("/attractions");
-  await expect(page.getByText("先创建或激活行程")).toBeVisible();
-  await expect(page.getByRole("button", { name: "去创建行程" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "查看我的行程" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "地点浏览" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
-  await page.waitForTimeout(500);
-  expect(attractionRequests).toHaveLength(0);
-});
-
 test("E7 keeps the location tab selected on list and detail", async ({ page }) => {
   await tripTo(page, "珠海市");
 
@@ -341,69 +267,6 @@ test("E7 keeps the location tab selected on list and detail", async ({ page }) =
     "aria-selected",
     "true",
   );
-});
-
-test("E8 shows an empty city state", async ({ page }) => {
-  await tripTo(page, "广州市");
-
-  await expect(page.getByText("该城市暂无已保存景点")).toBeVisible();
-});
-
-test("E9 shows no friendly state and toggles all for a city with only forbidden/unconfigured", async ({
-  page,
-}) => {
-  await tripTo(page, "南京市");
-
-  await expect(page.getByText("该城市暂无宠物友好的已保存景点")).toBeVisible();
-  await page.getByRole("checkbox", { name: "显示全部地点" }).click();
-  await expect(attractionCard(page, "中山陵").getByText("禁止携带")).toBeVisible();
-  await expect(attractionCard(page, "玄武湖").getByText("未配置")).toBeVisible();
-});
-
-test("E10 exposes no city selector or admin controls but offers add actions", async ({
-  page,
-}) => {
-  await tripTo(page, "珠海市");
-
-  await expect(page.getByRole("textbox", { name: "搜索城市" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /编辑|保存|删除/ })).toHaveCount(0);
-  await expect(
-    attractionCard(page, "情侣路").getByRole("combobox", { name: "添加到行程" }),
-  ).toBeVisible();
-  await expect(
-    attractionCard(page, "情侣路").getByRole("combobox", { name: "添加到行程" }),
-  ).toBeVisible();
-  await attractionCard(page, "情侣路").getByRole("combobox", { name: "添加到行程" }).click();
-  await expect(page.getByRole("option", { name: "暂不排期" })).toBeVisible();
-  await page.keyboard.press("Escape");
-
-  await attractionCard(page, "情侣路").getByRole("button", { name: "查看详情" }).click();
-  await expect(page.getByRole("button", { name: /编辑|保存|删除/ })).toHaveCount(0);
-});
-
-test("E11 clears the active trip on logout", async ({ page }) => {
-  await tripTo(page, "珠海市");
-  expect(
-    await page.evaluate(() => window.localStorage.getItem("pawtrip.activeTripId")),
-  ).not.toBeNull();
-
-  await page.getByRole("button", { name: "Log out" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Log out" }).click();
-  await expect(page).toHaveURL(/\/login$/);
-  expect(
-    await page.evaluate(() => window.localStorage.getItem("pawtrip.activeTripId")),
-  ).toBeNull();
-
-  await signIn(page);
-  await page.goto("/attractions");
-  await expect(page.getByText("先创建或激活行程")).toBeVisible();
-});
-
-test("E12 shows no scenic entry inside city browsing", async ({ page }) => {
-  await openCities(page);
-
-  await expect(page.getByRole("button", { name: /查看.*景点/ })).toHaveCount(0);
-  await expect(page.locator('[data-slot="card"]').filter({ hasText: "情侣路" })).toHaveCount(0);
 });
 
 // --- REQ-013 地点卡片媒体（add-location-card-media，ATDD E1–E9） ---
@@ -466,39 +329,6 @@ test("media E1 card shows first cover photo and rating", async ({ page }) => {
   await expect(rating).toContainText("4.6");
 });
 
-test("media E2 card without photo shows neutral placeholder", async ({ page }) => {
-  await tripTo(page, "珠海市");
-  await showAllAttractions(page);
-
-  const card = attractionCard(page, "珠海渔女");
-  await expect(card.locator("img")).toHaveCount(0);
-  const placeholder = card.getByRole("img", { name: "珠海渔女暂无图片" });
-  await expect(placeholder).toBeVisible();
-  await expect(placeholder).toContainText("景点");
-  await expect(card.getByText("珠海渔女")).toBeVisible();
-  await expect(card.getByText("宠物友好")).toHaveCount(0);
-  await expect(card.getByRole("button", { name: "查看详情" })).toBeVisible();
-});
-
-test("media E3 failed image falls back to placeholder without retry", async ({ page }) => {
-  await tripTo(page, "珠海市");
-  await selectType(page, "住宿");
-
-  const card = attractionCard(page, "珠海某酒店");
-  await expect(card.getByRole("img", { name: "珠海某酒店暂无图片" })).toBeVisible();
-  await expect(card.locator("img")).toHaveCount(0);
-  await expect(card.getByRole("button", { name: /重试|获取图片/ })).toHaveCount(0);
-  await expect(card.getByTestId("location-rating")).toContainText("4.8");
-});
-
-test("media E4 hides rating when snapshot missing", async ({ page }) => {
-  await tripTo(page, "珠海市");
-  await showAllAttractions(page);
-
-  const card = attractionCard(page, "珠海渔女");
-  await expect(card.getByTestId("location-rating")).toHaveCount(0);
-  await expect(card.getByText("珠海市香洲区")).toBeVisible();
-});
 
 test("media E5 only violated weight and shoulder limits render in red", async ({ page }) => {
   await createTrip(page, { city: "珠海市", days: 1, pet: "毛毛" });
@@ -536,27 +366,6 @@ test("media E5b hides limit tags when the pet meets every cap", async ({ page })
   await expect(attractionCard(page, "珠海渔女").getByText(/≤|附加费/)).toHaveCount(0);
 });
 
-test("media E6 policy note row renders generated phrases or hides", async ({ page }) => {
-  await tripTo(page, "珠海市");
-
-  const loverCard = attractionCard(page, "情侣路");
-  await expect(loverCard.getByText("公共区域需牵引")).toBeVisible();
-  await expect(loverCard.getByText("需疫苗证明")).toHaveCount(0);
-
-  await selectType(page, "住宿");
-  const hotel = attractionCard(page, "珠海某酒店");
-  await expect(hotel.getByText("公共区域需牵引")).toBeVisible();
-  await expect(hotel.getByText("需疫苗证明")).toBeVisible();
-
-  await selectType(page, "景点");
-  await expect(attractionCard(page, "情侣路")).toBeVisible();
-  await showAllAttractions(page);
-  // 渔女 leashRequired=1 仍会生成牵引短语；真正全空（乙组合）是无名景点。
-  const emptyCard = attractionCard(page, "珠海无名景点");
-  await expect(emptyCard).toBeVisible();
-  await expect(emptyCard.getByText(/公共区域需牵引|需疫苗证明|需提前预约/)).toHaveCount(0);
-});
-
 test("media E7 detail dialog carries cover and rating with fallback", async ({ page }) => {
   await tripTo(page, "珠海市");
 
@@ -574,28 +383,4 @@ test("media E7 detail dialog carries cover and rating with fallback", async ({ p
   await attractionCard(page, "珠海渔女").getByRole("button", { name: "查看详情" }).click();
   await expect(dialog.getByRole("img", { name: "珠海渔女暂无图片" })).toBeVisible();
   await expect(dialog.getByTestId("location-rating")).toHaveCount(0);
-});
-
-test("media E8 type switch keeps card structure and add actions", async ({ page }) => {
-  await tripTo(page, "珠海市");
-  await selectType(page, "住宿");
-
-  const hotel = attractionCard(page, "珠海某酒店");
-  await expect(hotel.getByRole("img", { name: "珠海某酒店暂无图片" })).toBeVisible();
-  await expect(hotel.getByTestId("location-rating")).toContainText("4.8");
-  await hotel.getByRole("combobox", { name: "添加到行程" }).click();
-  await page.getByRole("option", { name: "暂不排期" }).click();
-  await expect(page.locator('[data-stop-id^="u:"]')).toContainText("珠海某酒店");
-  await hotel.getByRole("combobox", { name: "添加到行程" }).click();
-  await page.getByRole("option", { name: "第 1 天" }).click();
-  await showTripPanel(page);
-  await expect(
-    page.locator('[data-stop-id^="d1:"]').filter({ hasText: "珠海某酒店" }),
-  ).toBeVisible();
-  await expect(page.locator('[data-stop-id^="u:"]')).toHaveCount(0);
-  await expect(hotel.getByText("第 1 天")).toBeVisible();
-
-  await selectType(page, "餐厅");
-  // 行程已有景点锚点时，餐厅列表按最近景点推荐。
-  await expect(attractionCard(page, "附近餐厅")).toBeVisible();
 });

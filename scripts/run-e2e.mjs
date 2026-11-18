@@ -16,7 +16,7 @@ const backendPort = 18080;
 const frontendPort = 3100;
 const maxWorkers = 8;
 const requestedWorkers = Number(
-  process.env.PAWTRIP_E2E_WORKERS ?? (process.env.CI ? 2 : 8),
+  process.env.PAWTRIP_E2E_WORKERS ?? (process.env.CI ? 4 : 8),
 );
 const workerCount = Math.min(
   Number.isInteger(requestedWorkers) && requestedWorkers > 0
@@ -340,6 +340,8 @@ async function main() {
       env: {
         ...process.env,
         SERVER_PORT: String(backendPort),
+        // E2E 不依赖高德外网；空 Key 覆盖根目录 .env，避免真实路线估算回填进行程计划。
+        AMAP_API_KEY: "",
         // SQLite 只允许一个写者；E2E 临时库用单连接池串行化访问，避免并发事务的锁升级死锁。
         // WAL 让直连临时库的测试读取不阻塞服务端写入，busy_timeout 兜底等待释放写锁。
         SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "1",

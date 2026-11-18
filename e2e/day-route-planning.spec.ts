@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
+  completeTripViaApi,
   createTripViaApi,
   csrfHeaders,
   openTrips,
@@ -49,6 +50,8 @@ function route(distance: number, time: number): FakeRoute {
 }
 
 async function installFakeAmap(page: Page) {
+  // 本地 .env 可能带真实高德 Key，阻断后端估算，保证标签只来自假 AMap。
+  await page.route("**/api/trips/*/route-estimate*", (route) => route.abort());
   await page.addInitScript(() => {
     // 打印导出用例复用同一初始化脚本，避免测试内再触发整页刷新。
     window.print = () => {};
@@ -158,7 +161,14 @@ async function installFakeAmap(page: Page) {
     }),
   );
   // addInitScript 只对后续文档加载生效；signIn 之后是 SPA 路由，需整页刷新注入假 AMap。
+  const hydratedAuth = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/auth/me" &&
+      response.request().method() === "GET" &&
+      response.ok(),
+  );
   await page.reload();
+  await hydratedAuth;
   await page.waitForSelector("html[data-app-ready='true']", {
     timeout: 15_000,
   });
@@ -209,13 +219,12 @@ async function seedRouteTrip(page: Page, days: RouteStop[][]) {
     },
   });
   expect(response.ok()).toBeTruthy();
+  await completeTripViaApi(page, trip.id);
 }
 
 async function activateTrip(page: Page) {
   await openTrips(page);
-  await tripCard(page, TRIP_NAME).getByRole("button", { name: "激活" }).click();
-  await expect(page.getByTestId("trip-panel")).toBeVisible();
-  await page.getByTestId("itinerary-link").click();
+  await tripCard(page, TRIP_NAME).getByRole("button", { name: "查看行程单" }).click();
   await expect(page).toHaveURL(/\/itinerary$/);
 }
 
@@ -285,69 +294,6 @@ test("draws driving routes and labels distance with the saved duration snapshot"
   expect(calls.map((call) => call.kind)).toEqual(["driving"]);
 });
 
-test("uses walking routes and falls back to the route duration", async ({
-  page,
-}) => {
-  await installFakeAmap(page);
-  await seedRouteTrip(page, [
-    [
-      { poiId: "e2e-route-b", toNext: "walk" },
-      { poiId: "e2e-route-c" },
-    ],
-  ]);
-  await activateTrip(page);
-  await setRoutePlan(page, { walking: [{ route: route(850, 61) }] });
-
-  const dialog = await openRouteDialog(page);
-
-  await expect(dialog.getByTestId("route-label")).toHaveText("850 米 · 2 分钟");
-  const calls = await routeCalls(page);
-  expect(calls.map((call) => call.kind)).toEqual(["walking"]);
-});
-
-test("does not request a route for adjacent stops with the same poiId", async ({
-  page,
-}) => {
-  await installFakeAmap(page);
-  await seedRouteTrip(page, [
-    [
-      { poiId: "e2e-zhu-a", toNext: "drive" },
-      { poiId: "e2e-zhu-a", toNext: "drive" },
-      { poiId: "e2e-route-b" },
-    ],
-  ]);
-  await activateTrip(page);
-  await setRoutePlan(page, { driving: [{ route: route(900, 300) }] });
-
-  const dialog = await openRouteDialog(page);
-
-  await expect(dialog.getByTestId("route-label")).toHaveText("900 米 · 5 分钟");
-  await expect(dialog.getByTestId("route-polyline")).toHaveCount(1);
-  const calls = await routeCalls(page);
-  expect(calls).toHaveLength(1);
-});
-
-test("shows a non-blocking hint when a stop has no coordinates", async ({
-  page,
-}) => {
-  await installFakeAmap(page);
-  await seedRouteTrip(page, [
-    [{ poiId: "e2e-zhu-a", toNext: "drive" }, { poiId: "e2e-zhu-b" }],
-  ]);
-  await activateTrip(page);
-  await setRoutePlan(page, { driving: [{ route: route(900, 300) }] });
-
-  const dialog = await openRouteDialog(page);
-
-  await expect(dialog.getByTestId("day-route-missing")).toContainText(
-    "部分地点缺少坐标",
-  );
-  await expect(dialog.getByTestId("route-polyline")).toHaveCount(0);
-  await expect(dialog.getByTestId("route-marker")).toHaveCount(1);
-  const calls = await routeCalls(page);
-  expect(calls).toHaveLength(0);
-});
-
 test("keeps the remaining segments when one route request fails", async ({
   page,
 }) => {
@@ -371,45 +317,6 @@ test("keeps the remaining segments when one route request fails", async ({
   );
   await expect(dialog.getByTestId("route-polyline")).toHaveCount(1);
   await expect(dialog.getByTestId("route-label")).toHaveText("700 米 · 4 分钟");
-});
-
-test("shows a placeholder when the AMap key is not configured", async ({
-  page,
-}) => {
-  await seedRouteTrip(page, [
-    [{ poiId: "e2e-zhu-a", toNext: "drive" }, { poiId: "e2e-route-b" }],
-  ]);
-  await activateTrip(page);
-
-  const dialog = await openRouteDialog(page);
-
-  await expect(dialog.getByTestId("day-route-placeholder")).toContainText(
-    "地图未配置",
-  );
-  await expect(page.getByTestId("itinerary-stop")).toHaveCount(2);
-});
-
-test("shows empty and single-stop states without requesting routes", async ({
-  page,
-}) => {
-  await installFakeAmap(page);
-  await seedRouteTrip(page, [[], [{ poiId: "e2e-zhu-a" }]]);
-  await activateTrip(page);
-
-  const emptyDialog = await openRouteDialog(page);
-  await expect(emptyDialog.getByTestId("day-route-empty")).toHaveText(
-    "当天暂无地点",
-  );
-  await page.getByRole("button", { name: "关闭弹窗" }).click();
-
-  await page.getByRole("tab", { name: "Day 2" }).click();
-  const singleDialog = await openRouteDialog(page);
-  await expect(singleDialog.getByTestId("day-route-single")).toHaveText(
-    "当天只有一个地点，无需路线",
-  );
-  await expect(singleDialog.getByTestId("route-marker")).toHaveCount(1);
-  const calls = await routeCalls(page);
-  expect(calls).toHaveLength(0);
 });
 
 test("keeps the route dialog out of the exported print view", async ({

@@ -44,6 +44,7 @@ export interface Trip {
   totalDays: number;
   startDate: string | null;
   transportMode: TransportMode | null;
+  planCompleted: boolean;
   plan: TripPlan;
   createdAt: string;
   updatedAt: string;
@@ -80,6 +81,7 @@ export type HydrationStatus = "idle" | "loading" | "ready" | "missing";
 export interface TripState {
   draft: DraftTrip | null;
   active: Trip | null;
+  editing: boolean;
   cache: TripCache;
   panel: { expanded: boolean };
   save: TripSaveState;

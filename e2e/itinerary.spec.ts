@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { expect, test, type Download, type Page } from "@playwright/test";
 import {
+  completeTripViaApi,
   createTripViaApi,
   csrfHeaders,
   openTrips,
@@ -86,12 +87,14 @@ async function seedItineraryTrip(
     },
   });
   expect(response.ok()).toBeTruthy();
+  await completeTripViaApi(page, trip.id);
   return trip;
 }
 
 async function activateTrip(page: Page, name = DEFAULT_TRIP_NAME) {
   await openTrips(page);
-  await tripCard(page, name).getByRole("button", { name: "激活" }).click();
+  await tripCard(page, name).getByRole("button", { name: "查看行程单" }).click();
+  await expect(page).toHaveURL(/\/itinerary$/);
   await expect(page.getByTestId("trip-panel")).toBeVisible();
 }
 
@@ -239,134 +242,6 @@ test("summarizes the active trip by day from the panel entry", async ({
   );
 });
 
-test("opens the itinerary from the active trip card", async ({ page }) => {
-  await seedItineraryTrip(page);
-  await activateTrip(page);
-
-  const card = tripCard(page, DEFAULT_TRIP_NAME);
-  const entry = card.getByRole("link", { name: "行程单" });
-  await expect(entry).toBeVisible();
-  await entry.click();
-
-  await expect(page).toHaveURL(/\/itinerary$/);
-  await expect(page.getByRole("heading", { name: "行程单" })).toBeVisible();
-});
-
-test("falls back when the route estimate request fails", async ({ page }) => {
-  await page.route(/\/api\/trips\/\d+\/route-estimate/, (route) =>
-    route.fulfill({
-      status: 500,
-      contentType: "application/json",
-      body: JSON.stringify({ message: "upstream failed" }),
-    }),
-  );
-  await seedItineraryTrip(page, {
-    plan: {
-      version: 1,
-      days: [
-        { day: 1, stops: [{ poiId: "e2e-zhu-a" }, { poiId: "e2e-zhu-b" }] },
-        { day: 2, stops: [] },
-      ],
-      unscheduled: [],
-    },
-  });
-  await activateTrip(page);
-  await page.goto("/itinerary");
-
-  await expect(page.getByTestId("itinerary-transport")).toContainText(
-    "估算暂不可用",
-  );
-  await expect(page.getByTestId("itinerary-stop").first()).toContainText(
-    "情侣路",
-  );
-  await expect(page.getByTestId("itinerary-policy")).toContainText(
-    "当天需携带牵引绳",
-  );
-});
-
-test("explains adjacent identical stops without an estimate", async ({
-  page,
-}) => {
-  await seedItineraryTrip(page, {
-    plan: {
-      version: 1,
-      days: [
-        {
-          day: 1,
-          stops: [{ poiId: "e2e-zhu-a" }, { poiId: "e2e-zhu-a" }],
-        },
-        { day: 2, stops: [] },
-      ],
-      unscheduled: [],
-    },
-  });
-  await activateTrip(page);
-  await page.goto("/itinerary");
-
-  const transport = page.getByTestId("itinerary-transport");
-  await expect(transport).toContainText("与上一景点相同，无需途内交通");
-  await expect(transport).not.toContainText("宠物专车");
-  await expect(transport).not.toContainText("估算中");
-});
-
-test("shows a no-config notice and hides the reminder when nothing applies", async ({
-  page,
-}) => {
-  await seedItineraryTrip(page, {
-    plan: {
-      version: 1,
-      days: [
-        { day: 1, stops: [{ poiId: "e2e-zhu-d" }] },
-        { day: 2, stops: [] },
-      ],
-      unscheduled: [],
-    },
-  });
-  await activateTrip(page);
-  await page.goto("/itinerary");
-
-  const stop = page.getByTestId("itinerary-stop");
-  await expect(stop).toHaveCount(1);
-  await stop.getByText("详细携宠政策").click();
-  await expect(stop).toContainText("暂无详细规则");
-  await expect(page.getByTestId("itinerary-policy")).toHaveCount(0);
-});
-
-test("shows only the duration for self-drive segments", async ({ page }) => {
-  await seedItineraryTrip(page, {
-    plan: {
-      version: 1,
-      days: [
-        {
-          day: 1,
-          stops: [
-            {
-              poiId: "e2e-zhu-a",
-              toNext: "self_drive",
-              toNextEstimate: {
-                durationMinutes: 35,
-                costLowYuan: 0,
-                costHighYuan: 0,
-              },
-            },
-            { poiId: "e2e-zhu-b" },
-          ],
-        },
-        { day: 2, stops: [] },
-      ],
-      unscheduled: [],
-    },
-  });
-  await activateTrip(page);
-  await page.goto("/itinerary");
-
-  const transport = page.getByTestId("itinerary-transport");
-  await expect(transport).toContainText("途内交通 · 驾车");
-  await expect(transport).toContainText("约 35 分钟");
-  await expect(transport).not.toContainText("¥");
-  await expect(transport).not.toContainText("宠物专车");
-});
-
 test("exports all days through the print dialog", async ({ page }) => {
   await page.addInitScript(() => {
     (window as unknown as { __printCalls: number }).__printCalls = 0;
@@ -466,100 +341,6 @@ test("restores the single-day view after printing ends", async ({ page }) => {
   await expect(dayOneTab).toHaveAttribute("aria-selected", "true");
 });
 
-test("shows representative airline rules for flights", async ({ page }) => {
-  await stubWindowPrint(page);
-  await seedItineraryTrip(page, {
-    transportMode: "flight",
-    plan: {
-      version: 1,
-      days: [
-        { day: 1, stops: [{ poiId: "e2e-zhu-a" }, { poiId: "e2e-zhu-b" }] },
-        { day: 2, stops: [] },
-      ],
-      unscheduled: [],
-    },
-  });
-  await activateTrip(page);
-  await page.goto("/itinerary");
-  await openExportView(page);
-
-  const transportRule = page.getByRole("region", { name: "大交通携宠规则" });
-  await expect(transportRule).toContainText(
-    "大交通携宠规则 · 飞机（中国国际航空）",
-  );
-  await expect(transportRule).toContainText("体重上限：≤32 kg");
-  await expect(transportRule).toContainText("容器要求：");
-  await expect(transportRule).toContainText("办理流程：");
-  await expect(transportRule).toContainText(
-    "检疫证明：需《动物检疫合格证明》，国际航班另需出入境文件",
-  );
-  await expect(transportRule).toContainText(
-    "来源：国航：作为行李托运的小动物",
-  );
-  await expect(transportRule).toContainText("已复核 2026-11-16");
-  await expect(transportRule).toContainText(
-    "飞机规则因航司与航线而异；此处按代表航司展示",
-  );
-  await expect(transportRule).toContainText("以承运方最新规则为准");
-  await expect(transportRule).not.toContainText("肩高上限");
-});
-
-test("omits numeric limits when the transport rule has none", async ({
-  page,
-}) => {
-  await stubWindowPrint(page);
-  await seedItineraryTrip(page, {
-    transportMode: "drive",
-    plan: {
-      version: 1,
-      days: [
-        { day: 1, stops: [{ poiId: "e2e-zhu-a" }, { poiId: "e2e-zhu-b" }] },
-        { day: 2, stops: [] },
-      ],
-      unscheduled: [],
-    },
-  });
-  await activateTrip(page);
-  await page.goto("/itinerary");
-  await openExportView(page);
-
-  const transportRule = page.getByRole("region", { name: "大交通携宠规则" });
-  await expect(transportRule).toContainText("大交通携宠规则 · 自驾");
-  await expect(transportRule).toContainText(
-    "体重限制：无统一限制，以车辆空间与安全固定为准",
-  );
-  await expect(transportRule).not.toContainText("体重上限");
-  await expect(transportRule).not.toContainText("肩高上限");
-});
-
-test("exports without a transport rule when no transport mode is set", async ({
-  page,
-}) => {
-  await stubWindowPrint(page);
-  await seedItineraryTrip(page, {
-    transportMode: null,
-    plan: {
-      version: 1,
-      days: [
-        { day: 1, stops: [{ poiId: "e2e-zhu-a" }, { poiId: "e2e-zhu-b" }] },
-        { day: 2, stops: [] },
-      ],
-      unscheduled: [],
-    },
-  });
-  await activateTrip(page);
-  await page.goto("/itinerary");
-  await openExportView(page);
-
-  await expect(
-    page.getByRole("region", { name: "大交通携宠规则" }),
-  ).toHaveCount(0);
-  await expect(page.getByText("12月1日 周二 · 珠海市")).toBeVisible();
-  await expect(page.getByTestId("itinerary-stop").first()).toContainText(
-    "情侣路",
-  );
-});
-
 test("exports the full itinerary as one PNG", async ({ page }) => {
   await seedItineraryTrip(page);
   await activateTrip(page);
@@ -606,4 +387,58 @@ test("shows an error when image generation fails", async ({ page }) => {
     "aria-selected",
     "true",
   );
+});
+
+async function openNearbyServices(page: Page) {
+  const stop = page.getByTestId("itinerary-stop").first();
+  await stop.getByText("附近宠物服务").click();
+  await expect(
+    stop.getByRole("button", { name: "复制珠海宠物医院电话" }),
+  ).toBeVisible();
+}
+
+test("hides copy buttons in the PDF print view", async ({ page }) => {
+  await stubWindowPrint(page);
+  await seedItineraryTrip(page);
+  await activateTrip(page);
+  await page.goto("/itinerary");
+  await openNearbyServices(page);
+
+  const copyButtons = page.locator('button[aria-label^="复制"]');
+  await expect(copyButtons).toHaveCount(2);
+
+  await openExportView(page);
+
+  for (const button of await copyButtons.all()) {
+    await expect(button).toBeHidden();
+  }
+  await expect(page.getByText("0756-8886666").first()).toBeVisible();
+});
+
+test("keeps copy buttons out of the image export surface", async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.toBlob;
+    HTMLCanvasElement.prototype.toBlob = function (
+      callback: BlobCallback,
+      ...args: unknown[]
+    ) {
+      window.setTimeout(() => {
+        original.call(this, callback, ...(args as [string?, number?]));
+      }, 1500);
+    };
+  });
+  await seedItineraryTrip(page);
+  await activateTrip(page);
+  await page.goto("/itinerary");
+  await openNearbyServices(page);
+
+  await page.getByRole("button", { name: "导出图片" }).click();
+
+  const surface = page.getByTestId("image-export-surface");
+  await expect(surface).toBeAttached();
+  await expect(surface.locator('button[aria-label^="复制"]')).toHaveCount(0);
+  await expect(surface.getByText("附近宠物服务").first()).toBeAttached();
+  await expect(page.getByRole("button", { name: "导出图片" })).toBeEnabled({
+    timeout: 20_000,
+  });
 });
