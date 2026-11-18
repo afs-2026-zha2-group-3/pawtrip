@@ -103,41 +103,50 @@ export function TransportSegmentRow({
 
   if (compact) {
     return (
-      <div
-        data-testid="transport-segment"
-        className="relative flex min-h-8 items-center gap-1.5 py-0.5 pl-0"
-      >
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-[10px] z-0 h-[100px] w-[2px] -translate-y-1/2 bg-paw-accent"
-        />
-        <span
-          aria-hidden="true"
-          className="relative z-10 inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-paw-accent text-xs text-paw-accent-strong"
-        >
-          ↔
-        </span>
-        <select
-          aria-label={transportMode === "drive" ? "选择其他途内交通方式" : "选择途内交通方式"}
-          className="relative z-10 h-7 min-w-0 flex-1 rounded-full border-0 bg-muted px-2.5 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          value={selectValue}
-          onChange={(event) => handleModeChange(event.target.value)}
-        >
-          {selectValue === "" ? (
-            <option value="" disabled>
-              点击此处选择小交通
-            </option>
-          ) : null}
-          {options.map((mode) => (
-            <option key={mode} value={mode}>
-              {toNextLabels[mode]}
-            </option>
-          ))}
-        </select>
-        {estimate ? (
-          <span className="relative z-10 text-xs text-muted-foreground">
-            约 {estimate.durationMinutes} 分钟
+      <div data-testid="transport-segment" className="flex flex-col gap-0.5 py-0.5 pl-0">
+        <div className="relative flex min-h-8 items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-[10px] z-0 h-[100px] w-[2px] -translate-y-1/2 bg-paw-accent"
+          />
+          <span
+            aria-hidden="true"
+            className="relative z-10 inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-paw-accent text-xs text-paw-accent-strong"
+          >
+            ↔
           </span>
+          <select
+            aria-label={transportMode === "drive" ? "选择其他途内交通方式" : "选择途内交通方式"}
+            className="relative z-10 h-7 shrink-0 rounded-full border-0 bg-muted px-2.5 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            value={selectValue}
+            onChange={(event) => handleModeChange(event.target.value)}
+          >
+            {selectValue === "" ? (
+              <option value="" disabled>
+                点击此处选择小交通
+              </option>
+            ) : null}
+            {options.map((mode) => (
+              <option key={mode} value={mode}>
+                {toNextLabels[mode]}
+              </option>
+            ))}
+          </select>
+          {selectValue !== "" && estimate ? (
+            <span className="relative z-10 text-xs text-muted-foreground">
+              约 {estimate.durationMinutes} 分钟
+            </span>
+          ) : null}
+          {selectValue === "drive" && estimate ? (
+            <span className="relative z-10 text-xs text-muted-foreground">
+              ¥{estimate.costLowYuan}–{estimate.costHighYuan}
+            </span>
+          ) : selectValue === "walk" && estimate ? (
+            <span className="relative z-10 text-xs text-muted-foreground">¥0</span>
+          ) : null}
+        </div>
+        {selectValue === "drive" ? (
+          <p className="pl-7 text-xs text-muted-foreground">{TAXI_PET_HINT}</p>
         ) : null}
       </div>
     );

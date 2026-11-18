@@ -169,12 +169,12 @@ function TripPanelContent({
         endIndex: stops.length,
         count: stops.length,
       });
-      if (!timeline && showTransitNotice(stops, active.transportMode)) {
+      if (showTransitNotice(stops, active.transportMode)) {
         next.push({ kind: "notice", id: `transit-notice-${day}`, container: day });
       }
       const dayPolicy = deriveDayPolicy(stops, locations, activePet);
       const policyLines = dayPolicyLines(dayPolicy);
-      if (!timeline && policyLines.length > 0) {
+      if (policyLines.length > 0) {
         next.push({ kind: "policy", id: `day-policy-${day}`, container: day, lines: policyLines });
       }
       const warningByPoi = new Map(
