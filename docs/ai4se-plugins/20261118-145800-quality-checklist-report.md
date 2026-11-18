@@ -14,7 +14,7 @@
 |----------|-----------|--------|----------|
 | P4-1 Local verify report exists | yes | Pass | `docs/ai4se-plugins/20261118-145715-local-verify-report.md` |
 | P4-2 Local verification Overall = Pass | yes | Pass | 报告 Overall Pass：后端 266、前端 318、build/tsc 通过、packing E2E 5、itinerary E2E 15、OpenSpec strict 通过 |
-| P4-3 CI pipeline report | yes* | Skipped | 尚未提交 PR / 运行 CI，未到 `phase=ci` |
+| P4-3 CI pipeline report | yes* | Pass（复核） | 原记 Skipped；PR #144 已合并（`1b9b2db`），Server tests / Web build / Browser E2E / Docs-only 四项全绿，见 `docs/ai4se-plugins/20261118-162000-pipeline-report.md` 与 change 目录 `ci-report.md` |
 | P4-4 Deploy verification | yes* | Skipped | 仓库无部署 workflow，未进行部署验证 |
 | P4-5 G2 decision | yes* | Skipped | G2 尚未 claim / 签署 |
 | P4-6 Apply/verify separation | yes | Pass | 实现与验证分离；G1 由具名 IO/SA 记录，P4 报告未替代 Gate 签署 |
@@ -31,9 +31,9 @@
 
 | Check id | Gap | Owner (if known) | Suggested next |
 |----------|-----|------------------|----------------|
-| P4-3 | 无 CI pipeline report | SA | 提交 PR 后运行 `/sdd:pipeline-report phase=ci` |
+| P4-3 | ~~无 CI pipeline report~~ 已补 | SA | 已由 PR #144 CI 全绿补齐（`20261118-162000-pipeline-report.md`） |
 | P4-5 | 无 G2 decision | VL | 本地与 CI 证据齐备后调用 `/sdd:g2-decision-record` |
-| E2E 全量 | 本地仅跑 packing 与 itinerary | SA | 由 PR CI 或发布前全量 E2E 覆盖 |
+| E2E 全量 | ~~本地仅跑 packing 与 itinerary~~ 已补 | SA | 合并后本地已跑全量 E2E 99 passed；CI E2E 亦全绿 |
 
 ## Notes
 
