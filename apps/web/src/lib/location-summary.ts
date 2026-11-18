@@ -1,19 +1,5 @@
 import type { PetPolicies } from "../queries/locations";
 
-export function restrictionFeeParts(policies: PetPolicies): string[] {
-  const parts: string[] = [];
-  if (policies.maxSinglePetWeightKg !== null) {
-    parts.push(`≤${policies.maxSinglePetWeightKg} kg`);
-  }
-  if (policies.maxSinglePetShoulderHeightCm !== null) {
-    parts.push(`≤${policies.maxSinglePetShoulderHeightCm} cm`);
-  }
-  if (policies.extraFeeCents !== null) {
-    parts.push(`附加费 ¥${policies.extraFeeCents / 100}`);
-  }
-  return parts;
-}
-
 export function policyNoteParts(policies: PetPolicies): string[] {
   const parts: string[] = [];
   if (policies.leashRequired === true) {

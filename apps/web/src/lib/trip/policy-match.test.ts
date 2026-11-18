@@ -8,6 +8,7 @@ import {
   matchLocationPolicyForType,
   matchCityCandidate,
   matchCityPolicy,
+  violatedLimitTags,
 } from "./policy-match";
 
 const dog: Pet = {
@@ -259,5 +260,47 @@ describe("location policy matching", () => {
         dog,
       ).status,
     ).toBe("unfriendly");
+  });
+});
+
+describe("violated limit tags", () => {
+  it("returns the weight tag when the pet exceeds the cap", () => {
+    expect(
+      violatedLimitTags({ ...emptyPolicies, maxSinglePetWeightKg: 8.5 }, dog),
+    ).toEqual(["≤8.5 kg"]);
+  });
+
+  it("returns the shoulder tag when a dog exceeds the cap", () => {
+    expect(
+      violatedLimitTags({ ...emptyPolicies, maxSinglePetShoulderHeightCm: 30 }, dog),
+    ).toEqual(["≤30 cm"]);
+  });
+
+  it("returns both tags when weight and shoulder are exceeded", () => {
+    expect(
+      violatedLimitTags(
+        { ...emptyPolicies, maxSinglePetWeightKg: 8, maxSinglePetShoulderHeightCm: 30 },
+        dog,
+      ),
+    ).toEqual(["≤8 kg", "≤30 cm"]);
+  });
+
+  it("skips the shoulder cap for cats", () => {
+    expect(
+      violatedLimitTags({ ...emptyPolicies, maxSinglePetShoulderHeightCm: 30 }, cat),
+    ).toEqual([]);
+  });
+
+  it("hides tags when the pet meets the caps", () => {
+    expect(
+      violatedLimitTags(
+        { ...emptyPolicies, maxSinglePetWeightKg: 10, maxSinglePetShoulderHeightCm: 40 },
+        dog,
+      ),
+    ).toEqual([]);
+  });
+
+  it("returns no tags when limits are not configured", () => {
+    expect(violatedLimitTags(emptyPolicies, dog)).toEqual([]);
   });
 });

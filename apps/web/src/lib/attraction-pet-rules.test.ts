@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   formatAllowedPetTypes,
   formatBooleanRequirement,
-  formatFee,
   isPetPolicyConfigured,
   petFriendlyLabel,
   petFriendlyStatus,
@@ -67,14 +66,10 @@ describe("attraction pet rules", () => {
     expect(formatAllowedPetTypes(null)).toBeNull();
   });
 
-  it("formats boolean requirements and fees", () => {
+  it("formats boolean requirements", () => {
     expect(formatBooleanRequirement(true)).toBe("需要");
     expect(formatBooleanRequirement(false)).toBe("不需要");
     expect(formatBooleanRequirement(null)).toBeNull();
-    expect(formatFee(1050)).toBe("10.5 元 / 只 / 次");
-    expect(formatFee(1)).toBe("0.01 元 / 只 / 次");
-    expect(formatFee(0)).toBe("0 元 / 只 / 次");
-    expect(formatFee(null)).toBeNull();
   });
 
   it("builds only non-null policy fields", () => {
@@ -85,7 +80,6 @@ describe("attraction pet rules", () => {
       { label: "单只宠物最大肩高", value: "40 cm" },
       { label: "牵引绳要求", value: "需要" },
       { label: "疫苗证明要求", value: "不需要" },
-      { label: "额外费用", value: "10.5 元 / 只 / 次" },
     ]);
     expect(petPolicyFields({
       ...fullPolicies,

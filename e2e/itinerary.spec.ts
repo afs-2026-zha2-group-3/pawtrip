@@ -201,10 +201,8 @@ test("summarizes the active trip by day from the panel entry", async ({
   await expect(firstStop.getByText("需要", { exact: true })).toBeVisible();
   await expect(firstStop).toContainText("疫苗证明要求");
   await expect(firstStop.getByText("不需要", { exact: true })).toBeVisible();
-  await expect(firstStop).toContainText("额外费用");
-  await expect(
-    firstStop.getByText("10.5 元 / 只 / 次", { exact: true }),
-  ).toBeVisible();
+  await expect(firstStop.getByText("额外费用")).toHaveCount(0);
+  await expect(firstStop.getByText("10.5 元 / 只 / 次")).toHaveCount(0);
   const transport = page.getByTestId("itinerary-transport");
   await expect(transport).toContainText("途内交通 · 打车");
   await expect(transport).toContainText("约 20 分钟");
