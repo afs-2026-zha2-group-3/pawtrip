@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
+  completeTripViaApi,
   createTripViaApi,
   csrfHeaders,
   openTrips,
@@ -49,13 +50,15 @@ async function seedPackingTrip(
     },
   });
   expect(response.ok()).toBeTruthy();
+  await completeTripViaApi(page, trip.id);
   return trip;
 }
 
 async function activateTrip(page: Page, name = DEFAULT_TRIP_NAME) {
   await openTrips(page);
-  await tripCard(page, name).getByRole("button", { name: "激活" }).click();
-  await expect(page.getByTestId("trip-panel")).toBeVisible();
+  await page.reload();
+  await tripCard(page, name).getByRole("button", { name: "查看行程单" }).click();
+  await expect(page).toHaveURL(/\/itinerary$/);
 }
 
 async function openItinerary(page: Page) {
