@@ -2,7 +2,7 @@
 
 - 日期：2026-11-17
 - phase：p2（Delta 与 Living Spec 一致性；未进入 G1）
-- 范围：`openspec/changes/2026-11-17-add-itinerary-nearby-pet-services/` 与 `openspec/specs/trip-attractions/spec.md`
+- 范围：`openspec/changes/archive/2026-11-17-add-itinerary-nearby-pet-services/` 与 `openspec/specs/trip-attractions/spec.md`
 - 工具：`openspec validate "2026-11-17-add-itinerary-nearby-pet-services" --strict` → valid
 
 ## Findings
@@ -33,3 +33,8 @@
 ## Verdict
 
 **Partial**（2 WARNING，无 BLOCKER）。WARNING 均为“规格落后于实现/追溯性重复维护”，由 P5 归档解决；本报告不是 Gate 决议。
+
+## Post-archive（2026-11-18）
+
+- L1/L2 已解决：change 已归档，`trip-attractions` 合并 ADDED「行程景点附近宠物服务」；MODIFIED 两项同文对齐。
+- 归档后 `openspec validate --all --strict` 27 passed / 0 failed。上述 Partial 为归档前记录。

@@ -601,3 +601,55 @@
 - **WHEN** 后端返回详情
 - **THEN** 响应包含可选的 `keytag`、`businessArea`，并保留既有 `coverPhotoUrl`、`rating`
 - **AND** 不包含原始 `photos`、`business` 或 `poi` 字段
+
+### Requirement: 行程景点附近宠物服务
+
+行程单中每个已排期景点卡片 SHALL 在“详细携宠政策”折叠区之后提供“附近宠物服务”可折叠栏目，默认收起。展开时页面 SHALL 请求 `GET /api/locations/{poiId}/nearby-services`，收起时 MUST NOT 请求。该接口 MUST 以景点 POI 的 `region_code` 前 4 位（城市级）为范围，返回直线距离最近的宠物医院与宠物用品店各至多 1 家，MUST NOT 应用 5km 距离筛选或宠物友好筛选。每项 MUST 包含 `poiId`、`name`、`address`、`distanceMeters`、`openingHours`，不存在时为 `null`。距离 MUST 使用 Haversine 直线距离并按米取整；距离并列时 MUST 按地点 ID 升序。`openingHours` MUST 优先读取高德快照 `business_json.opentime_week`，缺失时回退 `opentime_today`，都缺失为 `null`。景点经纬度缺失时 MUST 返回 `hospital` 与 `supplies` 均为 `null`，MUST NOT 猜测或回退到其他范围。未知 POI MUST 返回 404。前端 MUST 在加载、失败与无数据时显示明确文案，且 MUST NOT 阻塞卡片其他内容；距离 MUST 以一位小数公里展示为“距{景点名}约 X.Xkm”，地址缺失 SHALL 显示“地址未收录”，营业时间缺失 SHALL 显示“暂无”。
+
+#### Scenario: 展开加载最近服务
+
+- **GIVEN** 激活行程第 1 天包含有经纬度的景点“香炉湾沙滩”，且同城存在多家宠物医院与宠物用品店
+- **WHEN** 用户展开该景点卡片的“附近宠物服务”
+- **THEN** 页面请求 `/api/locations/{poiId}/nearby-services`
+- **AND** 展示距离最近的 1 家宠物医院与 1 家宠物用品店
+- **AND** 每项展示名称、一位小数公里距离、地址与营业时间
+
+#### Scenario: 收起不请求
+
+- **GIVEN** 用户尚未展开“附近宠物服务”
+- **WHEN** 行程单渲染景点卡片
+- **THEN** 不发起附近服务请求
+
+#### Scenario: 营业时间回退
+
+- **GIVEN** 宠物医院快照只有 `opentime_week`，宠物用品店快照只有 `opentime_today`
+- **WHEN** 用户展开栏目
+- **THEN** 医院展示 `opentime_week`，用品店展示 `opentime_today`
+- **AND** 两者都缺失时展示“暂无”
+
+#### Scenario: 景点无坐标
+
+- **GIVEN** 景点经纬度为 `null`
+- **WHEN** 请求附近服务
+- **THEN** `hospital` 与 `supplies` 均为 `null`
+- **AND** 前端展示“暂无附近宠物服务”
+
+#### Scenario: 无同城服务
+
+- **GIVEN** 景点所在城市没有已保存的宠物医院或宠物用品店
+- **WHEN** 用户展开栏目
+- **THEN** 对应类别为空
+- **AND** 栏目展示“暂无附近宠物服务”
+
+#### Scenario: 请求失败降级
+
+- **GIVEN** 附近服务接口返回错误
+- **WHEN** 用户展开栏目
+- **THEN** 展示“暂时无法获取附近宠物服务”
+- **AND** 景点卡片的政策与其他内容正常展示
+
+#### Scenario: 未知 POI
+
+- **GIVEN** 路径中的 POI 不存在
+- **WHEN** 请求附近服务
+- **THEN** 接口返回 404
