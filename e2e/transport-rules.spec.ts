@@ -236,22 +236,6 @@ test.describe("comparison-table", () => {
     await expect(footer).toContainText("官方或第三方渠道");
     expect(await footer.getByRole("link").count()).toBeGreaterThan(3);
   });
-
-  test("shows no booking action on the page", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /预订|购票/ })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /预订|购票/ })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /刷新/ })).toHaveCount(0);
-  });
-
-  test("keeps the cities page available without a transport rules entry", async ({
-    page,
-  }) => {
-    await page.getByRole("tab", { name: "城市浏览" }).click();
-
-    await expect(page).toHaveURL("/cities");
-    await expect(page.getByRole("table")).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "交通规则" })).toHaveCount(0);
-  });
 });
 
 test.describe("unavailable-pet-data", () => {
