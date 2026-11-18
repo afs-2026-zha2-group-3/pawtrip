@@ -65,6 +65,7 @@ const cityPolicy: CityPetPolicy = {
   policies: [],
   bannedBreeds: [],
   allowedBreeds: ["柯基犬"],
+  allowedPetTypes: "CAT,DOG",
   source: null,
   updatedMonth: null,
   match: null,
@@ -94,15 +95,42 @@ describe("city candidate matching", () => {
     ).toBe("unfriendly");
   });
 
-  it("is unjudgeable for cats and dogs without a breed", () => {
-    expect(matchCityCandidate(city, cat).status).toBe("unjudgeable");
+  it("treats cats as friendly when the city allows them", () => {
+    expect(matchCityCandidate(city, cat)).toEqual({
+      status: "friendly",
+      reasons: ["城市禁养犬种名单不适用于猫，未限制携带猫"],
+    });
+    expect(matchCityCandidate({ ...city, allowedPetTypes: "DOG" }, cat).status).toBe(
+      "unfriendly",
+    );
+    expect(matchCityCandidate({ ...city, allowedPetTypes: null }, cat).status).toBe(
+      "unfriendly",
+    );
+  });
+
+  it("is unjudgeable for dogs without a breed", () => {
     expect(matchCityCandidate(city, noBreedDog).status).toBe("unjudgeable");
   });
 });
 
 describe("city policy page matching", () => {
-  it("is unjudgeable for cats and unknown breeds", () => {
-    expect(matchCityPolicy(cityPolicy, cat).status).toBe("unjudgeable");
+  it("treats cats as friendly when the city allows them", () => {
+    expect(matchCityPolicy(cityPolicy, cat)).toEqual({
+      status: "friendly",
+      reasons: ["城市禁养犬种名单不适用于猫，未限制携带猫"],
+    });
+    expect(matchCityPolicy({ ...cityPolicy, allowedPetTypes: "DOG" }, cat).status).toBe(
+      "unfriendly",
+    );
+  });
+
+  it("is unfriendly for cats when the city has no allowed pet types", () => {
+    expect(
+      matchCityPolicy({ ...cityPolicy, allowedPetTypes: null }, cat).status,
+    ).toBe("unfriendly");
+  });
+
+  it("is unjudgeable for unknown breeds", () => {
     expect(matchCityPolicy(cityPolicy, noBreedDog).status).toBe("unjudgeable");
   });
 
@@ -147,6 +175,35 @@ describe("location policy matching", () => {
     expect(
       matchLocationPolicy({ ...emptyPolicies, maxSinglePetShoulderHeightCm: 30 }, dog)
         .status,
+    ).toBe("unfriendly");
+  });
+
+  it("ignores the shoulder height cap for cats", () => {
+    const verdict = matchLocationPolicy(
+      { ...emptyPolicies, maxSinglePetShoulderHeightCm: 25 },
+      { ...cat, shoulderHeightCm: 30 },
+    );
+    expect(verdict).toEqual({ status: "friendly", reasons: [] });
+  });
+
+  it("still applies type, weight and requirement limits to cats", () => {
+    expect(
+      matchLocationPolicy({ ...emptyPolicies, allowedPetTypes: "DOG" }, cat).status,
+    ).toBe("unfriendly");
+    expect(
+      matchLocationPolicy({ ...emptyPolicies, maxSinglePetWeightKg: 3 }, cat).status,
+    ).toBe("unfriendly");
+    expect(
+      matchLocationPolicy(
+        { ...emptyPolicies, vaccinationProofRequired: true },
+        { ...cat, hasVaccinationProof: false },
+      ).reasons[0],
+    ).toContain("疫苗证明");
+    expect(
+      matchLocationPolicy(
+        { ...emptyPolicies, leashRequired: true },
+        { ...cat, hasLeash: false },
+      ).status,
     ).toBe("unfriendly");
   });
 

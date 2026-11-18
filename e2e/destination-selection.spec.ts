@@ -72,7 +72,7 @@ test("E4 candidate cards show one tag per pet", async ({ page }) => {
   await searchCity(page, "杭州");
 
   const card = cityCard(page, "杭州市");
-  await expect(card.getByText("豆豆 · 无法判定")).toBeVisible();
+  await expect(card.getByText("豆豆 · 友好")).toBeVisible();
   await expect(card.getByText("毛毛 · 无法判定")).toBeVisible();
 });
 
@@ -300,7 +300,7 @@ test("E15 selecting a city shows its policy in the sidebar", async ({ page }) =>
   await expect(panel.locator("li")).toHaveCount(3);
   await expect(panel).toContainText("严格管理区内禁止饲养危险犬");
   await expect(
-    panel.getByText(/豆豆：城市养犬政策不适用于猫，暂无法判定/),
+    panel.getByText(/您的宠物豆豆不在珠海市禁养名单中/),
   ).toBeVisible();
   await expect(
     panel.getByText(/毛毛：宠物未填写犬种，无法判定禁养名单/),
