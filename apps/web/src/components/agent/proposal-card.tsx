@@ -33,12 +33,15 @@ export function ProposalCard({
   const actionable = proposal.status === "pending" && !applying;
 
   return (
-    <Card data-testid="agent-proposal" className="gap-3 border-primary/30">
-      <CardHeader className="gap-1">
+    <Card
+      data-testid="agent-proposal"
+      className="max-h-[50%] min-h-0 gap-3 border-primary/30"
+    >
+      <CardHeader className="shrink-0 gap-1">
         <CardTitle className="text-sm">待确认方案</CardTitle>
         <p className="text-xs text-muted-foreground">{proposal.summary}</p>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2 text-xs">
+      <CardContent className="flex min-h-0 flex-col gap-2 overflow-y-auto pr-1 text-xs">
         {diff?.days.map((day) =>
           day.added.length || day.removed.length ? (
             <div key={day.day} className="flex flex-col gap-0.5">
@@ -79,7 +82,7 @@ export function ProposalCard({
           </p>
         ) : null}
       </CardContent>
-      <CardFooter className="gap-2">
+      <CardFooter className="shrink-0 gap-2">
         <Button size="sm" disabled={!actionable} onClick={onApply}>
           {applying ? "应用中…" : "确认应用"}
         </Button>
