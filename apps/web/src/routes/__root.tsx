@@ -92,9 +92,16 @@ function AppHeader() {
 
   return (
     <header
-      className={`paw-header relative flex items-center justify-center px-4 py-2 print:hidden${plainHeader ? " paw-header-plain" : ""}`}
+      className={`paw-header relative flex shrink-0 items-center justify-center py-2 pr-24 pl-24 print:hidden${plainHeader ? " paw-header-plain" : ""}`}
     >
-      <AppTabs />
+      <div
+        data-testid="app-nav-scroll"
+        className="w-full min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div className="mx-auto w-fit max-w-full">
+          <AppTabs />
+        </div>
+      </div>
       {auth.isSuccess ? (
         <AlertDialog
           open={logoutDialogOpen}
@@ -278,11 +285,11 @@ function RootDocument({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body
-        className={
-          petPatternBody
-            ? "bg-pet-pattern min-h-svh text-foreground antialiased"
-            : "min-h-svh bg-background text-foreground antialiased"
-        }
+        className={`${
+          pathname === "/login" ? "min-h-svh" : "flex h-dvh flex-col overflow-hidden"
+        } ${
+          petPatternBody ? "bg-pet-pattern" : "bg-background"
+        } text-foreground antialiased`}
       >
         {pathname === "/login" ? null : <AppHeader />}
         {children}

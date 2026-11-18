@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { PolicyTags } from "@/components/trip/policy-tags";
-import { policyNoteParts, restrictionFeeParts } from "@/lib/location-summary";
+import { policyNoteParts } from "@/lib/location-summary";
 import { formatDistanceKm } from "@/lib/distance";
-import { matchLocationPolicyForType } from "@/lib/trip/policy-match";
+import { matchLocationPolicyForType, violatedLimitTags } from "@/lib/trip/policy-match";
 import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
 import { cn } from "@/lib/utils";
 import type { LocationSummary } from "../../../queries/locations";
@@ -14,6 +14,8 @@ import { PetFriendlyBadge } from "./-pet-friendly-badge";
 
 const TAG_PILL_CLASS =
   "inline-flex h-6 items-center rounded-full bg-[#F0F0F0] px-2.5 text-xs text-[#838383]";
+const LIMIT_TAG_CLASS =
+  "inline-flex h-6 items-center rounded-full bg-destructive/10 px-2.5 text-xs font-medium text-destructive ring-1 ring-inset ring-destructive/25";
 
 export function LocationCard({
   location,
@@ -43,7 +45,14 @@ export function LocationCard({
         .filter((entry) => entry.stops.some((stop) => stop.poiId === location.poiId))
         .map((entry) => entry.day)
     : [];
-  const restrictionParts = restrictionFeeParts(location.petPolicies);
+  const limitTags =
+    subjects.status === "ready"
+      ? Array.from(
+          new Set(
+            subjects.subjects.flatMap((pet) => violatedLimitTags(location.petPolicies, pet)),
+          ),
+        )
+      : [];
   const noteParts = policyNoteParts(location.petPolicies);
   return (
     <Card
@@ -112,10 +121,10 @@ export function LocationCard({
             }
           />
         </div>
-        {restrictionParts.length > 0 ? (
+        {limitTags.length > 0 ? (
           <div className="flex flex-wrap items-center gap-1.5">
-            {restrictionParts.map((part) => (
-              <span key={part} className={TAG_PILL_CLASS}>
+            {limitTags.map((part) => (
+              <span key={part} className={LIMIT_TAG_CLASS}>
                 {part}
               </span>
             ))}

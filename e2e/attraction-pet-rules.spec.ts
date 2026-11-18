@@ -249,7 +249,8 @@ test("E3 shows pet policy fields in location detail", async ({ page }) => {
   await expect(dialog.getByText("40 cm")).toBeVisible();
   await expect(dialog.getByText("需要", { exact: true })).toBeVisible();
   await expect(dialog.getByText("不需要", { exact: true })).toBeVisible();
-  await expect(dialog.getByText("10.5 元 / 只 / 次")).toBeVisible();
+  await expect(dialog.getByText("额外费用")).toHaveCount(0);
+  await expect(dialog.getByText("10.5 元 / 只 / 次")).toHaveCount(0);
   await expect(dialog.getByText("狗", { exact: true })).toBeVisible();
   await expect(dialog.getByText("预约要求")).toHaveCount(0);
 });
@@ -516,26 +517,40 @@ test("media E4 hides rating when snapshot missing", async ({ page }) => {
   await expect(card.getByText("珠海市香洲区")).toBeVisible();
 });
 
-test("media E5 restriction and fee row renders values or hides", async ({ page }) => {
-  await tripTo(page, "珠海市");
+test("media E5 only violated weight and shoulder limits render in red", async ({ page }) => {
+  await createTrip(page, { city: "珠海市", days: 1, pet: "毛毛" });
+  await openAttractions(page);
+  await hideTripPanel(page);
 
   const loverCard = attractionCard(page, "情侣路");
-  await expect(loverCard.getByText("≤8.5 kg")).toBeVisible();
-  await expect(loverCard.getByText("≤40 cm")).toBeVisible();
-  await expect(loverCard.getByText("附加费 ¥10.5")).toBeVisible();
+  await expect(loverCard.getByText("≤8.5 kg")).toHaveClass(/text-destructive/);
+  await expect(loverCard.getByText("≤40 cm")).toHaveClass(/text-destructive/);
+  await expect(loverCard.getByText(/附加费/)).toHaveCount(0);
 
   await selectType(page, "住宿");
   const hotel = attractionCard(page, "珠海某酒店");
-  await expect(hotel.getByText("≤15 kg")).toBeVisible();
-  await expect(hotel.getByText("附加费 ¥80")).toBeVisible();
-  await expect(hotel.getByText("cm")).toHaveCount(0);
+  await expect(hotel.getByText("≤15 kg")).toHaveClass(/text-destructive/);
+  await expect(hotel.getByText(/cm/)).toHaveCount(0);
+  await expect(hotel.getByText(/附加费/)).toHaveCount(0);
 
   await selectType(page, "景点");
-  await expect(attractionCard(page, "情侣路")).toBeVisible();
   await showAllAttractions(page);
   const emptyCard = attractionCard(page, "珠海渔女");
   await expect(emptyCard).toBeVisible();
   await expect(emptyCard.getByText(/≤|附加费/)).toHaveCount(0);
+});
+
+test("media E5b hides limit tags when the pet meets every cap", async ({ page }) => {
+  await tripTo(page, "珠海市");
+
+  await expect(attractionCard(page, "情侣路").getByText(/≤|附加费/)).toHaveCount(0);
+
+  await selectType(page, "住宿");
+  await expect(attractionCard(page, "珠海某酒店").getByText(/≤|附加费/)).toHaveCount(0);
+
+  await selectType(page, "景点");
+  await showAllAttractions(page);
+  await expect(attractionCard(page, "珠海渔女").getByText(/≤|附加费/)).toHaveCount(0);
 });
 
 test("media E6 policy note row renders generated phrases or hides", async ({ page }) => {
