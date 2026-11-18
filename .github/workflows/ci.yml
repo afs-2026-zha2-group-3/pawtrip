@@ -1,0 +1,195 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      server: ${{ steps.filter.outputs.server }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # 同一分支 push 的变更检测需要对比上一次提交，浅克隆不可用。
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          # PR 事件忽略该值；push 事件对比同一分支的最近一次提交。
+          base: ${{ github.ref }}
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.npmrc'
+              - '.github/workflows/ci.yml'
+            server:
+              - 'apps/server/**'
+              - '.github/workflows/ci.yml'
+            e2e:
+              - 'apps/server/**'
+              - 'apps/web/**'
+              - 'e2e/**'
+              - 'scripts/run-e2e.mjs'
+              - 'scripts/seed-users.mjs'
+              - 'scripts/seed-e2e-attractions.mjs'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.npmrc'
+              - 'playwright.config.ts'
+              - '.github/workflows/ci.yml'
+
+  build:
+    name: Build
+    needs: changes
+    if: needs.changes.outputs.web == 'true' || needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Node.js
+        if: needs.changes.outputs.web == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Set up JDK
+        if: needs.changes.outputs.server == 'true'
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: apps/server/pom.xml
+      - name: Install npm dependencies
+        if: needs.changes.outputs.web == 'true'
+        run: npm ci
+      - name: Build web
+        if: needs.changes.outputs.web == 'true'
+        run: npm run build
+      - name: Build server
+        if: needs.changes.outputs.server == 'true'
+        working-directory: apps/server
+        run: ./mvnw -B -DskipTests package
+      - name: Upload web build
+        if: needs.changes.outputs.web == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-dist
+          path: apps/web/dist/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload server jar
+        if: needs.changes.outputs.server == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: server-jar
+          path: apps/server/target/*.jar
+          if-no-files-found: error
+          retention-days: 7
+
+  frontend:
+    name: Frontend tests
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Run web unit tests
+        run: npm run test -w apps/web
+
+  backend:
+    name: Backend tests
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: apps/server/pom.xml
+      - name: Run tests
+        working-directory: apps/server
+        run: ./mvnw -B test
+
+  e2e:
+    name: Browser E2E
+    needs: [changes, build, frontend, backend]
+    if: |
+      !cancelled() &&
+      needs.changes.outputs.e2e == 'true' &&
+      (needs.build.result == 'success' || needs.build.result == 'skipped') &&
+      (needs.frontend.result == 'success' || needs.frontend.result == 'skipped') &&
+      (needs.backend.result == 'success' || needs.backend.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: apps/server/pom.xml
+      - run: npm ci
+      - name: Download server jar
+        if: needs.changes.outputs.server == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: server-jar
+          path: apps/server/target
+      - name: Use prebuilt server jar
+        if: needs.changes.outputs.server == 'true'
+        run: |
+          jar=$(find apps/server/target -maxdepth 1 -name '*.jar' | head -n 1)
+          echo "PAWTRIP_E2E_SERVER_JAR=$jar" >> "$GITHUB_ENV"
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run E2E tests
+        run: npm run test:e2e
+      - name: Upload Playwright diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-e2e-diagnostics
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
