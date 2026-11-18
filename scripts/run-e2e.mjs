@@ -16,7 +16,7 @@ const backendPort = 18080;
 const frontendPort = 3100;
 const maxWorkers = 8;
 const requestedWorkers = Number(
-  process.env.PAWTRIP_E2E_WORKERS ?? (process.env.CI ? 2 : 8),
+  process.env.PAWTRIP_E2E_WORKERS ?? (process.env.CI ? 4 : 8),
 );
 const workerCount = Math.min(
   Number.isInteger(requestedWorkers) && requestedWorkers > 0

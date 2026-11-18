@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
-  createTrip as createActiveTrip,
+  createActiveTripViaApi,
   resetTrips,
   signIn,
 } from "./trip-helpers";
@@ -10,8 +10,12 @@ const tableName = "交通携宠规则对比";
 async function openRules(page: Page, pet = "豆豆") {
   await signIn(page);
   await resetTrips(page);
-  await createActiveTrip(page, { city: "杭州市", days: 1, pet });
-  await page.getByRole("tab", { name: "交通规则" }).click();
+  await createActiveTripViaApi(page, {
+    cityAdcode: "330100",
+    petName: pet,
+    transportMode: "drive",
+  });
+  await page.goto("/transport-rules");
   await expect(page.getByRole("table", { name: tableName })).toBeVisible();
 }
 
@@ -53,9 +57,12 @@ test.describe("mode selection", () => {
   }) => {
     await signIn(page);
     await resetTrips(page);
-    await createActiveTrip(page, { city: "杭州市", days: 1, pet: "豆豆" });
-
-    await page.getByRole("tab", { name: "交通规则" }).click();
+    await createActiveTripViaApi(page, {
+      cityAdcode: "330100",
+      petName: "豆豆",
+      transportMode: "drive",
+    });
+    await page.goto("/transport-rules");
     await page.route("**/api/pets", (route) =>
       route.fulfill({
         status: 500,

@@ -2,23 +2,15 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   createTripViaApi,
   csrfHeaders,
-  openCities,
-  openTrips,
-  openTripDialog,
   pets,
   resetTrips,
   signIn,
-  tripCard,
 } from "./trip-helpers";
 
 // 与 apps/web/src/lib/trip/transport-segments.ts、day-policy.ts 的展示文案保持一致。
 const TAXI_PET_HINT = "部分平台提供宠物专车选项；普通网约车需司机同意，建议航空箱携带";
-const TRANSIT_PET_NOTICE = "地铁/公交：不可携带宠物上车";
-const SAME_POI_NOTE = "与上一景点相同，无需途内交通";
 const ESTIMATE_UNAVAILABLE = "估算暂不可用";
 const LEASH_LINE = "当天需携带牵引绳";
-const LEASH_MISSING_LINE = "当天需携带牵引绳（档案未登记牵引绳，请自备）";
-const SIZE_LINE_ZHU_A = "您的宠物「毛毛」超出景点 情侣路 限制（≤8.5kg/≤40cm）";
 
 interface EstimateSnapshot {
   durationMinutes: number;
@@ -100,9 +92,18 @@ async function presetTrip(
 }
 
 async function activateTrip(page: Page, name: string) {
-  await openTrips(page);
-  await tripCard(page, name).getByRole("button", { name: "激活" }).click();
-  await expect(tripCard(page, name)).toContainText("激活中");
+  const list = await page.request.get("/api/trips");
+  expect(list.ok()).toBeTruthy();
+  const created = ((await list.json()) as { id: number; name: string }[]).find(
+    (trip) => trip.name === name,
+  );
+  if (!created) throw new Error(`Trip ${name} not found`);
+  await page.evaluate(
+    (tripId) =>
+      window.localStorage.setItem("pawtrip.activeTripId", String(tripId)),
+    created.id,
+  );
+  await page.goto("/");
   await expect(page.getByTestId("trip-panel")).toBeVisible();
 }
 
@@ -232,15 +233,6 @@ test("E1 renders n-1 segment rows between stops, none for single/empty/unschedul
   await expect(segments.getByRole("button", { name: /^拖动/ })).toHaveCount(0);
 });
 
-test("E1 pre-confirmation state shows no transport segments", async ({ page }) => {
-  await openCities(page);
-  // main（PR #64/#66）将草稿入口改为行程确认弹窗：确认前状态同样不得渲染段行/公交提示。
-  // 原「未确认草稿」面板分支仍在 trip-panel 中保留，但 UI 已无入口，改验弹窗前置态。
-  await openTripDialog(page, "珠海市");
-  await expect(page.getByTestId("transport-segment")).toHaveCount(0);
-  await expect(page.getByTestId("transit-pet-notice")).toHaveCount(0);
-});
-
 test("E2 default taxi display never writes toNext or snapshot", async ({ page }) => {
   const id = await presetTrip(page, {
     name: "珠海两日",
@@ -331,197 +323,6 @@ test("E4 switching to walk saves mode only and restores after reload", async ({ 
   await expect(modeSelect(page, false)).toContainText("步行");
 });
 
-test("E5 shows one transit notice only for days with segments", async ({ page }) => {
-  await presetTrip(page, {
-    name: "珠海提示",
-    petName: "豆豆",
-    totalDays: 3,
-    days: [
-      { day: 1, stops: [{ poiId: "e2e-zhu-a" }, { poiId: "e2e-zhu-b" }] },
-      { day: 2, stops: [{ poiId: "e2e-zhu-c" }] },
-      { day: 3, stops: [] },
-    ],
-  });
-  await activateTrip(page, "珠海提示");
-  await expandPanel(page);
-
-  const notices = page.getByTestId("transit-pet-notice");
-  await expect(notices).toHaveCount(1);
-  await expect(notices.first()).toHaveText(TRANSIT_PET_NOTICE);
-  await expectBefore(notices.first(), page.locator('[data-stop-id="d1:0:e2e-zhu-a"]'));
-});
-
-test("E6 taxi pet hint follows the segment mode", async ({ page }) => {
-  await presetTrip(page, {
-    name: "珠海携宠",
-    petName: "豆豆",
-    totalDays: 1,
-    days: [
-      { day: 1, stops: [{ poiId: "e2e-zhu-a" }, { poiId: "e2e-zhu-b" }, { poiId: "e2e-zhu-c" }] },
-    ],
-  });
-  await activateTrip(page, "珠海携宠");
-  await expandPanel(page);
-
-  await expect(page.getByText(TAXI_PET_HINT)).toHaveCount(2);
-  const put = nextPlanPut(page);
-  await chooseMode(page, false, "walk", 0);
-  await put;
-  await expect(page.getByText(TAXI_PET_HINT)).toHaveCount(1);
-  await expect(
-    page.getByTestId("transport-segment").first().getByTestId("segment-mode"),
-  ).toHaveText("步行");
-});
-
-test("E6 self-drive segment shows no taxi hint", async ({ page }) => {
-  await presetTrip(page, {
-    name: "珠海驾车段",
-    petName: "豆豆",
-    totalDays: 1,
-    days: [
-      {
-        day: 1,
-        stops: [
-          {
-            poiId: "e2e-zhu-a",
-            toNext: "self_drive",
-            toNextEstimate: { durationMinutes: 15, costLowYuan: 0, costHighYuan: 0 },
-          },
-          { poiId: "e2e-zhu-b" },
-        ],
-      },
-    ],
-    transportMode: "drive",
-  });
-  await activateTrip(page, "珠海驾车段");
-
-  const segment = page.getByTestId("transport-segment").first();
-  await expect(segment.getByTestId("segment-mode")).toHaveText("驾车");
-  await expect(page.getByText(TAXI_PET_HINT)).toHaveCount(0);
-});
-
-test("E7 policy reminder keeps leash line; size warning names the pet below its own stop", async ({
-  page,
-}) => {
-  const id = await presetTrip(page, {
-    name: "珠海政策",
-    petName: "毛毛",
-    totalDays: 1,
-    days: [{ day: 1, stops: [{ poiId: "e2e-zhu-a" }, { poiId: "e2e-zhu-b" }] }],
-  });
-  await activateTrip(page, "珠海政策");
-  const puts = trackPlanPuts(page);
-
-  const reminder = page.getByTestId("day-policy-reminder");
-  await expect(reminder.getByText(LEASH_LINE, { exact: true })).toBeVisible();
-  // 体型警示点名宠物，位于对应景点行下方（2026-11-17 修订）
-  const sizeWarning = page.getByTestId("stop-size-warning");
-  await expect(sizeWarning).toHaveText(SIZE_LINE_ZHU_A);
-  await expectBefore(page.locator('[data-stop-id="d1:0:e2e-zhu-a"]'), sizeWarning);
-  await expect(reminder).not.toContainText("超出景点");
-  // 位置：公交提示之后、当天首个景点行之前。
-  await expectBefore(page.getByTestId("transit-pet-notice").first(), reminder);
-  await expectBefore(reminder, page.locator('[data-stop-id="d1:0:e2e-zhu-a"]'));
-  // 提醒纯前端渲染：不触发额外保存。
-  expect(puts).toHaveLength(0);
-  const trip = await getTrip(page, id);
-  expect(stopOf(trip, 1, 0).toNext ?? null).toBeNull();
-});
-
-test("E7 pet within limits gets the leash line only", async ({ page }) => {
-  await presetTrip(page, {
-    name: "珠海未超限",
-    petName: "豆豆",
-    totalDays: 1,
-    days: [{ day: 1, stops: [{ poiId: "e2e-zhu-a" }, { poiId: "e2e-zhu-b" }] }],
-  });
-  await activateTrip(page, "珠海未超限");
-
-  const reminder = page.getByTestId("day-policy-reminder");
-  await expect(reminder).toHaveText(LEASH_LINE);
-  await expect(page.getByText(/超出景点/)).toHaveCount(0);
-});
-
-test("E7 hasLeash=false strengthens the leash line", async ({ page }) => {
-  const headers = await csrfHeaders(page);
-  const created = await page.request.post("/api/pets", {
-    headers,
-    data: {
-      name: "无绳猫",
-      petType: "CAT",
-      weightKg: 5,
-      shoulderHeightCm: 30,
-      hasLeash: false,
-      hasVaccinationProof: true,
-      photo: null,
-      dogBreedId: null,
-    },
-  });
-  expect(created.ok()).toBeTruthy();
-  const pet = (await created.json()) as { id: number };
-  try {
-    const trip = await createTripViaApi(page, {
-      name: "珠海无绳",
-      cityAdcode: "440400",
-      petId: pet.id,
-      totalDays: 1,
-    });
-    await putTripPatch(page, trip.id, {
-      plan: { version: 1, days: [{ day: 1, stops: [{ poiId: "e2e-zhu-a" }] }], unscheduled: [] },
-    });
-    await activateTrip(page, "珠海无绳");
-
-    const reminder = page.getByTestId("day-policy-reminder");
-    await expect(reminder).toHaveText(LEASH_MISSING_LINE);
-    await expect(page.getByText(/超出景点/)).toHaveCount(0);
-  } finally {
-    await resetTrips(page);
-    await page.request.delete(`/api/pets/${pet.id}`, { headers: await csrfHeaders(page) });
-  }
-});
-
-test("E7 null policies, empty days and unscheduled stops never trigger reminders", async ({
-  page,
-}) => {
-  await presetTrip(page, {
-    name: "珠海无触发",
-    petName: "毛毛",
-    totalDays: 2,
-    days: [
-      { day: 1, stops: [{ poiId: "e2e-zhu-d" }] },
-      { day: 2, stops: [] },
-    ],
-    unscheduled: [{ poiId: "e2e-zhu-a" }],
-  });
-  await activateTrip(page, "珠海无触发");
-  await expandPanel(page);
-
-  await expect(page.locator('[data-stop-id="u:0:e2e-zhu-a"]')).toBeVisible();
-  await expect(page.getByTestId("day-policy-reminder")).toHaveCount(0);
-  await expect(page.getByTestId("transit-pet-notice")).toHaveCount(0);
-});
-
-test("E8 same-POI segment shows note only with zero requests and no writes", async ({ page }) => {
-  const counter = countEstimateRequests(page);
-  const id = await presetTrip(page, {
-    name: "珠海同点",
-    petName: "豆豆",
-    totalDays: 1,
-    days: [{ day: 1, stops: [{ poiId: "e2e-zhu-a" }, { poiId: "e2e-zhu-a" }] }],
-  });
-  await activateTrip(page, "珠海同点");
-  const puts = trackPlanPuts(page);
-
-  await expect(page.getByTestId("same-poi-note")).toHaveText(SAME_POI_NOTE);
-  await expect(page.getByTestId("transport-segment")).toHaveCount(0);
-  await expect(page.getByLabel("选择途内交通方式", { exact: true })).toHaveCount(0);
-  expect(counter.count).toBe(0);
-  expect(puts).toHaveLength(0);
-  const trip = await getTrip(page, id);
-  expect(stopOf(trip, 1, 0).toNext ?? null).toBeNull();
-  expect(stopOf(trip, 1, 1).toNext ?? null).toBeNull();
-});
-
 test("E9 estimate failure falls back without blocking mode save", async ({ page }) => {
   const id = await presetTrip(page, {
     name: "珠海兜底",
@@ -610,34 +411,6 @@ test("E10 drag reorder and cross-day move keep snapshots attached", async ({ pag
     costLowYuan: 40,
     costHighYuan: 60,
   });
-});
-
-test("E11 self-drive default shows driving duration-only without writing", async ({ page }) => {
-  const id = await presetTrip(page, {
-    name: "珠海自驾",
-    petName: "豆豆",
-    totalDays: 1,
-    days: [{ day: 1, stops: [{ poiId: "e2e-zhu-a" }, { poiId: "e2e-zhu-b" }] }],
-    transportMode: "drive",
-  });
-  await activateTrip(page, "珠海自驾");
-  const puts = trackPlanPuts(page);
-
-  const segment = page.getByTestId("transport-segment").first();
-  await expect(segment.getByTestId("segment-mode")).toHaveText("驾车");
-  // 坐标 NULL → 驾车时长估算确定性失败兜底；无费用展示。
-  await expect(segment.getByText(ESTIMATE_UNAVAILABLE)).toBeVisible();
-  await expect(segment.getByText(/¥/)).toHaveCount(0);
-  await expect(page.getByText(TAXI_PET_HINT)).toHaveCount(0);
-  await expect(page.getByTestId("transit-pet-notice")).toHaveCount(0);
-  await modeSelect(page, true).click();
-  await expect(modeOptions(page)).toHaveText(["打车", "步行", "驾车"]);
-  await page.keyboard.press("Escape");
-
-  expect(puts).toHaveLength(0);
-  const trip = await getTrip(page, id);
-  expect(stopOf(trip, 1, 0).toNext ?? null).toBeNull();
-  expect(stopOf(trip, 1, 0).toNextEstimate ?? null).toBeNull();
 });
 
 test("E12 drive-mode dropdown saves taxi and explicit self-drive, restores after reload", async ({

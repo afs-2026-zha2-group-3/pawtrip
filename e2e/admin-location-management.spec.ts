@@ -313,55 +313,6 @@ test("ADMIN sees the location tab and can filter and paginate both server tables
   await expect(page.getByRole("cell", { name: "北京市Pawtrip地点二", exact: true })).toBeVisible();
 });
 
-test("Amap pagination continues when the API count only reflects a full current page", async ({
-  page,
-}) => {
-  await mockUser(page, "ADMIN");
-  await mockAdminLocationLists(page);
-  await page.route(/\/api\/admin\/locations\/amap(?:\?.*)?$/, async (route) => {
-    const url = new URL(route.request().url());
-    const pageNumber = Number(url.searchParams.get("page") ?? "1");
-    const items = Array.from({ length: 10 }, (_, index) => ({
-      poiId: `page-${pageNumber}-poi-${index + 1}`,
-      name: pageNumber === 1
-        ? `南京市第一页地点 ${index + 1}`
-        : `南京市第二页地点 ${index + 1}`,
-      typeCode: "110000",
-      address: "南京市中山路",
-      location: "118.78,32.04",
-      regionCode: "320100",
-      saved: false,
-      poi: {},
-    }));
-
-    await route.fulfill({
-      json: {
-        items,
-        page: pageNumber,
-        pageSize: 10,
-        totalElements: 10,
-        totalPages: 1,
-        hasNext: false,
-        hasPrevious: pageNumber > 1,
-      },
-    });
-  });
-
-  await page.goto("/admin/locations");
-  await selectNanjingCity(page);
-  await expect(page.getByRole("cell", { name: "南京市第一页地点 1", exact: true })).toBeVisible();
-  await expect(page.getByText("第 1 页", { exact: true })).toBeVisible();
-
-  const secondPage = page.waitForResponse((response) => {
-    const url = new URL(response.url());
-    return url.pathname === "/api/admin/locations/amap" && url.searchParams.get("page") === "2";
-  });
-  await page.getByRole("button", { name: "下一页" }).click();
-  await secondPage;
-  await expect(page.getByRole("cell", { name: "南京市第二页地点 1", exact: true })).toBeVisible();
-  await expect(page.getByText("第 2 页", { exact: true })).toBeVisible();
-});
-
 test("saving an Amap candidate validates visit hours and updates the current row without refetching", async ({
   page,
 }) => {

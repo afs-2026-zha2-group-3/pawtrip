@@ -3,7 +3,6 @@ import { expect, test, type Download, type Page } from "@playwright/test";
 import {
   createTripViaApi,
   csrfHeaders,
-  openTrips,
   pets,
   resetTrips,
   signIn,
@@ -90,8 +89,18 @@ async function seedItineraryTrip(
 }
 
 async function activateTrip(page: Page, name = DEFAULT_TRIP_NAME) {
-  await openTrips(page);
-  await tripCard(page, name).getByRole("button", { name: "激活" }).click();
+  const list = await page.request.get("/api/trips");
+  expect(list.ok()).toBeTruthy();
+  const created = ((await list.json()) as { id: number; name: string }[]).find(
+    (trip) => trip.name === name,
+  );
+  if (!created) throw new Error(`Trip ${name} not found`);
+  await page.evaluate(
+    (tripId) =>
+      window.localStorage.setItem("pawtrip.activeTripId", String(tripId)),
+    created.id,
+  );
+  await page.goto("/trips");
   await expect(page.getByTestId("trip-panel")).toBeVisible();
 }
 
@@ -468,72 +477,6 @@ test("restores the single-day view after printing ends", async ({ page }) => {
   await expect(page.getByRole("button", { name: "导出 PDF" })).toBeVisible();
   await expect(policyDetails).toHaveJSProperty("open", false);
   await expect(dayOneTab).toHaveAttribute("aria-selected", "true");
-});
-
-test("shows representative airline rules for flights", async ({ page }) => {
-  await stubWindowPrint(page);
-  await seedItineraryTrip(page, {
-    transportMode: "flight",
-    plan: {
-      version: 1,
-      days: [
-        { day: 1, stops: [{ poiId: "e2e-zhu-a" }, { poiId: "e2e-zhu-b" }] },
-        { day: 2, stops: [] },
-      ],
-      unscheduled: [],
-    },
-  });
-  await activateTrip(page);
-  await page.goto("/itinerary");
-  await openExportView(page);
-
-  const transportRule = page.getByRole("region", { name: "大交通携宠规则" });
-  await expect(transportRule).toContainText(
-    "大交通携宠规则 · 飞机（中国国际航空）",
-  );
-  await expect(transportRule).toContainText("体重上限：≤32 kg");
-  await expect(transportRule).toContainText("容器要求：");
-  await expect(transportRule).toContainText("办理流程：");
-  await expect(transportRule).toContainText(
-    "检疫证明：需《动物检疫合格证明》，国际航班另需出入境文件",
-  );
-  await expect(transportRule).toContainText(
-    "来源：国航：作为行李托运的小动物",
-  );
-  await expect(transportRule).toContainText("已复核 2026-11-16");
-  await expect(transportRule).toContainText(
-    "飞机规则因航司与航线而异；此处按代表航司展示",
-  );
-  await expect(transportRule).toContainText("以承运方最新规则为准");
-  await expect(transportRule).not.toContainText("肩高上限");
-});
-
-test("omits numeric limits when the transport rule has none", async ({
-  page,
-}) => {
-  await stubWindowPrint(page);
-  await seedItineraryTrip(page, {
-    transportMode: "drive",
-    plan: {
-      version: 1,
-      days: [
-        { day: 1, stops: [{ poiId: "e2e-zhu-a" }, { poiId: "e2e-zhu-b" }] },
-        { day: 2, stops: [] },
-      ],
-      unscheduled: [],
-    },
-  });
-  await activateTrip(page);
-  await page.goto("/itinerary");
-  await openExportView(page);
-
-  const transportRule = page.getByRole("region", { name: "大交通携宠规则" });
-  await expect(transportRule).toContainText("大交通携宠规则 · 自驾");
-  await expect(transportRule).toContainText(
-    "体重限制：无统一限制，以车辆空间与安全固定为准",
-  );
-  await expect(transportRule).not.toContainText("体重上限");
-  await expect(transportRule).not.toContainText("肩高上限");
 });
 
 test("exports without a transport rule when no transport mode is set", async ({

@@ -1,13 +1,9 @@
 import { expect, test } from "@playwright/test";
 import {
-  createTrip,
-  createTripViaApi,
+  createActiveTripViaApi,
   openCities,
-  openTrips,
-  pets,
   resetTrips,
   signIn,
-  tripCard,
 } from "./trip-helpers";
 
 test.describe("app shell scrolling", () => {
@@ -21,8 +17,8 @@ test.describe("app shell scrolling", () => {
   test("E1 keeps the header fixed and only scrolls the content area", async ({
     page,
   }) => {
-    await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-    await page.getByRole("tab", { name: "交通规则" }).click();
+    await createActiveTripViaApi(page, { cityAdcode: "440400", petName: "豆豆" });
+    await page.goto("/transport-rules");
     await expect(page).toHaveURL(/\/transport-rules$/);
 
     const scroller = page.getByTestId("app-scroll");
@@ -68,14 +64,11 @@ test.describe("app shell scrolling", () => {
     };
     expect(locations.items.length).toBeGreaterThan(0);
 
-    const pet = (await pets(page)).find((candidate) => candidate.name === "豆豆");
-    if (!pet) throw new Error("Seed pet 豆豆 not found");
-
     const tripName = "珠海 · 滚动布局";
-    await createTripViaApi(page, {
+    await createActiveTripViaApi(page, {
       name: tripName,
       cityAdcode: "440400",
-      petId: pet.id,
+      petName: "豆豆",
       totalDays: 1,
       plan: {
         version: 1,
@@ -91,11 +84,9 @@ test.describe("app shell scrolling", () => {
       },
     });
 
-    await openTrips(page);
-    await tripCard(page, tripName).getByRole("button", { name: "激活" }).click();
-    await expect(page.getByTestId("trip-panel")).toBeVisible();
-    await page.getByRole("tab", { name: "地点浏览" }).click();
+    await page.goto("/attractions");
     await expect(page).toHaveURL(/\/attractions$/);
+    await expect(page.getByTestId("trip-panel")).toBeVisible();
     await page.getByRole("checkbox", { name: "显示全部地点" }).click();
 
     const map = page.getByTestId("attractions-map");
@@ -163,8 +154,8 @@ test.describe("narrow attractions", () => {
   }) => {
     await signIn(page);
     await resetTrips(page);
-    await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-    await page.getByRole("tab", { name: "地点浏览" }).click();
+    await createActiveTripViaApi(page, { cityAdcode: "440400", petName: "豆豆" });
+    await page.goto("/attractions");
     await expect(page).toHaveURL(/\/attractions$/);
     await page.getByRole("checkbox", { name: "显示全部地点" }).click();
 

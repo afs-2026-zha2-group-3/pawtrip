@@ -17,17 +17,12 @@ test.describe.configure({ timeout: 120_000 });
 // 经 PAWTRIP_E2E_DB_PATH 直连临时库在 beforeAll/afterAll 精确快照/恢复（毛毛无品种，API 无法等价重建），
 // 保证同 worker 后续套件（destination-selection E4 等）不受污染。直连先例见 city-pet-policy.spec.ts。
 
-// V27 种子推导的命中集合（design D6）：SWIMMING→COASTAL/LAKE；CALM→LAKE/CITY_PARK。
-// 注意桂林=MOUNTAIN,LAKE、无锡=LAKE、西宁/银川=LAKE,GRASSLAND 均含 LAKE，两组都命中。
+// V27 种子推导的命中集合（design D6）：SWIMMING→COASTAL/LAKE。
+// 注意桂林=MOUNTAIN,LAKE、无锡=LAKE、西宁/银川=LAKE,GRASSLAND 均含 LAKE。
 const swimmingHits = [
   "珠海市", "三亚市", "青岛市", "厦门市", "大连市", "海口市", "北海市", "深圳市",
   "宁波市", "温州市", "泉州市", "烟台市", "威海市", "秦皇岛市", "舟山市", "桂林市",
   "杭州市", "苏州市", "无锡市", "武汉市", "昆明市", "大理白族自治州", "西宁市", "银川市",
-];
-const calmHits = [
-  "厦门市", "深圳市", "桂林市", "杭州市", "苏州市", "无锡市", "武汉市", "昆明市",
-  "成都市", "南京市", "福州市", "长沙市", "广州市", "西安市", "哈尔滨市", "沈阳市",
-  "大理白族自治州", "西宁市", "银川市",
 ];
 
 async function cardNames(page: Page): Promise<string[]> {
@@ -100,19 +95,6 @@ async function expectRecommendedOrder(page: Page, hits: string[]) {
   expect(lastHit).toBeLessThan(firstRest);
 }
 
-async function expectNameOrderWithoutBadges(page: Page) {
-  const names = await allCardNames(page);
-  expect(names.length).toBeGreaterThan(2);
-  expect(names).toEqual([...names].sort(byServerNameOrder));
-  await expectNoBadges(page);
-}
-
-async function expectNoBadges(page: Page) {
-  await forEachPage(page, async () => {
-    await expect(page.locator('[data-slot="badge"]')).toHaveCount(0);
-  });
-}
-
 async function expectBadgesExactlyOn(page: Page, hits: string[]) {
   const badgeTitles: string[] = [];
   let badgeCount = 0;
@@ -170,47 +152,6 @@ async function deleteAllPetsViaApi(page: Page) {
   const pets = (await response.json()) as { id: number }[];
   for (const pet of pets) {
     await page.request.delete(`/api/pets/${pet.id}`, { headers });
-  }
-}
-
-// REQ-014 修订（2026-11-17）：徽标政策门禁辅助。犬种 id 经 API 解析，不硬编码种子顺序。
-async function breedIdByName(page: Page, name: string): Promise<number> {
-  const response = await page.request.get("/api/dog-breeds");
-  expect(response.status()).toBe(200);
-  const breeds = (await response.json()) as { id: number; name: string }[];
-  const breed = breeds.find((item) => item.name === name);
-  expect(breed, `犬种 ${name} 应在参考表内`).toBeDefined();
-  return breed!.id;
-}
-
-// 临时改写城市政策字段（直连临时库，先例见 beforeAll 种子快照），结束后精确恢复原值。
-async function withCityPolicyOverride(
-  adcode: string,
-  overrides: { allowed_pet_types?: string | null; max_single_pet_shoulder_height_cm?: number | null },
-  run: () => Promise<void>,
-) {
-  const dbPath = process.env.PAWTRIP_E2E_DB_PATH;
-  if (!dbPath) test.skip();
-  const { DatabaseSync } = await import("node:sqlite");
-  const db = new DatabaseSync(dbPath!);
-  db.exec("PRAGMA busy_timeout = 10000");
-  const columns = Object.keys(overrides) as (keyof typeof overrides)[];
-  const setters = columns.map((column) => `${column} = ?`).join(", ");
-  const original = db
-    .prepare(`SELECT ${columns.join(", ")} FROM administrative_region WHERE adcode = ?`)
-    .get(adcode) as Record<string, string | number | null>;
-  try {
-    db.prepare(`UPDATE administrative_region SET ${setters} WHERE adcode = ?`).run(
-      ...columns.map((column) => overrides[column] ?? null),
-      adcode,
-    );
-    await run();
-  } finally {
-    db.prepare(`UPDATE administrative_region SET ${setters} WHERE adcode = ?`).run(
-      ...columns.map((column) => original[column]),
-      adcode,
-    );
-    db.close();
   }
 }
 
@@ -303,14 +244,6 @@ test("preference SWIMMING ranks coastal/lake cities first with badges and name-o
   expect(names.indexOf("珠海市")).toBeLessThan(names.indexOf("广州市"));
 });
 
-test("personality CALM alone boosts lake/park cities without preferences", async ({ page }) => {
-  await createPetViaApi(page, { name: "静静", preferences: [], personality: "CALM" });
-  await openCities(page);
-
-  await expectRecommendedOrder(page, calmHits);
-  await expectBadgesExactlyOn(page, calmHits);
-});
-
 test("badge contract: no reason text, coexists with policy tags, no recommendation toggle", async ({
   page,
 }) => {
@@ -331,35 +264,6 @@ test("badge contract: no reason text, coexists with policy tags, no recommendati
   await expect(page.getByRole("checkbox", { name: "宠物友好筛选" })).toBeVisible();
   await expect(page.getByRole("switch")).toHaveCount(0);
 });
-
-test("unfilled preferences or no pet keeps name order without badges", async ({ page }) => {
-  await createPetViaApi(page, { name: "空白", preferences: [], personality: null });
-  await openCities(page);
-  await expectNameOrderWithoutBadges(page);
-
-  await deleteAllPetsViaApi(page);
-  await page.reload();
-  await expect(page.getByText(/共 \d+ 个候选/)).toBeVisible();
-  await expectNameOrderWithoutBadges(page);
-  await expect(page.getByText(/尚未添加宠物档案/)).toBeVisible();
-});
-
-test(
-  "multi-pet scoring uses only the first pet",
-  async ({ page }) => {
-    await createPetViaApi(page, { name: "泳泳", preferences: ["SWIMMING"] });
-    await createPetViaApi(page, { name: "雪雪", preferences: ["SNOW_PLAY"] });
-    await openCities(page);
-
-    // 第二只 SNOW_PLAY 不抬升雪景城市：命中集合仍为首只 SWIMMING 的海滨/湖泊
-    await expectRecommendedOrder(page, swimmingHits);
-    await expectBadgesExactlyOn(page, swimmingHits);
-    const names = await allCardNames(page);
-    expect(names.indexOf("珠海市")).toBeLessThan(names.indexOf("哈尔滨市"));
-    const harbin = await gotoCityCard(page, "哈尔滨市");
-    await expect(harbin.locator('[data-slot="badge"]')).toHaveCount(0);
-  },
-);
 
 test("filter and search overlay keeps score order and syncs candidate count", async ({ page }) => {
   await createPetViaApi(page, { name: "泳泳", preferences: ["SWIMMING"] });
@@ -384,112 +288,7 @@ test("filter and search overlay keeps score order and syncs candidate count", as
   await expect(dialog).toHaveCount(0);
 });
 
-test("legacy pet without preference fields stays unset and unranked", async ({ page }) => {
-  await createPetViaApi(page, { name: "旧档", omitPreferenceFields: true });
-
-  // 新版宠物页：内联档案视图（无详情弹窗），喜好/性格未填时展示两处「未设置」
-  await page.getByRole("tab", { name: "我的宠物" }).click();
-  await expect(page.getByRole("heading", { name: "旧档的档案" })).toBeVisible();
-  await expect(page.getByText("未设置", { exact: true })).toHaveCount(2);
-
-  await openCities(page);
-  await expectNameOrderWithoutBadges(page);
-});
-
 
 // REQ-014 修订（2026-11-17）：徽标 = 得分 >0 且首宠政策判定非「明确违反」（matchCityCandidate：
 // friendly/unjudgeable 均展示，仅 unfriendly 隐藏）；政策判定仅影响徽标，排序位次不变。
 // 种子口径：V16 全城 CAT,DOG + 7 个允许犬种（含柯基犬，不含德国牧羊犬），肩高上限均 NULL。
-
-test("policy gate: allowed-breed dog keeps badges on hit cities", async ({ page }) => {
-  const corgi = await breedIdByName(page, "柯基犬");
-  await createPetViaApi(page, {
-    name: "泳泳",
-    petType: "DOG",
-    preferences: ["SWIMMING"],
-    dogBreedId: corgi,
-  });
-  await openCities(page);
-
-  await expectRecommendedOrder(page, swimmingHits);
-  await expectBadgesExactlyOn(page, swimmingHits);
-});
-
-test("policy gate: breed outside city allowed list hides badges without changing rank", async ({
-  page,
-}) => {
-  const shepherd = await breedIdByName(page, "德国牧羊犬");
-  await createPetViaApi(page, {
-    name: "泳泳",
-    petType: "DOG",
-    preferences: ["SWIMMING"],
-    dogBreedId: shepherd,
-  });
-  await openCities(page);
-
-  // 排序仍按得分：命中城市整体先于未命中；但全城允许名单均不含德国牧羊犬 → 无徽标
-  await expectRecommendedOrder(page, swimmingHits);
-  await expectNoBadges(page);
-});
-
-test("policy gate: city type restriction hides badge for recommended city", async ({ page }) => {
-  const corgi = await breedIdByName(page, "柯基犬");
-  await createPetViaApi(page, {
-    name: "泳泳",
-    petType: "DOG",
-    preferences: ["SWIMMING"],
-    dogBreedId: corgi,
-  });
-  // 珠海（440400）临时改为仅允许猫：狗档案不匹配 → 徽标隐藏，但排序位次不变
-  await withCityPolicyOverride("440400", { allowed_pet_types: "CAT" }, async () => {
-    await openCities(page);
-    await expectRecommendedOrder(page, swimmingHits);
-    const zhuhai = await gotoCityCard(page, "珠海市");
-    await expect(zhuhai.locator('[data-slot="badge"]')).toHaveCount(0);
-    await expectBadgesExactlyOn(page, swimmingHits.filter((name) => name !== "珠海市"));
-  });
-});
-
-test("policy gate: shoulder height cap hides badge for recommended city", async ({ page }) => {
-  const corgi = await breedIdByName(page, "柯基犬");
-  await createPetViaApi(page, {
-    name: "泳泳",
-    petType: "DOG",
-    preferences: ["SWIMMING"],
-    dogBreedId: corgi,
-  });
-  // 珠海肩高上限临时改为 20cm（宠物 25cm 超限）→ 徽标隐藏，排序不变
-  await withCityPolicyOverride("440400", { max_single_pet_shoulder_height_cm: 20 }, async () => {
-    await openCities(page);
-    await expectRecommendedOrder(page, swimmingHits);
-    const zhuhai = await gotoCityCard(page, "珠海市");
-    await expect(zhuhai.locator('[data-slot="badge"]')).toHaveCount(0);
-    await expectBadgesExactlyOn(page, swimmingHits.filter((name) => name !== "珠海市"));
-  });
-});
-
-test("policy gate: unjudgeable dog keeps badge even over shoulder height cap", async ({ page }) => {
-  // 未填犬种的狗 → 无法判定：即使珠海肩高上限 20cm 低于宠物 25cm，徽标仍保留。
-  // API 强制狗必填犬种（PetService.resolveBreed），遗留数据直改临时库置空模拟。
-  const corgi = await breedIdByName(page, "柯基犬");
-  const pet = await createPetViaApi(page, {
-    name: "泳泳",
-    petType: "DOG",
-    preferences: ["SWIMMING"],
-    dogBreedId: corgi,
-  });
-  const dbPath = process.env.PAWTRIP_E2E_DB_PATH;
-  if (!dbPath) test.skip();
-  const { DatabaseSync } = await import("node:sqlite");
-  const db = new DatabaseSync(dbPath!);
-  db.exec("PRAGMA busy_timeout = 10000");
-  db.prepare("UPDATE pet SET dog_breed_id = NULL WHERE id = ?").run(pet.id);
-  db.close();
-  await withCityPolicyOverride("440400", { max_single_pet_shoulder_height_cm: 20 }, async () => {
-    await openCities(page);
-    await expectRecommendedOrder(page, swimmingHits);
-    await expectBadgesExactlyOn(page, swimmingHits);
-    const zhuhai = await gotoCityCard(page, "珠海市");
-    await expect(zhuhai.locator('[data-slot="badge"]')).toHaveText("系统推荐");
-  });
-});

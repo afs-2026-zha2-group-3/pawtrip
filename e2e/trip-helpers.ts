@@ -46,6 +46,9 @@ export async function resetTrips(page: Page) {
   for (const trip of trips) {
     await page.request.delete(`/api/trips/${trip.id}`, { headers });
   }
+  await page.evaluate(() =>
+    window.localStorage.removeItem("pawtrip.activeTripId"),
+  );
 }
 
 export function cityCard(page: Page, cityName: string) {
@@ -176,7 +179,8 @@ export async function createTripViaApi(
     cityAdcode: string;
     petId: number;
     totalDays: number;
-startDate?: string | null;
+    startDate?: string | null;
+    transportMode?: string | null;
     plan?: { version: 1; days: unknown[]; unscheduled: unknown[] };
   },
 ) {
@@ -185,11 +189,48 @@ startDate?: string | null;
     headers,
     data: {
       ...input,
+      transportMode: input.transportMode ?? null,
       plan: input.plan ?? { version: 1, days: [], unscheduled: [] },
     },
   });
   expect(response.ok()).toBeTruthy();
   return (await response.json()) as { id: number };
+}
+
+export async function createActiveTripViaApi(
+  page: Page,
+  input: {
+    cityAdcode: string;
+    petName?: string;
+    name?: string;
+    totalDays?: number;
+    startDate?: string | null;
+    transportMode?: string | null;
+    plan?: { version: 1; days: unknown[]; unscheduled: unknown[] };
+  },
+) {
+  const allPets = await pets(page);
+  const pet = input.petName
+    ? allPets.find((candidate) => candidate.name === input.petName)
+    : allPets[0];
+  if (!pet) {
+    throw new Error(`Seed pet ${input.petName ?? "(first)"} not found`);
+  }
+  const trip = await createTripViaApi(page, {
+    name: input.name ?? `e2e-${input.cityAdcode}`,
+    cityAdcode: input.cityAdcode,
+    petId: pet.id,
+    totalDays: input.totalDays ?? 1,
+    startDate: input.startDate ?? null,
+    transportMode: input.transportMode ?? null,
+    plan: input.plan,
+  });
+  await page.evaluate(
+    (tripId) =>
+      window.localStorage.setItem("pawtrip.activeTripId", String(tripId)),
+    trip.id,
+  );
+  return trip;
 }
 
 export async function pets(page: Page) {

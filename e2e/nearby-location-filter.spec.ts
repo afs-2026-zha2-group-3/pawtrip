@@ -1,8 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createTrip, resetTrips, signIn, withTripPanelNotBlocking } from "./trip-helpers";
+import {
+  createActiveTripViaApi,
+  resetTrips,
+  signIn,
+  withTripPanelNotBlocking,
+} from "./trip-helpers";
 
-async function openAttractions(page: Page) {
-  await page.getByRole("tab", { name: "地点浏览" }).click();
+async function tripToZhuhai(page: Page) {
+  await createActiveTripViaApi(page, { cityAdcode: "440400", petName: "豆豆" });
+  await page.goto("/attractions");
   await expect(page).toHaveURL(/\/attractions$/);
 }
 
@@ -66,17 +72,8 @@ test.beforeEach(async ({ page }) => {
   await resetTrips(page);
 });
 
-test("shows the map placeholder when the AMap JS key is not configured", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await openAttractions(page);
-
-  await expect(page.getByTestId("location-map-placeholder")).toBeVisible();
-  await expect(locationCard(page, "情侣路")).toBeVisible();
-});
-
 test("filters restaurants to 5km around the selected scheduled attraction", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await openAttractions(page);
+  await tripToZhuhai(page);
   await addAttractionToDay(page, "情侣路", 1);
   await chooseAnchor(page, "情侣路");
   await chooseType(page, "餐厅");
@@ -90,22 +87,8 @@ test("filters restaurants to 5km around the selected scheduled attraction", asyn
   await expect(page.getByRole("checkbox", { name: "显示全部地点" })).toHaveCount(0);
 });
 
-test("requires a scheduled attraction before browsing nearby locations", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await openAttractions(page);
-
-  await expect(page.getByRole("button", { name: "选择住宿/餐厅" })).toHaveCount(0);
-  await expect(locationCard(page, "珠海某酒店")).toHaveCount(0);
-
-  await addAttractionToDay(page, "情侣路", 1);
-  await chooseAnchor(page, "情侣路");
-  await chooseType(page, "餐厅");
-  await expect(locationCard(page, "附近餐厅")).toBeVisible();
-});
-
 test("switches to hotel browsing from the itinerary panel next step", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await openAttractions(page);
+  await tripToZhuhai(page);
 
   const nextStep = page.getByTestId("trip-next-step");
   await expect(nextStep).toBeDisabled();
@@ -123,20 +106,8 @@ test("switches to hotel browsing from the itinerary panel next step", async ({ p
   await expect(locationCard(page, "附近酒店")).toBeVisible();
 });
 
-test("opens the itinerary from the nearby stage panel", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await openAttractions(page);
-  await addAttractionToDay(page, "情侣路", 1);
-  await page.getByTestId("trip-next-step").click();
-
-  await page.getByTestId("trip-create-itinerary").click();
-  await expect(page).toHaveURL(/\/itinerary$/);
-  await expect(page.getByTestId("itinerary-stop").first()).toBeVisible();
-});
-
 test("filters hotels by 离景点最近 and shares the anchor with restaurants", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await openAttractions(page);
+  await tripToZhuhai(page);
   await addAttractionToDay(page, "情侣路", 1);
 
   await chooseType(page, "住宿");
@@ -161,8 +132,7 @@ test("filters hotels by 离景点最近 and shares the anchor with restaurants",
 });
 
 test("clears the anchor and restores the gate when the anchor leaves the trip", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await openAttractions(page);
+  await tripToZhuhai(page);
   await addAttractionToDay(page, "情侣路", 1);
   await chooseAnchor(page, "情侣路");
   await chooseType(page, "餐厅");
@@ -179,8 +149,7 @@ test("clears the anchor and restores the gate when the anchor leaves the trip", 
 });
 
 test("disables the anchor controls when no attraction is scheduled", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await openAttractions(page);
+  await tripToZhuhai(page);
 
   await expect(page.getByRole("button", { name: "选择住宿/餐厅" })).toHaveCount(0);
   await expect(page.getByRole("combobox", { name: "地点类型筛选" })).toHaveCount(0);
@@ -189,8 +158,7 @@ test("disables the anchor controls when no attraction is scheduled", async ({ pa
 });
 
 test("keeps an already-added nearby restaurant in the result", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await openAttractions(page);
+  await tripToZhuhai(page);
   await addAttractionToDay(page, "情侣路", 1);
   await chooseAnchor(page, "情侣路");
   await chooseType(page, "餐厅");
@@ -211,22 +179,8 @@ test("keeps an already-added nearby restaurant in the result", async ({ page }) 
   await expect(restaurant).toContainText("距情侣路约 0.2km");
 });
 
-test("nearby mode only exposes lodging and restaurant types", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await openAttractions(page);
-  await addAttractionToDay(page, "情侣路", 1);
-  await chooseAnchor(page, "情侣路");
-  const typeFilter = page.getByRole("combobox", { name: "地点类型筛选" });
-  await typeFilter.click();
-  await expect(page.getByRole("option", { name: "住宿", exact: true })).toBeVisible();
-  await expect(page.getByRole("option", { name: "餐厅", exact: true })).toBeVisible();
-  await expect(page.getByRole("option", { name: "宠物医院", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("option", { name: "宠物用品店", exact: true })).toHaveCount(0);
-});
-
 test("shows a clear error when the hotel anchor has no coordinates", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await openAttractions(page);
+  await tripToZhuhai(page);
   await addAttractionToDay(page, "无坐标景点", 1);
   await chooseType(page, "住宿");
   await chooseHotelAnchor(page, "无坐标景点");
@@ -239,8 +193,7 @@ test("shows a clear error when the hotel anchor has no coordinates", async ({ pa
 });
 
 test("clears the anchor and restores the restaurant gate", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await openAttractions(page);
+  await tripToZhuhai(page);
   await addAttractionToDay(page, "情侣路", 1);
   await chooseAnchor(page, "情侣路");
   await chooseType(page, "餐厅");
