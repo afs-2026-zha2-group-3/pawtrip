@@ -2,14 +2,17 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   completeTripInPastViaApi,
   completeTripViaApi,
+  confirmTripDialog,
   createActiveTripViaApi,
   createTrip,
   createTripViaApi,
   csrfHeaders,
   openCities,
+  openTripDialog,
   openTrips,
   pets,
   resetTrips,
+  setTripDates,
   signIn,
   tripCard,
   withTripPanelNotBlocking,
@@ -73,6 +76,34 @@ test("shows an empty state without trips", async ({ page }) => {
   await openTrips(page);
   await expect(page.getByText("还没有行程")).toBeVisible();
   await expect(page.getByRole("link", { name: "去创建行程" })).toBeVisible();
+});
+
+test("creates a new trip while another trip is active", async ({ page }) => {
+  const pet = (await pets(page))[0];
+  await createTripViaApi(page, {
+    name: "旧行程",
+    cityAdcode: "330100",
+    petId: pet.id,
+    totalDays: 1,
+  });
+
+  await openTrips(page);
+  await tripCard(page, "旧行程").getByRole("button", { name: "编辑" }).click();
+  await expect(page).toHaveURL(/\/attractions$/);
+  await openTrips(page);
+  await expect(tripCard(page, "旧行程")).toContainText("编辑中");
+  await expect(page.getByTestId("trip-panel")).toHaveCount(0);
+
+  await page.getByRole("link", { name: "创建新行程" }).click();
+  await expect(page).toHaveURL(/\/cities$/);
+  await openTripDialog(page, "杭州市");
+  await setTripDates(page, 2);
+  await confirmTripDialog(page);
+
+  await openTrips(page);
+  await expect(tripCard(page, "杭州市 · 2天")).toContainText("编辑中");
+  await expect(tripCard(page, "旧行程")).not.toContainText("编辑中");
+  await expect(tripCard(page, "旧行程")).toContainText("待完成");
 });
 
 test("groups trips by status, filters them, and supports editing and delete", async ({
@@ -214,9 +245,6 @@ test("keeps ended trips read-only while completed trips stay editable", async ({
   await endedCard.getByRole("button", { name: "查看行程单" }).click();
   await expect(page).toHaveURL(/\/itinerary$/);
   await expect(page.getByText(/仅可查看与导出/)).toBeVisible();
-  await expect(page.getByTestId("trip-panel")).toContainText(
-    "行程已结束，仅可查看，无法修改行程内容。",
-  );
 
   const headers = await csrfHeaders(page);
   const response = await page.request.put(`/api/trips/${ended.id}`, {

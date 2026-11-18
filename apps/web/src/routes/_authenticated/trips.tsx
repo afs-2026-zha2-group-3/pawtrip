@@ -54,6 +54,7 @@ import {
 } from "@/lib/trip/status";
 import { tripActions } from "@/lib/trip/store";
 import { TripSectionNav } from "@/components/trip/trip-section-nav";
+import { PageFrame } from "@/components/layout/page-frame";
 import { runViewTransition } from "@/lib/view-transition";
 import { cn } from "@/lib/utils";
 
@@ -169,13 +170,13 @@ function TripsPage() {
 
   if (trips.isPending) {
     return (
-      <main className="mx-auto w-full max-w-3xl p-6">
+      <PageFrame above={<TripSectionNav active="trips" />}>
         <Card>
           <CardHeader>
             <CardTitle>正在加载行程…</CardTitle>
           </CardHeader>
         </Card>
-      </main>
+      </PageFrame>
     );
   }
 
@@ -190,15 +191,10 @@ function TripsPage() {
       : sorted.filter((trip) => tripStatus(trip) === filter);
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
-      <TripSectionNav active="trips" />
+    <PageFrame above={<TripSectionNav active="trips" />}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-medium">我的行程</h1>
-        {active ? (
-          <Button variant="outline" size="sm" disabled title="已有编辑中的行程">
-            创建新行程
-          </Button>
-        ) : draft ? (
+        {draft ? (
           <Button variant="outline" size="sm" disabled title="存在未确认草稿">
             创建新行程
           </Button>
@@ -405,6 +401,6 @@ function TripsPage() {
           "当前没有编辑中的行程。点击卡片开始规划，已完成或结束的行程可查看行程单。"
         )}
       </p>
-    </main>
+    </PageFrame>
   );
 }

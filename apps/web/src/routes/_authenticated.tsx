@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TripPanel } from "../components/trip/trip-panel";
 import { AgentPanel } from "../components/agent/agent-panel";
 import { hydrateTripContext, retryTripHydration } from "../lib/trip/hydrate";
 import { readPersistedActiveTripId } from "../lib/trip/persistence";
@@ -85,7 +84,6 @@ function AuthenticatedShell() {
       >
         <Outlet />
       </div>
-      <TripPanel />
       <AgentPanel />
       {hydration === "idle" && hasPersistedTrip ? (
         <div
