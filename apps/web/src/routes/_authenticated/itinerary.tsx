@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Download, Image as ImageIcon, MapPin, PawPrint } from "lucide-react";
+import {
+  Download,
+  Image as ImageIcon,
+  ListChecks,
+  MapPin,
+  PawPrint,
+} from "lucide-react";
 import { useSelector } from "@tanstack/react-store";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import pawStickerSm from "@/assets/paw-sticker-sm.png";
@@ -19,6 +25,7 @@ import {
 } from "@/data/transport-rules";
 import { NearbyPetServices } from "@/components/trip/nearby-pet-services";
 import { DayRouteDialog } from "@/components/trip/day-route-dialog";
+import { PackingChecklistDialog } from "@/components/trip/packing-checklist-dialog";
 import { petPolicyFields } from "@/lib/attraction-pet-rules";
 import {
   downloadBlob,
@@ -52,6 +59,7 @@ import {
   locationBrowseDetailQueryOptions,
   type PetPolicies,
 } from "@/queries/locations";
+import { packingChecklistQueryOptions } from "@/queries/packing-checklist";
 import { petsQueryOptions } from "@/queries/pets";
 import { routeEstimateQueryOptions } from "@/queries/trips";
 
@@ -74,6 +82,12 @@ function ItineraryPage() {
   const city = useTripCity();
   const locations = useSelector(tripStore, (state) => state.cache.locations);
   const petsQuery = useQuery({ ...petsQueryOptions(), throwOnError: false });
+  const packingQuery = useQuery({
+    ...packingChecklistQueryOptions(active?.id ?? 0, {
+      enabled: Boolean(active),
+    }),
+    throwOnError: false,
+  });
   const cityMatchesActive = Boolean(
     city && active && city.adcode === active.cityAdcode,
   );
@@ -87,6 +101,7 @@ function ItineraryPage() {
   const imageSheetRef = useRef<HTMLDivElement>(null);
   const [selectedDay, setSelectedDay] = useState(1);
   const [routeDialogOpen, setRouteDialogOpen] = useState(false);
+  const [packingDialogOpen, setPackingDialogOpen] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [exportingImage, setExportingImage] = useState(false);
   const [imageExportError, setImageExportError] = useState<string | null>(null);
@@ -215,6 +230,13 @@ function ItineraryPage() {
     ? getRuleForMode(active.transportMode)
     : null;
   const trip = active;
+  const packingProgressText = packingQuery.isError
+    ? "进度暂不可用"
+    : packingQuery.data
+      ? `已打包 ${packingQuery.data.progress.checked} / ${packingQuery.data.progress.total} 件`
+      : packingQuery.isLoading
+        ? "读取中…"
+        : "未生成";
 
   async function exportImages() {
     setImageExportError(null);
@@ -304,15 +326,34 @@ function ItineraryPage() {
             ))}
           </TabsList>
         </Tabs>
-        <Button
-          type="button"
-          variant="outline"
-          className={petPillOutlineClass}
-          onClick={() => setRouteDialogOpen(true)}
-        >
-          <MapPin aria-hidden="true" />
-          查看当天路线规划
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className={petPillOutlineClass}
+              onClick={() => setPackingDialogOpen(true)}
+            >
+              <ListChecks aria-hidden="true" />
+              携带清单
+            </Button>
+            <span
+              data-testid="packing-progress"
+              className="text-xs text-muted-foreground"
+            >
+              {packingProgressText}
+            </span>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className={petPillOutlineClass}
+            onClick={() => setRouteDialogOpen(true)}
+          >
+            <MapPin aria-hidden="true" />
+            查看当天路线规划
+          </Button>
+        </div>
       </div>
 
       <DayRouteDialog
@@ -320,6 +361,12 @@ function ItineraryPage() {
         onOpenChange={setRouteDialogOpen}
         day={day}
         locations={locations}
+      />
+
+      <PackingChecklistDialog
+        open={packingDialogOpen}
+        onOpenChange={setPackingDialogOpen}
+        tripId={active.id}
       />
 
       {(printing ? itinerary.days : [day]).map((entry) => (

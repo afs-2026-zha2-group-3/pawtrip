@@ -45,6 +45,7 @@ import {
 } from "@/components/pet/pet-profile-card";
 import { ApiError } from "@/lib/http/api-error";
 import { photoDataUrl, readPhotoFile } from "@/lib/pet-photo";
+import { packingChecklistQueryKeys } from "@/queries/packing-checklist";
 import {
   createPetMutationOptions,
   deletePetMutationOptions,
@@ -158,6 +159,9 @@ export function PetDialog({
     ...createPetMutationOptions(),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: petQueryKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: packingChecklistQueryKeys.all,
+      });
       onClose();
     },
   });
@@ -165,6 +169,9 @@ export function PetDialog({
     ...updatePetMutationOptions(),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: petQueryKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: packingChecklistQueryKeys.all,
+      });
       onClose();
     },
   });
@@ -556,6 +563,9 @@ export function PetDeleteDialog({
     ...deletePetMutationOptions(),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: petQueryKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: packingChecklistQueryKeys.all,
+      });
       onClose();
     },
   });
