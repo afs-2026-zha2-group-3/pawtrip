@@ -127,3 +127,5 @@ CI 会自动安装 Chromium 及所需系统依赖。
 这两个命令都会自动启动后端和前端、运行测试并清理子进程。每次运行在系统临时目录创建全新的 SQLite 数据库，先执行 Flyway 迁移，再将测试账号写入该库；不会读取、清理或修改 `apps/server/data/pawtrip.db`。测试服务使用独立的 `18080`（后端）和 `3100`（前端）端口；若端口已被占用，命令会失败而不会复用已有服务。Playwright 报告保存在 `playwright-report/`，失败诊断保存在 `test-results/`。
 
 测试默认按文件并行（本地 4 个 worker，CI 2 个）。每个 worker 使用独立的 `petowner-wN` 账号及宠物档案，避免行程、宠物等用户级数据互相覆盖；可用 `PAWTRIP_E2E_WORKERS=8 npm run test:e2e` 调整并发的 worker 数（上限 8）。E2E 种子脚本会拒绝把 worker 账号或测试景点写入开发库。
+
+已有代码的 PR 推送文档提交时，CI 不会重复跑浏览器测试：`Docs-only check` 会比较本次 head 与上一次成功 E2E 的 head，若变更只涉及 `docs/`、`openspec/`、`requirement-workspace/` 或 `*.md`，则跳过 `Browser E2E`。没有历史记录、上次运行失败或被取消、同一提交重跑、diff 超过 300 个文件或检查出错时，仍会照常执行。
