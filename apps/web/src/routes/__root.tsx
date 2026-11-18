@@ -70,6 +70,12 @@ function AppHeader() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const plainHeader =
+    pathname === "/paws" ||
+    pathname === "/cities" ||
+    pathname === "/transport-rules" ||
+    pathname === "/trips" ||
+    pathname === "/itinerary";
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const isClient = typeof window !== "undefined";
   const auth = useQuery({ ...authQueryOptions, enabled: isClient });
@@ -83,7 +89,9 @@ function AppHeader() {
   });
 
   return (
-    <header className="paw-header relative flex items-center justify-center px-4 py-2 print:hidden">
+    <header
+      className={`paw-header relative flex items-center justify-center px-4 py-2 print:hidden${plainHeader ? " paw-header-plain" : ""}`}
+    >
       <AppTabs />
       {auth.isSuccess ? (
         <AlertDialog
@@ -97,8 +105,8 @@ function AppHeader() {
                 variant="ghost"
                 size="sm"
                 className={
-                  pathname === "/paws"
-                    ? "absolute right-4 rounded-full bg-card/90 shadow-sm backdrop-blur-sm"
+                  pathname === "/paws" || plainHeader
+                    ? "absolute right-4 h-8 rounded-full bg-card px-4 shadow-sm ring-1 ring-foreground/5"
                     : "absolute right-4"
                 }
                 disabled={logoutMutation.isPending}
@@ -254,6 +262,13 @@ function NotFoundComponent() {
 
 function RootDocument({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const petPatternBody =
+    pathname === "/paws" ||
+    pathname === "/cities" ||
+    pathname === "/trips" ||
+    pathname === "/itinerary" ||
+    pathname === "/transport-rules" ||
+    pathname === "/login";
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -262,10 +277,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       </head>
       <body
         className={
-          pathname === "/paws" ||
-          pathname === "/cities" ||
-          pathname === "/transport-rules" ||
-          pathname === "/login"
+          petPatternBody
             ? "bg-pet-pattern min-h-svh text-foreground antialiased"
             : "min-h-svh bg-background text-foreground antialiased"
         }

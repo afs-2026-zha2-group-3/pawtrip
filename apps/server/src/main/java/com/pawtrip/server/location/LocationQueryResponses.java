@@ -74,8 +74,8 @@ final class LocationQueryResponses {
 	}
 
 	record LocationDetail(String poiId, String name, String typeCode, String typeGroup, String address,
-			String regionCode, PetPolicies petPolicies, String coverPhotoUrl, String rating, String keytag,
-			String businessArea, String openTime, String tel) {
+			Double longitude, Double latitude, String regionCode, PetPolicies petPolicies, String coverPhotoUrl,
+			String rating, String keytag, String businessArea, String openTime, String tel) {
 
 		static LocationDetail from(PawtripLocation location, String coverPhotoUrl, String rating, String keytag,
 				String businessArea, String openTime, String tel) {
@@ -85,6 +85,8 @@ final class LocationQueryResponses {
 					location.getTypeCode(),
 					location.getTypeGroup(),
 					location.getAddress(),
+					location.getLongitude(),
+					location.getLatitude(),
 					location.getRegionCode(),
 					PetPolicies.from(location),
 					coverPhotoUrl,
