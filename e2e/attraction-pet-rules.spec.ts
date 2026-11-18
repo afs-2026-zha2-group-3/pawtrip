@@ -18,6 +18,9 @@ function locationCardGrid(page: Page) {
   return attractionCard(page, "情侣路").locator("xpath=..");
 }
 
+// 珠海夹具共 7 个景点：5 个基础夹具 + day-route 的 2 个路线夹具。
+const zhuHaiAttractionCardCount = 7;
+
 async function openAttractions(page: Page) {
   await page.getByRole("tab", { name: "地点浏览" }).click();
   await expect(page).toHaveURL(/\/attractions$/);
@@ -90,7 +93,7 @@ test.describe("agent panel layout integration", () => {
 
     const grid = locationCardGrid(page);
     const cards = grid.locator('[data-slot="card"]');
-    await expect(cards).toHaveCount(5);
+    await expect(cards).toHaveCount(zhuHaiAttractionCardCount);
 
     const [first, second, third] = await Promise.all([
       cards.nth(0).boundingBox(),
@@ -121,7 +124,7 @@ test.describe("agent panel layout integration", () => {
     await showAllAttractions(page);
 
     const cards = locationCardGrid(page).locator('[data-slot="card"]');
-    await expect(cards).toHaveCount(5);
+    await expect(cards).toHaveCount(zhuHaiAttractionCardCount);
 
     await page.getByTestId("agent-fab").click();
     await expect(page.getByTestId("agent-panel")).toBeVisible();
@@ -171,7 +174,7 @@ test.describe("below the 2xl breakpoint", () => {
     await showAllAttractions(page);
 
     const cards = locationCardGrid(page).locator('[data-slot="card"]');
-    await expect(cards).toHaveCount(5);
+    await expect(cards).toHaveCount(zhuHaiAttractionCardCount);
 
     await page.getByTestId("agent-fab").click();
     await expect(page.getByTestId("agent-panel")).toBeVisible();
