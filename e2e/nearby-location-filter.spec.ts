@@ -114,7 +114,7 @@ test("switches to hotel browsing from the itinerary panel next step", async ({ p
   await addAttractionToDay(page, "情侣路", 1);
   await expect(nextStep).toBeEnabled();
   await expect(page.getByTestId("trip-next-step-hint")).toContainText(
-    "推荐 5km 内的住宿与餐厅",
+    "按评分推荐 5km 内的住宿与餐厅",
   );
   await nextStep.click();
 

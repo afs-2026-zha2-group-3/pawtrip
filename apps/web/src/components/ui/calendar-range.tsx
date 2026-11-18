@@ -26,6 +26,10 @@ function formatAriaLabel(value: string): string {
   return `${year}年${month}月${day}日`;
 }
 
+function localIsoDate(date: Date): string {
+  return formatIsoDate(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 export function CalendarRange({
   startDate,
   endDate,
@@ -36,6 +40,7 @@ export function CalendarRange({
   onSelect: (startDate: string, endDate: string) => void;
 }) {
   const [view, setView] = useState(() => monthOf(startDate));
+  const today = localIsoDate(new Date());
 
   const firstWeekday = new Date(view.year, view.monthIndex, 1).getDay();
   const daysInMonth = new Date(view.year, view.monthIndex + 1, 0).getDate();
@@ -104,6 +109,7 @@ export function CalendarRange({
         {days.map((day) => {
           const isStart = day === startDate;
           const isEnd = day === endDate;
+          const disabled = day < today;
           const inRange =
             Boolean(startDate && endDate) &&
             day > startDate &&
@@ -125,16 +131,21 @@ export function CalendarRange({
               key={day}
               type="button"
               data-date={day}
+              disabled={disabled}
               aria-label={formatAriaLabel(day)}
               aria-pressed={isStart || isEnd}
               onClick={() => pick(day)}
               className={cn(
                 "flex h-8 items-center justify-center text-sm tabular-nums outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
                 shape,
-                inRange && "bg-muted",
-                !isStart && !isEnd && "hover:bg-muted",
-                (isStart || isEnd) &&
-                  "bg-primary text-primary-foreground hover:bg-primary",
+                disabled
+                  ? "cursor-not-allowed text-muted-foreground/40"
+                  : cn(
+                      inRange && "bg-muted",
+                      !isStart && !isEnd && "hover:bg-muted",
+                      (isStart || isEnd) &&
+                        "bg-primary text-primary-foreground hover:bg-primary",
+                    ),
               )}
             >
               {Number(day.slice(-2))}
