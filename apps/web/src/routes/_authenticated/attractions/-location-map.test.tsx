@@ -7,6 +7,8 @@ const { resize, MockMap, MockMarker, MockInfoWindow } = vi.hoisted(() => {
   class MockMap {
     setFitView = vi.fn();
     setZoomAndCenter = vi.fn();
+    getZoom = vi.fn(() => 12);
+    on = vi.fn();
     resize = resize;
     destroy = vi.fn();
   }
