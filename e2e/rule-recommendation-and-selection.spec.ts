@@ -55,33 +55,22 @@ test.describe("mode selection", () => {
     await resetTrips(page);
     await createActiveTrip(page, { city: "杭州市", days: 1, pet: "毛毛" });
 
-    await expect(page.getByTestId("transport-mode-tag")).toHaveCount(0);
-    await page.getByRole("button", { name: "选择大交通方式" }).click();
-    const railOption = page.locator('[data-mode="high_speed_rail"]');
-    await expect(page.locator("[data-mode]")).toHaveCount(4);
-    await expect(railOption).toContainText("毛毛 · 不推荐");
-    await expect(railOption).toContainText("体重 38kg 超过上限 15kg");
+    await page.getByRole("tab", { name: "交通规则" }).click();
+    await expect(page.getByRole("table", { name: tableName })).toBeVisible();
+    const railOption = page.getByRole("radio", { name: "选择高铁" });
 
     const saved = page.waitForResponse(
       (response) =>
         /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
         response.request().method() === "PUT",
     );
-    await railOption.click();
+    await railOption.check();
     const response = await saved;
     expect(response.request().postDataJSON()).toMatchObject({
       transportMode: "high_speed_rail",
     });
-    await expect(page.getByTestId("transport-mode-tag")).toContainText("高铁");
-
+    await expect(railOption).toBeChecked();
     await page.reload();
-    await expect(page.getByTestId("transport-mode-tag")).toContainText("高铁");
-    await page.getByTestId("transport-mode-tag").click();
-    await expect(railOption).toHaveAttribute("aria-pressed", "true");
-    await page.keyboard.press("Escape");
-
-    await page.goto("/transport-rules");
-    await expect(page.getByRole("table", { name: tableName })).toBeVisible();
     await expect(page.getByRole("radio", { name: "选择高铁" })).toBeChecked();
   });
 
@@ -92,6 +81,7 @@ test.describe("mode selection", () => {
     await resetTrips(page);
     await createActiveTrip(page, { city: "杭州市", days: 1, pet: "豆豆" });
 
+    await page.getByRole("tab", { name: "交通规则" }).click();
     await page.route("**/api/pets", (route) =>
       route.fulfill({
         status: 500,
@@ -101,12 +91,7 @@ test.describe("mode selection", () => {
     );
     await page.reload();
 
-    await page.getByRole("button", { name: "选择大交通方式" }).click();
-    const popover = page.locator('[data-slot="popover-content"]');
-    await expect(
-      popover.getByText("暂时无法读取宠物档案，请稍后重试。"),
-    ).toBeVisible();
-    const trainOption = popover.locator('[data-mode="train"]');
+    const trainOption = page.getByRole("radio", { name: "选择火车" });
     await expect(trainOption).toBeEnabled();
 
     const saved = page.waitForResponse(
@@ -114,7 +99,7 @@ test.describe("mode selection", () => {
         /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
         response.request().method() === "PUT",
     );
-    await trainOption.click();
+    await trainOption.check();
     const response = await saved;
     expect(response.request().postDataJSON()).toMatchObject({
       transportMode: "train",
@@ -126,9 +111,7 @@ test.describe("mode selection", () => {
     await resetTrips(page);
     await createActiveTrip(page, { city: "杭州市", days: 1, pet: "豆豆" });
 
-    await page.getByRole("button", { name: "选择大交通方式" }).click();
-    await page.getByRole("link", { name: "查看交通规则详情" }).click();
-
+    await page.getByRole("tab", { name: "交通规则" }).click();
     await expect(page).toHaveURL(/\/transport-rules$/);
     await expect(page.getByRole("table", { name: tableName })).toBeVisible();
   });
@@ -141,7 +124,6 @@ test.describe("mode selection", () => {
     const flightRadio = page.getByRole("radio", { name: "选择飞机" });
     const railRadio = page.getByRole("radio", { name: "选择高铁" });
 
-    await expect(page.getByTestId("transport-mode-tag")).toHaveCount(0);
     await expect(flightRadio).not.toBeChecked();
     const saved = page.waitForResponse(
       (response) =>
@@ -156,8 +138,6 @@ test.describe("mode selection", () => {
     expect(response.request().postDataJSON()).toMatchObject({
       transportMode: "high_speed_rail",
     });
-    await expect(page.getByTestId("transport-mode-tag")).toContainText("大交通");
-    await expect(page.getByTestId("transport-mode-tag")).toContainText("高铁");
     expect(
       await page.evaluate(() =>
         window.sessionStorage.getItem("pawtrip:selected-transport-mode"),
@@ -168,8 +148,6 @@ test.describe("mode selection", () => {
     await expect(page.getByRole("table", { name: tableName })).toBeVisible();
     await expect(page.getByRole("radio", { name: "选择高铁" })).toBeChecked();
     await expect(page.getByRole("radio", { name: "选择飞机" })).not.toBeChecked();
-    await expect(page.getByTestId("transport-mode-tag")).toContainText("大交通");
-    await expect(page.getByTestId("transport-mode-tag")).toContainText("高铁");
   });
 
   test("keeps mode selection available when pet data is unavailable", async ({

@@ -20,6 +20,8 @@ const dog: Pet = {
   hasVaccinationProof: true,
   photo: null,
   dogBreed: { id: 3, name: "柯基犬", officialAggressive: false },
+  preferences: [],
+  personality: null,
 };
 
 const cat: Pet = {
@@ -52,6 +54,7 @@ const city: DestinationCandidate = {
   allowedPetTypes: "CAT,DOG",
   allowedDogBreedIds: [3],
   maxSinglePetShoulderHeightCm: null,
+  featureTags: [],
 };
 
 const cityPolicy: CityPetPolicy = {

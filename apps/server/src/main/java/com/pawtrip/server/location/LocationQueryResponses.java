@@ -70,7 +70,7 @@ final class LocationQueryResponses {
 	}
 
 	record NearbyService(String poiId, String name, String address, Long distanceMeters,
-			String openingHours) {
+			String openingHours, String tel) {
 	}
 
 	record LocationDetail(String poiId, String name, String typeCode, String typeGroup, String address,

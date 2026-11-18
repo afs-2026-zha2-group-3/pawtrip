@@ -400,9 +400,9 @@ test("exports all days through the print dialog", async ({ page }) => {
   await expect(transportRule).toContainText("体重上限：≤15 kg");
   await expect(transportRule).toContainText("肩高上限：≤40 cm");
   await expect(transportRule).toContainText(
-    "容器要求：全程置于中铁快运专用宠物运输箱",
+    "容器要求：中铁快运专用宠物运输箱（供氧、温湿度监测）",
   );
-  await expect(transportRule).toContainText("办理流程：12306 App「宠物托运」");
+  await expect(transportRule).toContainText("办理流程：12306 App 预约带「宠」车次同车仓位");
   await expect(transportRule).toContainText(
     "检疫证明：需有效期内《动物检疫合格证明》",
   );

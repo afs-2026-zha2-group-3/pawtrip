@@ -24,7 +24,7 @@ describe("pet profile adapter (external US-01 dependency)", () => {
   it("returns petType and breed from the first pet", async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse([
-        { id: 1, petType: "DOG", shoulderHeightCm: 40, dogBreed: { id: 7, name: "柯基犬", officialAggressive: false } },
+        { id: 1, petType: "DOG", shoulderHeightCm: 40, dogBreed: { id: 7, name: "柯基犬", officialAggressive: false }, preferences: ["SWIMMING"], personality: "CALM" },
         { id: 2, petType: "CAT", shoulderHeightCm: 25, dogBreed: null },
       ]),
     );
@@ -33,15 +33,17 @@ describe("pet profile adapter (external US-01 dependency)", () => {
       breedId: 7,
       breedName: "柯基犬",
       shoulderHeightCm: 40,
+      preferences: ["SWIMMING"],
+      personality: "CALM",
     });
   });
 
   it("keeps null breed for a dog without breed or a cat", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse([{ id: 1, petType: "DOG", shoulderHeightCm: 40, dogBreed: null }]));
-    await expect(fetchPetProfile()).resolves.toEqual({ petType: "DOG", breedId: null, breedName: null, shoulderHeightCm: 40 });
+    await expect(fetchPetProfile()).resolves.toEqual({ petType: "DOG", breedId: null, breedName: null, shoulderHeightCm: 40, preferences: [], personality: null });
 
     fetchMock.mockResolvedValueOnce(jsonResponse([{ id: 1, petType: "CAT", shoulderHeightCm: 25, dogBreed: null }]));
-    await expect(fetchPetProfile()).resolves.toEqual({ petType: "CAT", breedId: null, breedName: null, shoulderHeightCm: 25 });
+    await expect(fetchPetProfile()).resolves.toEqual({ petType: "CAT", breedId: null, breedName: null, shoulderHeightCm: 25, preferences: [], personality: null });
   });
 
   it("degrades to no-profile when the request fails", async () => {

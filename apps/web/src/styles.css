@@ -162,6 +162,19 @@
   background-image: none;
 }
 
+.paw-header {
+  min-height: 80px;
+  background-color: #fffdf2;
+  background-image: url("./assets/pet-heads-banner.jpeg");
+  background-position: center;
+  background-size: cover;
+}
+
+.dark .paw-header {
+  background-color: var(--background);
+  background-image: none;
+}
+
 .paw-scroll {
   scrollbar-width: thin;
   scrollbar-color: var(--paw-line, #e0e0e0) transparent;

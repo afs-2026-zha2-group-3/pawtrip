@@ -144,15 +144,8 @@ export function MapLocationCard({
         label="添加到行程"
         totalDays={active.totalDays}
         onSelectDay={(day) => tripActions.addStop(day, poiId)}
+        onSelectUnscheduled={() => tripActions.addStop("unscheduled", poiId)}
       />
-      <Button
-        size="sm"
-        variant="outline"
-        className="rounded-full"
-        onClick={() => tripActions.addStop("unscheduled", poiId)}
-      >
-        暂不排期
-      </Button>
     </div>
   ) : null;
 

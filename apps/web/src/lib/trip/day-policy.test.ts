@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayPolicyLines, deriveDayPolicy, type DayPolicyPet } from "./day-policy";
+import { dayPolicyLines, deriveDayPolicy, sizeWarningLine, type DayPolicyPet } from "./day-policy";
 import type { LocationBrowseDetail, PetPolicies } from "@/queries/locations";
 import type { TripStop } from "./types";
 
@@ -141,21 +141,42 @@ describe("dayPolicyLines", () => {
     ]);
   });
 
-  it("names the attraction and each exceeded limit", () => {
+  it("keeps only the leash line; size warnings render below their own stop", () => {
     expect(
       dayPolicyLines({
         leash: "required",
         sizeWarnings: [
           { poiId: "poi-a", name: "景点A", weightLimitKg: 10, heightLimitCm: null },
-          { poiId: "poi-b", name: "景点B", weightLimitKg: 8.5, heightLimitCm: 40 },
-          { poiId: "poi-c", name: "景点C", weightLimitKg: null, heightLimitCm: 40 },
         ],
       }),
-    ).toEqual([
-      "当天需携带牵引绳",
-      "您的宠物超出景点 景点A 限制（≤10kg）",
-      "您的宠物超出景点 景点B 限制（≤8.5kg/≤40cm）",
-      "您的宠物超出景点 景点C 限制（≤40cm）",
-    ]);
+    ).toEqual(["当天需携带牵引绳"]);
+    expect(
+      dayPolicyLines({
+        leash: null,
+        sizeWarnings: [
+          { poiId: "poi-a", name: "景点A", weightLimitKg: 10, heightLimitCm: null },
+        ],
+      }),
+    ).toEqual([]);
+  });
+});
+
+describe("sizeWarningLine", () => {
+  it("names the pet, the attraction and each exceeded limit", () => {
+    expect(
+      sizeWarningLine({ poiId: "poi-a", name: "景点A", weightLimitKg: 10, heightLimitCm: null }, "毛毛"),
+    ).toBe("您的宠物「毛毛」超出景点 景点A 限制（≤10kg）");
+    expect(
+      sizeWarningLine({ poiId: "poi-b", name: "景点B", weightLimitKg: 8.5, heightLimitCm: 40 }, "毛毛"),
+    ).toBe("您的宠物「毛毛」超出景点 景点B 限制（≤8.5kg/≤40cm）");
+    expect(
+      sizeWarningLine({ poiId: "poi-c", name: "景点C", weightLimitKg: null, heightLimitCm: 40 }, "豆豆"),
+    ).toBe("您的宠物「豆豆」超出景点 景点C 限制（≤40cm）");
+  });
+
+  it("falls back to the unnamed subject when the pet name is missing", () => {
+    expect(
+      sizeWarningLine({ poiId: "poi-a", name: "景点A", weightLimitKg: 10, heightLimitCm: null }, null),
+    ).toBe("您的宠物超出景点 景点A 限制（≤10kg）");
   });
 });

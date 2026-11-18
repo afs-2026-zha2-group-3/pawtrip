@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -294,6 +296,87 @@ class DestinationApiTest {
 	}
 
 	@Test
+	void candidatesExposeSeededFeatureTags() throws Exception {
+		JsonNode candidates = fetchCandidates(null);
+
+		JsonNode zhuhai = findCandidate(candidates, "440400");
+		assertThat(zhuhai.path("featureTags").isArray()).isTrue();
+		assertThat(tagsOf(zhuhai)).containsExactly("COASTAL");
+
+		JsonNode hangzhou = findCandidate(candidates, "330100");
+		assertThat(tagsOf(hangzhou)).containsExactly("LAKE", "CITY_PARK");
+
+		// 未列入附录 A 的城市（440200 韶关）：feature_tags NULL → 空数组
+		JsonNode untagged = findCandidate(candidates, "440200");
+		assertThat(untagged.path("featureTags").isArray()).isTrue();
+		assertThat(tagsOf(untagged)).isEmpty();
+
+		for (JsonNode candidate : candidates) {
+			assertThat(candidate.path("featureTags").isArray()).isTrue();
+			for (String tag : tagsOf(candidate)) {
+				assertThat(CityFeatureTags.KEYS).contains(tag);
+			}
+		}
+	}
+
+	@Test
+	void featureTagsKeepNameOrderAndUnknownSortParamHasNoEffect() throws Exception {
+		JsonNode candidates = fetchCandidates(null);
+		List<String> names = new java.util.ArrayList<>();
+		for (JsonNode candidate : candidates) {
+			names.add(candidate.path("name").asString());
+		}
+		assertThat(names).isSortedAccordingTo(String::compareTo);
+
+		// 未知排序类参数不改变名称升序，也不影响 featureTags 下发
+		MvcResult sorted = this.mockMvc.perform(get("/api/destinations").param("sort", "score")
+					.with(user("user").roles("USER")))
+				.andExpect(status().isOk())
+				.andReturn();
+		JsonNode withSortParam = JSON_MAPPER.readTree(sorted.getResponse().getContentAsString());
+		List<String> sortedNames = new java.util.ArrayList<>();
+		for (JsonNode candidate : withSortParam) {
+			sortedNames.add(candidate.path("name").asString());
+		}
+		assertThat(sortedNames).isEqualTo(names);
+		assertThat(tagsOf(findCandidate(withSortParam, "440400"))).containsExactly("COASTAL");
+
+		// keyword 筛选后仍携带 featureTags
+		JsonNode filtered = fetchCandidates("杭州");
+		assertThat(filtered.size()).isEqualTo(1);
+		assertThat(tagsOf(filtered.get(0))).containsExactly("LAKE", "CITY_PARK");
+	}
+
+	@Test
+	void adminCityContractExcludesFeatureTagsAndWritePathDoesNotTouchColumn() throws Exception {
+		try {
+			// 请求体携带 featureTags 被忽略；响应契约不含该字段；种子列不被触碰
+			this.mockMvc.perform(patch("/api/admin/cities/440400")
+						.with(user("admin").roles("ADMIN"))
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+							{"petPolicies":{"allowedPetTypes":"CAT,DOG","maxPetsPerPerson":2},"featureTags":["SNOW"]}
+							"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.featureTags").doesNotExist());
+
+			this.mockMvc.perform(get("/api/admin/cities/440400")
+						.with(user("admin").roles("ADMIN")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.featureTags").doesNotExist());
+
+			assertThat(queryString("SELECT feature_tags FROM administrative_region WHERE adcode = '440400'"))
+					.isEqualTo("COASTAL");
+			assertThat(tagsOf(findCandidate(fetchCandidates(null), "440400"))).containsExactly("COASTAL");
+		}
+		finally {
+			executeUpdate("UPDATE administrative_region SET max_pets_per_person = NULL, "
+					+ "allowed_pet_types = 'CAT,DOG' WHERE adcode = '440400'");
+		}
+	}
+
+	@Test
 	void noSelectionWriteEndpointAndNoAdminBannedBreedMaintenanceEndpoint() throws Exception {
 		this.mockMvc.perform(post("/api/destinations")
 					.with(user("user").roles("USER"))
@@ -374,6 +457,26 @@ class DestinationApiTest {
 			}
 			return resultSet.getLong(1);
 		}
+	}
+
+	private static String queryString(String sql) throws Exception {
+		try (java.sql.Connection connection = java.sql.DriverManager
+				.getConnection("jdbc:sqlite:" + DB_PATH + "?foreign_keys=on");
+				java.sql.Statement statement = connection.createStatement();
+				java.sql.ResultSet resultSet = statement.executeQuery(sql)) {
+			if (!resultSet.next()) {
+				throw new AssertionError("Query returned no row: " + sql);
+			}
+			return resultSet.getString(1);
+		}
+	}
+
+	private static List<String> tagsOf(JsonNode candidate) {
+		List<String> tags = new java.util.ArrayList<>();
+		for (JsonNode tag : candidate.path("featureTags")) {
+			tags.add(tag.asString());
+		}
+		return tags;
 	}
 
 	private static void executeUpdate(String sql) throws Exception {

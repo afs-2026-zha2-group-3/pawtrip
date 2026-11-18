@@ -6,6 +6,7 @@ import cover1 from "@/assets/city-covers/cover-1.png";
 import cover2 from "@/assets/city-covers/cover-2.png";
 import cover3 from "@/assets/city-covers/cover-3.png";
 import cover4 from "@/assets/city-covers/cover-4.png";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,9 +19,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { PolicySubjectNotice, PolicyTags } from "@/components/trip/policy-tags";
 import type { DestinationCandidate } from "@/lib/destination-matching";
+import { scoreCity, sortByRecommendation } from "@/lib/destination-recommendation";
 import { matchCityCandidate, matchCityPolicy } from "@/lib/trip/policy-match";
 import type { PolicySubjects } from "@/lib/trip/policy-subjects";
 import { useActiveTrip, usePolicySubjects } from "@/lib/trip/selectors";
+import { tripActions } from "@/lib/trip/store";
 import { cn } from "@/lib/utils";
 import {
   cityPetPolicyQueryOptions,
@@ -28,6 +31,7 @@ import {
 } from "@/queries/city-pet-policy";
 import { destinationsQueryOptions } from "@/queries/destinations";
 import { petProfileQueryOptions } from "@/queries/pet-profile";
+import { petsQueryOptions } from "@/queries/pets";
 import { CityTripDialog } from "./-city-trip-dialog";
 
 export const Route = createFileRoute("/_authenticated/cities")({
@@ -58,6 +62,9 @@ function CitiesPage() {
   }, [keyword, friendlyOnly]);
 
   const profile = useQuery({ ...petProfileQueryOptions, enabled: isClient });
+  // REQ-014 修订：徽标政策判定取第一只宠物（与打分同口径；subjects 在有激活行程时会被替换为行程宠物，不适用）
+  const pets = useQuery({ ...petsQueryOptions(), enabled: isClient, throwOnError: false });
+  const firstPet = pets.data?.[0] ?? null;
   const destinations = useQuery({
     ...destinationsQueryOptions({
       keyword,
@@ -83,7 +90,8 @@ function CitiesPage() {
     );
   }
 
-  const candidates = destinations.data;
+  // REQ-014：渲染前按首宠喜好/性格打分排序；profile 晚到时自动重排（design D6）
+  const candidates = sortByRecommendation(destinations.data, profile.data ?? null);
   const pageCount = Math.max(1, Math.ceil(candidates.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
   const pageStart = (currentPage - 1) * PAGE_SIZE;
@@ -139,11 +147,6 @@ function CitiesPage() {
             <span className="text-sm whitespace-nowrap text-muted-foreground">
               共 {candidates.length} 个候选 · 点击卡片查看政策
             </span>
-            {active ? (
-              <p className="text-sm text-muted-foreground">
-                当前已有激活行程，请先在 我的行程 取消激活后再选择新城市。
-              </p>
-            ) : null}
             {subjects.status === "error" ? (
               <PolicySubjectNotice subjects={subjects} />
             ) : null}
@@ -179,11 +182,22 @@ function CitiesPage() {
                         (pageStart + index) % CITY_COVERS.length
                       ]
                     }
+                    recommended={
+                      // REQ-014 修订（2026-11-17）：徽标 = 得分 >0 且首宠政策判定非「明确违反」
+                      // （matchCityCandidate：friendly/unjudgeable 均展示，仅 unfriendly 隐藏；排序不受政策影响）
+                      scoreCity(
+                        candidate.featureTags,
+                        profile.data?.preferences ?? [],
+                        profile.data?.personality ?? null,
+                      ) > 0 &&
+                      firstPet != null &&
+                      matchCityCandidate(candidate, firstPet).status !== "unfriendly"
+                    }
                     selected={selected?.adcode === candidate.adcode}
-                    disabled={Boolean(active)}
                     subjects={subjects}
                     onSelect={() => setSelectedAdcode(candidate.adcode)}
                     onPick={() => {
+                      if (active) tripActions.clearActive();
                       setSelectedAdcode(candidate.adcode);
                       setDialogCity(candidate);
                     }}
@@ -248,16 +262,16 @@ function CitiesPage() {
 function CityCard({
   candidate,
   cover,
+  recommended,
   selected,
-  disabled,
   subjects,
   onSelect,
   onPick,
 }: {
   candidate: DestinationCandidate;
   cover: string;
+  recommended: boolean;
   selected: boolean;
-  disabled: boolean;
   subjects: PolicySubjects;
   onSelect: () => void;
   onPick: () => void;
@@ -282,6 +296,11 @@ function CityCard({
         selected ? "border-[#EC9455]" : "border-[#E0E0E0]",
       )}
     >
+      {recommended ? (
+        <Badge className="absolute right-2 top-2" aria-label="系统推荐">
+          系统推荐
+        </Badge>
+      ) : null}
       <img
         src={cover}
         alt={`${candidate.name}景观示意图`}
@@ -290,8 +309,6 @@ function CityCard({
       <Button
         type="button"
         variant="outline"
-        disabled={disabled}
-        title={disabled ? "请先在 我的行程 取消激活当前行程" : undefined}
         onClick={(event) => {
           event.stopPropagation();
           onPick();

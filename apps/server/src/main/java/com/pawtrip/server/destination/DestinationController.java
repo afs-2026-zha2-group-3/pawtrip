@@ -88,12 +88,28 @@ class DestinationController {
 				.toList();
 		// TODO: 政策收录状态与禁养犬种列表——数据来源确定后补充，当前占位为未收录/空列表
 		return new DestinationResponse(region.getAdcode(), region.getName(), province, false, List.of(),
-				region.getAllowedPetTypes(), allowedDogBreedIds, region.getMaxSinglePetShoulderHeightCm());
+				region.getAllowedPetTypes(), allowedDogBreedIds, region.getMaxSinglePetShoulderHeightCm(),
+				parseFeatureTags(region.getFeatureTags()));
+	}
+
+	// REQ-014：逗号分隔存储 → trim/去空段/去重（保留首次出现顺序），NULL/空白 → 空数组
+	private static List<String> parseFeatureTags(String featureTags) {
+		if (featureTags == null || featureTags.isBlank()) {
+			return List.of();
+		}
+		List<String> keys = new java.util.ArrayList<>();
+		for (String segment : featureTags.split(",")) {
+			String key = segment.trim();
+			if (!key.isEmpty() && !keys.contains(key)) {
+				keys.add(key);
+			}
+		}
+		return List.copyOf(keys);
 	}
 
 	record DestinationResponse(String adcode, String name, String province, boolean policyCovered,
 			List<BannedBreedResponse> bannedBreeds, String allowedPetTypes, List<Long> allowedDogBreedIds,
-			Double maxSinglePetShoulderHeightCm) {
+			Double maxSinglePetShoulderHeightCm, List<String> featureTags) {
 	}
 
 	record BannedBreedResponse(String breedName, String source, String updated) {

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { signIn as signInWithApi } from "./trip-helpers";
+import { csrfHeaders, signIn as signInWithApi } from "./trip-helpers";
 
 const username = "demo";
 
@@ -15,6 +15,15 @@ async function signIn(page: Page) {
 async function openPaws(page: Page) {
   await page.getByRole("tab", { name: "我的宠物" }).click();
   await expect(page).toHaveURL(/\/paws$/);
+}
+
+async function deleteAllPetsViaApi(page: Page) {
+  const headers = await csrfHeaders(page);
+  const response = await page.request.get("/api/pets");
+  const pets = (await response.json()) as { id: number }[];
+  for (const pet of pets) {
+    await page.request.delete(`/api/pets/${pet.id}`, { headers });
+  }
 }
 
 test("validates required pet fields before submitting", async ({ page }) => {
@@ -155,4 +164,95 @@ test("creates, switches, edits and deletes pets", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "Mimi Updated", exact: true }),
   ).toHaveCount(0);
+});
+
+test("manages optional preferences and personality across create, view and edit", async ({
+  page,
+}) => {
+  await signIn(page);
+  await openPaws(page);
+
+  await page.getByRole("button", { name: "添加第一只宠物" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("名字").fill("Coco");
+  await dialog.getByRole("combobox", { name: "宠物类型" }).click();
+  await page.getByRole("option", { name: "猫" }).click();
+  await dialog.getByLabel("体重（kg）").fill("4");
+  await dialog.getByLabel("肩高（cm）").fill("25");
+
+  // 不填喜好/性格时无必填错误，直接创建成功（REQ-014 可选字段）
+  await dialog.getByRole("button", { name: "创建宠物" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Coco的档案" })).toBeVisible();
+  await expect(page.getByText("未设置", { exact: true })).toHaveCount(2);
+
+  // 编辑：勾选喜好 + 选择性格，保存后档案展示中文标签
+  await page.getByRole("button", { name: "编辑", exact: true }).click();
+  const editDialog = page.getByRole("dialog");
+  await editDialog.getByRole("checkbox", { name: "游泳" }).click();
+  await editDialog.getByRole("checkbox", { name: "草地奔跑" }).click();
+  await editDialog.getByRole("combobox", { name: "宠物性格" }).click();
+  await page.getByRole("option", { name: "活泼好动" }).click();
+  await editDialog.getByRole("button", { name: "保存" }).click();
+  await expect(editDialog).toHaveCount(0);
+  await expect(page.getByText("游泳、草地奔跑")).toBeVisible();
+  await expect(page.getByText("活泼好动")).toBeVisible();
+
+  // 再次编辑：回显勾选与选中值
+  await page.getByRole("button", { name: "编辑", exact: true }).click();
+  const againDialog = page.getByRole("dialog");
+  await expect(
+    againDialog.getByRole("checkbox", { name: "游泳" }),
+  ).toBeChecked();
+  await expect(
+    againDialog.getByRole("checkbox", { name: "草地奔跑" }),
+  ).toBeChecked();
+  await expect(
+    againDialog.getByRole("checkbox", { name: "爬山" }),
+  ).not.toBeChecked();
+  await expect(
+    againDialog.getByRole("combobox", { name: "宠物性格" }),
+  ).toContainText("活泼好动");
+
+  // 清空喜好并将性格设为「未设置」，保存后档案显示未设置
+  await againDialog.getByRole("checkbox", { name: "游泳" }).click();
+  await againDialog.getByRole("checkbox", { name: "草地奔跑" }).click();
+  await againDialog.getByRole("combobox", { name: "宠物性格" }).click();
+  await page.getByRole("option", { name: "未设置" }).click();
+  await againDialog.getByRole("button", { name: "保存" }).click();
+  await expect(againDialog).toHaveCount(0);
+  await expect(page.getByText("未设置", { exact: true })).toHaveCount(2);
+
+  await deleteAllPetsViaApi(page);
+});
+
+test("shows unset for legacy pets created without preferences fields", async ({
+  page,
+}) => {
+  await signIn(page);
+
+  // API 造旧档案：请求体不含 preferences/personality，后端按 NULL 存储
+  const headers = await csrfHeaders(page);
+  const created = await page.request.post("/api/pets", {
+    headers,
+    data: {
+      name: "Legacy",
+      petType: "CAT",
+      weightKg: 3.5,
+      shoulderHeightCm: 22,
+      hasLeash: false,
+      hasVaccinationProof: false,
+      photo: null,
+      dogBreedId: null,
+    },
+  });
+  expect(created.status()).toBe(201);
+
+  await openPaws(page);
+  await expect(
+    page.getByRole("heading", { name: "Legacy的档案" }),
+  ).toBeVisible();
+  await expect(page.getByText("未设置", { exact: true })).toHaveCount(2);
+
+  await deleteAllPetsViaApi(page);
 });

@@ -13,6 +13,8 @@ export interface DestinationCandidate {
   allowedPetTypes: string | null;
   allowedDogBreedIds: number[];
   maxSinglePetShoulderHeightCm: number | null;
+  // REQ-014 只读城市特征标签（服务端恒下发，无标签为 []）
+  featureTags: string[];
 }
 
 export interface CityMatchProfile {

@@ -5,11 +5,26 @@ import pawStickerSm from "@/assets/paw-sticker-sm.png";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { photoDataUrl } from "@/lib/pet-photo";
-import type { Pet, PetType } from "@/queries/pets";
+import type { Pet, PetPersonality, PetPreference, PetType } from "@/queries/pets";
 
 export const petTypeLabels: Record<PetType, string> = {
   CAT: "猫",
   DOG: "狗",
+};
+
+// REQ-014 词表标签（design D1/D8，键与后端枚举镜像；表单与详情共用）
+export const preferenceLabels: Record<PetPreference, string> = {
+  SWIMMING: "游泳",
+  HIKING: "爬山",
+  GRASS_RUNNING: "草地奔跑",
+  CITY_WALKING: "城市漫步",
+  SNOW_PLAY: "玩雪",
+};
+
+export const personalityLabels: Record<PetPersonality, string> = {
+  ENERGETIC: "活泼好动",
+  CALM: "温和平静",
+  TIMID: "胆小敏感",
 };
 
 export const petCardTitleClass =
@@ -144,6 +159,20 @@ export function PetProfileView({
       ) : null}
       <ProfileRow label="体重（kg）" value={String(pet.weightKg)} />
       <ProfileRow label="肩高（cm）" value={String(pet.shoulderHeightCm)} />
+      <ProfileRow
+        label="喜好"
+        value={
+          pet.preferences.length > 0
+            ? pet.preferences
+                .map((preference) => preferenceLabels[preference])
+                .join("、")
+            : "未设置"
+        }
+      />
+      <ProfileRow
+        label="性格"
+        value={pet.personality ? personalityLabels[pet.personality] : "未设置"}
+      />
       <div className="flex flex-wrap gap-x-8 gap-y-3">
         <span className="flex items-center gap-2">
           <Checkbox
