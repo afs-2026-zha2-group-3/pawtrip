@@ -1,5 +1,6 @@
 package com.pawtrip.server.pet;
 
+import java.time.LocalDate;
 import java.util.Base64;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -13,6 +14,8 @@ import com.pawtrip.server.auth.AppUserRepository;
 import com.pawtrip.server.error.ApiErrorCode;
 import com.pawtrip.server.error.ApiException;
 import com.pawtrip.server.error.UnauthenticatedException;
+import com.pawtrip.server.trip.Trip;
+import com.pawtrip.server.trip.TripRepository;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -26,12 +29,14 @@ class PetService {
 	private final PetRepository petRepository;
 	private final DogBreedRepository dogBreedRepository;
 	private final AppUserRepository appUserRepository;
+	private final TripRepository tripRepository;
 
 	PetService(PetRepository petRepository, DogBreedRepository dogBreedRepository,
-			AppUserRepository appUserRepository) {
+			AppUserRepository appUserRepository, TripRepository tripRepository) {
 		this.petRepository = petRepository;
 		this.dogBreedRepository = dogBreedRepository;
 		this.appUserRepository = appUserRepository;
+		this.tripRepository = tripRepository;
 	}
 
 	List<PetResponses.PetDetail> pets(String username) {
@@ -86,7 +91,19 @@ class PetService {
 
 	@Transactional
 	void delete(String username, long petId) {
-		Pet pet = findOwnedPet(userId(username), petId);
+		Long userId = userId(username);
+		Pet pet = findOwnedPet(userId, petId);
+		List<Trip> trips = this.tripRepository.findAllByPetIdAndUserId(petId, userId);
+		List<Trip> ongoing = trips.stream()
+			.filter(trip -> !trip.isEnded(LocalDate.now()))
+			.toList();
+		if (!ongoing.isEmpty()) {
+			throw new PetInUseException(ongoing.stream().map(Trip::getName).toList());
+		}
+		if (!trips.isEmpty()) {
+			this.tripRepository.deleteAll(trips);
+			this.tripRepository.flush();
+		}
 		try {
 			this.petRepository.delete(pet);
 			this.petRepository.flush();
