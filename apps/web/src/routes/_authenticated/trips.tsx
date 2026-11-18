@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { MapPin, PawPrint, Plus, Trash2 } from "lucide-react";
+import { PawPrint, Plus, Trash2 } from "lucide-react";
 import pawStickerLg from "@/assets/paw-sticker-lg.png";
 import pawStickerSm from "@/assets/paw-sticker-sm.png";
 import {
@@ -65,7 +65,6 @@ function TripsPage() {
   const draft = useDraftTrip();
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const cityNames = new Map(
     (destinations.data ?? []).map((city) => [city.adcode, city.name]),
@@ -143,61 +142,31 @@ function TripsPage() {
   }
 
   const items = [...(trips.data ?? [])].sort((a, b) => a.id - b.id);
-  const selected = items.find((trip) => trip.id === selectedId) ?? items[0] ?? null;
 
-  const selectTrip = (trip: TripSummary) => {
-    setSelectedId(trip.id);
-    document
-      .getElementById(`trip-${trip.id}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  };
-
-  const tripSwitcher =
-    items.length > 0 ? (
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {items.map((trip) => {
-          const isSelected = trip.id === selected?.id;
-          return (
-            <button
-              key={trip.id}
-              type="button"
-              aria-current={isSelected ? "true" : undefined}
-              onClick={() => selectTrip(trip)}
-              className={cn(
-                "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                isSelected
-                  ? "bg-foreground text-background shadow-md"
-                  : "bg-card text-foreground shadow-sm hover:bg-muted",
-              )}
-            >
-              <MapPin aria-hidden="true" className="size-4" />
-              {trip.name}
-            </button>
-          );
-        })}
-        {active || draft ? (
-          <Button
-            variant="outline"
-            className={pillLinkClass(false)}
-            disabled
-            title={active ? "已有激活行程" : "存在未确认草稿"}
-          >
-            <Plus aria-hidden="true" />
-            创建新行程
-          </Button>
-        ) : (
-          <Link to="/cities" className={pillLinkClass(false)}>
-            <Plus aria-hidden="true" />
-            创建新行程
-          </Link>
-        )}
-      </div>
-    ) : null;
+  const createAction =
+    active || draft ? (
+      <Button
+        variant="outline"
+        className={pillLinkClass(false)}
+        disabled
+        title={active ? "已有激活行程" : "存在未确认草稿"}
+      >
+        <Plus aria-hidden="true" />
+        创建新行程
+      </Button>
+    ) : (
+      <Link to="/cities" className={pillLinkClass(false)}>
+        <Plus aria-hidden="true" />
+        创建新行程
+      </Link>
+    );
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-8 print:max-w-none print:p-0">
       <TripSectionNav active="trips" />
-      {tripSwitcher}
+      {items.length > 0 ? (
+        <div className="flex justify-end">{createAction}</div>
+      ) : null}
       <div className="flex flex-col gap-6">
         {draft ? (
           <Alert>
@@ -226,19 +195,15 @@ function TripsPage() {
             </Link>
           </section>
         ) : (
-          <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {items.map((trip) => {
               const isActive = active?.id === trip.id;
-              const isSelected = trip.id === selected?.id;
               return (
                 <section
                   key={trip.id}
                   id={`trip-${trip.id}`}
                   data-testid="trip-card"
-                  className={cn(
-                    "relative w-full rounded-[26px] bg-card p-6 shadow-pet-card ring-1 ring-foreground/5 sm:p-8",
-                    isSelected && "ring-2 ring-foreground/10",
-                  )}
+                  className="relative w-full rounded-[26px] bg-card p-6 shadow-pet-card ring-1 ring-foreground/5"
                 >
                   <img
                     src={pawStickerLg}

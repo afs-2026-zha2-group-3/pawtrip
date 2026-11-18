@@ -266,7 +266,8 @@ test("E3 shows pet policy fields in location detail", async ({ page }) => {
   await expect(dialog.getByText("40 cm")).toBeVisible();
   await expect(dialog.getByText("需要", { exact: true })).toBeVisible();
   await expect(dialog.getByText("不需要", { exact: true })).toBeVisible();
-  await expect(dialog.getByText("10.5 元 / 只 / 次")).toBeVisible();
+  await expect(dialog.getByText("额外费用")).toHaveCount(0);
+  await expect(dialog.getByText("10.5 元 / 只 / 次")).toHaveCount(0);
   await expect(dialog.getByText("狗", { exact: true })).toBeVisible();
   await expect(dialog.getByText("预约要求")).toHaveCount(0);
 });
@@ -444,6 +445,24 @@ async function showAllAttractions(page: Page) {
   await expect(toggle).toBeChecked();
 }
 
+async function selectType(page: Page, label: string) {
+  if (label === "景点") {
+    const back = page.getByRole("button", { name: "返回景点选择" });
+    if (await back.isVisible()) {
+      await back.click();
+    }
+    return;
+  }
+  const entry = page.getByRole("button", { name: "选择住宿/餐厅" });
+  if (await entry.isVisible()) {
+    await entry.click();
+  } else if (await page.getByRole("combobox", { name: "地点类型筛选" }).count() === 0) {
+    await scheduleAttractionAndSelectAnchor(page, "情侣路");
+  }
+  await page.getByRole("combobox", { name: "地点类型筛选" }).click();
+  await page.getByRole("option", { name: label, exact: true }).click();
+}
+
 test("media E1 card shows first cover photo and rating", async ({ page }) => {
   await tripTo(page, "珠海市");
 
@@ -462,6 +481,42 @@ test("media E1 card shows first cover photo and rating", async ({ page }) => {
   const rating = card.getByTestId("location-rating");
   await expect(rating).toBeVisible();
   await expect(rating).toContainText("4.6");
+});
+
+test("media E5 only violated weight and shoulder limits render in red", async ({ page }) => {
+  await createTrip(page, { city: "珠海市", days: 1, pet: "毛毛" });
+  await openAttractions(page);
+  await hideTripPanel(page);
+
+  const loverCard = attractionCard(page, "情侣路");
+  await expect(loverCard.getByText("≤8.5 kg")).toHaveClass(/text-destructive/);
+  await expect(loverCard.getByText("≤40 cm")).toHaveClass(/text-destructive/);
+  await expect(loverCard.getByText(/附加费/)).toHaveCount(0);
+
+  await selectType(page, "住宿");
+  const hotel = attractionCard(page, "珠海某酒店");
+  await expect(hotel.getByText("≤15 kg")).toHaveClass(/text-destructive/);
+  await expect(hotel.getByText(/cm/)).toHaveCount(0);
+  await expect(hotel.getByText(/附加费/)).toHaveCount(0);
+
+  await selectType(page, "景点");
+  await showAllAttractions(page);
+  const emptyCard = attractionCard(page, "珠海渔女");
+  await expect(emptyCard).toBeVisible();
+  await expect(emptyCard.getByText(/≤|附加费/)).toHaveCount(0);
+});
+
+test("media E5b hides limit tags when the pet meets every cap", async ({ page }) => {
+  await tripTo(page, "珠海市");
+
+  await expect(attractionCard(page, "情侣路").getByText(/≤|附加费/)).toHaveCount(0);
+
+  await selectType(page, "住宿");
+  await expect(attractionCard(page, "珠海某酒店").getByText(/≤|附加费/)).toHaveCount(0);
+
+  await selectType(page, "景点");
+  await showAllAttractions(page);
+  await expect(attractionCard(page, "珠海渔女").getByText(/≤|附加费/)).toHaveCount(0);
 });
 
 test("media E7 detail dialog carries cover and rating with fallback", async ({ page }) => {

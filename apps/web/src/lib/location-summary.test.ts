@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PetPolicies } from "../queries/locations";
-import { displayRating, policyNoteParts, restrictionFeeParts } from "./location-summary";
+import { displayRating, policyNoteParts } from "./location-summary";
 
 function policies(overrides: Partial<PetPolicies> = {}): PetPolicies {
   return {
@@ -15,38 +15,6 @@ function policies(overrides: Partial<PetPolicies> = {}): PetPolicies {
     ...overrides,
   };
 }
-
-describe("restrictionFeeParts", () => {
-  it("按 体重→肩高→附加费 顺序输出有值项", () => {
-    expect(
-      restrictionFeeParts(
-        policies({ maxSinglePetWeightKg: 15, maxSinglePetShoulderHeightCm: 40, extraFeeCents: 8000 }),
-      ),
-    ).toEqual(["≤15 kg", "≤40 cm", "附加费 ¥80"]);
-  });
-
-  it("null 项跳过", () => {
-    expect(restrictionFeeParts(policies({ maxSinglePetWeightKg: 15, extraFeeCents: 8000 }))).toEqual([
-      "≤15 kg",
-      "附加费 ¥80",
-    ]);
-  });
-
-  it("数值去尾零", () => {
-    expect(restrictionFeeParts(policies({ maxSinglePetWeightKg: 8.5 }))).toEqual(["≤8.5 kg"]);
-    expect(restrictionFeeParts(policies({ maxSinglePetShoulderHeightCm: 40.0 }))).toEqual(["≤40 cm"]);
-  });
-
-  it("附加费分转元并去尾零", () => {
-    expect(restrictionFeeParts(policies({ extraFeeCents: 8050 }))).toEqual(["附加费 ¥80.5"]);
-    expect(restrictionFeeParts(policies({ extraFeeCents: 1050 }))).toEqual(["附加费 ¥10.5"]);
-    expect(restrictionFeeParts(policies({ extraFeeCents: 0 }))).toEqual(["附加费 ¥0"]);
-  });
-
-  it("全部为空返回空数组", () => {
-    expect(restrictionFeeParts(policies())).toEqual([]);
-  });
-});
 
 describe("policyNoteParts", () => {
   it("三个布尔项为 true 时按顺序生成短语", () => {

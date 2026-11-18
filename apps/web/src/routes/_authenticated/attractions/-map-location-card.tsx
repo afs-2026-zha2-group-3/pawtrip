@@ -39,9 +39,6 @@ function policyChips(policies: PetPolicies): string[] {
   if (policies.maxSinglePetShoulderHeightCm != null) {
     chips.push(`肩高 ≤ ${policies.maxSinglePetShoulderHeightCm}cm`);
   }
-  if (policies.extraFeeCents != null) {
-    chips.push(`额外费用 ¥${(policies.extraFeeCents / 100).toFixed(0)}`);
-  }
   if (policies.leashRequired) {
     chips.push("需牵引");
   }
