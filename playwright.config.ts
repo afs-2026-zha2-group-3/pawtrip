@@ -5,7 +5,7 @@ const useSystemChrome = process.env.PAWTRIP_USE_SYSTEM_CHROME === "true";
 // 每个 worker 使用独立的 petowner-wN 账号，上限需与 scripts/run-e2e.mjs 的种子数量一致。
 const maxWorkers = 8;
 const requestedWorkers = Number(
-  process.env.PAWTRIP_E2E_WORKERS ?? (process.env.CI ? 2 : 4),
+  process.env.PAWTRIP_E2E_WORKERS ?? (process.env.CI ? 2 : 8),
 );
 const workers = Math.min(
   Number.isInteger(requestedWorkers) && requestedWorkers > 0

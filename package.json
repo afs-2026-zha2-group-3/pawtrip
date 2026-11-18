@@ -6,7 +6,7 @@
   ],
   "type": "module",
   "scripts": {
-    "dev": "npm run dev -w apps/web",
+    "dev": "node scripts/dev.mjs",
     "build": "npm run build -w apps/web",
     "preview": "npm run preview -w apps/web",
     "seed:users": "node scripts/seed-users.mjs",

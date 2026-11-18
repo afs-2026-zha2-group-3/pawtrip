@@ -170,6 +170,11 @@
   background-size: cover;
 }
 
+.paw-header-plain {
+  background-color: transparent;
+  background-image: none;
+}
+
 .dark .paw-header {
   background-color: var(--background);
   background-image: none;

@@ -31,7 +31,7 @@ area: interfaces
 | GET | `/api/dog-breeds` | 犬种目录（20 条），含 `officialAggressive` |
 | GET | `/api/locations/types` | 共享地点类型目录：景点 `110000`、住宿 `100000`、宠物医院 `090700`、宠物用品店 `061211`、餐厅 `050000` |
 | GET | `/api/locations` | 共享已保存地点分页列表；参数见下 |
-| GET | `/api/locations/{poiId}` | 用户浏览详情：基础信息 + 8 项 `petPolicies`，不含照片/business/原始 POI |
+| GET | `/api/locations/{poiId}` | 用户浏览详情：基础信息 + 8 项 `petPolicies` + 可空 `longitude`/`latitude`（未保存坐标时均为 `null`），不含照片/business/原始 POI |
 | GET | `/api/destinations` | 城市候选列表；参数 `keyword`、`petFriendly`、`petType`、`breedId`、`shoulderHeightCm`；每项含只读 `featureTags` |
 | GET | `/api/cities/{adcode}/pet-policy` | 城市养犬政策；可选 `breedId`，未收录返回 `covered:false` |
 | GET | `/api/trips` | 当前用户行程摘要（按 id 升序，不含 `plan`/`transportMode`） |

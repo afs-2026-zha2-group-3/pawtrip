@@ -12,6 +12,9 @@ hand-authored index here long-term.
 | domain/city-pet-policy | City pet policy (coverage, banned/allowed breeds, matching) | [domain/city-pet-policy.md](domain/city-pet-policy.md) |
 | domain/city-feature-tags | City feature tags (REQ-014 recommendation vocabulary, 48-city seed) | [domain/city-feature-tags.md](domain/city-feature-tags.md) |
 | external            | External systems knowledge                      | [external/README.md](external/README.md)           |
+| external            | TanStack AI integration (Start + React)         | [external/tanstack-ai.md](external/tanstack-ai.md) |
+| external            | shadcn AI Elements & TanStack AI UI helper      | [external/ai-elements.md](external/ai-elements.md) |
+| external            | BigModel (Zhipu) OpenAI-compatible API          | [external/bigmodel.md](external/bigmodel.md)       |
 | interfaces          | Interfaces knowledge                            | [interfaces/README.md](interfaces/README.md)       |
 | interfaces          | HTTP API contracts and error codes              | [interfaces/http-api.md](interfaces/http-api.md)   |
 | operations          | Operations knowledge                            | [operations/README.md](operations/README.md)       |

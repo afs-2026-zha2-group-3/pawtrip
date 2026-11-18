@@ -30,8 +30,10 @@ PR, or write G2 decisions.
 4. **Convention — unit-level TDD (UT):** this skill owns unit tests during
    red-green-refactor for each slice. Acceptance / **API** / **E2E** intent
    comes from the ATDD design; implement or wire those checks as the design and
-   Project Rules specify. Do **not** invent Playwright/POM pipelines or Excel
-   testcase generators here.
+   Project Rules specify. Do **not** add E2E cases beyond the design's E2E
+   list — single-view UI behavior belongs in component tests, and extra E2E
+   needs a design revision first. Do **not** invent Playwright/POM pipelines
+   or Excel testcase generators here.
 5. When OpenSpec change context is needed, wrap `/opsx:apply`; do not use it to
    bulk-generate implementation that skips TDD. If OpenSpec apply is unavailable
    → stop; see [openspec integration](../../../vendor/ai4se-plugins/integrations/openspec.md).

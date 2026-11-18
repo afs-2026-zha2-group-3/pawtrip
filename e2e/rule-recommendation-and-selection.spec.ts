@@ -48,32 +48,6 @@ test.describe("rule recommendation", () => {
 });
 
 test.describe("mode selection", () => {
-  test("selects the mode from the trip panel with the active pet verdict", async ({
-    page,
-  }) => {
-    await signIn(page);
-    await resetTrips(page);
-    await createActiveTrip(page, { city: "杭州市", days: 1, pet: "毛毛" });
-
-    await page.getByRole("tab", { name: "交通规则" }).click();
-    await expect(page.getByRole("table", { name: tableName })).toBeVisible();
-    const railOption = page.getByRole("radio", { name: "选择高铁" });
-
-    const saved = page.waitForResponse(
-      (response) =>
-        /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
-        response.request().method() === "PUT",
-    );
-    await railOption.check();
-    const response = await saved;
-    expect(response.request().postDataJSON()).toMatchObject({
-      transportMode: "high_speed_rail",
-    });
-    await expect(railOption).toBeChecked();
-    await page.reload();
-    await expect(page.getByRole("radio", { name: "选择高铁" })).toBeChecked();
-  });
-
   test("keeps the picker usable when pet data is unavailable", async ({
     page,
   }) => {
@@ -104,16 +78,6 @@ test.describe("mode selection", () => {
     expect(response.request().postDataJSON()).toMatchObject({
       transportMode: "train",
     });
-  });
-
-  test("opens the full rules page from the panel picker", async ({ page }) => {
-    await signIn(page);
-    await resetTrips(page);
-    await createActiveTrip(page, { city: "杭州市", days: 1, pet: "豆豆" });
-
-    await page.getByRole("tab", { name: "交通规则" }).click();
-    await expect(page).toHaveURL(/\/transport-rules$/);
-    await expect(page.getByRole("table", { name: tableName })).toBeVisible();
   });
 
   test("saves one selected mode to the active trip and restores it after reload", async ({
@@ -148,28 +112,5 @@ test.describe("mode selection", () => {
     await expect(page.getByRole("table", { name: tableName })).toBeVisible();
     await expect(page.getByRole("radio", { name: "选择高铁" })).toBeChecked();
     await expect(page.getByRole("radio", { name: "选择飞机" })).not.toBeChecked();
-  });
-
-  test("keeps mode selection available when pet data is unavailable", async ({
-    page,
-  }) => {
-    await openRules(page);
-    await page.route("**/api/pets**", (route) =>
-      route.fulfill({
-        status: 500,
-        contentType: "application/problem+json",
-        body: JSON.stringify({ status: 500, code: "INTERNAL_ERROR" }),
-      }),
-    );
-    await page.reload();
-
-    await expect(page.getByRole("table", { name: tableName })).toBeVisible();
-    await expect(
-      page.getByRole("columnheader", { name: "是否推荐" }),
-    ).toHaveCount(0);
-    const driveRadio = page.getByRole("radio", { name: "选择自驾" });
-    await expect(driveRadio).toBeEnabled();
-    await driveRadio.check();
-    await expect(driveRadio).toBeChecked();
   });
 });
