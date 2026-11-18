@@ -1,5 +1,3 @@
-import { formatCentsAsYuan } from "./pet-policy";
-
 export type PetFriendlyStatus = "friendly" | "forbidden" | "unconfigured";
 
 export interface AttractionPetPolicies {
@@ -72,13 +70,6 @@ export function formatBooleanRequirement(value: boolean | null): string | null {
   return value ? "需要" : "不需要";
 }
 
-export function formatFee(cents: number | null): string | null {
-  if (cents === null) {
-    return null;
-  }
-  return `${formatCentsAsYuan(cents)} 元 / 只 / 次`;
-}
-
 export function petPolicyFields(policies: AttractionPetPolicies): PetPolicyField[] {
   const fields: PetPolicyField[] = [];
   const allowedPetTypes = formatAllowedPetTypes(policies.allowedPetTypes);
@@ -101,10 +92,6 @@ export function petPolicyFields(policies: AttractionPetPolicies): PetPolicyField
   const vaccinationProofRequired = formatBooleanRequirement(policies.vaccinationProofRequired);
   if (vaccinationProofRequired !== null) {
     fields.push({ label: "疫苗证明要求", value: vaccinationProofRequired });
-  }
-  const extraFee = formatFee(policies.extraFeeCents);
-  if (extraFee !== null) {
-    fields.push({ label: "额外费用", value: extraFee });
   }
   const reservationRequired = formatBooleanRequirement(policies.reservationRequired);
   if (reservationRequired !== null) {

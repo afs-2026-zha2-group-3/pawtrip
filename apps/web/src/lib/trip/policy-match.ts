@@ -132,3 +132,24 @@ export function matchLocationPolicyForType(
   }
   return matchLocationPolicy(policies, pet);
 }
+
+export function violatedLimitTags(
+  policies: AttractionPetPolicies,
+  pet: Pet,
+): string[] {
+  const tags: string[] = [];
+  if (
+    policies.maxSinglePetWeightKg != null &&
+    pet.weightKg > policies.maxSinglePetWeightKg
+  ) {
+    tags.push(`≤${policies.maxSinglePetWeightKg} kg`);
+  }
+  if (
+    pet.petType === "DOG" &&
+    policies.maxSinglePetShoulderHeightCm != null &&
+    pet.shoulderHeightCm > policies.maxSinglePetShoulderHeightCm
+  ) {
+    tags.push(`≤${policies.maxSinglePetShoulderHeightCm} cm`);
+  }
+  return tags;
+}
