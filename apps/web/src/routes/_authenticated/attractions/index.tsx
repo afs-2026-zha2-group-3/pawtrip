@@ -466,19 +466,6 @@ function AttractionsPage() {
               </div>
             ) : null}
           </div>
-          <div className="relative ml-auto w-[210px] shrink-0">
-            <Search
-              aria-hidden="true"
-              className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              aria-label="搜索地点"
-              placeholder="搜索..."
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              className="h-9 w-full rounded-full pr-3 pl-9 text-sm"
-            />
-          </div>
         </div>
 
         <aside className="min-h-0 min-w-0 lg:col-start-1 lg:col-span-1 lg:row-start-2 lg:h-full">
@@ -584,6 +571,19 @@ function AttractionsPage() {
                 </Select>
               </div>
             ) : null}
+            <div className="relative ml-auto w-[210px] shrink-0">
+              <Search
+                aria-hidden="true"
+                className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                aria-label="搜索地点"
+                placeholder="搜索..."
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                className="h-9 w-full rounded-full pr-3 pl-9 text-sm"
+              />
+            </div>
           </div>
 
           <div className="mt-4">

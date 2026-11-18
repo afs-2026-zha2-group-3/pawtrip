@@ -157,6 +157,11 @@ function TripPanelContent({
   const activePet = active
     ? (petsQuery.data ?? []).find((pet) => pet.id === active.petId) ?? null
     : null;
+  const petState: "loading" | "error" | "ready" = petsQuery.isPending
+    ? "loading"
+    : petsQuery.isError
+      ? "error"
+      : "ready";
 
   const rows = useMemo<PanelRow[]>(() => {
     if (!active) return [];
@@ -374,8 +379,17 @@ function TripPanelContent({
     >
       <div className="flex shrink-0 items-start justify-between gap-2">
         {timeline ? (
-          <div className="flex min-w-0 items-center">
+          <div className="flex w-full min-w-0 items-center justify-between gap-2">
             <h2 className="text-sm leading-5 font-medium text-paw-ink">每日景点行程</h2>
+            {active ? (
+              <TransportModePicker
+                value={active.transportMode}
+                pet={activePet}
+                petState={petState}
+                onChange={(mode) => tripActions.setTransportMode(mode)}
+                disabled={readOnly}
+              />
+            ) : null}
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-1.5">
@@ -387,13 +401,7 @@ function TripPanelContent({
                 <TransportModePicker
                   value={active.transportMode}
                   pet={activePet}
-                  petState={
-                    petsQuery.isPending
-                      ? "loading"
-                      : petsQuery.isError
-                        ? "error"
-                        : "ready"
-                  }
+                  petState={petState}
                   onChange={(mode) => tripActions.setTransportMode(mode)}
                   disabled={readOnly}
                 />

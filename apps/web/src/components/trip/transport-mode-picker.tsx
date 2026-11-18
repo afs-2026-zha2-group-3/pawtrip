@@ -99,14 +99,7 @@ export function TransportModePicker({
               )}
             >
               <span className="flex items-center justify-between gap-2">
-                <span className="flex items-baseline gap-1.5">
-                  <span className="text-sm font-medium">{option.label}</span>
-                  {option.carrierName ? (
-                    <span className="text-xs text-muted-foreground">
-                      按{option.carrierName}
-                    </span>
-                  ) : null}
-                </span>
+                <span className="text-sm font-medium">{option.label}</span>
                 <span className="flex items-center gap-1">
                   {option.verdict ? (
                     <span

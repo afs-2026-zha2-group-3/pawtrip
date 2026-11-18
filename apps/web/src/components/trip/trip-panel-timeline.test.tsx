@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TripPanel } from "./trip-panel";
-import { tripActions } from "@/lib/trip/store";
+import { tripActions, tripStore } from "@/lib/trip/store";
 import type { LocationBrowseDetail, PetPolicies } from "@/queries/locations";
 import type { Trip, TripPlan } from "@/lib/trip/types";
 import type { TransportMode } from "@/data/transport-rules";
@@ -91,6 +92,7 @@ function tripWith(plan: TripPlan, transportMode: TransportMode | null = null): T
     totalDays: 3,
     startDate: null,
     transportMode,
+    planCompleted: false,
     plan,
     createdAt: "2026-11-17T00:00:00Z",
     updatedAt: "2026-11-17T00:00:00Z",
@@ -199,5 +201,27 @@ describe("timeline panel restores trip-panel hints and transport", () => {
     expect(screen.queryByTestId("transit-pet-notice")).toBeNull();
     expect(screen.queryByTestId("day-policy-reminder")).toBeNull();
     expect(screen.queryByTestId("transport-segment")).toBeNull();
+  });
+
+  it("places the transport mode picker on the day timeline heading row", () => {
+    renderTimeline({ transportMode: "high_speed_rail" });
+
+    const trigger = screen.getByTestId("transport-mode-tag");
+    expect(trigger.textContent).toContain("大交通 · 高铁");
+
+    const heading = screen.getByRole("heading", { name: "每日景点行程" });
+    expect(
+      heading.compareDocumentPosition(trigger) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(trigger.parentElement).toBe(heading.parentElement);
+  });
+
+  it("changes the transport mode from the timeline picker", async () => {
+    renderTimeline({ transportMode: null });
+
+    await userEvent.click(screen.getByTestId("transport-mode-picker"));
+    await userEvent.click(document.querySelector('[data-mode="drive"]')!);
+
+    expect(tripStore.state.active?.transportMode).toBe("drive");
   });
 });
