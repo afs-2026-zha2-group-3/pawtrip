@@ -50,6 +50,7 @@ import {
   useHydrationStatus,
   useTripCity,
 } from "@/lib/trip/selectors";
+import { isTripEnded } from "@/lib/trip/status";
 import { tripActions, tripStore } from "@/lib/trip/store";
 import { cn } from "@/lib/utils";
 import { destinationsQueryOptions } from "@/queries/destinations";
@@ -116,6 +117,13 @@ function ItineraryPage() {
   }, [active, locations]);
 
   useEffect(() => {
+    // 查看行程单即结束编辑态：返回「我的行程」不再显示「编辑中」，需从卡片重新编辑。
+    if (active?.planCompleted) {
+      tripActions.setEditing(false);
+    }
+  }, [active?.id, active?.planCompleted]);
+
+  useEffect(() => {
     requested.current.clear();
   }, [active?.id]);
 
@@ -164,7 +172,7 @@ function ItineraryPage() {
           <EmptyHeader>
             <EmptyTitle>还没有可查看的行程单</EmptyTitle>
             <EmptyDescription>
-              先创建并激活一个行程，行程单会按天汇总地点、交通与提醒。
+              先创建或打开一个行程，行程单会按天汇总地点、交通与提醒。
             </EmptyDescription>
           </EmptyHeader>
           <div className="flex gap-2">
@@ -178,6 +186,28 @@ function ItineraryPage() {
               查看我的行程
             </Link>
           </div>
+        </Empty>
+      </main>
+    );
+  }
+
+  if (!active.planCompleted) {
+    return (
+      <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
+        <TripSectionNav active="itinerary" />
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>尚未创建行程单</EmptyTitle>
+            <EmptyDescription>
+              先在计划中选好景点与交通，点击「创建行程单」后再查看。
+            </EmptyDescription>
+          </EmptyHeader>
+          <Link
+            to="/attractions"
+            className={buttonVariants({ size: "sm" })}
+          >
+            继续规划
+          </Link>
         </Empty>
       </main>
     );
@@ -208,6 +238,7 @@ function ItineraryPage() {
     ? getRuleForMode(active.transportMode)
     : null;
   const trip = active;
+  const ended = isTripEnded(active);
 
   async function exportImages() {
     setImageExportError(null);
@@ -240,6 +271,13 @@ function ItineraryPage() {
         <p className="text-sm text-muted-foreground">
           {cityName} · {meta}
         </p>
+        {ended ? (
+          <p role="status" className="text-sm text-amber-600">
+            该行程
+            {endDate ? `已于 ${formatTripDate(endDate) ?? endDate} ` : "已"}
+            结束，仅可查看与导出，无法继续编辑。
+          </p>
+        ) : null}
       </header>
 
       {transportRule ? <TransportRuleCard rule={transportRule} /> : null}

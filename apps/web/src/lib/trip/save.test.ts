@@ -17,6 +17,7 @@ const trip: Trip = {
   totalDays: 2,
   startDate: "2026-12-01",
   transportMode: null,
+  planCompleted: false,
   plan: {
     version: 1,
     days: [

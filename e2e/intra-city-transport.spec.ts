@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
+  completeTripViaApi,
   createTripViaApi,
   csrfHeaders,
   openCities,
@@ -96,13 +97,16 @@ async function presetTrip(
     plan: { version: 1, days: input.days, unscheduled: input.unscheduled ?? [] },
     transportMode: input.transportMode ?? null,
   });
+  await completeTripViaApi(page, created.id);
   return created.id;
 }
 
 async function activateTrip(page: Page, name: string) {
   await openTrips(page);
-  await tripCard(page, name).getByRole("button", { name: "激活" }).click();
-  await expect(tripCard(page, name)).toContainText("激活中");
+  await tripCard(page, name).getByRole("button", { name: "编辑" }).click();
+  await expect(page).toHaveURL(/\/attractions$/);
+  await openTrips(page);
+  await expect(tripCard(page, name)).toContainText("编辑中");
   await expect(page.getByTestId("trip-panel")).toBeVisible();
 }
 
@@ -466,6 +470,7 @@ test("E7 hasLeash=false strengthens the leash line", async ({ page }) => {
     await putTripPatch(page, trip.id, {
       plan: { version: 1, days: [{ day: 1, stops: [{ poiId: "e2e-zhu-a" }] }], unscheduled: [] },
     });
+    await completeTripViaApi(page, trip.id);
     await activateTrip(page, "珠海无绳");
 
     const reminder = page.getByTestId("day-policy-reminder");

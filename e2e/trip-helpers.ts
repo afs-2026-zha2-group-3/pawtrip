@@ -160,14 +160,23 @@ export async function createTrip(
 }
 
 export async function openTrips(page: Page) {
-  const list = page.waitForResponse(
-    (response) =>
-      new URL(response.url()).pathname === "/api/trips" &&
-      response.request().method() === "GET",
-  );
-  await page.getByRole("tab", { name: "我的行程" }).click();
+  const pathname = new URL(page.url()).pathname;
+  if (pathname === "/trips") {
+    await expect(page.getByRole("heading", { name: "我的行程" })).toBeVisible();
+    return;
+  }
+  if (pathname === "/itinerary") {
+    // 顶部导航把「我的行程」标为当前页，点它不会触发切换；改用行程视图内的链接。
+    await expect(page.getByRole("heading", { name: "行程单" })).toBeVisible();
+    await page
+      .getByRole("navigation", { name: "行程视图" })
+      .getByRole("link", { name: "我的行程" })
+      .click();
+  } else {
+    await page.getByRole("tab", { name: "我的行程" }).click();
+  }
   await expect(page).toHaveURL(/\/trips$/);
-  await list;
+  await expect(page.getByRole("heading", { name: "我的行程" })).toBeVisible();
 }
 
 export function tripCard(page: Page, name: string) {
@@ -193,7 +202,39 @@ export async function createTripViaApi(
     },
   });
   expect(response.ok()).toBeTruthy();
+  return (await response.json()) as {
+    id: number;
+    name: string;
+    totalDays: number;
+  };
+}
+
+export async function completeTripViaApi(page: Page, tripId: number) {
+  const headers = await csrfHeaders(page);
+  const response = await page.request.post(`/api/trips/${tripId}/complete`, {
+    headers,
+  });
+  expect(response.ok()).toBeTruthy();
   return (await response.json()) as { id: number };
+}
+
+export async function completeTripInPastViaApi(
+  page: Page,
+  trip: { id: number; name: string; totalDays: number },
+) {
+  // 完成接口会拒绝已结束行程，先完成再回填过去的开始日期。
+  await completeTripViaApi(page, trip.id);
+  const headers = await csrfHeaders(page);
+  const response = await page.request.put(`/api/trips/${trip.id}`, {
+    headers,
+    data: {
+      name: trip.name,
+      totalDays: trip.totalDays,
+      startDate: "2020-01-01",
+      plan: { version: 1, days: [], unscheduled: [] },
+    },
+  });
+  expect(response.ok()).toBeTruthy();
 }
 
 export async function pets(page: Page) {

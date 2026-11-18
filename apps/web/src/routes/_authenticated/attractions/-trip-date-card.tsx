@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, CalendarDays } from "lucide-react";
 import { CalendarRange } from "@/components/ui/calendar-range";
 import { tripActions } from "@/lib/trip/store";
-import { useActiveTrip } from "@/lib/trip/selectors";
+import { useActiveTrip, useActiveTripReadOnly } from "@/lib/trip/selectors";
 
 function addDays(isoDate: string, days: number): string {
   const [year, month, day] = isoDate.split("-").map(Number);
@@ -12,6 +12,7 @@ function addDays(isoDate: string, days: number): string {
 
 export function TripDateCard() {
   const active = useActiveTrip();
+  const readOnly = useActiveTripReadOnly();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -57,8 +58,14 @@ export function TripDateCard() {
           type="button"
           aria-expanded={open}
           aria-label="选择出发日期"
-          onClick={() => setOpen((current) => !current)}
-          className="flex shrink-0 items-center gap-2 rounded-xl border border-transparent px-2 py-1.5 text-sm text-foreground transition-colors hover:border-paw-line"
+          disabled={readOnly}
+          title={readOnly ? "行程已结束，无法修改出发日期" : undefined}
+          onClick={() => {
+            if (!readOnly) {
+              setOpen((current) => !current);
+            }
+          }}
+          className="flex shrink-0 items-center gap-2 rounded-xl border border-transparent px-2 py-1.5 text-sm text-foreground transition-colors hover:border-paw-line disabled:cursor-not-allowed disabled:opacity-60"
         >
           <span className="tabular-nums">{start ?? "未设置出发日期"}</span>
           <ArrowRight aria-hidden="true" className="size-4" />
