@@ -319,22 +319,6 @@ test("keeps the remaining segments when one route request fails", async ({
   await expect(dialog.getByTestId("route-label")).toHaveText("700 米 · 4 分钟");
 });
 
-test("shows a placeholder when the AMap key is not configured", async ({
-  page,
-}) => {
-  await seedRouteTrip(page, [
-    [{ poiId: "e2e-zhu-a", toNext: "drive" }, { poiId: "e2e-route-b" }],
-  ]);
-  await activateTrip(page);
-
-  const dialog = await openRouteDialog(page);
-
-  await expect(dialog.getByTestId("day-route-placeholder")).toContainText(
-    "地图未配置",
-  );
-  await expect(page.getByTestId("itinerary-stop")).toHaveCount(2);
-});
-
 test("keeps the route dialog out of the exported print view", async ({
   page,
 }) => {

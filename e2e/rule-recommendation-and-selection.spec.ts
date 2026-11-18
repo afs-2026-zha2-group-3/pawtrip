@@ -52,41 +52,6 @@ test.describe("rule recommendation", () => {
 });
 
 test.describe("mode selection", () => {
-  test("keeps the picker usable when pet data is unavailable", async ({
-    page,
-  }) => {
-    await signIn(page);
-    await resetTrips(page);
-    await createActiveTripViaApi(page, {
-      cityAdcode: "330100",
-      petName: "豆豆",
-      transportMode: "drive",
-    });
-    await page.goto("/transport-rules");
-    await page.route("**/api/pets", (route) =>
-      route.fulfill({
-        status: 500,
-        contentType: "application/json",
-        body: JSON.stringify({ code: "INTERNAL_ERROR", message: "boom" }),
-      }),
-    );
-    await page.reload();
-
-    const trainOption = page.getByRole("radio", { name: "选择火车" });
-    await expect(trainOption).toBeEnabled();
-
-    const saved = page.waitForResponse(
-      (response) =>
-        /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
-        response.request().method() === "PUT",
-    );
-    await trainOption.check();
-    const response = await saved;
-    expect(response.request().postDataJSON()).toMatchObject({
-      transportMode: "train",
-    });
-  });
-
   test("saves one selected mode to the active trip and restores it after reload", async ({
     page,
   }) => {

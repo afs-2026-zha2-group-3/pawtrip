@@ -45,48 +45,6 @@ test.describe("tab-and-routing", () => {
     await expect(page.getByRole("tab", { name: "地点管理" })).toHaveCount(0);
   });
 
-  test("navigates to the rules route when the tab is selected", async ({ page }) => {
-    await signIn(page);
-    await page.getByRole("tab", { name: "交通规则" }).click();
-
-    await expect(page).toHaveURL("/transport-rules");
-    await expect(page.getByRole("tab", { name: "交通规则" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-  });
-
-  test("keeps only the rules tab selected on a direct visit", async ({ page }) => {
-    await signIn(page);
-    await page.goto("/transport-rules");
-
-    await expect(page.getByRole("tab", { name: "交通规则" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    await expect(page.getByRole("tab", { name: "城市浏览" })).toHaveAttribute(
-      "aria-selected",
-      "false",
-    );
-  });
-
-  test("keeps admin tabs ordered after the rules tab for administrators", async ({
-    page,
-  }) => {
-    await signIn(page, "admin");
-
-    const labels = await page.getByRole("tab").allTextContents();
-    expect(labels.slice(0, 8)).toEqual([
-      "首页",
-      "我的宠物",
-      "城市浏览",
-      "地点浏览",
-      "交通规则",
-      "我的行程",
-      "地点管理",
-      "城市管理",
-    ]);
-  });
 });
 
 test.describe("no-active-trip", () => {

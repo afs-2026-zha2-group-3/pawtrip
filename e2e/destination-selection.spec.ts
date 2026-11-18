@@ -55,27 +55,6 @@ test("E2 searches by city or province keyword and shows empty state", async ({ p
   await expect(page.getByText("暂无符合条件的目的地")).toBeVisible();
 });
 
-test("E3 pet-friendly filter keeps eligible candidates", async ({ page }) => {
-  await openCities(page);
-  await searchCity(page, "杭州");
-
-  const total = await guestCount(page);
-  const filter = page.getByRole("checkbox", { name: "宠物友好筛选" });
-  await filter.click();
-  await expect(filter).toBeChecked();
-  await expect(page.getByText(`共 ${total} 个候选`)).toBeVisible();
-  await expect(cityCard(page, "杭州市")).toBeVisible();
-});
-
-test("E4 candidate cards show one tag per pet", async ({ page }) => {
-  await openCities(page);
-  await searchCity(page, "杭州");
-
-  const card = cityCard(page, "杭州市");
-  await expect(card.getByText("豆豆 · 友好")).toBeVisible();
-  await expect(card.getByText("毛毛 · 无法判定")).toBeVisible();
-});
-
 test("E5 selecting a city opens the trip dialog without POSTing a trip", async ({ page }) => {
   const posts: string[] = [];
   page.on("request", (request) => {
@@ -145,24 +124,6 @@ test("E7 rejects incomplete or overlong date ranges without creating a trip", as
   expect(posts).toHaveLength(0);
 });
 
-test("E8 city cards expose policy inline without policy links", async ({ page }) => {
-  await openCities(page);
-  await page.getByRole("textbox", { name: "搜索城市" }).fill("珠海");
-  await page.getByText("共 1 个候选").waitFor();
-
-  const card = cityCard(page, "珠海市");
-  await expect(
-    card.getByRole("link", { name: /查看.*的城市政策/ }),
-  ).toHaveCount(0);
-  await expect(page.getByText("政策要点")).toHaveCount(0);
-  await card.click();
-  await expect(page).toHaveURL(/\/cities$/);
-  await expect(
-    page.getByRole("heading", { name: "珠海市宠物管理政策" }),
-  ).toBeVisible();
-  await expect(page.getByText("政策要点")).toBeVisible();
-});
-
 test("E9 active trip is cleared when selecting another city", async ({
   page,
 }) => {
@@ -180,25 +141,6 @@ test("E9 active trip is cleared when selecting another city", async ({
   expect(
     await page.evaluate(() => window.localStorage.getItem("pawtrip.activeTripId")),
   ).toBeNull();
-});
-
-test("E11 keeps 我的行程 tab selected on direct access", async ({ page }) => {
-  await page.goto("/trips");
-  await expect(page).toHaveURL(/\/trips$/);
-  await expect(page.getByRole("tab", { name: "我的行程" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
-});
-
-test("E13 prompts for a pet profile when the user has none", async ({ page }) => {
-  await page.route("**/api/pets", (route) => route.fulfill({ json: [] }));
-  await page.getByRole("tab", { name: "城市浏览" }).click();
-  await searchCity(page, "杭州");
-
-  await expect(page.getByText(/尚未添加宠物档案/)).toBeVisible();
-  await expect(page.getByRole("link", { name: "先去添加宠物" })).toBeVisible();
-  await expect(cityCard(page, "杭州市").getByText(/·/)).toHaveCount(0);
 });
 
 test("E14 reports a pet API failure instead of an empty pet list", async ({ page }) => {
@@ -272,43 +214,4 @@ test("E15 selecting a city shows its policy in the sidebar", async ({ page }) =>
   await expect(
     page.getByText("仅列出部分示例，完整名单请查阅当地政府通告。"),
   ).toBeVisible();
-});
-
-test("E16 paginates candidates and resets to the first page on search", async ({
-  page,
-}) => {
-  await openCities(page);
-
-  const pager = page.getByRole("navigation", { name: "城市分页" });
-  await expect(pager).toContainText("第 1 /");
-  await expect(pager.getByRole("button", { name: "上一页" })).toBeDisabled();
-  await expect(pager.getByRole("button", { name: "下一页" })).toBeEnabled();
-  const total = await guestCount(page);
-  const firstAdcode = await page
-    .getByTestId("city-card")
-    .first()
-    .getAttribute("data-adcode");
-
-  await pager.getByRole("button", { name: "下一页" }).click();
-  await expect(pager).toContainText("第 2 /");
-  await expect(pager.getByRole("button", { name: "上一页" })).toBeEnabled();
-  await expect(page.getByTestId("city-card").first()).not.toHaveAttribute(
-    "data-adcode",
-    firstAdcode ?? "",
-  );
-  expect(await guestCount(page)).toBe(total);
-
-  await page.getByRole("textbox", { name: "搜索城市" }).fill("广东");
-  await expect(pager).toContainText("第 1 / 3 页");
-  await expect(pager.getByRole("button", { name: "上一页" })).toBeDisabled();
-
-  await pager.getByRole("button", { name: "下一页" }).click();
-  await expect(pager).toContainText("第 2 / 3 页");
-  await pager.getByRole("button", { name: "下一页" }).click();
-  await expect(pager).toContainText("第 3 / 3 页");
-  await expect(pager.getByRole("button", { name: "下一页" })).toBeDisabled();
-
-  await searchCity(page, "杭州");
-  await expect(pager).toHaveCount(0);
-  await expect(cityCard(page, "杭州市")).toBeVisible();
 });

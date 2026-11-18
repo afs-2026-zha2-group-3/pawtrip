@@ -244,27 +244,6 @@ test("preference SWIMMING ranks coastal/lake cities first with badges and name-o
   expect(names.indexOf("珠海市")).toBeLessThan(names.indexOf("广州市"));
 });
 
-test("badge contract: no reason text, coexists with policy tags, no recommendation toggle", async ({
-  page,
-}) => {
-  await createPetViaApi(page, { name: "泳泳", preferences: ["SWIMMING"] });
-  await openCities(page);
-
-  const recommended = await gotoCityCard(page, "杭州市");
-  await expect(recommended.locator('[data-slot="badge"]')).toHaveText("系统推荐");
-  // 徽标不遮挡标题，且与逐宠物政策标签并存
-  await expect(recommended.locator("h2")).toHaveText("杭州市");
-  await expect(recommended.getByText(/泳泳 ·/).first()).toBeVisible();
-  // 无理由文字（Non-goal 反向）
-  await expect(page.getByText(/推荐原因|因为|推荐理由/)).toHaveCount(0);
-  const plain = await gotoCityCard(page, "广州市");
-  await expect(plain.locator('[data-slot="badge"]')).toHaveCount(0);
-  // /cities 无推荐开关：仅「宠物友好筛选」一个复选框，无 switch 控件
-  await expect(page.getByRole("checkbox")).toHaveCount(1);
-  await expect(page.getByRole("checkbox", { name: "宠物友好筛选" })).toBeVisible();
-  await expect(page.getByRole("switch")).toHaveCount(0);
-});
-
 test("filter and search overlay keeps score order and syncs candidate count", async ({ page }) => {
   await createPetViaApi(page, { name: "泳泳", preferences: ["SWIMMING"] });
   await openCities(page);

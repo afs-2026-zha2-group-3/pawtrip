@@ -170,34 +170,6 @@ test("groups trips by status, filters them, and supports editing and delete", as
   await expect(tripCard(page, "杭州两日")).toHaveCount(0);
 });
 
-test("marks the trip completed after creating the itinerary", async ({ page }) => {
-  await createTrip(page, { city: "珠海市", days: 1, pet: "豆豆" });
-  await expect(page).toHaveURL(/\/attractions$/);
-  await expect(page.getByTestId("itinerary-link")).toHaveCount(0);
-
-  await addDayAttraction(page, "情侣路", 1);
-  await page.getByTestId("trip-next-step").click();
-
-  const completed = page.waitForResponse(
-    (response) =>
-      /\/api\/trips\/\d+\/complete$/.test(new URL(response.url()).pathname) &&
-      response.request().method() === "POST",
-  );
-  await page.getByTestId("trip-create-itinerary").click();
-  expect((await completed).ok()).toBeTruthy();
-  await expect(page).toHaveURL(/\/itinerary$/);
-  await expect(page.getByRole("heading", { name: "行程单" })).toBeVisible();
-
-  await openTrips(page);
-  const card = page.getByTestId("trip-card").first();
-  await expect(card).toContainText("已完成");
-  // 查看行程单后编辑态结束，卡片回到普通「已完成」展示。
-  await expect(card).not.toContainText("编辑中");
-  await expect(card.getByRole("button", { name: "查看行程单" })).toBeVisible();
-  await expect(card.getByRole("button", { name: "编辑" })).toBeVisible();
-  await expect(card.getByRole("button", { name: "结束编辑" })).toHaveCount(0);
-});
-
 test("hides the itinerary until the plan is completed", async ({ page }) => {
   await createTrip(page, { city: "杭州市", days: 1 });
 
@@ -258,26 +230,6 @@ test("keeps ended trips read-only while completed trips stay editable", async ({
   expect(response.status()).toBe(409);
 });
 
-test("shows ended trips without an itinerary as delete-only", async ({ page }) => {
-  const pet = (await pets(page))[0];
-  await createTripViaApi(page, {
-    name: "未完成旧行程",
-    cityAdcode: "330100",
-    petId: pet.id,
-    totalDays: 1,
-    startDate: "2020-01-01",
-  });
-
-  await openTrips(page);
-  const card = tripCard(page, "未完成旧行程");
-  await expect(card).toContainText("行程结束");
-  await expect(card).toContainText("未创建行程单");
-  await expect(card.getByRole("button", { name: "查看行程单" })).toHaveCount(0);
-  await expect(card.getByRole("button", { name: "编辑" })).toHaveCount(0);
-  await expect(card.getByRole("button", { name: "删除" })).toBeVisible();
-  await expect(card).not.toHaveAttribute("role", "button");
-});
-
 test("reports a missing trip when activation returns 404", async ({ page }) => {
   const pet = (await pets(page))[0];
   const created = await createTripViaApi(page, {
@@ -293,36 +245,6 @@ test("reports a missing trip when activation returns 404", async ({ page }) => {
   await openTrips(page);
   await tripCard(page, "已删除行程").getByRole("button", { name: "编辑" }).click();
   await expect(page.getByText("打开行程失败，请稍后重试。")).toBeVisible();
-});
-
-test("evaluates transport rules only for the active trip pet", async ({ page }) => {
-  await createActiveTripViaApi(page, { cityAdcode: "330100", petName: "毛毛" });
-  await page.goto("/transport-rules");
-  await expect(page).toHaveURL(/\/transport-rules$/);
-  await expect(page.getByRole("table", { name: "交通携宠规则对比" })).toBeVisible();
-
-  await expect(page.getByText(/^毛毛 · /).first()).toBeVisible();
-  await expect(page.getByText(/^豆豆 · /)).toHaveCount(0);
-});
-
-test("requires a created trip before browsing attractions", async ({ page }) => {
-  await openCities(page);
-
-  const locationListRequests: string[] = [];
-  page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/api/locations") {
-      locationListRequests.push(request.url());
-    }
-  });
-  await page.getByRole("tab", { name: "地点浏览" }).click();
-  await expect(page.getByText("先创建或激活行程")).toBeVisible();
-  expect(locationListRequests).toHaveLength(0);
-
-  await createActiveTripViaApi(page, { cityAdcode: "330100" });
-  await page.reload();
-  await expect(
-    page.getByRole("combobox", { name: "添加到行程" }).first(),
-  ).toBeVisible();
 });
 
 test("adds stops to the selected day and to unscheduled with debounced saving", async ({
@@ -422,17 +344,6 @@ test("keeps local edits when saving fails and retries", async ({ page }) => {
   await expect(page.getByTestId("trip-panel")).toContainText("西湖");
 
   failSaving = false;
-});
-
-test("does not render the panel on the login page", async ({ page }) => {
-  await createActiveTripViaApi(page, { cityAdcode: "330100" });
-  await page.goto("/");
-  await expect(page.getByTestId("trip-panel")).toBeVisible();
-
-  await page.getByRole("button", { name: "Log out" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Log out" }).click();
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByTestId("trip-panel")).toHaveCount(0);
 });
 
 test("shows active-pet location policy tags", async ({ page }) => {

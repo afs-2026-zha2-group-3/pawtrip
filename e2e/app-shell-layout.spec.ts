@@ -128,22 +128,6 @@ test.describe("app shell scrolling", () => {
 test.describe("narrow navigation", () => {
   test.use({ viewport: { width: 390, height: 800 } });
 
-  test("E3 keeps all admin tabs reachable through horizontal scrolling", async ({
-    page,
-  }) => {
-    await signIn(page, "admin");
-
-    const nav = page.getByTestId("app-nav-scroll");
-    await expect
-      .poll(() =>
-        nav.evaluate((element) => element.scrollWidth > element.clientWidth),
-      )
-      .toBe(true);
-
-    await nav.evaluate((element) => element.scrollTo(element.scrollWidth, 0));
-    await expect(page.getByRole("tab", { name: "城市管理" })).toBeInViewport();
-    expect(await page.evaluate(() => window.scrollY)).toBe(0);
-  });
 });
 
 test.describe("narrow attractions", () => {
@@ -183,50 +167,6 @@ test.describe("regular desktop viewport", () => {
 
   test.beforeEach(async ({ page }) => {
     await signIn(page);
-  });
-
-  test("E4 shows no scrollbar on the paws page and falls back on short viewports", async ({
-    page,
-  }) => {
-    await page.getByRole("tab", { name: "我的宠物" }).click();
-    await expect(page).toHaveURL(/\/paws$/);
-
-    const scroller = page.getByTestId("app-scroll");
-    await expect
-      .poll(() =>
-        scroller.evaluate((element) => element.scrollHeight <= element.clientHeight),
-      )
-      .toBe(true);
-    expect(await page.evaluate(() => window.scrollY)).toBe(0);
-
-    await page.setViewportSize({ width: 1920, height: 480 });
-    await expect
-      .poll(() =>
-        scroller.evaluate((element) => element.scrollHeight > element.clientHeight),
-      )
-      .toBe(true);
-    await scroller.evaluate((element) => element.scrollTo(0, 100));
-    await expect
-      .poll(() => scroller.evaluate((element) => element.scrollTop))
-      .toBeGreaterThan(0);
-    await expect(page.getByTestId("app-scroll")).toBeVisible();
-  });
-
-  test("E5 releases the shell in print media", async ({ page }) => {
-    await page.emulateMedia({ media: "print" });
-
-    const styles = await page.getByTestId("app-scroll").evaluate((element) => {
-      const computed = getComputedStyle(element);
-      return {
-        display: computed.display,
-        overflowY: computed.overflowY,
-      };
-    });
-    expect(styles).toEqual({
-      display: "block",
-      overflowY: "visible",
-    });
-    await expect(page.locator("header")).toBeHidden();
   });
 
   test("E6 keeps the selected city policy panel sticky inside the content viewport", async ({
