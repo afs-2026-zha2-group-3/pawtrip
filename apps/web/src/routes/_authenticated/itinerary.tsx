@@ -4,7 +4,6 @@ import {
   Download,
   Image as ImageIcon,
   ListChecks,
-  MapPin,
   PawPrint,
 } from "lucide-react";
 import { useSelector } from "@tanstack/react-store";
@@ -24,7 +23,7 @@ import {
   type TransportRule,
 } from "@/data/transport-rules";
 import { NearbyPetServices } from "@/components/trip/nearby-pet-services";
-import { DayRouteDialog } from "@/components/trip/day-route-dialog";
+import { DayRoutePanel } from "@/components/trip/day-route-panel";
 import { PackingChecklistDialog } from "@/components/trip/packing-checklist-dialog";
 import { petPolicyFields } from "@/lib/attraction-pet-rules";
 import { companionActions } from "@/lib/companion/store";
@@ -103,7 +102,6 @@ function ItineraryPage() {
   const requested = useRef(new Set<string>());
   const imageSheetRef = useRef<HTMLDivElement>(null);
   const [selectedDay, setSelectedDay] = useState(1);
-  const [routeDialogOpen, setRouteDialogOpen] = useState(false);
   const [packingDialogOpen, setPackingDialogOpen] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [exportingImage, setExportingImage] = useState(false);
@@ -340,6 +338,7 @@ function ItineraryPage() {
   return (
     <PageFrame
       above={<TripSectionNav active="itinerary" />}
+      width="wide"
       className="border-2 border-paw-accent-soft print:border-0"
     >
 
@@ -416,41 +415,23 @@ function ItineraryPage() {
           </TabsList>
         </Tabs>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              className={petPillOutlineClass}
-              onClick={() => setPackingDialogOpen(true)}
-            >
-              <ListChecks aria-hidden="true" />
-              携带清单
-            </Button>
-            <span
-              data-testid="packing-progress"
-              className="text-xs text-muted-foreground"
-            >
-              {packingProgressText}
-            </span>
-          </div>
           <Button
             type="button"
             variant="outline"
             className={petPillOutlineClass}
-            onClick={() => setRouteDialogOpen(true)}
+            onClick={() => setPackingDialogOpen(true)}
           >
-            <MapPin aria-hidden="true" />
-            查看当天路线规划
+            <ListChecks aria-hidden="true" />
+            携带清单
           </Button>
+          <span
+            data-testid="packing-progress"
+            className="text-xs text-muted-foreground"
+          >
+            {packingProgressText}
+          </span>
         </div>
       </div>
-
-      <DayRouteDialog
-        open={routeDialogOpen}
-        onOpenChange={setRouteDialogOpen}
-        day={day}
-        locations={locations}
-      />
 
       <PackingChecklistDialog
         open={packingDialogOpen}
@@ -458,33 +439,41 @@ function ItineraryPage() {
         tripId={active.id}
       />
 
-      {(printing ? itinerary.days : [day]).map((entry) => (
-        <DayDetail
-          key={entry.day}
-          day={entry}
-          tripId={active.id}
-          forceOpen={printing}
-        />
-      ))}
-
-      {itinerary.unscheduledNames.length > 0 ? (
-        <section
-          aria-label="未排期地点"
-          className={cn(cardClass, "print:shadow-none print:ring-0")}
-        >
-          <h2 className="text-lg font-medium text-paw-ink">未排期</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {itinerary.unscheduledNames.map((name, index) => (
-              <span
-                key={`${index}-${name}`}
-                className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
-              >
-                {name}
-              </span>
-            ))}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_26rem]">
+        {(printing ? itinerary.days : [day]).map((entry) => (
+          <div key={entry.day} className="min-w-0 lg:col-start-1">
+            <DayDetail day={entry} tripId={active.id} forceOpen={printing} />
           </div>
-        </section>
-      ) : null}
+        ))}
+
+        <DayRoutePanel
+          day={day}
+          locations={locations}
+          className="lg:col-start-2 lg:row-start-1 lg:sticky lg:top-6 lg:self-start"
+        />
+
+        {itinerary.unscheduledNames.length > 0 ? (
+          <section
+            aria-label="未排期地点"
+            className={cn(
+              cardClass,
+              "print:shadow-none print:ring-0 lg:col-start-1",
+            )}
+          >
+            <h2 className="text-lg font-medium text-paw-ink">未排期</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {itinerary.unscheduledNames.map((name, index) => (
+                <span
+                  key={`${index}-${name}`}
+                  className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
+                >
+                  {name}
+                </span>
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </div>
 
       {exportingImage ? (
         <div

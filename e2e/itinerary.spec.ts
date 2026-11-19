@@ -30,6 +30,11 @@ interface TripPlanBody {
 
 const DEFAULT_TRIP_NAME = "珠海 · 2天 · 豆豆";
 
+// 路线面板常驻后会重复展示当天日期与城市，日期断言需限定在行程明细内。
+function dayDetail(page: Page) {
+  return page.getByRole("region", { name: "按天行程" });
+}
+
 const itineraryPlan: TripPlanBody = {
   version: 1,
   days: [
@@ -196,7 +201,9 @@ test("summarizes the active trip by day", async ({ page }) => {
   const dayTwo = page.getByRole("tab", { name: "Day 2" });
   await expect(dayOne).toHaveAttribute("aria-selected", "true");
 
-  await expect(page.getByText("12月1日 周二 · 珠海市")).toBeVisible();
+  await expect(
+    dayDetail(page).getByText("12月1日 周二 · 珠海市"),
+  ).toBeVisible();
   await expect(page.getByTestId("itinerary-stop")).toHaveCount(2);
   const firstStop = page.getByTestId("itinerary-stop").first();
   await expect(firstStop).toContainText("情侣路");
@@ -226,7 +233,9 @@ test("summarizes the active trip by day", async ({ page }) => {
 
   await dayTwo.click();
   await expect(dayTwo).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByText("12月2日 周三 · 珠海市")).toBeVisible();
+  await expect(
+    dayDetail(page).getByText("12月2日 周三 · 珠海市"),
+  ).toBeVisible();
   await expect(page.getByTestId("itinerary-stop")).toHaveCount(1);
   await expect(page.getByTestId("itinerary-stop")).toContainText(
     "珠海海滨公园",
@@ -262,8 +271,12 @@ test("exports all days through the print dialog", async ({ page }) => {
     .poll(() => page.evaluate(() => (window as unknown as { __printCalls: number }).__printCalls))
     .toBe(1);
 
-  await expect(page.getByText("12月1日 周二 · 珠海市")).toBeVisible();
-  await expect(page.getByText("12月2日 周三 · 珠海市")).toBeVisible();
+  await expect(
+    dayDetail(page).getByText("12月1日 周二 · 珠海市"),
+  ).toBeVisible();
+  await expect(
+    dayDetail(page).getByText("12月2日 周三 · 珠海市"),
+  ).toBeVisible();
 
   const firstStop = page.getByTestId("itinerary-stop").first();
   await expect(firstStop.getByText("8.5 kg", { exact: true })).toBeVisible();
@@ -295,8 +308,12 @@ test("exports all days through the print dialog", async ({ page }) => {
   await expect(page.getByRole("tablist", { name: "按天切换" })).toBeHidden();
   await expect(page.getByRole("button", { name: "导出 PDF" })).toBeHidden();
   await expect(page.getByTestId("trip-panel")).toBeHidden();
-  await expect(page.getByText("12月1日 周二 · 珠海市")).toBeVisible();
-  await expect(page.getByText("12月2日 周三 · 珠海市")).toBeVisible();
+  await expect(
+    dayDetail(page).getByText("12月1日 周二 · 珠海市"),
+  ).toBeVisible();
+  await expect(
+    dayDetail(page).getByText("12月2日 周三 · 珠海市"),
+  ).toBeVisible();
   await expect(firstStop.getByText("8.5 kg", { exact: true })).toBeVisible();
   await expect(firstStop.getByText("不需要", { exact: true })).toBeVisible();
   await expect(firstStop.getByText("10.5 元 / 只 / 次")).toHaveCount(0);
@@ -331,15 +348,21 @@ test("restores the single-day view after printing ends", async ({ page }) => {
     .filter({ hasText: "详细携宠政策" });
   await expect(dayOneTab).toHaveAttribute("aria-selected", "true");
   await page.getByRole("button", { name: "导出 PDF" }).click();
-  await expect(page.getByText("12月2日 周三 · 珠海市")).toBeVisible();
+  await expect(
+    dayDetail(page).getByText("12月2日 周三 · 珠海市"),
+  ).toBeVisible();
   await expect(policyDetails).toHaveJSProperty("open", true);
 
   await page.evaluate(() =>
     (window as unknown as { __finishPrint: () => void }).__finishPrint(),
   );
 
-  await expect(page.getByText("12月2日 周三 · 珠海市")).toHaveCount(0);
-  await expect(page.getByText("12月1日 周二 · 珠海市")).toBeVisible();
+  await expect(
+    dayDetail(page).getByText("12月2日 周三 · 珠海市"),
+  ).toHaveCount(0);
+  await expect(
+    dayDetail(page).getByText("12月1日 周二 · 珠海市"),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "导出 PDF" })).toBeVisible();
   await expect(policyDetails).toHaveJSProperty("open", false);
   await expect(dayOneTab).toHaveAttribute("aria-selected", "true");

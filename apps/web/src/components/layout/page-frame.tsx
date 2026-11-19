@@ -5,14 +5,21 @@ import { cn } from "@/lib/utils";
 export function PageFrame({
   above,
   className,
+  width = "default",
   children,
 }: {
   above?: ReactNode;
   className?: string;
+  width?: "default" | "wide";
   children: ReactNode;
 }) {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-8 print:max-w-none print:p-0">
+    <main
+      className={cn(
+        "mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-8 print:max-w-none print:p-0",
+        width === "wide" && "lg:max-w-6xl",
+      )}
+    >
       {above}
       <section
         className={cn(
