@@ -1,4 +1,9 @@
-## ADDED Requirements
+# companion-hints Specification
+
+## Purpose
+挂在现有 Chatbot 入口上方的伙伴气泡，以宠物第一人称提供逐页情境提示与业务事件反馈，并在 5 秒后自动关闭。
+
+## Requirements
 
 ### Requirement: 伙伴气泡复用现有 Chatbot 入口
 
