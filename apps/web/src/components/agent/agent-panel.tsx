@@ -207,7 +207,7 @@ export function AgentPanel() {
         <SheetContent
           side="right"
           data-testid="agent-panel"
-          className="z-[60] gap-0 overflow-hidden bg-[#FCEFD9] p-0 max-lg:inset-0 max-lg:h-full max-lg:w-full max-lg:max-w-none lg:top-24 lg:right-4 lg:bottom-4 lg:left-auto lg:h-auto lg:w-[400px] lg:rounded-[24px] lg:border lg:border-paw-accent/15"
+          className="z-[60] gap-0 overflow-hidden bg-[#FCEFD9] p-0 max-lg:inset-0 max-lg:h-full max-lg:w-full max-lg:max-w-none lg:top-[var(--app-header-height)] lg:right-4 lg:bottom-4 lg:left-auto lg:h-auto lg:w-[400px] lg:max-w-none lg:rounded-[24px] lg:border lg:border-paw-accent/15"
         >
           <SheetHeader className="relative h-22 px-4">
             <SheetTitle className="sr-only">行程规划助手</SheetTitle>
