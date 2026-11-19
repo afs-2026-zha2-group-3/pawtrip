@@ -80,7 +80,7 @@ function AuthenticatedShell() {
       <div
         ref={scrollRef}
         data-testid="app-scroll"
-        className="app-scroll min-h-0 flex-1 overflow-y-auto [view-transition-name:app-content]"
+        className="app-scroll min-h-0 flex-1 overflow-y-auto pt-[var(--app-header-height)] [view-transition-name:app-content] print:pt-0"
       >
         <Outlet />
       </div>
@@ -88,7 +88,7 @@ function AuthenticatedShell() {
       {hydration === "idle" && hasPersistedTrip ? (
         <div
           role="alert"
-          className="fixed top-16 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-lg border bg-card px-3 py-2 text-sm shadow-lg"
+          className="fixed top-[calc(var(--app-header-height)+0.5rem)] left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-lg border bg-card px-3 py-2 text-sm shadow-lg"
         >
           恢复激活行程失败
           <Button size="sm" variant="outline" onClick={() => void retryTripHydration(queryClient)}>

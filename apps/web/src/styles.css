@@ -163,10 +163,6 @@
   background-image: none;
 }
 
-.paw-header {
-  min-height: var(--app-header-height);
-}
-
 .paw-scroll {
   scrollbar-width: thin;
   scrollbar-color: var(--paw-line, #e0e0e0) transparent;
