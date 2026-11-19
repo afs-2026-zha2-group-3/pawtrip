@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   completeTripViaApi,
   createTripViaApi,
@@ -69,47 +69,65 @@ async function installFakeAmap(page: Page) {
       destroy() {}
     }
 
-    class FakeMarker {
+    // 面板常驻会随地点详情加载多次重绘；假覆盖物需在 setMap(null) 时真正移除，
+    // 否则重复绘制会累积 DOM 节点，与真实 AMap 的覆盖物清理语义不符。
+    class FakeOverlay {
+      element: HTMLElement | null = null;
+      detach() {
+        this.element?.remove();
+        this.element = null;
+      }
+      attach(map: FakeMap | null, element: HTMLElement) {
+        if (!map) {
+          this.detach();
+          return;
+        }
+        this.element = element;
+        map.container.appendChild(element);
+      }
+    }
+
+    class FakeMarker extends FakeOverlay {
       opts: Record<string, unknown>;
       constructor(options: Record<string, unknown>) {
+        super();
         this.opts = options;
       }
       on() {}
       setMap(map: FakeMap | null) {
-        if (!map) return;
         const label = (this.opts.label ?? {}) as { content?: string };
         const element = document.createElement("div");
         element.dataset.testid = "route-marker";
         element.textContent = String(label.content ?? "");
-        map.container.appendChild(element);
+        this.attach(map, element);
       }
     }
 
-    class FakePolyline {
+    class FakePolyline extends FakeOverlay {
       opts: Record<string, unknown>;
       constructor(options: Record<string, unknown>) {
+        super();
         this.opts = options;
       }
       setMap(map: FakeMap | null) {
-        if (!map) return;
         const element = document.createElement("div");
         element.dataset.testid = "route-polyline";
         element.dataset.color = String(this.opts.strokeColor ?? "");
-        map.container.appendChild(element);
+        this.attach(map, element);
       }
     }
 
-    class FakeText {
+    class FakeText extends FakeOverlay {
       opts: Record<string, unknown>;
       constructor(options: Record<string, unknown>) {
+        super();
         this.opts = options;
       }
       setMap(map: FakeMap | null) {
-        if (!map) return;
         const element = document.createElement("div");
         element.dataset.testid = "route-label";
         element.textContent = String(this.opts.text ?? "");
-        map.container.appendChild(element);
+        this.attach(map, element);
       }
     }
 
@@ -184,7 +202,23 @@ async function setRoutePlan(page: Page, plan: Partial<FakeRoutePlan>) {
       driving: value.driving ?? [],
       walking: value.walking ?? [],
     };
+    state.__amapCalls = [];
   }, plan);
+}
+
+// 面板常驻后地图会在地点详情加载过程中多次重绘并提前消耗假算路队列；
+// 先等首次绘制稳定，再设置算路计划，并用空天往返切换触发一次干净的重绘。
+async function redrawWithRoutePlan(
+  page: Page,
+  panel: Locator,
+  markers: number,
+  plan: Partial<FakeRoutePlan>,
+) {
+  await expect(panel.getByTestId("route-marker")).toHaveCount(markers);
+  await setRoutePlan(page, plan);
+  await page.getByRole("tab", { name: "Day 2" }).click();
+  await expect(panel.getByTestId("day-route-empty")).toBeVisible();
+  await page.getByRole("tab", { name: "Day 1" }).click();
 }
 
 async function routeCalls(page: Page) {
@@ -228,11 +262,10 @@ async function activateTrip(page: Page) {
   await expect(page).toHaveURL(/\/itinerary$/);
 }
 
-async function openRouteDialog(page: Page) {
-  await page.getByRole("button", { name: "查看当天路线规划" }).click();
-  const dialog = page.getByTestId("day-route-dialog");
-  await expect(dialog).toBeVisible();
-  return dialog;
+async function openRoutePanel(page: Page) {
+  const panel = page.getByTestId("day-route-panel");
+  await expect(panel).toBeVisible();
+  return panel;
 }
 
 test.beforeEach(async ({ page }) => {
@@ -240,7 +273,7 @@ test.beforeEach(async ({ page }) => {
   await resetTrips(page);
 });
 
-test("opens the route dialog for the selected day and keeps the day after closing", async ({
+test("shows the route panel for the selected day without opening a dialog", async ({
   page,
 }) => {
   await seedRouteTrip(page, [
@@ -249,17 +282,26 @@ test("opens the route dialog for the selected day and keeps the day after closin
   ]);
   await activateTrip(page);
 
-  await page.getByRole("tab", { name: "Day 2" }).click();
-  const dialog = await openRouteDialog(page);
-  await expect(dialog.getByText("第 2 天路线规划")).toBeVisible();
-  await expect(dialog.getByText("12月2日 周三 · 珠海市")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "查看当天路线规划" }),
+  ).toHaveCount(0);
+  const panel = await openRoutePanel(page);
+  await expect(
+    panel.getByRole("heading", { name: "第 1 天路线规划" }),
+  ).toBeVisible();
+  await expect(panel.getByText("12月1日 周二 · 珠海市")).toBeVisible();
 
-  await page.getByRole("button", { name: "关闭弹窗" }).click();
-  await expect(dialog).toHaveCount(0);
+  await page.getByRole("tab", { name: "Day 2" }).click();
+
+  await expect(
+    panel.getByRole("heading", { name: "第 2 天路线规划" }),
+  ).toBeVisible();
+  await expect(panel.getByText("12月2日 周三 · 珠海市")).toBeVisible();
   await expect(page.getByRole("tab", { name: "Day 2" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
 test("draws driving routes and labels distance with the saved duration snapshot", async ({
@@ -279,15 +321,18 @@ test("draws driving routes and labels distance with the saved duration snapshot"
       },
       { poiId: "e2e-route-b" },
     ],
+    [],
   ]);
   await activateTrip(page);
-  await setRoutePlan(page, { driving: [{ route: route(1200, 1080) }] });
 
-  const dialog = await openRouteDialog(page);
+  const panel = await openRoutePanel(page);
+  await redrawWithRoutePlan(page, panel, 2, {
+    driving: [{ route: route(1200, 1080) }],
+  });
 
-  await expect(dialog.getByTestId("route-marker")).toHaveCount(2);
-  await expect(dialog.getByTestId("route-polyline")).toHaveCount(1);
-  await expect(dialog.getByTestId("route-label")).toHaveText(
+  await expect(panel.getByTestId("route-marker")).toHaveCount(2);
+  await expect(panel.getByTestId("route-polyline")).toHaveCount(1);
+  await expect(panel.getByTestId("route-label")).toHaveText(
     "1.2 公里 · 20 分钟",
   );
   const calls = await routeCalls(page);
@@ -304,42 +349,112 @@ test("keeps the remaining segments when one route request fails", async ({
       { poiId: "e2e-route-b", toNext: "drive" },
       { poiId: "e2e-route-c" },
     ],
+    [],
   ]);
   await activateTrip(page);
-  await setRoutePlan(page, {
+
+  const panel = await openRoutePanel(page);
+  await redrawWithRoutePlan(page, panel, 3, {
     driving: [{ error: true }, { route: route(700, 240) }],
   });
 
-  const dialog = await openRouteDialog(page);
-
-  await expect(dialog.getByTestId("day-route-failure")).toContainText(
+  await expect(panel.getByTestId("day-route-failure")).toContainText(
     "部分路段路线获取失败",
   );
-  await expect(dialog.getByTestId("route-polyline")).toHaveCount(1);
-  await expect(dialog.getByTestId("route-label")).toHaveText("700 米 · 4 分钟");
+  await expect(panel.getByTestId("route-polyline")).toHaveCount(1);
+  await expect(panel.getByTestId("route-label")).toHaveText("700 米 · 4 分钟");
 });
 
-test("keeps the route dialog out of the exported print view", async ({
+test("shows the empty state when the selected day has no stops", async ({
   page,
 }) => {
+  await seedRouteTrip(page, [[{ poiId: "e2e-zhu-a" }], []]);
+  await activateTrip(page);
+  await page.getByRole("tab", { name: "Day 2" }).click();
+
+  const panel = await openRoutePanel(page);
+  await expect(panel.getByTestId("day-route-empty")).toHaveText("当天暂无地点");
+  await expect(panel.getByTestId("day-route-map")).toHaveCount(0);
+});
+
+test("shows the single-stop note for a one-stop day", async ({ page }) => {
+  await installFakeAmap(page);
+  await seedRouteTrip(page, [[{ poiId: "e2e-zhu-a" }]]);
+  await activateTrip(page);
+
+  const panel = await openRoutePanel(page);
+  await expect(panel.getByTestId("route-marker")).toHaveCount(1);
+  await expect(panel.getByTestId("day-route-single")).toHaveText(
+    "当天只有一个地点，无需路线",
+  );
+  expect(await routeCalls(page)).toHaveLength(0);
+});
+
+test("stacks the route panel after the day detail on narrow screens", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 900, height: 900 });
+  await seedRouteTrip(page, [
+    [{ poiId: "e2e-zhu-a" }],
+    [{ poiId: "e2e-route-b" }],
+  ]);
+  await activateTrip(page);
+
+  const panel = await openRoutePanel(page);
+  await expect(panel.getByText("第 1 天路线规划")).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  const dayBox = await page
+    .getByRole("region", { name: "按天行程" })
+    .boundingBox();
+  const panelBox = await panel.boundingBox();
+  expect(dayBox).not.toBeNull();
+  expect(panelBox).not.toBeNull();
+  expect(panelBox!.y).toBeGreaterThan(dayBox!.y);
+});
+
+test("keeps the route panel out of the exported print view and image surface", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.toBlob;
+    HTMLCanvasElement.prototype.toBlob = function (
+      callback: BlobCallback,
+      ...args: unknown[]
+    ) {
+      window.setTimeout(() => {
+        original.call(this, callback, ...(args as [string?, number?]));
+      }, 1500);
+    };
+  });
   await installFakeAmap(page);
   await seedRouteTrip(page, [
     [
       { poiId: "e2e-zhu-a", toNext: "drive" },
       { poiId: "e2e-route-b" },
     ],
+    [],
   ]);
   await activateTrip(page);
-  await setRoutePlan(page, { driving: [{ route: route(1200, 1080) }] });
 
-  const dialog = await openRouteDialog(page);
-  await expect(dialog.getByTestId("route-label")).toHaveCount(1);
-  await page.getByRole("button", { name: "关闭弹窗" }).click();
+  const panel = await openRoutePanel(page);
+  await redrawWithRoutePlan(page, panel, 2, {
+    driving: [{ route: route(1200, 1080) }],
+  });
+  await expect(panel.getByTestId("route-label")).toHaveCount(1);
+
+  await page.getByRole("button", { name: "导出图片" }).click();
+  const surface = page.getByTestId("image-export-surface");
+  await expect(surface).toBeAttached();
+  await expect(surface.getByTestId("day-route-panel")).toHaveCount(0);
+  await expect(surface.getByTestId("day-route-map")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "导出图片" }),
+  ).toBeEnabled({ timeout: 20_000 });
 
   await page.getByRole("button", { name: "导出 PDF" }).click();
   await page.emulateMedia({ media: "print" });
 
-  await expect(page.getByTestId("day-route-dialog")).toHaveCount(0);
-  await expect(page.getByTestId("day-route-map")).toHaveCount(0);
-  await expect(page.getByTestId("route-label")).toHaveCount(0);
+  await expect(page.getByTestId("day-route-panel")).toBeHidden();
+  await expect(page.getByTestId("day-route-map")).toBeHidden();
 });
