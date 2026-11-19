@@ -15,8 +15,16 @@ export const AGENT_CATALOG_MAX_PAGES = 20;
 export const AGENT_CATALOG_CANDIDATE_LIMIT = 20;
 
 export const AGENT_ENDPOINT = "/agent";
-export const AGENT_DEFAULT_MODEL = "glm-5.3";
+export const AGENT_DEFAULT_MODEL = "glm-5.3-flash";
 export const AGENT_BIGMODEL_BASE_URL = "https://open.bigmodel.cn/api/paas/v4";
+
+/**
+ * 智谱 GLM-5.2+ 的推理强度档位。glm-5.3 强制思考，不能传 disabled，
+ * 只能用 reasoning_effort 在 low/high/max 之间调整。
+ */
+export const AGENT_REASONING_EFFORTS = ["low", "high", "max"] as const;
+export type AgentReasoningEffort = (typeof AGENT_REASONING_EFFORTS)[number];
+export const AGENT_DEFAULT_REASONING_EFFORT: AgentReasoningEffort = "low";
 
 export const AGENT_TOOL_NAMES = [
   "find_locations",

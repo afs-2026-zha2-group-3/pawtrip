@@ -27,7 +27,7 @@ const bigmodel = openaiCompatible({
   name: "bigmodel",
   baseURL: "https://open.bigmodel.cn/api/paas/v4",
   apiKey: process.env.BIGMODEL_API_KEY!,
-  models: ["glm-5.3"],
+  models: ["glm-5.3-flash"],
 });
 ```
 
@@ -56,7 +56,7 @@ export const Route = createFileRoute("/agent")({
       POST: async ({ request }) => {
         const { messages, threadId, runId, tools } = await chatParamsFromRequest(request);
         const stream = chat({
-          adapter: bigmodel("glm-5.3"),
+          adapter: bigmodel("glm-5.3-flash"),
           messages,
           threadId,
           runId,
