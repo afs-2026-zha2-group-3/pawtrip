@@ -438,7 +438,10 @@ function AttractionsPage() {
             : "2xl:grid-cols-[280px_minmax(0,1fr)_minmax(320px,0.8fr)]",
         )}
       >
-        <aside className="flex min-h-0 min-w-0 flex-col gap-3 rounded-[22px] border border-paw-line bg-card p-4 shadow-[0_2px_8px_0_rgba(38,31,18,0.04)] lg:col-start-1 lg:col-span-1 lg:row-start-1 lg:h-full">
+        <aside
+          data-testid="trip-panel-column"
+          className="flex min-h-0 min-w-0 flex-col gap-3 rounded-[22px] border border-paw-line bg-card p-4 shadow-[0_2px_8px_0_rgba(38,31,18,0.04)] lg:col-start-1 lg:col-span-1 lg:row-start-1 lg:h-full"
+        >
           <TripDateCard />
           <div className="min-h-0 flex-1">
             <TripPanel embedded timeline footer={panelFooter} />
