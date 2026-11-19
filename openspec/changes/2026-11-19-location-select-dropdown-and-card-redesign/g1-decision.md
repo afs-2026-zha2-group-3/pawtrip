@@ -20,7 +20,7 @@
   - 歧义：无未决 blocking 项。下拉结构、URL 白名单、类型切换与行程切换的状态清理、门禁移除、评分与标签位置、Day 控件形态、简介回退均已定稿；8 个 P1 OQ 全部 resolved。
   - 冲突：已消除两处 Living Spec 语义冲突（卡片封面/评分、web-app-shell 导航组成）；`trip-attractions` 既有 5km 契约、政策匹配、地图联动、加入行程与详情弹窗媒体规则不变；`location-management` 仅新增可空字段，管理端 UI 不变。
   - 残余风险（非阻塞，IO/SA 知悉）：
-    1. 当前分支中间态不可编译（`attractions/index.tsx` 仍引用已删除的 `setTypeGroup`/`gated`），且 `V31` 对 `B02F400HUL` 有重复 UPDATE；由 P4 一次性收敛。
+    1. 当前分支中间态不可编译（`attractions/index.tsx` 仍引用已删除的 `setTypeGroup`/`gated`），且 `V32` 对 `B02F400HUL` 有重复 UPDATE；由 P4 一次性收敛。
     2. 依赖未安装，单测、build 与 Playwright 未运行；DoV-7/DoV-10 记 Defer，不得据此宣称 P4 完成。
     3. 截图中第二个地点标签（如「户外区域」）无数据来源，仅渲染单个 `keytag`，不臆造标签。
     4. 截图未展示「查看详情」，Design 保留低强调 ghost 入口以维持详情弹窗与既有 E2E 可访问名。

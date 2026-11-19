@@ -44,7 +44,7 @@ Go（2026-11-19，light intake）— 用户以截图明确要求：顶部「地�
    - 卡片与控件：[-location-card.tsx](../../apps/web/src/routes/_authenticated/attractions/-location-card.tsx)、[-pet-friendly-badge.tsx](../../apps/web/src/routes/_authenticated/attractions/-pet-friendly-badge.tsx)、[-location-rating.tsx](../../apps/web/src/routes/_authenticated/attractions/-location-rating.tsx)、[-day-select.tsx](../../apps/web/src/routes/_authenticated/attractions/-day-select.tsx)
    - 前端契约：[queries/locations.ts](../../apps/web/src/queries/locations.ts)
    - 后端契约：[LocationQueryResponses.java](../../apps/server/src/main/java/com/pawtrip/server/location/LocationQueryResponses.java#L25)、[PawtripLocation.java](../../apps/server/src/main/java/com/pawtrip/server/location/PawtripLocation.java#L32)
-   - 迁移：[V31__add_location_description.sql](../../apps/server/src/main/resources/db/migration/V31__add_location_description.sql)
+   - 迁移：[V32__add_location_description.sql](../../apps/server/src/main/resources/db/migration/V32__add_location_description.sql)
    - 既有 E2E：`e2e/attraction-pet-rules.spec.ts`、`e2e/nearby-location-filter.spec.ts`、`e2e/companion-hints.spec.ts`、`e2e/transport-rules.spec.ts`
    - 影响分析：[analysis/REQ-019/impact-brief.md](../analysis/REQ-019/impact-brief.md)、Deep-dive：[analysis/REQ-019/deep-dive.md](../analysis/REQ-019/deep-dive.md)
    - OpenSpec change：`openspec/changes/2026-11-19-location-select-dropdown-and-card-redesign/`

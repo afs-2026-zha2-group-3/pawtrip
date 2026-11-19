@@ -127,7 +127,7 @@
 
 - 表与迁移：
   - `pawtrip_location` 增加 `description TEXT`（可空）。
-  - `V31__add_location_description.sql` 仅新增列与种子 UPDATE；不建索引、不改约束。
+  - `V32__add_location_description.sql` 仅新增列与种子 UPDATE；不建索引、不改约束。
 - 后端：
   - `PawtripLocation.description` + getter + `updateDescription`（测试夹具用）。
   - `LocationSummary` 与 `LocationDetail` 增加 `description`；`from(...)` 透传。
@@ -137,7 +137,7 @@
   - 新增 `locationDescription(location)` 纯函数（`lib/location-summary.ts`）：`description ?? address ?? "地址未收录"`；卡片、详情弹窗与地图卡共用。
 - 详情弹窗：`DialogDescription` 下增加简介段落（`text-sm text-muted-foreground`），类型与地址行保留。
 - 地图详情卡：标题/类型行下增加简介行，再展示照片、地址、营业时间与电话。
-- 种子：珠海演示与 E2E 夹具补文案；`B02F400HUL` 只保留一条简介，使用截图口径「沿着林间小径慢慢走，和毛孩子一起享受山海绿意。」；删除 `V31` 中第二条重复 UPDATE。
+- 种子：珠海演示与 E2E 夹具补文案；`B02F400HUL` 只保留一条简介，使用截图口径「沿着林间小径慢慢走，和毛孩子一起享受山海绿意。」；删除 `V32` 中第二条重复 UPDATE。
 - 回退：简介为空即展示地址；地址也为空展示「地址未收录」；无外部请求。
 
 ### D8 测试与回滚
@@ -190,7 +190,7 @@
 
 ## Migration
 
-- Flyway `V31` 增加可空列；既有行保持 `NULL`，前端回退地址。
+- Flyway `V32` 增加可空列；既有行保持 `NULL`，前端回退地址。
 - 种子文案仅影响演示与 E2E 数据；E2E 运行器使用临时数据库执行全量迁移。
 - 无写接口与权限变更；无需数据回填。
 
@@ -205,7 +205,7 @@
 | 截图第二个地点标签无数据来源 | 仅展示 `keytag`；不臆造「户外区域」等标签 |
 | 评分位置与原实现不同 | 评分徽标固定封面右下；保留 `location-rating` 测试标识 |
 | 简介为空的旧数据 | 前端统一回退地址；不触发外部请求 |
-| `V31` 重复更新同一 POI | P4 删除第二条 UPDATE，保留截图口径 |
+| `V32` 重复更新同一 POI | P4 删除第二条 UPDATE，保留截图口径 |
 | 当前分支半成品不可编译 | P4 一次性收敛 `setTypeGroup`/`gated` 后再验证 |
 
 ## Open Questions

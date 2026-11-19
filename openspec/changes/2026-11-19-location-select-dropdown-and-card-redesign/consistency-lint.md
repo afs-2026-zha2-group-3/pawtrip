@@ -30,7 +30,7 @@
 | Tasks 与 Design 对齐 | Pass | 5 组 14 项覆盖后端、导航、门禁、卡片、测试；每项含验证点 |
 | AC 与 Scenario 追溯 | Pass | `dov-ac-review.md` 9 个 Requirement / 37 个 Scenario，AC-1…AC-8 全覆盖 |
 | 无新依赖 | Pass | Proposal Impact、Design 范围、P1 impact 均声明零新依赖 |
-| 迁移编号 | Pass | `V30` 为当前最新，`V31` 为本次新增；设计引用一致 |
+| 迁移编号 | Pass | `V30` 为当前最新，`V32` 为本次新增；设计引用一致 |
 | 规范校验 | Pass | `npx --no-install openspec change validate 2026-11-19-location-select-dropdown-and-card-redesign --strict` → valid（2026-11-19） |
 
 ## Findings
@@ -40,7 +40,7 @@
 | SUGGESTION | 卡片操作 | 截图未展示「查看详情」，但既有详情弹窗与 4 处 E2E 依赖该可访问名 | Design D5 保留低强调 ghost 文字按钮；若用户要求完全按截图，可改为标题区域打开详情并同步改 E2E |
 | SUGGESTION | 封面标签 | 截图含「森林公园」「户外区域」两个地点标签，数据模型只有单个 `keytag` | Design D5 只渲染实际 `keytag`，不臆造标签；如需多标签另行立需求 |
 | SUGGESTION | Living Spec 锚点 | 「行程景点锚点选择」保留「景点类型下行程景点锚点选择器」条目，基线页面未见该控件 | 属既有漂移，本 change 不新增/不删除该能力；P4 不为该控件写新测试 |
-| SUGGESTION | 当前分支 | `index.tsx` 仍有 `setTypeGroup`/`gated` 残留，`V31` 中 `B02F400HUL` 重复 UPDATE | Design D3/D7 与 Risks 已列明，P4 一次性收敛并删除重复 UPDATE |
+| SUGGESTION | 当前分支 | `index.tsx` 仍有 `setTypeGroup`/`gated` 残留，`V32` 中 `B02F400HUL` 重复 UPDATE | Design D3/D7 与 Risks 已列明，P4 一次性收敛并删除重复 UPDATE |
 | SUGGESTION | 导航 ARIA | 原 `TabsList` 内直接放 `Select` 会出现 tablist + combobox 混排 | Design D1 改为共享视觉容器内 `TabsList` 与 `Select` 并列 |
 | SUGGESTION | E2E 旧断言 | `attraction-pet-rules` 仍按 `tab`「地点浏览」进入；`transport-rules` 断言旧导航文案 | Design D8 与 Tasks 5.1 要求同步更新，属预期改动 |
 

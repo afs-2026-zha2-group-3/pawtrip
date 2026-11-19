@@ -46,7 +46,7 @@
 
 - `apps/server/.../PawtripLocation.java:32,122,185`：本轮已新增 `description` 字段、getter 与 `updateDescription`。
 - `apps/server/.../LocationQueryResponses.java:25,77`：本轮已在列表与详情 record 中增加 `description`。
-- `apps/server/src/main/resources/db/migration/V31__add_location_description.sql`：新增可空列并写入 21 条珠海/测试地点简介；注意 `B02F400HUL` 被更新两次（第 8、40 行），后写入的文案覆盖前者，P4 需删除重复。
+- `apps/server/src/main/resources/db/migration/V32__add_location_description.sql`：新增可空列并写入 21 条珠海/测试地点简介；注意 `B02F400HUL` 被更新两次（第 8、40 行），后写入的文案覆盖前者，P4 需删除重复。
 - `LocationQueryApiTest.java:132,135,326`：本轮已补列表与详情简介断言；`scripts/seed-e2e-attractions.mjs:16,41,58,109,401,434` 已补种子简介。
 
 **测试现状**
@@ -66,7 +66,7 @@
 | 卡片结构 | 封面 → 标题/keytag/评分 → 政策标签 → 地址 → 操作 | 封面叠层（宠物友好/keytag/评分徽标）→ 标题 → 简介 → 距离/政策标签 → 底部「Day 1 +」 |
 | 卡片简介 | 地址行 | `description`，缺失回退地址 |
 | 详情/地图卡 | 类型 + 地址 | 同步展示简介（缺失回退地址） |
-| 后端数据 | 无 `description` | `V31` 新增可空列；列表/详情返回；珠海与 E2E 夹具补文案 |
+| 后端数据 | 无 `description` | `V32` 新增可空列；列表/详情返回；珠海与 E2E 夹具补文案 |
 | 前端契约 | `LocationSummary`/`LocationBrowseDetail` 无简介 | 增加 `description: string \| null`（详情可为可选可空） |
 | Living Spec | 类型筛选 + 餐厅门禁 + 卡片封面/评分 + 导航 | MODIFIED「地点类型筛选」「地点卡片封面与评分」「行程景点锚点选择」；RENAMED + MODIFIED「餐厅的选择门禁」→「酒店与餐厅的默认列表与可选锚点」；ADDED「地点选择导航与类型页面」「地点卡片概览与简介」「地点简介字段」；web-app-shell MODIFIED「顶部居中横向导航」「Tab 与路由同步」 |
 
@@ -76,7 +76,7 @@
 - **不受影响**：城市选择与激活行程、宠物政策匹配与标签计算、5km 过滤算法与排序、分页、搜索、keytag chips、地图加载与联动、加入行程/未排期保存、行程单与导出、管理端页面与接口。
 - **兼容性**：`type` 缺省为景点，旧链接 `/attractions` 行为不变；`hotel`/`restaurant` 仍是既有 `typeGroup`；`description` 可空，旧数据无需回填；保留 `查看详情`、`添加到行程`、`离景点最近`、`显示全部地点`、`location-rating` 等可访问名与测试标识。
 - **外部依赖**：无新增；简介不触发高德实时请求。
-- **数据迁移**：`V31` 增加可空列，向后兼容；种子更新仅影响演示与 E2E 数据。
+- **数据迁移**：`V32` 增加可空列，向后兼容；种子更新仅影响演示与 E2E 数据。
 
 ## 5. Artifact impact
 
@@ -104,7 +104,7 @@
 | 风险 R4 | 酒店标题仍显示「住宿」 | 页面标题使用需求文案「酒店」；保留后端类型目录 label 供其他场景 |
 | 风险 R5 | 卡片外观改动导致点击/拖拽/地图联动回归 | 保留卡片根 `data-slot`、可访问名与回调；`stopPropagation` 仅包裹操作区 |
 | 风险 R6 | 详情/地图卡简介不一致 | 统一取值函数：`description ?? address ?? "地址未收录"` |
-| 风险 R7 | 迁移重复更新同一 POI | `V31` 中 `B02F400HUL` 重复 UPDATE；P4 删除后一条，保留截图口径文案 |
+| 风险 R7 | 迁移重复更新同一 POI | `V32` 中 `B02F400HUL` 重复 UPDATE；P4 删除后一条，保留截图口径文案 |
 | 风险 R8 | 当前分支存在半成品代码 | `index.tsx` 仍引用已移除的 `setTypeGroup` 与 `gated`；P1 不继续实现，P4 一次性收敛并通过编译/测试 |
 | **blocker** | 无 | 无阻塞性未知依赖；`description` 可为空，无需数据回填 |
 

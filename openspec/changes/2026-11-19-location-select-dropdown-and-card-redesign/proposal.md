@@ -27,7 +27,7 @@
 
 ## Impact
 
-- **后端**：`PawtripLocation`、`LocationQueryResponses`、`LocationQueryService`、Flyway `V31` 迁移；`apps/server` 测试夹具与断言。
+- **后端**：`PawtripLocation`、`LocationQueryResponses`、`LocationQueryService`、Flyway `V32` 迁移；`apps/server` 测试夹具与断言。
 - **前端**：`apps/web/src/routes/__root.tsx`（导航下拉）、`routes/_authenticated/attractions/index.tsx`（类型参数与门禁移除）、`-location-card.tsx`、`-pet-friendly-badge.tsx`、`-location-rating.tsx`、`-day-select.tsx`、`-location-detail-dialog.tsx`、`-map-location-card.tsx`、`queries/locations.ts`。
 - **测试与种子**：`scripts/seed-e2e-attractions.mjs`、`e2e/attraction-pet-rules.spec.ts`、`e2e/nearby-location-filter.spec.ts`、`e2e/companion-hints.spec.ts`、`e2e/transport-rules.spec.ts`。
 - **依赖**：无新增依赖。

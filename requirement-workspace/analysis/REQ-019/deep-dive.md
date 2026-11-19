@@ -53,7 +53,7 @@
 ## 5. 后端数据契约
 
 - 表：`pawtrip_location` 增加 `description TEXT`，可空。
-- 迁移：`V31__add_location_description.sql`；不动其他列、索引与约束。
+- 迁移：`V32__add_location_description.sql`；不动其他列、索引与约束。
 - 列表 `LocationSummary` 与详情 `LocationDetail` 增加 `description`（可空）；字段顺序不影响 JSON 客户端。
 - 写入：本轮不新增管理端编辑接口；仅迁移与种子写入。`updateDescription` 供测试夹具使用。
 - 种子：珠海演示与 E2E 夹具补文案；未覆盖地点保持 `NULL`。
@@ -110,7 +110,7 @@
 | 行程单附近宠物服务（REQ-015） | 医院/用品店 | 不受导航下拉影响；作为其唯一浏览路径继续存在 |
 | `companion-hints`（REQ-018） | 导航文案断言 | 仅更新文案数组；提示逻辑不变 |
 | `location-management` | 管理端与用户端契约 | 仅新增可空字段；管理端 UI 不变 |
-| 后端 / 数据库 | — | V31 可空列；无写接口变化 |
+| 后端 / 数据库 | — | V32 可空列；无写接口变化 |
 
 ## 8. DoR ⑨–⑫ 结论
 

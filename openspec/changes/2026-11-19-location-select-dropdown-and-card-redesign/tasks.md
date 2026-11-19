@@ -8,7 +8,7 @@
 
 - [x] 1.1 红：扩展 `LocationQueryApiTest` 断言列表 `poi-zhu-a` 有 `description`、`poi-zhu-e` 为 `null`，详情返回 `description`；临时移除 DTO 字段/透传确认失败。验证：`./mvnw test` 失败输出与 A1–A3 一致。
 - [x] 1.2 红：`LocationSchemaMigrationTest` 断言 `pawtrip_location` 含可空 `description` 列。验证：移除建列语句后该断言失败。
-- [x] 1.3 绿：`V31__add_location_description.sql` 只保留一条 `B02F400HUL` UPDATE（截图口径「沿着林间小径慢慢走，和毛孩子一起享受山海绿意。」）与演示/E2E 种子文案；无重复 UPDATE、无索引与约束变更。
+- [x] 1.3 绿：`V32__add_location_description.sql` 只保留一条 `B02F400HUL` UPDATE（截图口径「沿着林间小径慢慢走，和毛孩子一起享受山海绿意。」）与演示/E2E 种子文案；无重复 UPDATE、无索引与约束变更。
 - [x] 1.4 绿：`PawtripLocation` 增加 `description` 映射、getter 与 `updateDescription`；`LocationSummary`、`LocationDetail` 增加 `description` 并透传。验证：`./mvnw test` 全绿。
 - [x] 1.5 `scripts/seed-e2e-attractions.mjs` 为夹具写入 `description`（「无坐标景点」「珠海无名景点」保持无简介，用于回退用例）。验证：E2E 种子后接口返回符合 A1–A3。
 

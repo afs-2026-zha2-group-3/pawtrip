@@ -20,8 +20,8 @@
 | A1 | 地点简介字段 / 列表返回简介 | `LocationQueryApiTest.defaultListReturnsOnlyFriendlyAttractionsInCity`：`poi-zhu-a` 的 `description` 等于夹具文案 | 临时移除 `LocationSummary.description` 与 `from(...)` 透传 → 断言失败 | 恢复字段与透传 |
 | A2 | 地点简介字段 / 详情返回简介 | `LocationQueryApiTest.detailReturnsEightPoliciesAndNoAdminOnlyFields`：详情 `description` 等于夹具文案 | 同上移除 `LocationDetail.description` → 断言失败 | 恢复字段与透传 |
 | A3 | 地点简介字段 / 未配置简介 | 同一列表用例：`poi-zhu-e` 的 `description` 为 `null`；不写空字符串 | 字段缺失时 JSON 无该键 → 断言失败 | 实体映射为 `null` 时序列化为 `null` |
-| A4 | 地点简介字段（迁移面） | `LocationSchemaMigrationTest`：`pawtrip_location` 表含 `description` 列且可空 | 移除 `V31` 建列语句 → 断言失败 | `V31__add_location_description.sql` 新增可空列 |
-| A5 | 迁移幂等 | 既有迁移测试：Flyway 顺序 `V30 → V31`、无重复 UPDATE | `V31` 保留两条 `B02F400HUL` UPDATE → 走查记录为红 | 删除重复 UPDATE，仅保留截图口径文案 |
+| A4 | 地点简介字段（迁移面） | `LocationSchemaMigrationTest`：`pawtrip_location` 表含 `description` 列且可空 | 移除 `V32` 建列语句 → 断言失败 | `V32__add_location_description.sql` 新增可空列 |
+| A5 | 迁移幂等 | 既有迁移测试：Flyway 顺序 `V30 → V32`、无重复 UPDATE | `V32` 保留两条 `B02F400HUL` UPDATE → 走查记录为红 | 删除重复 UPDATE，仅保留截图口径文案 |
 
 约束：
 
@@ -83,7 +83,7 @@
 ## What is written before production code（红绿顺序）
 
 1. **A1–A3 失败断言**：先扩展 `LocationQueryApiTest` 并确认红（临时移除 DTO 字段/透传）。
-2. **A4–A5 迁移断言与脚本约束**：`LocationSchemaMigrationTest` 加列断言确认红；`V31` 删除重复 UPDATE。
+2. **A4–A5 迁移断言与脚本约束**：`LocationSchemaMigrationTest` 加列断言确认红；`V32` 删除重复 UPDATE。
 3. **后端转绿**：实体字段、DTO 透传、迁移建列与种子文案。
 4. **U1–U2 失败单测**：`locationDescription`、`normalizeLocationType` 断言先红。
 5. **前端实现转绿**：导航下拉、`validateSearch`、门禁移除、卡片与 `DaySelect`、详情/地图卡取值。

@@ -29,7 +29,7 @@
 | DoV-6 任务可执行 | Pass | `tasks.md` 5 组 14 项 | 每项含动作与验证点；P3 将补 ATDD 分层与红绿顺序 |
 | DoV-7 实施交叉证据 | Pass | P4 完成（2026-11-19）：`gated`/`setTypeGroup` 残留已清除，页面可编译；`npm run build -w apps/web` ✓、`tsc -p apps/web/tsconfig.json --noEmit` ✓、vitest 372 passed、后端 `./mvnw test` 272/0/0 | Tasks 1.1–5.4 全部勾选；两处偏差见 Tasks §7 |
 | DoV-8 跨 REQ 一致性 | Pass | P1 `analysis/REQ-019/impact-brief.md` §3–§4；`design.md` Non-goals | 不改城市、行程、政策匹配、地图、导出、伙伴提示契约 |
-| DoV-9 迁移可验证 | Pass | `design.md` Migration；`V31__add_location_description.sql` | 可空列、无回填、可安全回滚；种子仅演示与 E2E |
+| DoV-9 迁移可验证 | Pass | `design.md` Migration；`V32__add_location_description.sql` | 可空列、无回填、可安全回滚；种子仅演示与 E2E |
 | DoV-10 E2E 与全量验证 | Pass | `node scripts/run-e2e.mjs attraction-pet-rules.spec.ts nearby-location-filter.spec.ts companion-hints.spec.ts transport-rules.spec.ts` 通过；全量 `node scripts/run-e2e.mjs` → 109 passed（含 `admin-location-management`），服务端临时库未污染工作区数据库 | E13 用 `page.route` 桩 2 页数据验证切类型回第 1 页；地图详情卡简介无 Key 环境不可达，记待目视验证 |
 
 ## Requirement ↔ Scenario ↔ AC ↔ Task 追溯
