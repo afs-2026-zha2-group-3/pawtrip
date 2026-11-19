@@ -130,6 +130,7 @@ describe("AgentPanel", () => {
     await waitFor(() => {
       expect(screen.getByTestId("agent-panel")).toBeTruthy();
     });
+    expect(fab.className).toContain("invisible");
     expect(screen.getByText(/描述城市、日期、宠物/)).toBeTruthy();
     expect(screen.getByTestId("agent-current-trip").textContent).toContain("未激活行程");
     expect(tripStore.state.active).toBeNull();

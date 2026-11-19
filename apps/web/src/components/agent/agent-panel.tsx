@@ -202,7 +202,9 @@ export function AgentPanel() {
           data-testid="agent-fab"
           aria-label="打开行程规划助手"
           aria-expanded={open}
-          className="pointer-events-auto size-20 rounded-full border border-[#E8C79E] bg-[#FBE7C9] p-1.5 shadow-md hover:bg-[#F7DDB4]"
+          className={`pointer-events-auto size-20 rounded-full border border-[#E8C79E] bg-[#FBE7C9] p-1.5 shadow-md hover:bg-[#F7DDB4] ${
+            open ? "invisible" : ""
+          }`}
           onClick={() => agentActions.setOpen(true)}
         >
           <img
