@@ -292,6 +292,9 @@ function TripsPage() {
             );
             const endDate = tripEndDate(trip);
             const canOpen = status !== "ended" || trip.planCompleted;
+            const summary = `${cityNames.get(trip.cityAdcode) ?? trip.cityAdcode} · ${trip.totalDays} 天 · ${petNames.get(trip.petId) ?? `宠物 #${trip.petId}`}`;
+            const showsSummary =
+              summary.replace(/\s/g, "") !== trip.name.replace(/\s/g, "");
             const openCard = () => {
               if (busyId === trip.id) return;
               void openTrip(trip, status === "pending" ? "plan" : "itinerary");
@@ -330,26 +333,24 @@ function TripsPage() {
                     </Badge>
                     {editing ? <Badge variant="outline">编辑中</Badge> : null}
                   </CardTitle>
-                  <CardDescription>
-                    {cityNames.get(trip.cityAdcode) ?? trip.cityAdcode} · {trip.totalDays} 天 ·{" "}
-                    {petNames.get(trip.petId) ?? `宠物 #${trip.petId}`}
-                  </CardDescription>
+                  {showsSummary ? (
+                    <CardDescription>{summary}</CardDescription>
+                  ) : null}
                   {status === "completed" ? (
-                    <CardDescription>
-                      行程单已创建
+                    <CardDescription className="text-xs">
                       {endDate
-                        ? `，${formatTripDate(endDate)} 结束前仍可调整。`
-                        : "，可继续调整安排。"}
+                        ? `行程单已创建 · 可调整至 ${formatTripDate(endDate)}`
+                        : "行程单已创建 · 可继续调整安排"}
                     </CardDescription>
                   ) : null}
                   {status === "ended" && endDate ? (
-                    <CardDescription>
-                      {formatTripDate(endDate)} 已结束，仅可查看。
-                      {trip.planCompleted ? "" : "未创建行程单。"}
+                    <CardDescription className="text-xs">
+                      {`${formatTripDate(endDate)} 已结束，仅可查看`}
+                      {trip.planCompleted ? "" : " · 未创建行程单"}
                     </CardDescription>
                   ) : null}
                 </CardHeader>
-                <CardFooter className="gap-2">
+                <CardFooter className="mt-auto gap-2">
                   {status === "ended" ? (
                     trip.planCompleted ? (
                       <Button size="sm" variant="outline" onClick={() => openCard()}>
