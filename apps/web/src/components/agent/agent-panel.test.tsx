@@ -274,7 +274,6 @@ describe("AgentPanel", () => {
     renderPanel();
 
     expect(screen.getAllByTestId("agent-status")).toHaveLength(1);
-    expect(screen.getByTestId("agent-status").textContent).toContain("正在思考");
   });
 
   it("shows tool calls as light tags while thinking", () => {
@@ -290,7 +289,6 @@ describe("AgentPanel", () => {
     ];
 
     const { unmount } = renderPanel();
-    expect(screen.getByTestId("agent-status").textContent).toContain("正在思考");
     expect(screen.getByText("搜索地点")).toBeTruthy();
     unmount();
 
@@ -325,7 +323,6 @@ describe("AgentPanel", () => {
     renderPanel();
 
     expect(screen.getAllByTestId("agent-status")).toHaveLength(1);
-    expect(screen.getByTestId("agent-status").textContent).toContain("正在思考");
     expect(screen.queryByTestId("agent-completed-steps")).toBeNull();
     expect(screen.getByTestId("agent-status").textContent).not.toContain("已完成");
   });

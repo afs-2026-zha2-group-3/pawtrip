@@ -439,12 +439,8 @@ function AgentProcess({ items }: { items: AgentProcessItem[] }) {
 
 function AgentThinking() {
   return (
-    <div
-      data-testid="agent-status"
-      className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground"
-    >
-      <span>正在思考</span>
-      <img src={pawLoadingGif} alt="" aria-hidden className="h-8 w-auto" />
+    <div data-testid="agent-status" className="flex items-center px-2 py-1">
+      <img src={pawLoadingGif} alt="" aria-hidden className="h-20 w-auto" />
     </div>
   );
 }
