@@ -87,7 +87,7 @@ function AppHeader() {
     <header className="paw-header relative flex shrink-0 items-center justify-center py-2 pr-24 pl-24 print:hidden">
       <div
         data-testid="app-nav-scroll"
-        className="w-full min-w-0 overflow-x-auto py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="w-full min-w-0 overflow-x-auto py-1.5 drop-shadow-[0_2px_20px_rgba(38,31,18,0.28)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <div className="mx-auto w-fit max-w-full">
           <AppTabs />
@@ -195,7 +195,7 @@ function AppTabs() {
     >
       <TabsList
         aria-label="主导航"
-        className="group-data-horizontal/tabs:h-auto gap-1 rounded-full bg-card p-1.5 shadow-md"
+        className="group-data-horizontal/tabs:h-auto gap-1 rounded-full bg-card p-1.5"
       >
         <TabsTrigger value="home" className={navPillClass}>首页</TabsTrigger>
         <TabsTrigger value="paws" className={navPillClass}>我的宠物</TabsTrigger>
