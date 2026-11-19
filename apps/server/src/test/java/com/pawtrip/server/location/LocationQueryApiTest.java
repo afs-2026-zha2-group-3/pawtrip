@@ -105,10 +105,12 @@ class LocationQueryApiTest {
 						null, null)));
 		this.locationRepository.flush();
 		PawtripLocation rated = this.locationRepository.findByPoiId("poi-zhu-a").orElseThrow();
+		rated.updateDescription("沿着海边步道慢慢走，和毛孩子一起吹吹海风。");
 		this.photoRepository.saveAll(List.of(
 				new LocationPhoto(rated.getId(), 1, "{}", "第二张", "https://photos.example/a-1.png"),
 				new LocationPhoto(rated.getId(), 0, "{}", "第一张", "https://photos.example/a-0.png")));
 		this.locationRepository.saveAll(List.of(
+				rated,
 				locationWithBusiness("poi-hz-blank", "空白评分景点", "330106", "{\"rating\":\"  \"}"),
 				locationWithBusiness("poi-hz-bad", "非法快照景点", "330106", "not-json")));
 		this.locationRepository.flush();
@@ -127,7 +129,10 @@ class LocationQueryApiTest {
 		assertThat(body.path("totalElements").asLong()).isEqualTo(2);
 		assertThat(item(body, "poi-zhu-a").path("maxPetsPerPerson").asInt()).isEqualTo(1);
 		assertThat(item(body, "poi-zhu-a").path("keytag").asString()).isEqualTo("海滨步道");
+		assertThat(item(body, "poi-zhu-a").path("description").asString())
+			.isEqualTo("沿着海边步道慢慢走，和毛孩子一起吹吹海风。");
 		assertThat(item(body, "poi-zhu-e").path("keytag").isNull()).isTrue();
+		assertThat(isNullOrMissing(item(body, "poi-zhu-e").path("description"))).isTrue();
 	}
 
 	@Test
@@ -318,6 +323,8 @@ class LocationQueryApiTest {
 		JsonNode body = json(get("/api/locations/poi-zhu-a").with(user("demo").roles("USER")));
 
 		assertThat(body.path("name").asString()).isEqualTo("情侣路");
+		assertThat(body.path("description").asString())
+			.isEqualTo("沿着海边步道慢慢走，和毛孩子一起吹吹海风。");
 		assertThat(body.path("petPolicies").path("allowedPetTypes").asString()).isEqualTo("DOG");
 		assertThat(body.path("petPolicies").path("maxPetsPerPerson").asInt()).isEqualTo(1);
 		assertThat(body.path("petPolicies").path("maxSinglePetWeightKg").asDouble()).isEqualTo(8.5);

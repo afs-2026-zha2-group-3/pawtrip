@@ -9,7 +9,7 @@
 - [x] 1.1 对齐 `lib/companion/store.ts`：`say(text, mood)`、`setHint/clearHint/showHint/dismiss`、id 递增与 `createdAt`；补齐 `store.test.ts` U1–U8（含同 path 去重、id 不匹配不误关、无 storage 写入）
 - [x] 1.2 对齐 `useCompanionHint(text)`：按 pathname 登记/清理；页面数据 pending 或 hydration 未完成时传 `null`
 - [x] 1.3 恢复 `agent-fab` 并收敛为唯一入口：保留原 `Bot` 图标、位置/尺寸/`z-[70]`/`data-testid`/可访问名称；点击改为 `agentActions.setOpen(true)`，面板已开时再点不关闭；`aria-expanded={open}`
-- [x] 1.4 入口与气泡同一 `fixed right-4 bottom-4 z-[70]` 容器：气泡 `absolute right-0 bottom-full mb-3`，`w-[min(20rem,calc(100vw-2rem))]`，四档情绪边框
+- [x] 1.4 入口与气泡同一 `fixed right-4 bottom-4 z-[70]` 容器：气泡 `absolute right-0 bottom-full mb-3`，`w-[min(20rem,calc(100vw-2rem))]`，四种情绪共用统一边框色 `border-[#EC9455]`
 - [x] 1.5 气泡内容：标题「<第一只宠物名> · 伙伴提示」，无档案回退「豆包」；纯文本正文；关闭按钮；`role="status"` + `aria-live="polite"`；不显示头像/图标；移除「AI 规划」按钮
 - [x] 1.6 自动展示与计时：`autoShownPath` 初始化为当前 pathname（首挂载/刷新不弹）；pathname 切换后展示一次；同一 pathname 重渲染不重复；5000ms 自动关闭；定时器按 `bubble.id` 校验
 - [x] 1.7 事件优先：未过期 `event` 气泡存在时不弹 hint 且不写 `autoShownPath`；事件关闭后补弹本页 hint
@@ -54,3 +54,4 @@
 - [x] 5.6 回填 `dov-ac-review.md`：DoV-7 由 Partial 更新为实测结果、DoV-10 记录验证证据
 - [x] 5.7 若验证暴露口径偏差，先更新 `atdd-design.md` / `design.md` 再改实现，保持四向一致。验证期修正实现（不涉及口径变更）：入口外壳 `pointer-events-none` + 子元素 `pointer-events-auto`，避免方形命中区遮挡面板发送按钮；管理端不发起宠物预览请求，避免其 401 触发全局缓存清理
 - [x] 5.8 气泡文案统一为宠物第一人称（2026-11-19 用户反馈）：七页 hint 与全部业务事件改为「我/我们」口吻，多宠物场景保留其他宠物名字；同步更新 `attraction-pet-rules`、`city-pet-policy`、`destination-selection`、`paws-pet-management`、`rule-recommendation-and-selection` 的 E2E 断言。证据：vitest 364、受影响 6 spec 32/32、全量 E2E 104/104、`tsc --noEmit` 通过
+- [x] 5.9 气泡边框统一（2026-11-19 用户反馈：绿色边框与其他气泡不一致）：删除按情绪切换的 `MOOD_BORDER`，四种情绪统一 `border-[#EC9455]`，情绪仅由标题前状态点表达；spec 需求口径、`design.md` D5 表格与实现同步。测试：`companion.test.tsx` 的 warn 断言改为统一边框并新增「四种情绪边框一致、状态点各不相同」用例。证据：`tsc --noEmit` 通过、companion + agent-panel 30/30、`npm run build -w apps/web` 通过、`companion-hints.spec.ts` 5/5；浏览器实测 `info` 气泡 `borderTopColor: rgb(236, 148, 85)`

@@ -14,6 +14,26 @@ export function policyNoteParts(policies: PetPolicies): string[] {
   return parts;
 }
 
+export const LOCATION_TYPES = ["attraction", "hotel", "restaurant"] as const;
+
+export type LocationType = (typeof LOCATION_TYPES)[number];
+
+export function normalizeLocationType(value: unknown): LocationType {
+  return value === "hotel" || value === "restaurant" ? value : "attraction";
+}
+
+export function locationDescription(location: {
+  description?: string | null;
+  address?: string | null;
+}): string {
+  const description = location.description?.trim();
+  if (description) {
+    return description;
+  }
+  const address = location.address?.trim();
+  return address ? address : "地址未收录";
+}
+
 export function displayRating(rating: string | null): string | null {
   if (rating === null) {
     return null;

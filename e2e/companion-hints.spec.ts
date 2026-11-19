@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { resetTrips, signIn } from "./trip-helpers";
 
-const NAV_TABS = ["我的宠物", "城市浏览", "地点浏览", "交通规则", "我的行程"] as const;
+const NAV_TABS = ["我的宠物", "城市浏览", "交通规则", "我的行程"] as const;
 
 async function waitBubbleText(page: Page, previous?: string) {
   const bubble = page.getByTestId("companion-bubble");
@@ -29,6 +29,19 @@ test("shows one hint per page while navigating", async ({ page }) => {
     texts.add(text);
     previous = text;
   }
+
+  await page.getByRole("combobox", { name: "地点选择" }).click();
+  await page.getByRole("option", { name: "景点", exact: true }).click();
+  await expect(page).toHaveURL(/\/attractions$/);
+  const location = await waitBubbleText(page, previous);
+  texts.add(location.text);
+  previous = location.text;
+
+  await page.getByRole("tab", { name: "我的行程" }).click();
+  await expect(page).toHaveURL(/\/trips$/);
+  const trips = await waitBubbleText(page, previous);
+  texts.add(trips.text);
+  previous = trips.text;
 
   await page.getByRole("link", { name: "行程单" }).click();
   await expect(page).toHaveURL(/\/itinerary$/);

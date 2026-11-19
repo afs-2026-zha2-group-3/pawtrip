@@ -82,7 +82,6 @@ export function TransportSegmentRow({
         }
       : null);
   const options = transportSelectorOptions(transportMode);
-  const selectValue = options.includes(displayMode) ? displayMode : "";
   const handleModeChange = (value: string | null) => {
     if (value === "walk" || value === "drive" || value === "self_drive") {
       tripActions.setStopTransport(stopRef, value, null);
@@ -95,33 +94,14 @@ export function TransportSegmentRow({
       className="flex flex-col gap-0.5 rounded-md bg-muted/40 px-2 py-1"
     >
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span data-testid="segment-mode" className="font-medium text-foreground">
-          {toNextLabels[displayMode]}
-        </span>
-        {estimate ? (
-          <>
-            <span>{`约 ${estimate.durationMinutes} 分钟`}</span>
-            {displayMode === "drive" ? (
-              <span>{`¥${estimate.costLowYuan}–${estimate.costHighYuan}`}</span>
-            ) : displayMode === "walk" ? (
-              <span>¥0</span>
-            ) : null}
-          </>
-        ) : estimateQuery.isError ? (
-          <span>{ESTIMATE_UNAVAILABLE_TEXT}</span>
-        ) : (
-          <span>{ESTIMATE_LOADING_TEXT}</span>
-        )}
-        <Select
-          value={selectValue === "" ? null : selectValue}
-          onValueChange={handleModeChange}
-        >
+        <Select value={displayMode} onValueChange={handleModeChange}>
           <SelectTrigger
             size="sm"
+            data-testid="segment-mode"
             aria-label={
               transportMode === "drive" ? "选择其他途内交通方式" : "选择途内交通方式"
             }
-            className="ml-auto text-xs"
+            className="text-xs"
           >
             <SelectValue>
               {(value: string | null) =>
@@ -139,6 +119,20 @@ export function TransportSegmentRow({
             </SelectGroup>
           </SelectContent>
         </Select>
+        {estimate ? (
+          <>
+            <span>{`约 ${estimate.durationMinutes} 分钟`}</span>
+            {displayMode === "drive" ? (
+              <span>{`¥${estimate.costLowYuan}–${estimate.costHighYuan}`}</span>
+            ) : displayMode === "walk" ? (
+              <span>¥0</span>
+            ) : null}
+          </>
+        ) : estimateQuery.isError ? (
+          <span>{ESTIMATE_UNAVAILABLE_TEXT}</span>
+        ) : (
+          <span>{ESTIMATE_LOADING_TEXT}</span>
+        )}
       </div>
       {displayMode === "drive" ? (
         <p className="text-xs text-muted-foreground">{TAXI_PET_HINT}</p>

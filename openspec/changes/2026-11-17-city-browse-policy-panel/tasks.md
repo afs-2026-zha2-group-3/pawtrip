@@ -84,3 +84,41 @@
 - [x] 11.2 更新 E15/E17/E19：断言最多 3 条要点、侧栏无犬种名单、每城有详情链接；来源与名单改在政策页断言。
 - [x] 11.3 合并后重跑 `destination-selection.spec.ts`：21/21 通过。
 - [ ] 11.4 本次精简尚未提交；如需上线，另建分支提交并创建 PR。
+
+## 12. 外框对齐与卡片「选择」（2026-11-19）
+
+- [x] 12.1 `cities.tsx` 主内容外框未选中/选中统一为 `max-w-[1662px]`，与交通规则页一致；选中态两列改为 `minmax(0,1fr)_360px`
+- [x] 12.2 卡片操作按钮由封面下方右侧绝对定位改为内容流末尾右对齐（`mt-auto flex justify-end`），贴住卡片右下角，文案改为「选择」
+- [x] 12.3 同步 E2E 按钮文案（`trip-helpers.ts`、`destination-selection`、`attraction-pet-rules`、`city-personalized-recommendation`）
+- [x] 12.4 `tsc --noEmit` 与 `npm run build -w apps/web`
+- [x] 12.5 目标 E2E：`destination-selection`、`city-personalized-recommendation`、`attraction-pet-rules`、`app-shell-layout`、`city-pet-policy` → 33 passed
+- [x] 12.6 `openspec change validate 2026-11-17-city-browse-policy-panel --strict` → valid
+- [x] 12.7 浏览器目视外框宽度、卡片右下角按钮与侧栏并排效果
+
+执行记录（2026-11-19）：
+- 1800px 视口：城市浏览外框 1614px、交通规则外框 1614px（均受 `max-w-[1662px]` 与 `p-6` 约束）；选中城市后外框仍 1614px，两列 1178px + 360px，候选卡片随列宽变窄。
+- 卡片按钮文案「选择」，距卡片右/下各 17px（`p-4`）；1600px 下卡片宽 484px，打开侧栏后 356px。
+- 验证：`tsc --noEmit` 通过；`npm run build -w apps/web` 通过；目标 5 个 spec 共 33 passed；`validate --strict` valid。未提交、未推送。
+
+## 13. 五列网格与淡橘色外框（2026-11-19）
+
+- [x] 13.1 候选卡片网格：视口 ≥1280px 未打开侧栏时五列；打开侧栏后四列，关闭恢复五列
+- [x] 13.2 页框描边改用 `paw-accent` 淡橘色
+- [x] 13.3 E2E 断言宽屏五列/打开侧栏四列与外框描边
+- [x] 13.4 `tsc --noEmit`、`npm run build -w apps/web`、目标 E2E
+- [x] 13.5 `openspec change validate 2026-11-17-city-browse-policy-panel --strict`
+
+- 实现：卡片网格 `sm:grid-cols-2 lg:grid-cols-3` + 选中 `xl:grid-cols-4` / 未选中 `xl:grid-cols-5`；侧栏并排与吸顶同步改用 `xl:`（避免任意断点变体被 `lg:` 覆盖的排序问题）。外框 `border-2 border-paw-accent`，并加 `data-testid="city-browse-frame"`。
+- 验证（1600×900）：未选中 5 列；点卡片后 4 列、侧栏 360px 在列表右侧；关闭恢复 5 列；外框 `rgb(236, 148, 85)`。新增 E16 通过。
+- 验证：`tsc --noEmit` 通过；`npm run build -w apps/web` 通过；`destination-selection`/`itinerary`/`trips-panel`/`attraction-pet-rules`/`app-shell-layout` 共 52 passed；`validate --strict` valid。未提交、未推送。
+
+## 14. 淡奶黄描边与去阴影（2026-11-19）
+
+- [x] 14.1 页框描边由 `paw-accent` 淡橘色改为 `paw-accent-soft` 淡奶黄（`#FFEFD6`）
+- [x] 14.2 页框与城市卡片移除阴影
+- [x] 14.3 E2E 断言外框描边为 `rgb(255, 239, 214)`
+- [x] 14.4 `tsc --noEmit`、`npm run build -w apps/web`、目标 E2E
+- [x] 14.5 `openspec change validate 2026-11-17-city-browse-policy-panel --strict`
+
+- 实现：`city-browse-frame` 与城市卡片改为 `border-paw-accent-soft`；页框去掉 `shadow-md`，卡片去掉自定义阴影。
+- 验证：`destination-selection` E16 断言 `rgb(255, 239, 214)`；目标 E2E 通过；`validate --strict` valid。未提交、未推送。

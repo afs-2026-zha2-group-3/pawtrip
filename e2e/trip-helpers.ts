@@ -77,7 +77,7 @@ function isoDate(offsetDays: number): string {
 
 export async function openTripDialog(page: Page, cityName: string) {
   await searchCity(page, cityName);
-  await cityCard(page, cityName).getByRole("button", { name: "Pick" }).click();
+  await cityCard(page, cityName).getByRole("button", { name: "选择" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText(cityName).first()).toBeVisible();

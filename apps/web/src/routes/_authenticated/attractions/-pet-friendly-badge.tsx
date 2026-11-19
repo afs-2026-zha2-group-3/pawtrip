@@ -14,9 +14,11 @@ const STATUS_CLASSES = {
 export function PetFriendlyBadge({
   typeGroup,
   maxPetsPerPerson,
+  tone = "default",
 }: {
   typeGroup: string;
   maxPetsPerPerson: number | null;
+  tone?: "default" | "overlay";
 }) {
   const unrestricted = !petRulesApplyTo(typeGroup) && maxPetsPerPerson === null;
   const status = unrestricted ? "friendly" : petFriendlyStatus(maxPetsPerPerson);
@@ -24,8 +26,10 @@ export function PetFriendlyBadge({
     <span
       data-status={status}
       className={cn(
-        "inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset",
-        STATUS_CLASSES[status],
+        "inline-flex w-fit items-center rounded-full font-medium",
+        tone === "overlay"
+          ? "h-5 bg-[#F6C445] px-2 text-[11px] text-[#5A3B00]"
+          : cn("px-2 py-0.5 text-xs ring-1 ring-inset", STATUS_CLASSES[status]),
       )}
     >
       {unrestricted ? "不限宠物" : petFriendlyLabel(maxPetsPerPerson)}

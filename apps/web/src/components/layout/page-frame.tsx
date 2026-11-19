@@ -16,7 +16,7 @@ export function PageFrame({
       {above}
       <section
         className={cn(
-          "flex flex-col gap-6 rounded-[32px] bg-card p-6 shadow-pet-card sm:p-8 print:gap-4 print:rounded-none print:bg-transparent print:p-0 print:shadow-none",
+          "flex flex-col gap-6 rounded-[32px] bg-card p-6 sm:p-8 print:gap-4 print:rounded-none print:bg-transparent print:p-0 print:shadow-none",
           className,
         )}
       >

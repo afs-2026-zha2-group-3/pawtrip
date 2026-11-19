@@ -187,6 +187,33 @@ class LocationSchemaMigrationTest {
 	}
 
 	@Test
+	void addsNullableDescriptionWithoutChangingExistingRows(@TempDir Path tempDir) throws SQLException {
+		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("location-description.db") + "?foreign_keys=on";
+		Flyway.configure().dataSource(jdbcUrl, null, null).target("30").load().migrate();
+
+		long locationId;
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			locationId = insertLocation(connection, "poi-before-description", null, null);
+		}
+
+		Flyway.configure().dataSource(jdbcUrl, null, null).load().migrate();
+
+		try (Connection connection = DriverManager.getConnection(jdbcUrl)) {
+			assertThat(columns(connection, "pawtrip_location")).contains("description");
+			assertThat(selectDescription(connection, locationId)).isNull();
+			assertNotNullConstraint(connection, "description");
+
+			try (PreparedStatement update = connection.prepareStatement(
+					"UPDATE pawtrip_location SET description = ? WHERE id = ?")) {
+				update.setString(1, "沿着海边步道慢慢走。");
+				update.setLong(2, locationId);
+				update.executeUpdate();
+			}
+			assertThat(selectDescription(connection, locationId)).isEqualTo("沿着海边步道慢慢走。");
+		}
+	}
+
+	@Test
 	void createsLocationTablesAndEnforcesUniquePoiHoursAndPhotoForeignKey(@TempDir Path tempDir)
 			throws SQLException {
 		String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("locations.db") + "?foreign_keys=on";
@@ -325,6 +352,31 @@ class LocationSchemaMigrationTest {
 			}
 		}
 		return columns;
+	}
+
+	private static String selectDescription(Connection connection, long locationId) throws SQLException {
+		try (PreparedStatement query = connection.prepareStatement(
+				"SELECT description FROM pawtrip_location WHERE id = ?")) {
+			query.setLong(1, locationId);
+			try (ResultSet result = query.executeQuery()) {
+				assertThat(result.next()).isTrue();
+				return result.getString("description");
+			}
+		}
+	}
+
+	private static void assertNotNullConstraint(Connection connection, String columnName) throws SQLException {
+		try (Statement statement = connection.createStatement();
+				ResultSet result = statement.executeQuery("PRAGMA table_info(pawtrip_location)")) {
+			boolean found = false;
+			while (result.next()) {
+				if (columnName.equals(result.getString("name"))) {
+					found = true;
+					assertThat(result.getInt("notnull")).isZero();
+				}
+			}
+			assertThat(found).isTrue();
+		}
 	}
 
 	private static String selectAllowedPetTypes(Connection connection, String table, String idColumn, String id)

@@ -156,6 +156,11 @@ test("summarizes the active trip by day", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/itinerary$/);
   await expect(page.getByRole("heading", { name: "行程单" })).toBeVisible();
+  await expect(page.locator("main > section").first()).toHaveCSS(
+    "border-top-color",
+    "rgb(255, 239, 214)",
+  );
+  await expect(page.locator("main > section").first()).toHaveCSS("box-shadow", "none");
   await expect(page.getByRole("tab", { name: "我的行程" })).toHaveAttribute(
     "aria-selected",
     "true",

@@ -29,6 +29,8 @@ public class PawtripLocation {
 
 	private String address;
 
+	private String description;
+
 	private Double longitude;
 
 	private Double latitude;
@@ -116,6 +118,10 @@ public class PawtripLocation {
 		return this.address;
 	}
 
+	public String getDescription() {
+		return this.description;
+	}
+
 	public Double getLongitude() {
 		return this.longitude;
 	}
@@ -174,6 +180,10 @@ public class PawtripLocation {
 
 	public String getAllowedPetTypes() {
 		return this.allowedPetTypes;
+	}
+
+	public void updateDescription(String description) {
+		this.description = description;
 	}
 
 	public void updateVisitHours(Integer minVisitHours, Integer maxVisitHours) {

@@ -18,3 +18,23 @@
 - [x] 3.1 `npx vitest run`（apps/web）328 通过
 - [x] 3.2 定向 E2E（7 个受影响 spec，临时库 + worker 账号）通过
 - [x] 3.3 `npx --no-install openspec change validate 2026-11-18-deprecate-floating-trip-panel --strict` 通过
+
+## 4. 我的行程淡橘色外框（2026-11-19）
+
+- [x] 4.1 `PageFrame` 白卡容器描边改用 `paw-accent` 淡橘色
+- [x] 4.2 `tsc --noEmit`、目标 E2E
+- [x] 4.3 `openspec change validate 2026-11-18-deprecate-floating-trip-panel --strict`
+
+- 实现：`/trips` 两个 `PageFrame`（加载态与主态）均加 `border-2 border-paw-accent print:border-0`。
+- 验证：浏览器实测描边 `rgb(236, 148, 85)`；`trips-panel` 新增用例通过；`tsc`/`build` 通过；`validate --strict` valid。未提交、未推送。
+
+## 5. 淡奶黄描边与去阴影（2026-11-19）
+
+- [x] 5.1 `/trips` 白卡容器描边改用 `paw-accent-soft` 淡奶黄（`#FFEFD6`）
+- [x] 5.2 白卡容器移除阴影
+- [x] 5.3 E2E 断言描边 `rgb(255, 239, 214)` 且 `box-shadow: none`
+- [x] 5.4 `tsc --noEmit`、`npm run build -w apps/web`、目标 E2E
+- [x] 5.5 `openspec change validate 2026-11-18-deprecate-floating-trip-panel --strict`
+
+- 实现：`/trips` 两个 `PageFrame` 均 `border-2 border-paw-accent-soft print:border-0`；`PageFrame` 默认样式移除 `shadow-pet-card`。
+- 验证：`trips-panel` 用例断言 `rgb(255, 239, 214)` 与 `box-shadow: none`；目标 E2E 通过；`validate --strict` valid。未提交、未推送。

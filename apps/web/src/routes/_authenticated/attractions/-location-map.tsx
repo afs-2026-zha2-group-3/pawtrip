@@ -64,11 +64,22 @@ function infoHtml(
   </div>`;
 }
 
-function MapFallback({ title, description }: { title: string; description: string }) {
+function MapFallback({
+  title,
+  description,
+  className,
+}: {
+  title: string;
+  description: string;
+  className?: string;
+}) {
   return (
     <div
       data-testid="location-map-placeholder"
-      className="flex h-full min-h-[320px] flex-col items-center justify-center gap-2 rounded-xl border bg-muted/30 p-6 text-center"
+      className={cn(
+        "flex h-full min-h-[320px] flex-col items-center justify-center gap-2 rounded-xl border bg-muted/30 p-6 text-center",
+        className,
+      )}
     >
       <p className="text-sm font-medium">{title}</p>
       <p className="max-w-xs text-xs text-muted-foreground">{description}</p>
@@ -296,12 +307,17 @@ export function LocationMap({
       <MapFallback
         title="地图未配置"
         description="请设置 VITE_AMAP_JS_KEY 和 VITE_AMAP_SECURITY_CODE 后刷新页面。"
+        className={className}
       />
     );
   }
   if (status === "error") {
     return (
-      <MapFallback title="地图加载失败" description="请检查网络或高德 JS API Key 配置。" />
+      <MapFallback
+        title="地图加载失败"
+        description="请检查网络或高德 JS API Key 配置。"
+        className={className}
+      />
     );
   }
 

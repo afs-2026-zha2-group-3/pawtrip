@@ -125,6 +125,13 @@ describe("trip store", () => {
       "poi-a",
     ]);
 
+    tripActions.moveStop({ container: 1, index: 0 }, { container: 1, index: 1 });
+    expect(tripStore.state.active!.plan.days[0].stops.map((stop) => stop.poiId)).toEqual([
+      "poi-a",
+      "poi-b",
+    ]);
+
+    tripActions.moveStop({ container: 1, index: 1 }, { container: 1, index: 0 });
     tripActions.moveStop({ container: 1, index: 0 }, { container: 2, index: 0 });
     const plan = tripStore.state.active!.plan;
     expect(plan.days[0].stops.map((stop) => stop.poiId)).toEqual(["poi-a"]);

@@ -140,11 +140,10 @@ export const tripActions = {
       const plan = state.active.plan;
       const stop = takeStop(plan, from);
       if (!stop) return state;
-      let targetIndex = to.index;
-      if (from.container === to.container && from.index < to.index) {
-        targetIndex -= 1;
-      }
-      const next = insertStop(stop.plan, to.container, stop.stop, targetIndex);
+      // 先移除再插入：目标索引保持拖放所在项的位置，向下移动才能越过目标项。
+      const targetIndex = to.index;
+      // 拖拽后相邻关系已变，丢弃旧段的方式与快照，让用户按新相邻地点重新选择。
+      const next = insertStop(stop.plan, to.container, { poiId: stop.stop.poiId }, targetIndex);
       return {
         ...state,
         active: { ...state.active, plan: next },

@@ -6,12 +6,7 @@ import { cn } from "@/lib/utils";
 
 export const COMPANION_BUBBLE_MS = 5000;
 
-const MOOD_BORDER: Record<CompanionMood, string> = {
-  ok: "border-emerald-300",
-  info: "border-[#EC9455]",
-  warn: "border-amber-400",
-  danger: "border-red-400",
-};
+const BUBBLE_BORDER_CLASS = "border-[#EC9455]";
 
 const MOOD_DOT: Record<CompanionMood, string> = {
   ok: "bg-emerald-500",
@@ -79,7 +74,7 @@ export function CompanionBubble({
       aria-live="polite"
       className={cn(
         "pointer-events-auto absolute right-0 bottom-full mb-3 flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-2 rounded-2xl border-2 bg-card p-3 shadow-xl print:hidden",
-        MOOD_BORDER[bubble.mood],
+        BUBBLE_BORDER_CLASS,
       )}
     >
       <div className="flex items-start justify-between gap-2">

@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CompanionBubble } from "./companion";
 import { useCompanionHint } from "@/lib/companion/use-companion-hint";
-import { companionActions, companionStore } from "@/lib/companion/store";
+import { companionActions, companionStore, type CompanionMood } from "@/lib/companion/store";
 
 function HintPage({ hint, path }: { hint: string | null; path: string }) {
   useCompanionHint(hint, path);
@@ -197,7 +197,34 @@ describe("CompanionBubble", () => {
     const className = screen.getByTestId("companion-bubble").className;
     expect(className).toContain("w-[min(20rem,calc(100vw-2rem))]");
     expect(className).toContain("bottom-full");
-    expect(className).toContain("border-amber-400");
+    expect(className).toContain("border-[#EC9455]");
+  });
+
+  it("keeps one border color across moods and varies only the dot", () => {
+    const borderOf = (mood: CompanionMood) => {
+      companionActions.say("提示", mood);
+      const { unmount } = render(<Harness pathname="/" hint={null} />);
+      const bubble = screen.getByTestId("companion-bubble");
+      const className = bubble.className;
+      const dotClass =
+        bubble.querySelector("p > span")?.className ?? "";
+      unmount();
+      return { className, dotClass };
+    };
+
+    const moods = ["ok", "info", "warn", "danger"] as const;
+    const rendered = moods.map(borderOf);
+    for (const item of rendered) {
+      expect(item.className).toContain("border-[#EC9455]");
+    }
+    for (const token of ["border-emerald-300", "border-amber-400", "border-red-400"]) {
+      for (const item of rendered) {
+        expect(item.className).not.toContain(token);
+      }
+    }
+    expect(new Set(rendered.map((item) => item.dotClass)).size).toBe(
+      moods.length,
+    );
   });
 
   it("does not steal focus or block underlying controls", async () => {

@@ -142,17 +142,13 @@ function CitiesPage() {
   };
 
   return (
-    <main
-      className={cn(
-        "mx-auto w-full px-4 py-6 sm:px-6",
-        selected ? "max-w-[1408px]" : "max-w-5xl",
-      )}
-    >
+    <main className="mx-auto w-full max-w-[1662px] px-4 py-6 sm:px-6">
       <div
+        data-testid="city-browse-frame"
         className={cn(
-          "flex flex-col gap-6 rounded-[22px] border-2 border-[#EC9455] bg-card p-6 shadow-md",
+          "flex flex-col gap-6 rounded-[22px] border-2 border-paw-accent-soft bg-card p-6",
           selected &&
-            "min-[1408px]:grid min-[1408px]:grid-cols-[minmax(0,976px)_360px] min-[1408px]:items-start",
+            "xl:grid xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start",
         )}
       >
         <section className="flex min-w-0 flex-col gap-6">
@@ -214,7 +210,12 @@ function CitiesPage() {
             </Empty>
           ) : (
             <>
-              <div className="grid gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+              <div
+                className={cn(
+                  "grid gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3",
+                  selected ? "xl:grid-cols-4" : "xl:grid-cols-5",
+                )}
+              >
                 {visibleCandidates.map((candidate, index) => (
                   <CityCard
                     key={candidate.adcode}
@@ -334,8 +335,8 @@ function CityCard({
         }
       }}
       className={cn(
-        "relative flex cursor-pointer flex-col gap-5 rounded-[22px] border bg-card p-4 shadow-[0_2px_8px_0_rgba(38,31,18,0.04)] outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-        selected ? "border-[#EC9455]" : "border-[#E0E0E0]",
+        "relative flex cursor-pointer flex-col gap-5 rounded-[22px] border border-paw-accent-soft bg-card p-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        selected && "border-[#EC9455]",
       )}
     >
       {recommended ? (
@@ -348,22 +349,6 @@ function CityCard({
         alt={`${candidate.name}景观示意图`}
         className="h-[100px] w-full rounded-[14px] object-cover"
       />
-      <Button
-        type="button"
-        variant="outline"
-        onClick={(event) => {
-          event.stopPropagation();
-          onPick();
-        }}
-        className={cn(
-          "absolute right-4 top-[106px] h-9 rounded-full px-2.5 text-sm font-medium shadow-sm",
-          selected
-            ? "border-[#404040] bg-[#0A0A0A] text-[#FAFAFA] hover:bg-[#0A0A0A]/90 hover:text-[#FAFAFA]"
-            : "border-[#E5E5E5] bg-card text-foreground hover:bg-muted",
-        )}
-      >
-        Pick
-      </Button>
       <div className="flex flex-col gap-2">
         <h2 className="text-xl font-medium leading-7 text-[#262626]">
           {candidate.name}
@@ -376,6 +361,24 @@ function CityCard({
           match={(pet) => matchCityCandidate(candidate, pet)}
           className="gap-2"
         />
+      </div>
+      <div className="mt-auto flex justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={(event) => {
+            event.stopPropagation();
+            onPick();
+          }}
+          className={cn(
+            "h-9 rounded-full px-2.5 text-sm font-medium shadow-sm",
+            selected
+              ? "border-[#404040] bg-[#0A0A0A] text-[#FAFAFA] hover:bg-[#0A0A0A]/90 hover:text-[#FAFAFA]"
+              : "border-[#E5E5E5] bg-card text-foreground hover:bg-muted",
+          )}
+        >
+          选择
+        </Button>
       </div>
     </article>
   );
@@ -398,7 +401,7 @@ function CityPolicyPane({
     <aside
       role="region"
       aria-label="城市宠物管理政策"
-      className="paw-scroll flex min-w-0 flex-col gap-4 min-[1408px]:sticky min-[1408px]:top-6 min-[1408px]:max-h-[calc(100dvh-var(--app-header-height)-3rem)] min-[1408px]:self-start min-[1408px]:overflow-y-auto"
+      className="paw-scroll flex min-w-0 flex-col gap-4 xl:sticky xl:top-6 xl:max-h-[calc(100dvh-var(--app-header-height)-3rem)] xl:self-start xl:overflow-y-auto"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-2.5">

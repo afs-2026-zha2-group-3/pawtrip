@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PolicyTags } from "@/components/trip/policy-tags";
 import { petRulesApplyTo } from "@/lib/attraction-pet-rules";
 import { formatDistanceKm } from "@/lib/distance";
+import { locationDescription } from "@/lib/location-summary";
 import { matchLocationPolicyForType } from "@/lib/trip/policy-match";
 import {
   useActiveTrip,
@@ -206,6 +207,9 @@ export function MapLocationCard({
                 </span>
                 <LocationRating rating={location?.rating ?? point?.rating ?? null} />
               </div>
+              <p className="text-sm leading-5 text-muted-foreground">
+                {locationDescription(location ?? point ?? {})}
+              </p>
               <p className="text-base leading-6 text-foreground">{address}</p>
               {point?.distanceMeters != null && anchorName ? (
                 <p className="text-xs text-muted-foreground">

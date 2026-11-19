@@ -243,7 +243,7 @@ test("E2 default taxi display never writes toNext or snapshot", async ({ page })
   const puts = trackPlanPuts(page);
 
   const segment = page.getByTestId("transport-segment").first();
-  await expect(segment.getByTestId("segment-mode")).toHaveText("打车");
+  await expect(segment.getByTestId("segment-mode")).toContainText("打车");
   // 坐标 NULL → 估算确定性失败，证明查询已走完仍未写库。
   await expect(segment.getByText(ESTIMATE_UNAVAILABLE)).toBeVisible();
   await expect(segment.getByText(TAXI_PET_HINT)).toBeVisible();
@@ -317,11 +317,11 @@ test("E4 switching to walk saves mode only and restores after reload", async ({ 
 
   await page.reload();
   const segment = page.getByTestId("transport-segment").first();
-  await expect(segment.getByTestId("segment-mode")).toHaveText("步行");
+  await expect(segment.getByTestId("segment-mode")).toContainText("步行");
   await expect(modeSelect(page, false)).toContainText("步行");
 });
 
-test("E10 drag reorder and cross-day move keep snapshots attached", async ({ page }) => {
+test("E10 drag reorder and cross-day move reset the moved stop's transport", async ({ page }) => {
   const id = await presetTrip(page, {
     name: "珠海拖拽",
     petName: "豆豆",
@@ -335,7 +335,11 @@ test("E10 drag reorder and cross-day move keep snapshots attached", async ({ pag
             toNext: "drive",
             toNextEstimate: { durationMinutes: 12, costLowYuan: 40, costHighYuan: 60 },
           },
-          { poiId: "e2e-zhu-b" },
+          {
+            poiId: "e2e-zhu-b",
+            toNext: "walk",
+            toNextEstimate: { durationMinutes: 8, costLowYuan: 0, costHighYuan: 0 },
+          },
         ],
       },
       { day: 2, stops: [{ poiId: "e2e-zhu-c" }] },
@@ -346,7 +350,7 @@ test("E10 drag reorder and cross-day move keep snapshots attached", async ({ pag
   // AnimatedList 入场弹簧动画 620ms + 每行 50ms stagger，拖拽前等待行坐标稳定，否则 boundingBox 漂移导致拖放落空。
   await page.waitForTimeout(1200);
 
-  // 同日重排：b 拖到 a 上 → [b, a]，a 的快照随 stop 透传。
+  // 同日重排：b 拖到 a 上 → [b, a]，被拖动的 b 丢弃原方式与快照，等待用户重新选择；未移动的 a 保留。
   let put = nextPlanPut(page);
   await dragHandleTo(page, "珠海渔女", page.locator('[data-stop-id="d1:0:e2e-zhu-a"]'));
   await put;
@@ -355,14 +359,22 @@ test("E10 drag reorder and cross-day move keep snapshots attached", async ({ pag
     "e2e-zhu-b",
     "e2e-zhu-a",
   ]);
+  const moved = stopOf(trip, 1, 0);
+  expect(moved.poiId).toBe("e2e-zhu-b");
+  expect(moved.toNext ?? null).toBeNull();
+  expect(moved.toNextEstimate ?? null).toBeNull();
   expect(stopOf(trip, 1, 1).toNext).toBe("drive");
   expect(stopOf(trip, 1, 1).toNextEstimate).toEqual({
     durationMinutes: 12,
     costLowYuan: 40,
     costHighYuan: 60,
   });
+  // 段行回到默认方式（打车），原步行快照不再展示。
+  const segment = page.getByTestId("transport-segment").first();
+  await expect(segment.getByTestId("segment-mode")).toContainText("打车");
+  await expect(segment.getByText("约 8 分钟")).toHaveCount(0);
 
-  // 跨天移动：a 拖到第 2 天 → day2 追加 a，快照不丢。
+  // 跨天移动：a 拖到第 2 天 → day2 追加 a，a 的旧快照同样清空。
   // 重排后行位置过渡动画同样为 620ms，等待落定后再拖拽。
   await page.waitForTimeout(800);
   put = nextPlanPut(page);
@@ -377,12 +389,10 @@ test("E10 drag reorder and cross-day move keep snapshots attached", async ({ pag
     "e2e-zhu-c",
     "e2e-zhu-a",
   ]);
-  expect(stopOf(trip, 2, 1).toNext).toBe("drive");
-  expect(stopOf(trip, 2, 1).toNextEstimate).toEqual({
-    durationMinutes: 12,
-    costLowYuan: 40,
-    costHighYuan: 60,
-  });
+  const movedCrossDay = stopOf(trip, 2, 1);
+  expect(movedCrossDay.poiId).toBe("e2e-zhu-a");
+  expect(movedCrossDay.toNext ?? null).toBeNull();
+  expect(movedCrossDay.toNextEstimate ?? null).toBeNull();
 });
 
 test("E12 drive-mode dropdown saves taxi and explicit self-drive, restores after reload", async ({
@@ -412,10 +422,10 @@ test("E12 drive-mode dropdown saves taxi and explicit self-drive, restores after
   await put;
   trip = await getTrip(page, id);
   expect(stopOf(trip, 1, 0).toNext).toBe("self_drive");
-  await expect(page.getByTestId("transport-segment").first().getByTestId("segment-mode")).toHaveText("驾车");
+  await expect(page.getByTestId("transport-segment").first().getByTestId("segment-mode")).toContainText("驾车");
   await expect(page.getByText(TAXI_PET_HINT)).toHaveCount(0);
 
   await page.reload();
-  await expect(page.getByTestId("transport-segment").first().getByTestId("segment-mode")).toHaveText("驾车");
+  await expect(page.getByTestId("transport-segment").first().getByTestId("segment-mode")).toContainText("驾车");
   await expect(modeSelect(page, true)).toContainText("驾车");
 });

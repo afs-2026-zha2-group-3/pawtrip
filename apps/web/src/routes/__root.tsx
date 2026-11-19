@@ -33,7 +33,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { normalizeLocationType } from "../lib/location-summary";
+import { cn } from "../lib/utils";
 import { ApiError } from "../lib/http/api-error";
 import { agentActions } from "../lib/agent/store";
 import { tripActions } from "../lib/trip/store";
@@ -150,12 +159,18 @@ const navPillClass =
 
 function AppTabs() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const search = useRouterState({
+    select: (state) => state.location.search as { type?: unknown },
+  });
   const navigate = useNavigate();
   const isClient = typeof window !== "undefined";
   const auth = useQuery({ ...authQueryOptions, enabled: isClient });
   const isAttractions = pathname === "/attractions" || pathname.startsWith("/attractions/");
+  const placeType = isAttractions ? normalizeLocationType(search.type) : null;
+  const placeSelectValue =
+    placeType === null ? null : placeType === "attraction" ? "attraction" : "lodging";
   const activeTab = isAttractions
-    ? "attractions"
+    ? ""
     : pathname === "/paws"
       ? "paws"
       : pathname === "/cities"
@@ -170,6 +185,9 @@ function AppTabs() {
                 ? "admin-cities"
                 : "home";
 
+  const navListClass =
+    "group-data-horizontal/tabs:h-auto gap-1 rounded-full bg-transparent p-0 shadow-none";
+
   return (
     <Tabs
       value={activeTab}
@@ -178,8 +196,6 @@ function AppTabs() {
           void navigate({ to: "/paws" });
         } else if (value === "cities") {
           void navigate({ to: "/cities" });
-        } else if (value === "attractions") {
-          void navigate({ to: "/attractions" });
         } else if (value === "transport-rules") {
           void navigate({ to: "/transport-rules" });
         } else if (value === "trips") {
@@ -192,15 +208,42 @@ function AppTabs() {
           void navigate({ to: "/" });
         }
       }}
+      className="flex-row! items-center gap-1 rounded-full bg-card p-1.5 shadow-md"
     >
-      <TabsList
-        aria-label="主导航"
-        className="group-data-horizontal/tabs:h-auto gap-1 rounded-full bg-card p-1.5 shadow-md"
-      >
+      <TabsList aria-label="主导航" className={navListClass}>
         <TabsTrigger value="home" className={navPillClass}>首页</TabsTrigger>
         <TabsTrigger value="paws" className={navPillClass}>我的宠物</TabsTrigger>
         <TabsTrigger value="cities" className={navPillClass}>城市浏览</TabsTrigger>
-        <TabsTrigger value="attractions" className={navPillClass}>地点浏览</TabsTrigger>
+      </TabsList>
+      <Select
+        value={placeSelectValue}
+        onValueChange={(value) => {
+          if (value === "attraction") {
+            void navigate({ to: "/attractions" });
+          } else if (value === "lodging") {
+            void navigate({ to: "/attractions", search: { type: "hotel" } });
+          }
+        }}
+      >
+        <SelectTrigger
+          aria-label="地点选择"
+          data-active={isAttractions ? "true" : undefined}
+          className={cn(
+            "h-auto rounded-full border-0 bg-transparent px-4 py-2 text-sm font-medium shadow-none",
+            "hover:bg-muted data-[active=true]:bg-foreground data-[active=true]:text-background",
+            "dark:text-foreground/70 dark:data-[active=true]:bg-foreground dark:data-[active=true]:text-background",
+          )}
+        >
+          <span>地点选择</span>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem value="attraction">景点</SelectItem>
+            <SelectItem value="lodging">酒店和餐厅</SelectItem>
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+      <TabsList aria-label="导航（续）" className={navListClass}>
         <TabsTrigger value="transport-rules" className={navPillClass}>交通规则</TabsTrigger>
         <TabsTrigger value="trips" className={navPillClass}>我的行程</TabsTrigger>
         {auth.data?.role === "ADMIN" ? (
