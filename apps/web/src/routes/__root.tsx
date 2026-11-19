@@ -87,7 +87,7 @@ function AppHeader() {
     <header className="paw-header relative flex shrink-0 items-center justify-center py-2 pr-24 pl-24 print:hidden">
       <div
         data-testid="app-nav-scroll"
-        className="w-full min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="w-full min-w-0 overflow-x-auto py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <div className="mx-auto w-fit max-w-full">
           <AppTabs />
