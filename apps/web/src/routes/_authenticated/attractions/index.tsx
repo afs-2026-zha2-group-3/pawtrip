@@ -526,9 +526,12 @@ function AttractionsPage() {
         <div
           ref={listRef}
           data-testid="location-list"
-          className="flex min-h-0 min-w-0 flex-1 flex-col p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:overflow-y-auto"
+          className={cn(
+            "flex min-h-0 min-w-0 flex-1 flex-col p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:overflow-y-auto lg:pt-0",
+            !locations.isError && gridTotalPages > 1 && "lg:pb-0",
+          )}
         >
-          <div className="z-20 -mx-4 shrink-0 border-b border-paw-accent-soft bg-gradient-to-b from-card to-card/85 px-4 backdrop-blur-sm lg:sticky lg:top-0 lg:pt-4 lg:pb-2">
+          <div className="z-20 -mx-4 shrink-0 border-b border-paw-accent-soft bg-gradient-to-b from-card to-card/85 px-4 backdrop-blur-sm lg:sticky lg:top-0 lg:pt-4 lg:pb-0">
           <div className="mb-3 flex min-w-0 flex-nowrap items-center gap-3 overflow-hidden">
             <h1 className="shrink-0 whitespace-nowrap text-2xl leading-8 font-medium">
               {typeLabel}
