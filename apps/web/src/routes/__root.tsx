@@ -84,12 +84,12 @@ function AppHeader() {
   });
 
   return (
-    <header className="paw-header relative flex shrink-0 items-center justify-center py-2 pr-24 pl-24 print:hidden">
+    <header className="pointer-events-none fixed inset-x-0 top-0 z-40 flex h-[var(--app-header-height)] items-center justify-center py-2 pr-24 pl-24 print:hidden">
       <div
         data-testid="app-nav-scroll"
         className="w-full min-w-0 overflow-x-auto py-1.5 drop-shadow-[0_2px_20px_rgba(38,31,18,0.28)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        <div className="mx-auto w-fit max-w-full">
+        <div className="pointer-events-auto mx-auto w-fit max-w-full">
           <AppTabs />
         </div>
       </div>
@@ -104,7 +104,7 @@ function AppHeader() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute right-4 h-8 rounded-full bg-card px-4 shadow-sm ring-1 ring-foreground/5"
+                className="pointer-events-auto absolute right-4 h-8 rounded-full bg-card px-4 shadow-sm ring-1 ring-foreground/5"
                 disabled={logoutMutation.isPending}
               />
             }
