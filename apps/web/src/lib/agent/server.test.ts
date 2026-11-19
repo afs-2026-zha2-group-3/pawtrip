@@ -86,6 +86,80 @@ describe("agent server route", () => {
     expect(toolNames).not.toContain("evil_fetch");
   });
 
+  it("passes the configured reasoning effort to the model", async () => {
+    const adapter = fakeText();
+    let modelOptions: Record<string, unknown> | undefined;
+    adapter.setResponses([
+      ({ request: options }) => {
+        modelOptions = options.modelOptions;
+        return { text: "ok" };
+      },
+    ]);
+
+    const response = await handleAgentRequest(request(), {
+      env: {
+        PAWTRIP_AGENT_PROVIDER: "fake",
+        NODE_ENV: "test",
+        PAWTRIP_AGENT_REASONING_EFFORT: "Low",
+      },
+      fetch: vi.fn(async () => authResponse(200)) as unknown as typeof fetch,
+      createAdapter: () => adapter,
+    });
+
+    expect(response.status).toBe(200);
+    await response.text();
+    expect(modelOptions).toEqual({ reasoning_effort: "low" });
+  });
+
+  it("defaults to the lowest reasoning effort without a configured value", async () => {
+    const adapter = fakeText();
+    let modelOptions: Record<string, unknown> | undefined;
+    adapter.setResponses([
+      ({ request: options }) => {
+        modelOptions = options.modelOptions;
+        return { text: "ok" };
+      },
+    ]);
+
+    const response = await handleAgentRequest(request(), {
+      env: { PAWTRIP_AGENT_PROVIDER: "fake", NODE_ENV: "test" },
+      fetch: vi.fn(async () => authResponse(200)) as unknown as typeof fetch,
+      createAdapter: () => adapter,
+    });
+
+    expect(response.status).toBe(200);
+    await response.text();
+    expect(modelOptions).toEqual({ reasoning_effort: "low" });
+  });
+
+  it("falls back to the lowest reasoning effort for an unsupported value", async () => {
+    const adapter = fakeText();
+    let modelOptions: Record<string, unknown> | undefined;
+    adapter.setResponses([
+      ({ request: options }) => {
+        modelOptions = options.modelOptions;
+        return { text: "ok" };
+      },
+    ]);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const response = await handleAgentRequest(request(), {
+      env: {
+        PAWTRIP_AGENT_PROVIDER: "fake",
+        NODE_ENV: "test",
+        PAWTRIP_AGENT_REASONING_EFFORT: "medium",
+      },
+      fetch: vi.fn(async () => authResponse(200)) as unknown as typeof fetch,
+      createAdapter: () => adapter,
+    });
+
+    expect(response.status).toBe(200);
+    await response.text();
+    expect(modelOptions).toEqual({ reasoning_effort: "low" });
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
+  });
+
   it("refuses to run the fake provider in production", async () => {
     const response = await handleAgentRequest(request(), {
       env: { PAWTRIP_AGENT_PROVIDER: "fake", NODE_ENV: "production" },

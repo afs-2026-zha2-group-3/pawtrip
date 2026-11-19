@@ -46,7 +46,8 @@ area: external
 
 ## 本项目实现（2026-11 复核）
 
-- 适配器：`openaiCompatible({ name: "bigmodel", baseURL, apiKey, models: [model] })`，默认 `baseURL=https://open.bigmodel.cn/api/paas/v4`、模型 `glm-5.3`。
-- 服务端环境变量：`BIGMODEL_API_KEY`（必填，仅服务端）、`PAWTRIP_API_BASE_URL`（Spring 地址）、`PAWTRIP_AGENT_PROVIDER`（`bigmodel` 或非生产 `fake`）、可选 `PAWTRIP_AGENT_MODEL` 与 `PAWTRIP_AGENT_BASE_URL`。
+- 适配器：`openaiCompatible({ name: "bigmodel", baseURL, apiKey, models: [model] })`，默认 `baseURL=https://open.bigmodel.cn/api/paas/v4`、模型 `glm-5.3-flash`（`PAWTRIP_AGENT_MODEL` 可覆盖）。
+- 服务端环境变量：`BIGMODEL_API_KEY`（必填，仅服务端）、`PAWTRIP_API_BASE_URL`（Spring 地址）、`PAWTRIP_AGENT_PROVIDER`（`bigmodel` 或非生产 `fake`）、可选 `PAWTRIP_AGENT_MODEL`、`PAWTRIP_AGENT_BASE_URL` 与 `PAWTRIP_AGENT_REASONING_EFFORT`。
+- 推理强度：`glm-5.3` 强制思考（`thinking.type: "disabled"` 会报错），只能用 `reasoning_effort` 取 `low` / `high` / `max`（服务商默认 `max`）。实现通过 `chat({ modelOptions: { reasoning_effort } })` 传入，因为 `@tanstack/ai` 的 `openaiCompatible` 适配器不声明 reasoning 能力，`chat({ reasoning })` 不会写出该字段；未配置时默认 `low`，取值非法时告警并回退 `low`。
 - 生产环境必须禁用 `PAWTRIP_AGENT_PROVIDER=fake`，并按用户/会话配置模型调用限流与配额；CI 与 E2E 只使用 fake provider，不访问智谱。
 - 结构化计划不依赖 provider 结构化输出参数，而由 `update_trip_plan` 工具调用承载增量操作，并在浏览器端基于最新计划重新计算与校验。`tool_choice` 只使用默认 `auto`。
