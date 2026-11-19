@@ -1,4 +1,8 @@
-import { mutationOptions, queryOptions } from "@tanstack/react-query";
+import {
+  mutationOptions,
+  queryOptions,
+  type UseQueryOptions,
+} from "@tanstack/react-query";
 import { request } from "../lib/http/request";
 
 export type PetType = "CAT" | "DOG";
@@ -58,6 +62,16 @@ export function petsQueryOptions() {
     staleTime: 60_000,
     retry: 1,
   });
+}
+
+// 只读预览缓存：提示组件不参与列表页数据流，避免提前预热 petsQueryOptions 的共享缓存。
+export function petsPreviewQueryOptions(): UseQueryOptions<Pet[]> {
+  return {
+    queryKey: [...petQueryKeys.all, "preview"],
+    queryFn: ({ signal }) => request<Pet[]>("/api/pets", { signal }),
+    staleTime: 0,
+    retry: 1,
+  };
 }
 
 export function dogBreedsQueryOptions() {

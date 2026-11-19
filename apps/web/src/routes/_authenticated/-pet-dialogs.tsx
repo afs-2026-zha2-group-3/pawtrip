@@ -43,6 +43,7 @@ import {
   personalityLabels,
   preferenceLabels,
 } from "@/components/pet/pet-profile-card";
+import { companionActions } from "@/lib/companion/store";
 import { ApiError } from "@/lib/http/api-error";
 import { photoDataUrl, readPhotoFile } from "@/lib/pet-photo";
 import { tripStatus } from "@/lib/trip/status";
@@ -157,23 +158,43 @@ export function PetDialog({
   const [errors, setErrors] = useState<DraftErrors>({});
   const [photoError, setPhotoError] = useState<string | null>(null);
 
+  const notifySaved = (saved: Pet) => {
+    const incomplete =
+      (saved.petType === "DOG" && !saved.dogBreed) ||
+      !Number.isFinite(saved.weightKg) ||
+      saved.weightKg <= 0;
+    if (incomplete) {
+      companionActions.say(
+        `${saved.name}的档案我记好啦，补全品种和体重后推荐会更准`,
+        "warn",
+      );
+      return;
+    }
+    companionActions.say(
+      `${saved.name}的档案我记好啦，下一步我们去城市浏览挑目的地吧`,
+      "ok",
+    );
+  };
+
   const createMutation = useMutation({
     ...createPetMutationOptions(),
-    onSuccess: async () => {
+    onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: petQueryKeys.all });
       await queryClient.invalidateQueries({
         queryKey: packingChecklistQueryKeys.all,
       });
+      notifySaved(saved);
       onClose();
     },
   });
   const updateMutation = useMutation({
     ...updatePetMutationOptions(),
-    onSuccess: async () => {
+    onSuccess: async (saved) => {
       await queryClient.invalidateQueries({ queryKey: petQueryKeys.all });
       await queryClient.invalidateQueries({
         queryKey: packingChecklistQueryKeys.all,
       });
+      notifySaved(saved);
       onClose();
     },
   });

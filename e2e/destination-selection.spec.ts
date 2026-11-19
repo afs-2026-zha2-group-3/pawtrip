@@ -52,7 +52,12 @@ test("E2 searches by city or province keyword and shows empty state", async ({ p
 
   await search.fill("不存在的城市");
   await expect(page.getByText("共 0 个候选")).toBeVisible();
-  await expect(page.getByText("暂无符合条件的目的地")).toBeVisible();
+  await expect(
+    page.getByText("暂无符合条件的目的地", { exact: true }),
+  ).toBeVisible();
+  const bubble = page.getByTestId("companion-bubble");
+  await expect(bubble).toHaveAttribute("data-mood", "info", { timeout: 3000 });
+  await expect(bubble).toContainText("我没找到合适的地方");
 });
 
 test("E5 selecting a city opens the trip dialog without POSTing a trip", async ({ page }) => {
@@ -162,6 +167,10 @@ test("E15 selecting a city shows its policy in the sidebar", async ({ page }) =>
   const card = cityCard(page, "珠海市");
   await expect(card.getByRole("link")).toHaveCount(0);
   await card.click();
+
+  const bubble = page.getByTestId("companion-bubble");
+  await expect(bubble).toHaveAttribute("data-mood", "ok", { timeout: 3000 });
+  await expect(bubble).toContainText("珠海市的政策我看过了");
 
   const panel = page.getByRole("region", { name: "城市宠物管理政策" });
   await expect(

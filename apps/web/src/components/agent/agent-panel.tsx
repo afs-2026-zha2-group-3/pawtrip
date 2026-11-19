@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouterState } from "@tanstack/react-router";
 import { fetchServerSentEvents, useChat } from "@tanstack/ai-react";
 import { ArrowUp, ChevronRight, Minus } from "lucide-react";
 import blackDogGif from "@/assets/black-dog.gif";
@@ -14,6 +15,7 @@ import { Bubble } from "@/components/ui/bubble";
 import { Message, MessageContent } from "@/components/ui/message";
 import { AgentMarkdown } from "@/components/agent/agent-markdown";
 import { ProposalCard } from "@/components/agent/proposal-card";
+import { CompanionBubble } from "@/components/companion/companion";
 import { CityTripDialog } from "@/routes/_authenticated/-city-trip-dialog";
 import { applyProposal } from "@/lib/agent/apply";
 import { createAgentClientTools } from "@/lib/agent/client-tools";
@@ -33,7 +35,7 @@ import {
 } from "@/lib/agent/selectors";
 import { destinationsQueryOptions } from "@/queries/destinations";
 import { locationBrowseDetailQueryOptions } from "@/queries/locations";
-import { petsQueryOptions } from "@/queries/pets";
+import { petsPreviewQueryOptions, petsQueryOptions, type Pet } from "@/queries/pets";
 import {
   fetchTripDetail,
   tripQueryKeys,
@@ -51,6 +53,7 @@ export function AgentPanel() {
   const shownProposal = proposals.length > 0 ? proposals[proposals.length - 1] : null;
   const names = useAgentLocationNames();
   const queryClient = useQueryClient();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isClient = typeof window !== "undefined";
   const activeId = active?.id ?? null;
 
@@ -64,6 +67,16 @@ export function AgentPanel() {
     enabled: isClient && open,
     throwOnError: false,
   });
+  // 气泡在面板关闭时也要展示宠物名；用只读预览缓存兜底，避免预热列表页的共享缓存。
+  // 管理端不展示气泡，无需额外请求（该请求的 401 会触发全局缓存清理）。
+  const showCompanion = !pathname.startsWith("/admin");
+  const companionPets = useQuery<Pet[]>({
+    ...petsPreviewQueryOptions(),
+    enabled: isClient && showCompanion && pets.data === undefined,
+    throwOnError: false,
+  });
+  const companionName =
+    pets.data?.[0]?.name ?? companionPets.data?.[0]?.name ?? "豆包";
 
   const [threadId] = useState(() => `trip-planning-${crypto.randomUUID()}`);
   const tools = useMemo(() => createAgentClientTools(queryClient), [queryClient]);
@@ -181,13 +194,16 @@ export function AgentPanel() {
   // 悬浮宽度与地点浏览页 2xl 留白轨道（376px）耦合；修改宽度时需同步 attractions/index.tsx。
   return (
     <>
-      {!open ? (
+{/* 外壳只负责定位：方形命中区会盖住圆形 FAB 角落下方的面板控件，需让外壳透传指针。 */}
+      <div className="pointer-events-none fixed right-4 bottom-4 z-[70]">
+        <CompanionBubble pathname={pathname} name={companionName} panelOpen={open} />
         <Button
           type="button"
           data-testid="agent-fab"
           aria-label="打开行程规划助手"
-          className="fixed right-4 bottom-4 z-[70] size-20 rounded-full border border-[#E8C79E] bg-[#FBE7C9] p-1.5 shadow-md hover:bg-[#F7DDB4]"
-          onClick={() => agentActions.toggleOpen()}
+          aria-expanded={open}
+          className="pointer-events-auto size-20 rounded-full border border-[#E8C79E] bg-[#FBE7C9] p-1.5 shadow-md hover:bg-[#F7DDB4]"
+          onClick={() => agentActions.setOpen(true)}
         >
           <img
             src={blackDogGif}
@@ -196,7 +212,7 @@ export function AgentPanel() {
             className="size-full -translate-y-1 object-contain"
           />
         </Button>
-      ) : null}
+      </div>
 
       <Sheet
         open={open}

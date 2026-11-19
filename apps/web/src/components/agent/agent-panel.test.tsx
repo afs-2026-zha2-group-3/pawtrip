@@ -4,7 +4,19 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { AgentPanel } from "./agent-panel";
 import { agentActions, agentStore } from "@/lib/agent/store";
+import { companionActions } from "@/lib/companion/store";
 import { tripActions, tripStore } from "@/lib/trip/store";
+
+const router = vi.hoisted(() => ({ pathname: "/" }));
+
+vi.mock("@tanstack/react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@tanstack/react-router")>()),
+  useRouterState: ({
+    select,
+  }: {
+    select: (state: { location: { pathname: string } }) => unknown;
+  }) => select({ location: { pathname: router.pathname } }),
+}));
 
 const chat = vi.hoisted(() => ({
   state: {
@@ -74,7 +86,9 @@ const pendingProposal = {
 describe("AgentPanel", () => {
   beforeEach(() => {
     agentActions.resetForTests();
+    companionActions.resetForTests();
     tripActions.resetForTests();
+    router.pathname = "/";
     chat.state.messages = [];
     chat.state.isLoading = false;
     chat.state.error = undefined;
@@ -347,5 +361,58 @@ describe("AgentPanel", () => {
     expect(screen.queryByTestId("agent-status")).toBeNull();
     expect(screen.getByTestId("agent-process-collapsed")).toBeTruthy();
     expect(screen.queryByTestId("agent-completed-steps")).toBeNull();
+  });
+
+  it("keeps the panel open when the only entry is clicked again", async () => {
+    renderPanel();
+
+    const fab = screen.getByTestId("agent-fab");
+    fireEvent.click(fab);
+    await screen.findByTestId("agent-panel");
+
+    fireEvent.click(fab);
+
+    expect(screen.getByTestId("agent-panel")).toBeTruthy();
+    expect(screen.getAllByTestId("agent-fab")).toHaveLength(1);
+    expect(screen.queryByTestId("companion-avatar")).toBeNull();
+  });
+
+  it("dismisses the bubble when the agent panel opens", async () => {
+    companionActions.setHint("首页提示", "/");
+    companionActions.showHint();
+
+    renderPanel();
+    expect(screen.getByTestId("companion-bubble")).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("agent-fab"));
+    await screen.findByTestId("agent-panel");
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("companion-bubble")).toBeNull();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "关闭 Agent 面板" }));
+    expect(screen.queryByTestId("companion-bubble")).toBeNull();
+  });
+
+  it("keeps the entry but hides the bubble on admin pages", () => {
+    router.pathname = "/admin/locations";
+    companionActions.setHint("不应展示", "/admin/locations");
+    companionActions.showHint();
+
+    renderPanel();
+
+    expect(screen.getByTestId("agent-fab")).toBeTruthy();
+    expect(screen.queryByTestId("companion-bubble")).toBeNull();
+  });
+
+  it("falls back to the default companion name without a pet profile", () => {
+    companionActions.setHint("首页提示", "/");
+    companionActions.showHint();
+
+    renderPanel();
+
+    expect(screen.getByText("豆包 · 伙伴提示")).toBeTruthy();
+    expect(screen.getByText("首页提示")).toBeTruthy();
   });
 });

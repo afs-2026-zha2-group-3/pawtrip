@@ -37,6 +37,8 @@ import {
   tripsQueryOptions,
   type TripSummary,
 } from "@/queries/trips";
+import { companionActions } from "@/lib/companion/store";
+import { useCompanionHint } from "@/lib/companion/use-companion-hint";
 import {
   useActiveTrip,
   useDraftTrip,
@@ -102,14 +104,17 @@ function TripsPage() {
   const openTrip = async (trip: TripSummary, target: "plan" | "itinerary") => {
     if (draft) {
       setError("存在未确认草稿，请先在行程面板放弃草稿后再切换行程。");
+      companionActions.say("我发现还有没确认的草稿，先放弃它再切换行程吧", "warn");
       return;
     }
     if (tripStatus(trip) === "ended" && !trip.planCompleted) {
       setError("该行程已结束，且没有行程单可查看。");
+      companionActions.say("这份行程已经结束了，我也找不到可查看的行程单", "warn");
       return;
     }
     if (active && active.id !== trip.id && save.status === "error") {
       setError("当前行程有未保存的修改，请先重试保存再切换。");
+      companionActions.say("当前行程还有修改没保存成功，先帮我重试保存再切换吧", "danger");
       return;
     }
     setError(null);
@@ -118,6 +123,12 @@ function TripsPage() {
       if (target === "plan") {
         tripActions.setEditing(true);
       }
+      companionActions.say(
+        tripStatus(trip) === "ended"
+          ? `${trip.name}已经结束了，我们只能看看行程单`
+          : `继续编辑「${trip.name}」吧，我还没玩够`,
+        tripStatus(trip) === "ended" ? "info" : "ok",
+      );
       await navigate({ to });
       return;
     }
@@ -135,9 +146,16 @@ function TripsPage() {
           });
         }
       });
+      companionActions.say(
+        tripStatus(trip) === "ended"
+          ? `「${trip.name}」的行程单打开啦，不过行程已经结束`
+          : `切换到「${trip.name}」啦，我们接着安排吧`,
+        tripStatus(trip) === "ended" ? "info" : "ok",
+      );
       await navigate({ to });
     } catch {
       setError("打开行程失败，请稍后重试。");
+      companionActions.say("行程没打开，再试一次吧", "danger");
     } finally {
       setBusyId(null);
     }
@@ -146,6 +164,7 @@ function TripsPage() {
   const endEditing = () => {
     runViewTransition(() => tripActions.clearActive());
     setError(null);
+    companionActions.say("我先收起编辑啦，点一张卡片就能继续安排", "info");
   };
 
   const remove = async (trip: TripSummary) => {
@@ -167,6 +186,17 @@ function TripsPage() {
       setBusyId(null);
     }
   };
+
+  useCompanionHint(
+    trips.isPending
+      ? null
+      : (trips.data ?? []).length === 0
+        ? "创建第一份行程吧，我们从城市浏览挑个目的地开始"
+        : active
+          ? `我正在陪你编辑「${active.name}」，点其他卡片可以切换`
+          : "点卡片切换行程，或者创建一份新的",
+    Route.fullPath,
+  );
 
   if (trips.isPending) {
     return (
