@@ -7,6 +7,7 @@ import {
   petPillPrimaryClass,
 } from "@/components/pet/pet-profile-card";
 import { Button } from "@/components/ui/button";
+import { useCompanionHint } from "@/lib/companion/use-companion-hint";
 import { cn } from "@/lib/utils";
 import { photoDataUrl } from "@/lib/pet-photo";
 import { PetDeleteDialog, PetDialog } from "./-pet-dialogs";
@@ -23,6 +24,15 @@ function PawsPage() {
   const [pendingDelete, setPendingDelete] = useState<Pet | null>(null);
   const pets = petsQuery.data ?? [];
   const selected = pets.find((pet) => pet.id === selectedId) ?? pets[0] ?? null;
+
+  useCompanionHint(
+    petsQuery.isPending
+      ? null
+      : selected
+        ? "我的档案都在这呢，填写的越全推荐的越准！"
+        : "先给我建个档案吧，之后的推荐都靠它",
+    Route.fullPath,
+  );
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">

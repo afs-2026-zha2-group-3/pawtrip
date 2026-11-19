@@ -173,7 +173,9 @@ test("summarizes the active trip by day", async ({ page }) => {
     .click();
   await expect(page).toHaveURL(/\/itinerary$/);
 
-  await expect(page.getByText("珠海 · 2天 · 豆豆")).toBeVisible();
+  await expect(
+    page.getByText("珠海 · 2天 · 豆豆", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByText("珠海市 · 豆豆 · 12月1日 周二 至 12月2日 周三 · 大交通 高铁"),
   ).toBeVisible();

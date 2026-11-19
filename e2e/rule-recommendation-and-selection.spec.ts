@@ -48,6 +48,11 @@ test.describe("rule recommendation", () => {
     await expect(driveRow).toContainText("毛毛 · 不推荐");
     await expect(driveRow).toContainText("缺少动物检疫合格证明");
     await expect(driveRow).not.toContainText("超过上限");
+
+    await page.getByRole("radio", { name: "选择高铁" }).check();
+    const bubble = page.getByTestId("companion-bubble");
+    await expect(bubble).toHaveAttribute("data-mood", "warn", { timeout: 3000 });
+    await expect(bubble).toContainText("毛毛可能不满足");
   });
 });
 
@@ -69,6 +74,9 @@ test.describe("mode selection", () => {
     await railRadio.check();
     await expect(railRadio).toBeChecked();
     await expect(flightRadio).not.toBeChecked();
+    const bubble = page.getByTestId("companion-bubble");
+    await expect(bubble).toHaveAttribute("data-mood", "ok", { timeout: 3000 });
+    await expect(bubble).toContainText("选好高铁");
     const response = await saved;
     expect(response.ok()).toBeTruthy();
     expect(response.request().postDataJSON()).toMatchObject({

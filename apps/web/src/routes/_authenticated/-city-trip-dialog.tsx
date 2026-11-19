@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { companionActions } from "@/lib/companion/store";
 import type { DestinationCandidate } from "@/lib/destination-matching";
 import { createTripAndActivate } from "@/lib/trip/create";
 import { daysBetween } from "@/lib/trip/duration";
@@ -92,6 +93,10 @@ export function CityTripDialog({
         city,
         startDate,
       });
+      companionActions.say(
+        `「${trip.name}」建好啦，下一步选一个带我过去的大交通方式吧`,
+        "ok",
+      );
       if (navigateOnCreate) {
         onClose();
         await navigate({ to: "/transport-rules" });

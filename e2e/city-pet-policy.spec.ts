@@ -79,6 +79,15 @@ test("warns when the pet breed is on the banned list", async ({ page }) => {
   await expect(page.getByText(/豆豆/).first()).toBeVisible();
   await expect(page.getByText(/比特犬属于当地禁养犬种/)).toBeVisible();
   await expect(page.getByText(/禁养犬种名单/)).toBeVisible();
+
+  await page.getByRole("tab", { name: "城市浏览" }).click();
+  await expect(page).toHaveURL(/\/cities$/);
+  await expect(page.getByText("豆豆").first()).toBeVisible();
+  await page.getByRole("textbox", { name: "搜索城市" }).fill("珠海");
+  await page.getByTestId("city-card").filter({ hasText: "珠海市" }).click();
+  const bubble = page.getByTestId("companion-bubble");
+  await expect(bubble).toHaveAttribute("data-mood", "danger", { timeout: 3000 });
+  await expect(bubble).toContainText("珠海市把我列进禁养名单了");
 });
 
 async function editZhuhaiAllowedBreeds(page: Page, breedName: string, checked: boolean) {

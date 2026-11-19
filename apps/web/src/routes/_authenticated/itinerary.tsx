@@ -27,6 +27,8 @@ import { NearbyPetServices } from "@/components/trip/nearby-pet-services";
 import { DayRouteDialog } from "@/components/trip/day-route-dialog";
 import { PackingChecklistDialog } from "@/components/trip/packing-checklist-dialog";
 import { petPolicyFields } from "@/lib/attraction-pet-rules";
+import { companionActions } from "@/lib/companion/store";
+import { useCompanionHint } from "@/lib/companion/use-companion-hint";
 import {
   downloadBlob,
   elementToPngBlob,
@@ -115,6 +117,7 @@ function ItineraryPage() {
 
   function exportPdf() {
     setPrinting(true);
+    companionActions.say("打印窗口我打开啦，选「另存为 PDF」就能带走", "ok");
     // 等打印态（渲染全部 Day）提交后再打开打印对话框。
     requestAnimationFrame(() => {
       requestAnimationFrame(() => window.print());
@@ -173,6 +176,40 @@ function ItineraryPage() {
     () => (active ? buildItinerary(active, cityName, locations, pet) : null),
     [active, cityName, locations, pet],
   );
+  const tripEnded = active ? isTripEnded(active) : false;
+
+  useCompanionHint(
+    hydration === "idle" || hydration === "loading"
+      ? null
+      : !active
+        ? "先创建行程并生成行程单，我会在这里按天汇总给你看"
+        : !active.planCompleted
+          ? "行程单还没生成，回地点浏览点「创建行程单」吧"
+          : tripEnded
+            ? `${active.name}已经结束了，我陪你只读看看，还能导出分享`
+            : "我按天把交通食宿应急都列好了，可以导出分享",
+    Route.fullPath,
+  );
+
+  const selectedDayEntryCount =
+    itinerary?.days.find((entry) => entry.day === selectedDay)?.entries.length ??
+    null;
+  const dayReportedRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!active?.planCompleted || selectedDayEntryCount === null) return;
+    if (dayReportedRef.current === null) {
+      dayReportedRef.current = selectedDay;
+      return;
+    }
+    if (dayReportedRef.current === selectedDay) return;
+    dayReportedRef.current = selectedDay;
+    if (selectedDayEntryCount === 0) {
+      companionActions.say(
+        `第 ${selectedDay} 天还空着，去地点浏览给我补几个地方吧`,
+        "info",
+      );
+    }
+  }, [active?.planCompleted, selectedDay, selectedDayEntryCount]);
 
   if (!active || !itinerary) {
     if (hydration === "idle" || hydration === "loading") {
@@ -260,7 +297,7 @@ function ItineraryPage() {
     ? getRuleForMode(active.transportMode)
     : null;
   const trip = active;
-  const ended = isTripEnded(active);
+  const ended = tripEnded;
   const packingProgressText = packingQuery.isError
     ? "进度暂不可用"
     : packingQuery.data
@@ -282,8 +319,10 @@ function ItineraryPage() {
       }
       const blob = await elementToPngBlob(sheet);
       downloadBlob(blob, imageFileName(trip.name));
+      companionActions.say("行程单图片我导出好啦，可以分享给同行伙伴", "ok");
     } catch {
       setImageExportError("图片导出失败，请重试");
+      companionActions.say("图片没导出成功，再试一次吧", "danger");
     } finally {
       setExportingImage(false);
     }

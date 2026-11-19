@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { BookOpen, CircleFadingPlus, X } from "lucide-react";
@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { PolicySubjectNotice, PolicyTags } from "@/components/trip/policy-tags";
+import { companionActions } from "@/lib/companion/store";
+import { useCompanionHint } from "@/lib/companion/use-companion-hint";
 import type { DestinationCandidate } from "@/lib/destination-matching";
 import { scoreCity, sortByRecommendation } from "@/lib/destination-recommendation";
 import { matchCityCandidate, matchCityPolicy } from "@/lib/trip/policy-match";
@@ -78,6 +80,40 @@ function CitiesPage() {
     placeholderData: keepPreviousData,
   });
 
+  // REQ-014：渲染前按首宠喜好/性格打分排序；profile 晚到时自动重排（design D6）
+  const candidates = sortByRecommendation(destinations.data ?? [], profile.data ?? null);
+  const pageCount = Math.max(1, Math.ceil(candidates.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const visibleCandidates = candidates.slice(pageStart, pageStart + PAGE_SIZE);
+  const selected =
+    candidates.find((candidate) => candidate.adcode === selectedAdcode) ?? null;
+
+  useCompanionHint(
+    profile.isPending || pets.isPending
+      ? null
+      : firstPet
+        ? "快来挑选一个适合我的城市吧！"
+        : "先给我建个档案，我就能按品种帮你筛城市，现在先带你看看政策",
+    Route.fullPath,
+  );
+
+  const emptyReportedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!destinations.data || destinations.isPending) return;
+    const key = `${keyword}|${friendlyOnly}|${candidates.length}`;
+    if (candidates.length > 0) {
+      emptyReportedRef.current = key;
+      return;
+    }
+    if (emptyReportedRef.current === key) return;
+    emptyReportedRef.current = key;
+    companionActions.say(
+      "我没找到合适的地方，换个关键词或关掉宠物友好筛选让我再看看",
+      "info",
+    );
+  }, [candidates.length, destinations.data, destinations.isPending, friendlyOnly, keyword]);
+
   if (!destinations.data) {
     return (
       <main className="mx-auto w-full max-w-3xl p-6">
@@ -90,14 +126,20 @@ function CitiesPage() {
     );
   }
 
-  // REQ-014：渲染前按首宠喜好/性格打分排序；profile 晚到时自动重排（design D6）
-  const candidates = sortByRecommendation(destinations.data, profile.data ?? null);
-  const pageCount = Math.max(1, Math.ceil(candidates.length / PAGE_SIZE));
-  const currentPage = Math.min(page, pageCount);
-  const pageStart = (currentPage - 1) * PAGE_SIZE;
-  const visibleCandidates = candidates.slice(pageStart, pageStart + PAGE_SIZE);
-  const selected =
-    candidates.find((candidate) => candidate.adcode === selectedAdcode) ?? null;
+  const selectCity = (candidate: DestinationCandidate) => {
+    setSelectedAdcode(candidate.adcode);
+    if (firstPet && matchCityCandidate(candidate, firstPet).status === "unfriendly") {
+      companionActions.say(
+        `${candidate.name}把我列进禁养名单了，我们换个目的地吧`,
+        "danger",
+      );
+      return;
+    }
+    companionActions.say(
+      `${candidate.name}的政策我看过了，下一步去交通规则看看怎么带我过去`,
+      "ok",
+    );
+  };
 
   return (
     <main
@@ -195,7 +237,7 @@ function CitiesPage() {
                     }
                     selected={selected?.adcode === candidate.adcode}
                     subjects={subjects}
-                    onSelect={() => setSelectedAdcode(candidate.adcode)}
+                    onSelect={() => selectCity(candidate)}
                     onPick={() => {
                       if (active) tripActions.clearActive();
                       setSelectedAdcode(candidate.adcode);
