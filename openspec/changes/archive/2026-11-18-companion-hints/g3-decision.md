@@ -24,5 +24,5 @@
 
 - G2 残余风险（CI Backend tests 按变更检测跳过、tsc 不在 CI 门禁、无独立 CD、E2E 仅断言关键短语、提示仅内存）已在 `g2-decision.md` 记录为 accepted，G3 无新增风险。
 - 合并 main（`dc2f285`）后 `agent-panel.tsx` 与 PR #148 入口视觉改动自动合并，`panelOpen` 隐藏气泡逻辑与「面板展开隐藏悬浮入口」共存，定向 E2E 已验证。
-- 归档提交 `0f9c4f4` 与 main 同步 merge 提交 `23b89f7` 随本分支合入 main；本 G3 记录位于归档目录内，一并落地。
+- 归档提交 `0f9c4f4`、main 同步 merge `23b89f7` 与 G3 记录 `8281657` 由用户指示「不提 PR，直接提交并合并」，以快进方式直推 `main`；本 G3 记录位于归档目录内，一并落地。
 - 本记录不写分支 tip 哈希，以 `git log origin/main` 为准。
