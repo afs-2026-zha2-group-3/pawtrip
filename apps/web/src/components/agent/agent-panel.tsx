@@ -2,7 +2,11 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import { fetchServerSentEvents, useChat } from "@tanstack/ai-react";
-import { Bot, ChevronRight, Loader2, X } from "lucide-react";
+import { ArrowUp, ChevronRight, Minus } from "lucide-react";
+import blackDogGif from "@/assets/black-dog.gif";
+import craneDogGif from "@/assets/crane-dog.gif";
+import hiIAmPaopao from "@/assets/hi-i-am-paopao.png";
+import pawLoadingGif from "@/assets/paw-loading.gif";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupTextarea } from "@/components/ui/input-group";
 import { MessageScroller } from "@/components/ui/message-scroller";
@@ -190,7 +194,7 @@ export function AgentPanel() {
   // 悬浮宽度与地点浏览页 2xl 留白轨道（376px）耦合；修改宽度时需同步 attractions/index.tsx。
   return (
     <>
-      {/* 外壳只负责定位：方形命中区会盖住圆形 FAB 角落下方的面板控件，需让外壳透传指针。 */}
+{/* 外壳只负责定位：方形命中区会盖住圆形 FAB 角落下方的面板控件，需让外壳透传指针。 */}
       <div className="pointer-events-none fixed right-4 bottom-4 z-[70]">
         <CompanionBubble pathname={pathname} name={companionName} panelOpen={open} />
         <Button
@@ -198,10 +202,17 @@ export function AgentPanel() {
           data-testid="agent-fab"
           aria-label="打开行程规划助手"
           aria-expanded={open}
-          className="pointer-events-auto size-12 rounded-full shadow-lg"
+          className={`pointer-events-auto size-20 rounded-full border border-[#E8C79E] bg-[#FBE7C9] p-1.5 shadow-md hover:bg-[#F7DDB4] ${
+            open ? "invisible" : ""
+          }`}
           onClick={() => agentActions.setOpen(true)}
         >
-          <Bot aria-hidden />
+          <img
+            src={blackDogGif}
+            alt=""
+            aria-hidden
+            className="size-full -translate-y-1 object-contain"
+          />
         </Button>
       </div>
 
@@ -214,177 +225,204 @@ export function AgentPanel() {
         <SheetContent
           side="right"
           data-testid="agent-panel"
-          className="z-[60] max-lg:inset-0 max-lg:h-full max-lg:w-full max-lg:max-w-none lg:top-24 lg:right-4 lg:bottom-4 lg:left-auto lg:h-auto lg:w-[400px] lg:rounded-xl lg:border"
+          className="z-[60] gap-0 overflow-hidden bg-[#FCEFD9] p-0 max-lg:inset-0 max-lg:h-full max-lg:w-full max-lg:max-w-none lg:top-[var(--app-header-height)] lg:right-4 lg:bottom-4 lg:left-auto lg:h-auto lg:w-[400px] lg:max-w-none lg:rounded-[24px] lg:border lg:border-paw-accent/15"
         >
-          <SheetHeader className="flex-row items-center justify-between gap-2 border-b pb-2">
-            <SheetTitle>行程规划助手</SheetTitle>
+          <SheetHeader className="relative h-22 px-4">
+            <SheetTitle className="sr-only">行程规划助手</SheetTitle>
+            <img
+              src={craneDogGif}
+              alt=""
+              aria-hidden
+              className="absolute bottom-0 left-5 h-18 w-auto"
+            />
+            <img
+              src={hiIAmPaopao}
+              alt="Hi, I am Pao Pao"
+              className="absolute right-4 bottom-3 h-auto w-55"
+            />
             <Button
               type="button"
               size="icon-sm"
               variant="ghost"
               aria-label="关闭 Agent 面板"
+              className="absolute top-1 right-1 rounded-full text-paw-ink/50 hover:bg-paw-accent-soft hover:text-paw-ink"
               onClick={() => agentActions.setOpen(false)}
             >
-              <X aria-hidden />
+              <Minus aria-hidden />
             </Button>
           </SheetHeader>
 
-          <p
-            data-testid="agent-current-trip"
-            className="text-xs text-muted-foreground"
-          >
-            {active
-              ? `当前行程：${active.name}`
-              : "未激活行程：可让助手通过确认弹窗创建新行程"}
-          </p>
+          <div className="flex min-h-0 flex-1 flex-col rounded-t-[20px] bg-white">
+            <p
+              data-testid="agent-current-trip"
+              className="px-4 pt-3 text-center text-xs text-muted-foreground"
+            >
+              {active
+                ? `当前行程：${active.name}`
+                : "未激活行程：可让助手通过确认弹窗创建新行程"}
+            </p>
 
-          <MessageScroller data-testid="agent-messages" className="px-1">
-            {turns.length === 0 ? (
-              <p className="px-2 py-6 text-sm text-muted-foreground">
-                描述城市、日期、宠物和想去的地点，我会在 Pawtrip 已收录地点中生成可确认的方案。
+            <MessageScroller data-testid="agent-messages" className="px-3 py-3">
+              {turns.length === 0 ? (
+                <p className="px-2 py-6 text-sm text-muted-foreground">
+                  描述城市、日期、宠物和想去的地点，我会在 Pawtrip 已收录地点中生成可确认的方案。
+                </p>
+              ) : null}
+              {turns.map((turn) => (
+                <Fragment key={turn.key}>
+                  {turn.user ? (
+                    <Message from="user">
+                      <MessageContent className="items-end">
+                        <Bubble
+                          variant="outline"
+                          className="border-paw-accent/20 bg-[#FBE7C9] text-paw-ink"
+                        >
+                          {turn.user.text}
+                        </Bubble>
+                      </MessageContent>
+                    </Message>
+                  ) : null}
+                  {turn.process.length > 0 ? (
+                    turn.active ? (
+                      <AgentProcess items={turn.process} />
+                    ) : (
+                      <details
+                        data-testid="agent-process-collapsed"
+                        className="group px-2 py-1 text-xs text-muted-foreground"
+                      >
+                        <summary className="flex cursor-pointer list-none items-center gap-1 select-none marker:hidden [&::-webkit-details-marker]:hidden">
+                          <ChevronRight
+                            aria-hidden="true"
+                            className="size-3.5 shrink-0 transition-transform group-open:rotate-90"
+                          />
+                          已完成思考
+                        </summary>
+                        <AgentProcess items={turn.process} />
+                      </details>
+                    )
+                  ) : null}
+                  {turn.reply ? (
+                    <Message from="assistant">
+                      <MessageContent className="gap-1">
+                        <div className="w-full rounded-2xl border border-[#ECECEC] bg-[#F6F6F6] px-3 py-2.5">
+                          <AgentMarkdown text={turn.reply.text} />
+                        </div>
+                      </MessageContent>
+                    </Message>
+                  ) : null}
+                  {turn.active ? <AgentThinking /> : null}
+                </Fragment>
+              ))}
+            </MessageScroller>
+
+            {flow?.stage === "confirm-deactivate" ? (
+              <div
+                data-testid="agent-deactivate-confirm"
+                className="mx-3 flex flex-col gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+              >
+                <p>
+                  创建新行程会取消当前激活行程。将先完成待发送的保存，保存成功后继续。
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => void confirmDeactivation()}>
+                    确认并继续
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => flow.resolve({ status: "cancelled" })}
+                  >
+                    取消
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            {flow?.stage === "dialog" ? (
+              <CityTripDialog
+                city={flow.city}
+                initialStartDate={flow.startDate}
+                initialEndDate={flow.endDate}
+                initialPetId={flow.petId}
+                navigateOnCreate={false}
+                beforeCreate={async () => {
+                  if (!tripStore.state.active) return true;
+                  const outcome = await flushTripSave();
+                  return outcome.ok;
+                }}
+                onCreated={(trip) => {
+                  flow.resolve({
+                    status: "created",
+                    tripId: trip.id,
+                    city: {
+                      adcode: flow.city.adcode,
+                      name: flow.city.name,
+                      province: flow.city.province,
+                      featureTags: flow.city.featureTags ?? [],
+                    },
+                    totalDays: trip.totalDays,
+                    petId: trip.petId,
+                  });
+                }}
+                onClose={() => flow.resolve({ status: "cancelled" })}
+              />
+            ) : null}
+
+            {shownProposal && active ? (
+              <div className="flex max-h-[50%] min-h-0 flex-col px-3">
+                <ProposalCard
+                  proposal={shownProposal}
+                  targetTrip={active}
+                  names={names}
+                  applying={applying}
+                  error={applyError}
+                  onApply={() => void apply()}
+                  onReject={() => agentActions.clearProposals()}
+                />
+              </div>
+            ) : null}
+
+            {chat.error ? (
+              <p role="alert" className="px-4 text-xs text-destructive">
+                Agent 请求失败：{chat.error.message}
               </p>
             ) : null}
-            {turns.map((turn) => (
-              <Fragment key={turn.key}>
-                {turn.user ? (
-                  <Message from="user">
-                    <MessageContent className="items-end">
-                      <Bubble
-                        variant="default"
-                        className="bg-emerald-100 text-black"
-                      >
-                        {turn.user.text}
-                      </Bubble>
-                    </MessageContent>
-                  </Message>
-                ) : null}
-                {turn.process.length > 0 ? (
-                  turn.active ? (
-                    <AgentProcess items={turn.process} />
-                  ) : (
-                    <details
-                      data-testid="agent-process-collapsed"
-                      className="group px-2 py-1 text-xs text-muted-foreground"
-                    >
-                      <summary className="flex cursor-pointer list-none items-center gap-1 select-none marker:hidden [&::-webkit-details-marker]:hidden">
-                        <ChevronRight
-                          aria-hidden="true"
-                          className="size-3.5 shrink-0 transition-transform group-open:rotate-90"
-                        />
-                        已完成思考
-                      </summary>
-                      <AgentProcess items={turn.process} />
-                    </details>
-                  )
-                ) : null}
-                {turn.reply ? (
-                  <Message from="assistant">
-                    <MessageContent className="gap-1">
-                      <AgentMarkdown text={turn.reply.text} />
-                    </MessageContent>
-                  </Message>
-                ) : null}
-                {turn.active ? <AgentThinking /> : null}
-              </Fragment>
-            ))}
-          </MessageScroller>
 
-          {flow?.stage === "confirm-deactivate" ? (
-            <div
-              data-testid="agent-deactivate-confirm"
-              className="flex flex-col gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+            <form
+              className="flex flex-col gap-2 px-4 pt-2 pb-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void send();
+              }}
             >
-              <p>
-                创建新行程会取消当前激活行程。将先完成待发送的保存，保存成功后继续。
-              </p>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => void confirmDeactivation()}>
-                  确认并继续
-                </Button>
+              <InputGroup className="rounded-xl border-paw-accent/50 bg-white shadow-sm focus-within:border-paw-accent focus-within:ring-2 focus-within:ring-paw-accent/20">
+                <InputGroupTextarea
+                  aria-label="向行程规划助手提问"
+                  placeholder="例如：帮我规划珠海两天的行程，带豆豆"
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void send();
+                    }
+                  }}
+                />
                 <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => flow.resolve({ status: "cancelled" })}
+                  type="submit"
+                  size="icon-sm"
+                  aria-label="发送"
+                  disabled={chat.isLoading || !input.trim()}
+                  className="rounded-full bg-paw-accent-strong text-white hover:bg-paw-accent"
                 >
-                  取消
+                  <ArrowUp aria-hidden />
                 </Button>
-              </div>
-            </div>
-          ) : null}
-
-          {flow?.stage === "dialog" ? (
-            <CityTripDialog
-              city={flow.city}
-              initialStartDate={flow.startDate}
-              initialEndDate={flow.endDate}
-              initialPetId={flow.petId}
-              navigateOnCreate={false}
-              beforeCreate={async () => {
-                if (!tripStore.state.active) return true;
-                const outcome = await flushTripSave();
-                return outcome.ok;
-              }}
-              onCreated={(trip) => {
-                flow.resolve({
-                  status: "created",
-                  tripId: trip.id,
-                  city: {
-                    adcode: flow.city.adcode,
-                    name: flow.city.name,
-                    province: flow.city.province,
-                    featureTags: flow.city.featureTags ?? [],
-                  },
-                  totalDays: trip.totalDays,
-                  petId: trip.petId,
-                });
-              }}
-              onClose={() => flow.resolve({ status: "cancelled" })}
-            />
-          ) : null}
-
-          {shownProposal && active ? (
-            <ProposalCard
-              proposal={shownProposal}
-              targetTrip={active}
-              names={names}
-              applying={applying}
-              error={applyError}
-              onApply={() => void apply()}
-              onReject={() => agentActions.clearProposals()}
-            />
-          ) : null}
-
-          {chat.error ? (
-            <p role="alert" className="text-xs text-destructive">
-              Agent 请求失败：{chat.error.message}
-            </p>
-          ) : null}
-
-          <form
-            className="flex flex-col gap-1"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void send();
-            }}
-          >
-            <InputGroup>
-              <InputGroupTextarea
-                aria-label="向行程规划助手提问"
-                placeholder="例如：帮我规划珠海两天的行程，带豆豆"
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault();
-                    void send();
-                  }
-                }}
-              />
-              <Button type="submit" size="sm" disabled={chat.isLoading || !input.trim()}>
-                发送
-              </Button>
-            </InputGroup>
-          </form>
+              </InputGroup>
+              <p className="px-2 text-center text-[11px] leading-4 text-muted-foreground">
+                AI 生成的回复可能不准确，重要事项请联系人工客服。
+              </p>
+            </form>
+          </div>
         </SheetContent>
       </Sheet>
     </>
@@ -419,12 +457,8 @@ function AgentProcess({ items }: { items: AgentProcessItem[] }) {
 
 function AgentThinking() {
   return (
-    <div
-      data-testid="agent-status"
-      className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground"
-    >
-      <Loader2 className="size-3.5 animate-spin" aria-hidden />
-      <span>正在思考</span>
+    <div data-testid="agent-status" className="flex items-center px-2 py-1">
+      <img src={pawLoadingGif} alt="" aria-hidden className="h-20 w-auto" />
     </div>
   );
 }

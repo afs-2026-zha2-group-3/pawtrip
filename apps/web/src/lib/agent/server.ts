@@ -10,6 +10,9 @@ import type { FakeResponseStep } from "@tanstack/ai/testing";
 import {
   AGENT_BIGMODEL_BASE_URL,
   AGENT_DEFAULT_MODEL,
+  AGENT_DEFAULT_REASONING_EFFORT,
+  AGENT_REASONING_EFFORTS,
+  type AgentReasoningEffort,
 } from "./constants";
 import { buildSystemPrompt, sanitizeAgentContext } from "./context";
 import { loadAgentEnv } from "./env";
@@ -72,6 +75,7 @@ export async function handleAgentRequest(
     const context = sanitizeAgentContext(
       (params.forwardedProps as Record<string, unknown> | undefined)?.agentContext,
     );
+    const reasoningEffort = parseReasoningEffort(env.PAWTRIP_AGENT_REASONING_EFFORT);
     const stream = chat({
       adapter,
       messages: params.messages,
@@ -79,6 +83,7 @@ export async function handleAgentRequest(
       runId: params.runId,
       tools,
       systemPrompts: [buildSystemPrompt(context)],
+      modelOptions: { reasoning_effort: reasoningEffort },
     });
     return toServerSentEventsResponse(stream);
   } catch (error) {
@@ -146,6 +151,21 @@ async function createAdapter(env: AgentServerEnv): Promise<AgentAdapter> {
     models: [model],
   });
   return bigmodel(model);
+}
+
+function parseReasoningEffort(
+  value: string | undefined,
+): AgentReasoningEffort {
+  if (value == null || value.trim() === "") return AGENT_DEFAULT_REASONING_EFFORT;
+  const effort = value.trim().toLowerCase();
+  const matched = AGENT_REASONING_EFFORTS.find((item) => item === effort);
+  if (!matched) {
+    console.warn(
+      `[agent] unsupported PAWTRIP_AGENT_REASONING_EFFORT=${value}; falling back to ${AGENT_DEFAULT_REASONING_EFFORT}; expected ${AGENT_REASONING_EFFORTS.join("/")}`,
+    );
+    return AGENT_DEFAULT_REASONING_EFFORT;
+  }
+  return matched;
 }
 
 function jsonError(status: number, code: string, detail: string): Response {

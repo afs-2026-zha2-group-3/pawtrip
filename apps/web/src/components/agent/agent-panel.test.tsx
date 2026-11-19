@@ -130,6 +130,7 @@ describe("AgentPanel", () => {
     await waitFor(() => {
       expect(screen.getByTestId("agent-panel")).toBeTruthy();
     });
+    expect(fab.className).toContain("invisible");
     expect(screen.getByText(/描述城市、日期、宠物/)).toBeTruthy();
     expect(screen.getByTestId("agent-current-trip").textContent).toContain("未激活行程");
     expect(tripStore.state.active).toBeNull();
@@ -184,27 +185,6 @@ describe("AgentPanel", () => {
     });
     expect(agentStore.state.proposals).toEqual([]);
     expect(tripStore.state.active?.plan.days[0].stops).toEqual([{ poiId: "a" }]);
-  });
-
-  it("right-aligns user messages in a light green bubble without identity marks", async () => {
-    agentActions.setOpen(true);
-    chat.state.messages = [
-      { id: "u1", role: "user", parts: [{ type: "text", content: "帮我安排住宿" }] },
-    ];
-
-    renderPanel();
-
-    const bubble = (await screen.findByText("帮我安排住宿")).closest(
-      '[data-slot="bubble"]',
-    ) as HTMLElement;
-    expect(bubble.className).toContain("bg-emerald-100");
-    expect(bubble.className).toContain("text-black");
-
-    const content = bubble.parentElement as HTMLElement;
-    expect(content.className).toContain("items-end");
-
-    const message = bubble.closest('[data-slot="message"]') as HTMLElement;
-    expect(message.querySelector("img, svg")).toBeNull();
   });
 
   it("shows intermediate narration in a collapsed process block", async () => {
@@ -309,7 +289,6 @@ describe("AgentPanel", () => {
     renderPanel();
 
     expect(screen.getAllByTestId("agent-status")).toHaveLength(1);
-    expect(screen.getByTestId("agent-status").textContent).toContain("正在思考");
   });
 
   it("shows tool calls as light tags while thinking", () => {
@@ -325,7 +304,6 @@ describe("AgentPanel", () => {
     ];
 
     const { unmount } = renderPanel();
-    expect(screen.getByTestId("agent-status").textContent).toContain("正在思考");
     expect(screen.getByText("搜索地点")).toBeTruthy();
     unmount();
 
@@ -360,7 +338,6 @@ describe("AgentPanel", () => {
     renderPanel();
 
     expect(screen.getAllByTestId("agent-status")).toHaveLength(1);
-    expect(screen.getByTestId("agent-status").textContent).toContain("正在思考");
     expect(screen.queryByTestId("agent-completed-steps")).toBeNull();
     expect(screen.getByTestId("agent-status").textContent).not.toContain("已完成");
   });
