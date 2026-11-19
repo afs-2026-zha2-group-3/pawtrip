@@ -2,6 +2,8 @@
 
 变更：`2026-11-17-city-browse-policy-panel`
 
+> 2026-11-19 修订：AC-4/AC-5 中关闭后 `max-w-5xl` 居中、卡片不变窄、976px 定宽与 Pick 的记录为历史证据；当前口径见 `tasks.md` 第 12 节（外框 `max-w-[1662px]`、卡片右下角「选择」、列表列自适应）。
+
 ## 检查结果
 
 | Check | Result | Evidence | Notes |

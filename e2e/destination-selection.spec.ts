@@ -138,7 +138,7 @@ test("E9 active trip is cleared when selecting another city", async ({
 
   await expect(page.getByRole("textbox", { name: "搜索城市" })).toBeVisible();
   const card = cityCard(page, "杭州市");
-  const pick = card.getByRole("button", { name: "Pick" });
+  const pick = card.getByRole("button", { name: "选择" });
   await expect(pick).toBeEnabled();
   await pick.click();
   await expect(page.getByRole("dialog")).toBeVisible();
@@ -156,6 +156,34 @@ test("E14 reports a pet API failure instead of an empty pet list", async ({ page
 
   await expect(page.getByText("暂时无法读取宠物档案，请稍后重试。")).toBeVisible();
   await expect(page.getByText(/尚未添加宠物档案/)).toHaveCount(0);
+});
+
+test("E16 wide viewport shows five city columns and four with the policy open", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await openCities(page);
+
+  const grid = page.getByTestId("city-card").first().locator("..");
+  const columns = () =>
+    grid.evaluate(
+      (element) => getComputedStyle(element).gridTemplateColumns.split(" ").length,
+    );
+
+  await expect(page.getByTestId("city-browse-frame")).toHaveCSS(
+    "border-top-color",
+    "rgb(255, 239, 214)",
+  );
+  await expect.poll(columns).toBe(5);
+
+  await page.getByTestId("city-card").first().click();
+  await expect(
+    page.getByRole("region", { name: "城市宠物管理政策" }),
+  ).toBeVisible();
+  await expect.poll(columns).toBe(4);
+
+  await page.getByRole("button", { name: "关闭城市政策" }).click();
+  await expect.poll(columns).toBe(5);
 });
 
 test("E15 selecting a city shows its policy in the sidebar", async ({ page }) => {

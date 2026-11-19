@@ -15,9 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PolicySubjectNotice } from "@/components/trip/policy-tags";
 import { TripPanel } from "@/components/trip/trip-panel";
 import { petRulesApplyTo } from "@/lib/attraction-pet-rules";
+import { normalizeLocationType } from "@/lib/location-summary";
 import { useAgentOpen } from "@/lib/agent/selectors";
 import { companionActions } from "@/lib/companion/store";
 import { useCompanionHint } from "@/lib/companion/use-companion-hint";
@@ -43,22 +45,32 @@ import { MapLocationCard } from "./-map-location-card";
 import { TripDateCard } from "./-trip-date-card";
 
 export const Route = createFileRoute("/_authenticated/attractions/")({
+  validateSearch: (search: Record<string, unknown>) => {
+    const type = normalizeLocationType(search.type);
+    return type === "attraction" ? {} : { type };
+  },
   component: AttractionsPage,
 });
 
 const PAGE_SIZE = 20;
 const DEFAULT_TYPE_GROUP = "attraction";
+const TYPE_LABELS: Record<string, string> = {
+  attraction: "景点",
+  hotel: "酒店",
+  restaurant: "餐厅",
+};
 const NEARBY_TYPE_GROUPS = new Set(["hotel", "restaurant"]);
 
 function AttractionsPage() {
   const isClient = typeof window !== "undefined";
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: Route.fullPath });
   const queryClient = useQueryClient();
   const active = useActiveTrip();
   const policySubjects = usePolicySubjects();
   const agentOpen = useAgentOpen();
+  const { type: typeParam } = Route.useSearch();
+  const typeGroup = normalizeLocationType(typeParam);
   const totalDays = active?.totalDays ?? 1;
-  const [typeGroup, setTypeGroup] = useState(DEFAULT_TYPE_GROUP);
   const [includeWithoutRules, setIncludeWithoutRules] = useState(false);
   const [page, setPage] = useState(1);
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null);
@@ -83,7 +95,6 @@ function AttractionsPage() {
 
   const nearbyType = NEARBY_TYPE_GROUPS.has(typeGroup);
   const petRulesApply = petRulesApplyTo(typeGroup);
-  const gated = nearbyType && anchorPoiId === null;
   const nearbyAnchorPoiId = nearbyType ? (anchorPoiId ?? undefined) : undefined;
   const anchorName = anchorPoiId
     ? (anchors.find((anchor) => anchor.poiId === anchorPoiId)?.name ?? null)
@@ -93,7 +104,7 @@ function AttractionsPage() {
     !active
       ? "先创建或激活行程，我才能按城市帮你挑地点"
       : nearbyType && anchorPoiId === null
-        ? "先选一个景点当锚点，我再帮你挑附近的餐厅和住宿"
+        ? "选一个行程景点当锚点，我帮你挑 5km 内的餐厅和住宿"
         : anchors.length > 0
           ? "快来挑适合我的景点吧！和我一起游玩！点击「下一步」来帮我挑选适合我的餐厅和酒店吧！"
           : "把想去的景点加进来吧，我帮你串成每天的路线",
@@ -116,7 +127,6 @@ function AttractionsPage() {
   useEffect(() => {
     if (previousTripId.current !== activeTripId) {
       previousTripId.current = activeTripId;
-      setTypeGroup(DEFAULT_TYPE_GROUP);
       setAnchorPoiId(null);
       setActiveKeytag(null);
       setSearchInput("");
@@ -142,7 +152,12 @@ function AttractionsPage() {
     setPage(1);
   }, [activeKeytag, normalizedKeyword]);
 
-  const listRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    setPage(1);
+    setActiveKeytag(null);
+  }, [typeGroup]);
+
+  const listRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     listRef.current?.scrollTo({ top: 0 });
   }, [page]);
@@ -162,14 +177,13 @@ function AttractionsPage() {
       page,
       pageSize: PAGE_SIZE,
     }),
-    enabled: isClient && Boolean(regionCode) && !gated,
+    enabled: isClient && Boolean(regionCode),
     throwOnError: (error) =>
       !(Boolean(nearbyAnchorPoiId) && error instanceof ApiError && error.status === 400),
     placeholderData: keepPreviousData,
   });
   const friendlyEmpty =
     petRulesApply &&
-    !gated &&
     !locations.isError &&
     !includeWithoutRules &&
     locations.data !== undefined &&
@@ -183,7 +197,7 @@ function AttractionsPage() {
       page: 1,
       pageSize: 1,
     }),
-    enabled: isClient && Boolean(regionCode) && !gated && friendlyEmpty,
+    enabled: isClient && Boolean(regionCode) && friendlyEmpty,
     throwOnError: false,
   });
   const anchorError = Boolean(
@@ -196,7 +210,7 @@ function AttractionsPage() {
       petFriendlyOnly: petRulesApply && !includeWithoutRules,
       nearPoiId: nearbyAnchorPoiId,
     }),
-    enabled: isClient && Boolean(regionCode) && !gated && (mapEnabled || clientFilterActive),
+    enabled: isClient && Boolean(regionCode) && (mapEnabled || clientFilterActive),
     throwOnError: false,
     placeholderData: keepPreviousData,
   });
@@ -277,7 +291,7 @@ function AttractionsPage() {
     );
   }
 
-  if (!gated && !locations.data && !locations.isError) {
+  if (!locations.data && !locations.isError) {
     return (
       <main className="mx-auto w-full max-w-3xl p-6">
         <Card>
@@ -289,10 +303,8 @@ function AttractionsPage() {
     );
   }
 
-  const types = locationTypes.data;
   const data = locations.data;
-  const selectedType = types.find((option) => option.key === typeGroup);
-  const typeLabel = selectedType?.label ?? "地点";
+  const typeLabel = TYPE_LABELS[typeGroup] ?? "地点";
   const nearbyActive = nearbyType && anchorPoiId !== null;
   const checkingAny = friendlyEmpty && allLocations.isPending;
   const anyExists = (allLocations.data?.totalElements ?? 0) > 0;
@@ -321,13 +333,6 @@ function AttractionsPage() {
   const gridTotalPages = clientFilterActive
     ? Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE))
     : (data?.totalPages ?? 1);
-  const hasPagination = !gated && !locations.isError && gridTotalPages > 1;
-
-  const changeType = (value: string) => {
-    setTypeGroup(value);
-    setActiveKeytag(null);
-    setPage(1);
-  };
 
   const enterNearbyLocations = () => {
     const firstAnchor = anchors[0];
@@ -344,12 +349,8 @@ function AttractionsPage() {
       );
     }
     setAnchorPoiId(firstAnchor.poiId);
-    changeType("hotel");
-  };
-
-  const backToAttractions = () => {
-    setAnchorPoiId(null);
-    changeType(DEFAULT_TYPE_GROUP);
+    setPage(1);
+    void navigate({ to: "/attractions", search: { type: "hotel" } });
   };
 
   const createItinerary = async () => {
@@ -470,7 +471,7 @@ function AttractionsPage() {
   const renderCards = () => (
     <div
       className={cn(
-        "paw-grid grid gap-4 sm:grid-cols-2",
+        "paw-grid grid gap-6 sm:grid-cols-2",
         !agentOpen && "2xl:grid-cols-3",
       )}
     >
@@ -478,9 +479,7 @@ function AttractionsPage() {
         <LocationCard
           key={location.poiId}
           location={location}
-          typeLabel={
-            types.find((option) => option.key === location.typeGroup)?.label ?? location.typeGroup
-          }
+          typeLabel={TYPE_LABELS[location.typeGroup] ?? typeLabel}
           totalDays={totalDays}
           anchorName={nearbyType ? anchorName : null}
           highlighted={mapFocusPoiId === location.poiId}
@@ -504,17 +503,15 @@ function AttractionsPage() {
       <div
         data-testid="attractions-layout"
         className={cn(
-          "grid min-h-0 items-stretch gap-4 lg:h-full lg:grid-rows-[minmax(0,1fr)] lg:grid-cols-[280px_minmax(0,1fr)_minmax(320px,36%)]",
+          "grid min-h-0 items-stretch gap-4 lg:h-full lg:grid-rows-[minmax(0,1fr)] lg:grid-cols-[280px_minmax(0,1fr)]",
           // 展开态的 376px 留白 = Agent 面板 400px + right-4 16px - 页面右内边距 40px；
           // 面板宽度变更时需同步 agent-panel.tsx。
-          agentOpen
-            ? "2xl:grid-cols-[280px_minmax(0,1fr)_minmax(240px,0.85fr)_minmax(0,376px)]"
-            : "2xl:grid-cols-[280px_minmax(0,1fr)_minmax(320px,0.8fr)]",
+          agentOpen ? "2xl:grid-cols-[280px_minmax(0,1fr)_minmax(0,376px)]" : undefined,
         )}
       >
         <aside
           data-testid="trip-panel-column"
-          className="flex min-h-0 min-w-0 flex-col gap-3 rounded-[22px] border border-paw-line bg-card p-4 shadow-[0_2px_8px_0_rgba(38,31,18,0.04)] lg:col-start-1 lg:col-span-1 lg:row-start-1 lg:h-full"
+          className="flex min-h-0 min-w-0 flex-col gap-3 rounded-[22px] border border-paw-accent-soft bg-card p-4 lg:col-start-1 lg:col-span-1 lg:row-start-1 lg:h-full"
         >
           <TripDateCard />
           <div className="min-h-0 flex-1">
@@ -523,222 +520,192 @@ function AttractionsPage() {
         </aside>
 
         <section
+          data-testid="attractions-region"
+          className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[22px] border border-paw-accent-soft bg-card lg:col-start-2 lg:col-span-1 lg:row-start-1 lg:h-full lg:flex-row"
+        >
+        <div
           ref={listRef}
           data-testid="location-list"
-          className={cn(
-            "flex min-h-0 min-w-0 flex-col gap-4 rounded-[22px] border border-paw-line bg-card p-4 shadow-[0_2px_8px_0_rgba(38,31,18,0.04)] lg:col-start-2 lg:col-span-1 lg:row-start-1 lg:h-full lg:overflow-y-auto lg:pt-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-            hasPagination && "lg:pb-0",
-          )}
+          className="flex min-h-0 min-w-0 flex-1 flex-col p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:overflow-y-auto"
         >
-          <div className="z-20 -mx-4 shrink-0 border-b border-paw-line bg-gradient-to-b from-card to-card/85 px-4 backdrop-blur-sm lg:sticky lg:top-0 lg:pt-4 lg:pb-2">
-            <div className="mb-3 flex min-w-0 flex-nowrap items-center gap-3 overflow-hidden">
-              <h1 className="shrink-0 whitespace-nowrap text-2xl leading-8 font-medium">
-                {typeGroup === DEFAULT_TYPE_GROUP ? "景点" : typeLabel}
-              </h1>
-              {chipOptions.length > 0 ? (
-                <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto">
-                  {chipOptions.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      aria-pressed={activeKeytag === tag}
-                      onClick={() => setActiveKeytag((current) => (current === tag ? null : tag))}
-                      className={cn(
-                        "inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3 text-sm transition-colors",
-                        activeKeytag === tag
-                          ? "bg-[#F5F5F5] text-foreground"
-                          : "border border-[#E5E5E5] bg-card text-foreground hover:bg-muted",
-                      )}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              {typeGroup === DEFAULT_TYPE_GROUP ? (
-                <>
-                  {petRulesApply ? (
-                    <label className="flex cursor-pointer items-center gap-2">
-                      <Checkbox
-                        aria-label="显示全部地点"
-                        checked={includeWithoutRules}
-                        onCheckedChange={(checked) => {
-                          setIncludeWithoutRules(Boolean(checked));
-                          setPage(1);
-                        }}
-                      />
-                      显示全部地点
-                    </label>
-                  ) : null}
-                  {anchors.length > 0 ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={anchorsLoading}
-                      onClick={enterNearbyLocations}
-                    >
-                      选择住宿/餐厅
-                    </Button>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="bg-[#F5F5F5] hover:bg-[#EBEBEB]"
-                    onClick={backToAttractions}
+          <div className="z-20 -mx-4 shrink-0 border-b border-paw-accent-soft bg-gradient-to-b from-card to-card/85 px-4 backdrop-blur-sm lg:sticky lg:top-0 lg:pt-4 lg:pb-2">
+          <div className="mb-3 flex min-w-0 flex-nowrap items-center gap-3 overflow-hidden">
+            <h1 className="shrink-0 whitespace-nowrap text-2xl leading-8 font-medium">
+              {typeLabel}
+            </h1>
+            {nearbyType ? (
+              <Tabs
+                value={typeGroup}
+                onValueChange={(value) => {
+                  if (value === "hotel" || value === "restaurant") {
+                    void navigate({ to: "/attractions", search: { type: value } });
+                  }
+                }}
+                className="contents"
+              >
+                <TabsList aria-label="地点类型" className="h-9 shrink-0 rounded-full bg-muted p-1">
+                  <TabsTrigger
+                    value="hotel"
+                    className="h-7 flex-none rounded-full px-4 text-sm data-active:bg-foreground data-active:text-background group-data-[variant=default]/tabs-list:data-active:shadow-none dark:data-active:bg-foreground dark:data-active:text-background"
                   >
-                    返回景点选择
-                  </Button>
-                  <div className="flex items-center gap-2">
-                    <span>地点类型</span>
-                    <Select value={typeGroup} onValueChange={(value) => value && changeType(value)}>
-                      <SelectTrigger aria-label="地点类型筛选">
-                        <SelectValue>
-                          {(value: string | null) =>
-                            types.find((option) => option.key === value)?.label ?? "选择类型"
-                          }
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {types
-                            .filter((option) => NEARBY_TYPE_GROUPS.has(option.key))
-                            .map((option) => (
-                              <SelectItem key={option.key} value={option.key}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              )}
-              {nearbyType ? (
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={anchorPoiId ?? ""}
-                    onValueChange={(value) => {
-                      setAnchorPoiId(value || null);
-                      setPage(1);
-                    }}
-                    disabled={anchorsLoading || anchors.length === 0}
+                    酒店
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="restaurant"
+                    className="h-7 flex-none rounded-full px-4 text-sm data-active:bg-foreground data-active:text-background group-data-[variant=default]/tabs-list:data-active:shadow-none dark:data-active:bg-foreground dark:data-active:text-background"
                   >
-                    <SelectTrigger aria-label="离景点最近">
-                      <SelectValue>
-                        {(value: string | null) =>
-                          value && value !== "none" && anchorName
-                            ? `离${anchorName}最近`
-                            : anchorsLoading
-                              ? "正在加载行程景点…"
-                              : "离景点最近"
-                        }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {anchors.map((anchor) => (
-                          <SelectItem key={anchor.poiId} value={anchor.poiId}>
-                            {anchor.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : null}
-              <div className="relative ml-auto w-[210px] shrink-0">
-                <Search
-                  aria-hidden="true"
-                  className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                  aria-label="搜索地点"
-                  placeholder="搜索..."
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  className="h-9 w-full rounded-full pr-3 pl-9 text-sm"
-                />
-              </div>
-            </div>
-
-            {policySubjects.status === "error" || policySubjects.status === "loading" ? (
-              <div className="mt-4">
-                <PolicySubjectNotice subjects={policySubjects} />
+                    餐厅
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            ) : null}
+            {chipOptions.length > 0 ? (
+              <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto">
+                {chipOptions.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    aria-pressed={activeKeytag === tag}
+                    onClick={() => setActiveKeytag((current) => (current === tag ? null : tag))}
+                    className={cn(
+                      "inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3 text-sm transition-colors",
+                      activeKeytag === tag
+                        ? "bg-[#F5F5F5] text-foreground"
+                        : "border border-[#E5E5E5] bg-card text-foreground hover:bg-muted",
+                    )}
+                  >
+                    {tag}
+                  </button>
+                ))}
               </div>
             ) : null}
           </div>
 
-          {gated ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyTitle>请先在景点页选择行程景点</EmptyTitle>
-                <EmptyDescription>
-                  住宿和餐厅会显示所选行程景点 5km 内的地点。请返回“景点”模式后先安排景点。
-                </EmptyDescription>
-              </EmptyHeader>
-              <Button onClick={backToAttractions}>返回景点选择</Button>
-            </Empty>
-          ) : locations.isError ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyTitle>{anchorError ? "该景点缺少坐标，无法计算距离" : "加载地点失败"}</EmptyTitle>
-                <EmptyDescription>
-                  {anchorError ? "请清除锚点后重新选择其他行程景点。" : "请稍后重试。"}
-                </EmptyDescription>
-              </EmptyHeader>
-              {anchorError ? <Button onClick={() => setAnchorPoiId(null)}>清除锚点</Button> : null}
-            </Empty>
-          ) : clientFilterActive ? (
-            fullLocations.isPending ? (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+            {typeGroup === DEFAULT_TYPE_GROUP && petRulesApply ? (
+              <label className="flex cursor-pointer items-center gap-2">
+                <Checkbox
+                  aria-label="显示全部地点"
+                  checked={includeWithoutRules}
+                  onCheckedChange={(checked) => {
+                    setIncludeWithoutRules(Boolean(checked));
+                    setPage(1);
+                  }}
+                />
+                显示全部地点
+              </label>
+            ) : null}
+            {nearbyType ? (
+              <div className="flex items-center gap-2">
+                <Select
+                  value={anchorPoiId ?? "none"}
+                  onValueChange={(value) => {
+                    setAnchorPoiId(value === "none" ? null : value);
+                    setPage(1);
+                  }}
+                  disabled={anchorsLoading || anchors.length === 0}
+                >
+                  <SelectTrigger aria-label="离景点最近">
+                    <SelectValue>
+                      {(value: string | null) =>
+                        value && value !== "none" && anchorName
+                          ? `离${anchorName}最近`
+                          : anchorsLoading
+                            ? "正在加载行程景点…"
+                            : "离景点最近"
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="none">不限景点</SelectItem>
+                      {anchors.map((anchor) => (
+                        <SelectItem key={anchor.poiId} value={anchor.poiId}>
+                          {anchor.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+            <div className="relative ml-auto w-[210px] shrink-0">
+              <Search
+                aria-hidden="true"
+                className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                aria-label="搜索地点"
+                placeholder="搜索..."
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                className="h-9 w-full rounded-full pr-3 pl-9 text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <PolicySubjectNotice subjects={policySubjects} />
+          </div>
+          </div>
+
+          <div className="mt-5 flex min-w-0 flex-col gap-4">
+            {locations.isError ? (
+              <Empty>
+                <EmptyHeader>
+                  <EmptyTitle>{anchorError ? "该景点缺少坐标，无法计算距离" : "加载地点失败"}</EmptyTitle>
+                  <EmptyDescription>
+                    {anchorError ? "请清除锚点后重新选择其他行程景点。" : "请稍后重试。"}
+                  </EmptyDescription>
+                </EmptyHeader>
+                {anchorError ? <Button onClick={() => setAnchorPoiId(null)}>清除锚点</Button> : null}
+              </Empty>
+            ) : clientFilterActive ? (
+              fullLocations.isPending ? (
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyTitle>正在加载地点…</EmptyTitle>
+                  </EmptyHeader>
+                </Empty>
+              ) : fullLocations.isError ? (
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyTitle>加载地点失败</EmptyTitle>
+                    <EmptyDescription>请稍后重试。</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : filteredItems.length === 0 ? (
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyTitle>没有匹配的地点</EmptyTitle>
+                    <EmptyDescription>试试其他关键词或分类筛选。</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                renderCards()
+              )
+            ) : !data ? (
               <Empty>
                 <EmptyHeader>
                   <EmptyTitle>正在加载地点…</EmptyTitle>
                 </EmptyHeader>
               </Empty>
-            ) : fullLocations.isError ? (
+            ) : data.items.length === 0 ? (
               <Empty>
                 <EmptyHeader>
-                  <EmptyTitle>加载地点失败</EmptyTitle>
-                  <EmptyDescription>请稍后重试。</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : filteredItems.length === 0 ? (
-              <Empty>
-                <EmptyHeader>
-                  <EmptyTitle>没有匹配的地点</EmptyTitle>
-                  <EmptyDescription>试试其他关键词或分类筛选。</EmptyDescription>
+                  <EmptyTitle>{emptyTitle}</EmptyTitle>
+                  {showToggleHint ? (
+                    <EmptyDescription>可打开“显示全部地点”查看该类型下的所有已保存地点。</EmptyDescription>
+                  ) : null}
                 </EmptyHeader>
               </Empty>
             ) : (
               renderCards()
-            )
-          ) : !data ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyTitle>正在加载地点…</EmptyTitle>
-              </EmptyHeader>
-            </Empty>
-          ) : data.items.length === 0 ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyTitle>{emptyTitle}</EmptyTitle>
-                {showToggleHint ? (
-                  <EmptyDescription>可打开“显示全部地点”查看该类型下的所有已保存地点。</EmptyDescription>
-                ) : null}
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            renderCards()
-          )}
+            )}
+          </div>
 
-          {hasPagination ? (
-            <div className="z-20 mt-auto -mx-4 shrink-0 border-t border-paw-line bg-gradient-to-t from-card to-card/85 px-4 backdrop-blur-sm lg:sticky lg:bottom-0 lg:pt-4 lg:pb-4">
+          {!locations.isError && gridTotalPages > 1 ? (
+            <div className="z-20 mt-auto -mx-4 shrink-0 border-t border-paw-accent-soft bg-gradient-to-t from-card to-card/85 px-4 backdrop-blur-sm lg:sticky lg:bottom-0 lg:pt-4 lg:pb-4">
               <div className="flex items-center justify-between">
                 <Button
                   variant="outline"
@@ -762,53 +729,43 @@ function AttractionsPage() {
               </div>
             </div>
           ) : null}
-        </section>
+        </div>
 
         <aside
           data-testid="attractions-map"
-          className="relative min-h-0 lg:col-start-3 lg:col-span-1 lg:row-start-1 lg:h-full"
+          className="relative w-full shrink-0 p-3 lg:h-full lg:w-[36%]"
         >
-          {gated ? (
-            <div
-              data-testid="location-map-placeholder"
-              className="flex h-full min-h-[320px] items-center justify-center rounded-[22px] border bg-muted/30 p-6 text-center text-sm text-muted-foreground"
-            >
-              选择锚点后显示地图
-            </div>
-          ) : (
-            <>
-              <LocationMap
-                points={
-                  mapEnabled
-                    ? clientFilterActive
-                      ? filteredItems
-                      : (fullLocations.data ?? [])
-                    : []
-                }
-                typeLabel={typeLabel}
-                anchorName={nearbyType ? anchorName : null}
-                focusPoiId={mapFocusPoiId}
-                showInfoWindow={!mapDetailPoiId}
-                onSelect={setMapFocusPoiId}
-                onOpenDetail={setMapDetailPoiId}
-                loading={mapEnabled && fullLocations.isPending}
-                className="rounded-[22px] border-0"
-              />
-              {mapDetailPoiId ? (
-                <MapLocationCard
-                  poiId={mapDetailPoiId}
-                  point={fullLocations.data?.find((point) => point.poiId === mapDetailPoiId) ?? null}
-                  typeLabel={typeLabel}
-                  anchorName={nearbyType ? anchorName : null}
-                  onClose={() => {
-                    setMapDetailPoiId(null);
-                    setMapFocusPoiId(null);
-                  }}
-                />
-              ) : null}
-            </>
-          )}
+          <LocationMap
+            points={
+              mapEnabled
+                ? clientFilterActive
+                  ? filteredItems
+                  : (fullLocations.data ?? [])
+                : []
+            }
+            typeLabel={typeLabel}
+            anchorName={nearbyType ? anchorName : null}
+            focusPoiId={mapFocusPoiId}
+            showInfoWindow={!mapDetailPoiId}
+            onSelect={setMapFocusPoiId}
+            onOpenDetail={setMapDetailPoiId}
+            loading={mapEnabled && fullLocations.isPending}
+            className="h-full"
+          />
+          {mapDetailPoiId ? (
+            <MapLocationCard
+              poiId={mapDetailPoiId}
+              point={fullLocations.data?.find((point) => point.poiId === mapDetailPoiId) ?? null}
+              typeLabel={typeLabel}
+              anchorName={nearbyType ? anchorName : null}
+              onClose={() => {
+                setMapDetailPoiId(null);
+                setMapFocusPoiId(null);
+              }}
+            />
+          ) : null}
         </aside>
+        </section>
 
         {agentOpen ? (
           <div

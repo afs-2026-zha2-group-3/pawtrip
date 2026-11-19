@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PolicySubjectNotice, PolicyTags } from "@/components/trip/policy-tags";
+import { locationDescription } from "@/lib/location-summary";
 import { matchLocationPolicyForType } from "@/lib/trip/policy-match";
 import {
   useActiveTrip,
@@ -79,6 +80,9 @@ export function LocationDetailDialog({
 
         {location ? (
           <div className="flex flex-col gap-4">
+            <p className="text-sm leading-6 text-muted-foreground">
+              {locationDescription(location)}
+            </p>
             <PetFriendlyBadge
               typeGroup={location.typeGroup}
               maxPetsPerPerson={location.petPolicies.maxPetsPerPerson}

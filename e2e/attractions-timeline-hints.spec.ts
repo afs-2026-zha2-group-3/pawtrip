@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page, type Request } from "@playwright/test";
 import {
   createTripViaApi,
   csrfHeaders,
@@ -67,6 +67,27 @@ async function activateAndOpenAttractions(page: Page, name: string) {
   await tripCard(page, name).getByRole("button", { name: "编辑" }).click();
   await expect(page).toHaveURL(/\/attractions$/);
   await expect(page.getByTestId("trip-panel")).toBeVisible();
+}
+
+async function dragStop(page: Page, from: Locator, to: Locator) {
+  const fromBox = (await from.boundingBox())!;
+  const toBox = (await to.boundingBox())!;
+  await page.mouse.move(fromBox.x + fromBox.width / 2, fromBox.y + fromBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(
+    fromBox.x + fromBox.width / 2,
+    fromBox.y + fromBox.height / 2 + 12,
+    { steps: 5 },
+  );
+  await page.mouse.move(toBox.x + toBox.width / 2, toBox.y + toBox.height / 2, { steps: 10 });
+  await page.mouse.up();
+}
+
+async function savedStopOrder(request: Request): Promise<string[]> {
+  const body = request.postDataJSON() as {
+    plan: { days: { stops: { poiId: string }[] }[] };
+  };
+  return body.plan.days[0].stops.map((stop) => stop.poiId);
 }
 
 test.beforeEach(async ({ page }) => {
@@ -152,12 +173,45 @@ test("timeline rail connects both stop dots through taxi and walk segments", asy
     }
   };
 
-  await expect(segment.getByTestId("segment-mode")).toHaveText("打车");
+  await expect(segment.getByTestId("segment-mode")).toContainText("打车");
   await expect(panel.getByText(TAXI_PET_HINT)).toBeVisible();
   await assertRailConnected();
 
   await select.click();
   await page.getByRole("option", { name: "步行", exact: true }).click();
-  await expect(segment.getByTestId("segment-mode")).toHaveText("步行");
+  await expect(segment.getByTestId("segment-mode")).toContainText("步行");
   await assertRailConnected();
+});
+
+test("reorders timeline stops downward and upward", async ({ page }) => {
+  await presetTwoStopTrip(page, null);
+  await activateAndOpenAttractions(page, "珠海提示还原");
+
+  const panel = page.getByTestId("trip-panel");
+  const first = panel.locator('[data-stop-id="d1:0:e2e-zhu-a"]');
+  const second = panel.locator('[data-stop-id="d1:1:e2e-zhu-b"]');
+  await expect(first).toBeVisible();
+  await expect(second).toBeVisible();
+
+  const waitForSave = () =>
+    page.waitForRequest(
+      (candidate) =>
+        candidate.method() === "PUT" && /\/api\/trips\/\d+$/.test(candidate.url()),
+      { timeout: 15000 },
+    );
+
+  // 从上往下拖：此前该方向是空操作，顺序必须互换并提交。
+  const downSave = waitForSave();
+  await dragStop(page, first, second);
+  expect(await savedStopOrder(await downSave)).toEqual(["e2e-zhu-b", "e2e-zhu-a"]);
+  const movedFirst = panel.locator('[data-stop-id="d1:0:e2e-zhu-b"]');
+  const movedSecond = panel.locator('[data-stop-id="d1:1:e2e-zhu-a"]');
+  await expect(movedFirst).toBeVisible();
+  await expect(movedSecond).toBeVisible();
+
+  // 从下往上拖回：恢复原顺序。
+  const upSave = waitForSave();
+  await dragStop(page, movedFirst, movedSecond);
+  expect(await savedStopOrder(await upSave)).toEqual(["e2e-zhu-a", "e2e-zhu-b"]);
+  await expect(panel.locator('[data-stop-id="d1:0:e2e-zhu-a"]')).toBeVisible();
 });

@@ -13,6 +13,7 @@ const fixtures = [
 		typeCode: "110000",
 		typeGroup: "attraction",
 		address: "珠海市香洲区",
+		description: "沿着情侣路海滨步道慢慢走，和毛孩子一起吹吹海风。",
 		longitude: 113.5,
 		latitude: 22.1,
 		regionCode: "440402",
@@ -25,6 +26,7 @@ const fixtures = [
 		extraFeeCents: 1050,
 		reservationRequired: null,
 		rating: "4.6",
+		business: { keytag: "滨海步道" },
 		// 故意先插 order 1：封面必须按 photo_order 取第一张，而非插入顺序。
 		photos: [
 			{ photoOrder: 1, sourceUrl: "https://photos.e2e.test/a-1.png" },
@@ -37,6 +39,7 @@ const fixtures = [
 		typeCode: "110000",
 		typeGroup: "attraction",
 		address: "珠海市香洲区",
+		description: "城市地标旁的滨海步道，适合和毛孩子一起看海。",
 		regionCode: "440402",
 		allowedPetTypes: "DOG",
 		maxPetsPerPerson: 0,
@@ -53,6 +56,7 @@ const fixtures = [
 		typeCode: "110000",
 		typeGroup: "attraction",
 		address: "珠海市香洲区",
+		description: "临海的城市公园，草坪开阔，适合遛狗散步。",
 		regionCode: "440400",
 		allowedPetTypes: null,
 		maxPetsPerPerson: null,
@@ -103,6 +107,7 @@ const fixtures = [
 		typeCode: "100000",
 		typeGroup: "hotel",
 		address: "珠海市香洲区",
+		description: "情侣路旁的海景酒店，允许携带中小型犬入住。",
 		longitude: 113.5,
 		latitude: 22.105,
 		regionCode: "440402",
@@ -394,12 +399,12 @@ if (!hasTable) {
 
 const insert = db.prepare(`
 	INSERT INTO pawtrip_location (
-		poi_id, name, type_code, type_group, address, longitude, latitude, region_code,
+		poi_id, name, type_code, type_group, address, description, longitude, latitude, region_code,
 		poi_json, business_json, allowed_pet_types, max_pets_per_person,
 		max_single_pet_weight_kg, max_single_pet_shoulder_height_cm,
 		leash_required, vaccination_proof_required, extra_fee_cents, reservation_required
 	)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, '{}', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 const insertPhoto = db.prepare(`
 	INSERT INTO location_photo (location_id, photo_order, source_json, title, source_url)
@@ -427,6 +432,7 @@ try {
 			fixture.typeCode,
 			fixture.typeGroup,
 			fixture.address,
+			fixture.description ?? null,
 			fixture.longitude ?? null,
 			fixture.latitude ?? null,
 			fixture.regionCode,

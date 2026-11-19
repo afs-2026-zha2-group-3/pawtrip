@@ -41,7 +41,21 @@ test.describe("tab-and-routing", () => {
     await signIn(page);
 
     const labels = await page.getByRole("tab").allTextContents();
-    expect(labels.slice(0, 5)).toEqual(["首页", "我的宠物", "城市浏览", "地点浏览", "交通规则"]);
+    expect(labels.slice(0, 4)).toEqual(["首页", "我的宠物", "城市浏览", "交通规则"]);
+    const placeSelect = page.getByRole("combobox", { name: "地点选择" });
+    await expect(placeSelect).toBeVisible();
+    const cities = page.getByRole("tab", { name: "城市浏览" });
+    const rules = page.getByRole("tab", { name: "交通规则" });
+    const [citiesBox, placeBox, rulesBox] = [
+      await cities.boundingBox(),
+      await placeSelect.boundingBox(),
+      await rules.boundingBox(),
+    ];
+    expect(citiesBox).not.toBeNull();
+    expect(placeBox).not.toBeNull();
+    expect(rulesBox).not.toBeNull();
+    expect(placeBox!.x).toBeGreaterThan(citiesBox!.x);
+    expect(rulesBox!.x).toBeGreaterThan(placeBox!.x);
     await expect(page.getByRole("tab", { name: "地点管理" })).toHaveCount(0);
   });
 

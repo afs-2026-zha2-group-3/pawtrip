@@ -383,7 +383,7 @@ function TripPanelContent({
           ? "h-full min-h-0 w-full overflow-hidden"
           : embedded
             ? "w-full rounded-xl border bg-card p-3"
-            : "z-50 rounded-xl border bg-card shadow-xl [view-transition-name:trip-panel]",
+            : "z-50 rounded-xl border bg-card [view-transition-name:trip-panel]",
         !embedded &&
           (open
             ? "fixed inset-0 overflow-y-auto p-4 lg:top-24 lg:bottom-4 lg:left-4 lg:right-auto lg:w-[364px] lg:rounded-xl"

@@ -4,6 +4,8 @@
 
 范围：核对需求方对城市浏览页的口头验收要求、Delta Spec、Design、Tasks 与已执行的验证证据；不作 Gate 决策，不代签。
 
+> 2026-11-19 修订：AC-4/AC-5 中「关闭后 `max-w-5xl` 居中」「卡片不变窄、976px 定宽」「Pick」为历史证据；当前实现在 `tasks.md` 第 12 节：外框统一 `max-w-[1662px]`、按钮为右下角「选择」、打开侧栏列表列自适应变窄。
+
 ## Acceptance Criteria
 
 | Item | Result | Evidence | Notes |

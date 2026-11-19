@@ -95,7 +95,7 @@ describe("snapshot-first display", () => {
   it("shows the saved taxi snapshot without any estimate request", () => {
     renderRow({ stop: { poiId: "poi-a", toNext: "drive", toNextEstimate: DRIVE_SNAPSHOT } });
 
-    expect(screen.getByTestId("segment-mode").textContent).toBe("打车");
+    expect(screen.getByTestId("segment-mode").textContent).toContain("打车");
     expect(screen.getByText("约 25 分钟")).toBeTruthy();
     expect(screen.getByText("¥40–60")).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
@@ -106,7 +106,7 @@ describe("snapshot-first display", () => {
       stop: { poiId: "poi-a", toNext: "self_drive", toNextEstimate: { durationMinutes: 47, costLowYuan: 0, costHighYuan: 0 } },
     });
 
-    expect(screen.getByTestId("segment-mode").textContent).toBe("驾车");
+    expect(screen.getByTestId("segment-mode").textContent).toContain("驾车");
     expect(screen.getByText("约 47 分钟")).toBeTruthy();
     expect(screen.queryByText(/¥/)).toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
@@ -117,7 +117,7 @@ describe("snapshot-first display", () => {
       stop: { poiId: "poi-a", toNext: "walk", toNextEstimate: { durationMinutes: 508, costLowYuan: 0, costHighYuan: 0 } },
     });
 
-    expect(screen.getByTestId("segment-mode").textContent).toBe("步行");
+    expect(screen.getByTestId("segment-mode").textContent).toContain("步行");
     expect(screen.getByText("约 508 分钟")).toBeTruthy();
     expect(screen.getByText("¥0")).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
@@ -147,7 +147,7 @@ describe("live estimate without a snapshot", () => {
     renderRow({ transportMode: "drive" });
 
     expect(await screen.findByText("约 47 分钟")).toBeTruthy();
-    expect(screen.getByTestId("segment-mode").textContent).toBe("驾车");
+    expect(screen.getByTestId("segment-mode").textContent).toContain("驾车");
     expect(screen.queryByText(/¥/)).toBeNull();
     expect(fetchMock.mock.calls[0][0]).toBe(
       "/api/trips/7/route-estimate?fromPoiId=poi-a&toPoiId=poi-b&mode=drive",
@@ -255,6 +255,20 @@ describe("mode selection", () => {
         costHighYuan: 0,
       });
     });
+  });
+});
+
+describe("row layout", () => {
+  it("renders the mode only inside the selector at the row start", () => {
+    renderRow({ stop: { poiId: "poi-a", toNext: "drive", toNextEstimate: DRIVE_SNAPSHOT } });
+
+    expect(screen.getAllByText("打车")).toHaveLength(1);
+    const select = screen.getByRole("combobox", { name: "选择途内交通方式" });
+    expect(select.textContent).toContain("打车");
+    expect(
+      select.compareDocumentPosition(screen.getByText("约 25 分钟")) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });
 

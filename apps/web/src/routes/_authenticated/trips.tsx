@@ -200,7 +200,10 @@ function TripsPage() {
 
   if (trips.isPending) {
     return (
-      <PageFrame above={<TripSectionNav active="trips" />}>
+      <PageFrame
+        above={<TripSectionNav active="trips" />}
+        className="border-2 border-paw-accent-soft print:border-0"
+      >
         <Card>
           <CardHeader>
             <CardTitle>正在加载行程…</CardTitle>
@@ -221,7 +224,10 @@ function TripsPage() {
       : sorted.filter((trip) => tripStatus(trip) === filter);
 
   return (
-    <PageFrame above={<TripSectionNav active="trips" />}>
+    <PageFrame
+      above={<TripSectionNav active="trips" />}
+      className="border-2 border-paw-accent-soft print:border-0"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-medium">我的行程</h1>
         {draft ? (

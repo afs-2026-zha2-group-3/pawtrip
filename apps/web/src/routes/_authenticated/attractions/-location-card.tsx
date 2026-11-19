@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { PolicyTags } from "@/components/trip/policy-tags";
-import { policyNoteParts } from "@/lib/location-summary";
+import { locationDescription, policyNoteParts } from "@/lib/location-summary";
 import { formatDistanceKm } from "@/lib/distance";
 import { matchLocationPolicyForType, violatedLimitTags } from "@/lib/trip/policy-match";
 import {
@@ -16,10 +16,10 @@ import { LocationCover } from "./-location-cover";
 import { LocationRating } from "./-location-rating";
 import { PetFriendlyBadge } from "./-pet-friendly-badge";
 
-const TAG_PILL_CLASS =
-  "inline-flex h-6 items-center rounded-full bg-[#F0F0F0] px-2.5 text-xs text-[#838383]";
-const LIMIT_TAG_CLASS =
-  "inline-flex h-6 items-center rounded-full bg-destructive/10 px-2.5 text-xs font-medium text-destructive ring-1 ring-inset ring-destructive/25";
+const OVERLAY_TAG_CLASS =
+  "inline-flex h-5 items-center rounded-full bg-white/85 px-2 text-[11px] text-[#5A5A5A] backdrop-blur-sm";
+const OVERLAY_LIMIT_TAG_CLASS =
+  "inline-flex h-5 items-center rounded-full bg-white/85 px-2 text-[11px] font-medium text-destructive ring-1 ring-inset ring-destructive/25 backdrop-blur-sm";
 
 export function LocationCard({
   location,
@@ -72,22 +72,51 @@ export function LocationCard({
         }
       }}
       className={cn(
-        "gap-3 rounded-[20px] border border-paw-line p-3 shadow-[0_2px_8px_0_rgba(38,31,18,0.04)] ring-0",
+        "gap-2.5 rounded-[14px] border border-paw-accent-soft bg-card p-2.5 ring-0",
         onLocate && "cursor-pointer transition-colors hover:border-paw-accent",
         highlighted && "border-paw-accent",
       )}
     >
-      <div>
+      <div className="relative">
         <LocationCover
           coverPhotoUrl={location.coverPhotoUrl}
           name={location.name}
           typeLabel={typeLabel}
-          className="aspect-[2.3] rounded-[14px]"
+          className="aspect-[4/3] rounded-[10px]"
         />
+        <div className="absolute top-2 left-2 flex max-w-[calc(100%-1rem)] flex-wrap gap-1">
+          <PetFriendlyBadge
+            tone="overlay"
+            typeGroup={location.typeGroup}
+            maxPetsPerPerson={location.petPolicies.maxPetsPerPerson}
+          />
+          {location.keytag ? (
+            <span className="inline-flex h-5 items-center rounded-full bg-white/85 px-2 text-[11px] text-paw-ink backdrop-blur-sm">
+              {location.keytag}
+            </span>
+          ) : null}
+        </div>
+        <div className="absolute right-2 bottom-2">
+          <LocationRating rating={location.rating} variant="badge" />
+        </div>
+        {noteParts.length > 0 || limitTags.length > 0 ? (
+          <div className="absolute bottom-2 left-2 flex max-w-[calc(100%-4rem)] flex-wrap gap-1">
+            {noteParts.map((part) => (
+              <span key={part} className={OVERLAY_TAG_CLASS}>
+                {part}
+              </span>
+            ))}
+            {limitTags.map((part) => (
+              <span key={part} className={OVERLAY_LIMIT_TAG_CLASS}>
+                {part}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="min-w-0 flex-1 truncate text-base leading-6 font-medium text-paw-ink">
+          <CardTitle className="min-w-0 flex-1 truncate text-[15px] leading-6 font-semibold text-paw-ink">
             {location.name}
           </CardTitle>
           {addedDays.length > 0 ? (
@@ -103,65 +132,43 @@ export function LocationCard({
             </div>
           ) : null}
         </div>
-        <div className="flex items-center gap-3">
-          <span className="inline-flex h-[21px] items-center rounded-md bg-paw-accent-soft px-1.5 text-xs font-medium text-paw-accent-strong">
-            {location.keytag ?? typeLabel}
-          </span>
-          <LocationRating rating={location.rating} />
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <PetFriendlyBadge
-            typeGroup={location.typeGroup}
-            maxPetsPerPerson={location.petPolicies.maxPetsPerPerson}
-          />
-          {noteParts.map((part) => (
-            <span key={part} className={TAG_PILL_CLASS}>
-              {part}
-            </span>
-          ))}
-          <PolicyTags
-            subjects={subjects}
-            match={(pet) =>
-              matchLocationPolicyForType(location.typeGroup, location.petPolicies, pet)
-            }
-          />
-        </div>
-        {limitTags.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {limitTags.map((part) => (
-              <span key={part} className={LIMIT_TAG_CLASS}>
-                {part}
-              </span>
-            ))}
-          </div>
-        ) : null}
-        <p className="line-clamp-2 text-sm leading-5 text-[#737373]">
-          {location.address ?? "地址未收录"}
+        <p className="line-clamp-2 text-xs leading-5 text-[#8A8A8A]">
+          {locationDescription(location)}
         </p>
         {anchorName && location.distanceMeters != null ? (
           <p className="text-xs text-muted-foreground">
             距{anchorName}约 {formatDistanceKm(location.distanceMeters)}
           </p>
         ) : null}
+        {subjects.status === "ready" ? (
+          <PolicyTags
+            subjects={subjects}
+            match={(pet) =>
+              matchLocationPolicyForType(location.typeGroup, location.petPolicies, pet)
+            }
+          />
+        ) : null}
       </div>
       <div
-        className="mt-auto flex flex-wrap items-center justify-between gap-2"
+        className="mt-auto flex items-center justify-between gap-2"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center gap-1.5">
-          <Button size="sm" variant="outline" className="rounded-full" onClick={onOpen}>
-            查看详情
-          </Button>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-1.5">
-          <DaySelect
-            label="添加到行程"
-            totalDays={totalDays}
-            onSelectDay={onAddStop}
-            onSelectUnscheduled={onAddUnscheduled}
-            disabled={readOnly}
-          />
-        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 rounded-full px-2 text-xs text-muted-foreground hover:text-foreground"
+          onClick={onOpen}
+        >
+          查看详情
+        </Button>
+        <DaySelect
+          variant="compact"
+          label="添加到行程"
+          totalDays={totalDays}
+          onSelectDay={onAddStop}
+          onSelectUnscheduled={onAddUnscheduled}
+          disabled={readOnly}
+        />
       </div>
     </Card>
   );

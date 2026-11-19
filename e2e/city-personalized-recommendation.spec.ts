@@ -260,7 +260,7 @@ test("filter and search overlay keeps score order and syncs candidate count", as
   await expect(hangzhou.locator('[data-slot="badge"]')).toHaveText("系统推荐");
   await expect(hangzhou.getByText(/泳泳 ·/).first()).toBeVisible();
   // 选定流程不变
-  await hangzhou.getByRole("button", { name: "Pick" }).click();
+  await hangzhou.getByRole("button", { name: "选择" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: "取消" }).click();

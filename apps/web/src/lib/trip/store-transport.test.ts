@@ -141,30 +141,50 @@ describe("backfillStopEstimate", () => {
   });
 });
 
-describe("stop snapshot pass-through on moves", () => {
+describe("moved stop loses its intra-city transport", () => {
   beforeEach(() => {
     tripActions.resetForTests();
     tripActions.setActive(tripWithPlan(twoStopPlan()));
     tripActions.setStopTransport({ container: 1, index: 0 }, "drive", DRIVE_ESTIMATE);
   });
 
-  it("keeps the snapshot when reordering within a day", () => {
+  it("drops mode and snapshot when reordering within a day", () => {
+    const revision = tripStore.state.saveRevision;
+
     tripActions.moveStop({ container: 1, index: 0 }, { container: 1, index: 2 });
 
-    expect(tripStore.state.active!.plan.days[0].stops[1]).toEqual({
-      poiId: "poi-a",
-      toNext: "drive",
-      toNextEstimate: DRIVE_ESTIMATE,
-    });
+    expect(tripStore.state.active!.plan.days[0].stops[1]).toEqual({ poiId: "poi-a" });
+    expect(tripStore.state.saveRevision).toBe(revision + 1);
   });
 
-  it("keeps the snapshot when moving across days", () => {
+  it("drops mode and snapshot when moving across days", () => {
     tripActions.moveStop({ container: 1, index: 0 }, { container: 2, index: 0 });
 
-    expect(tripStore.state.active!.plan.days[1].stops[0]).toEqual({
-      poiId: "poi-a",
-      toNext: "drive",
-      toNextEstimate: DRIVE_ESTIMATE,
+    expect(tripStore.state.active!.plan.days[1].stops[0]).toEqual({ poiId: "poi-a" });
+  });
+
+  it("keeps other stops' saved mode and snapshot", () => {
+    tripActions.setActive(
+      tripWithPlan({
+        version: 1,
+        days: [
+          {
+            day: 1,
+            stops: [{ poiId: "poi-a" }, { poiId: "poi-b" }, { poiId: "poi-c" }],
+          },
+        ],
+        unscheduled: [],
+      }),
+    );
+    tripActions.setStopTransport({ container: 1, index: 1 }, "self_drive", ZERO_ESTIMATE);
+
+    tripActions.moveStop({ container: 1, index: 0 }, { container: 1, index: 3 });
+
+    expect(tripStore.state.active!.plan.days[0].stops[2]).toEqual({ poiId: "poi-a" });
+    expect(tripStore.state.active!.plan.days[0].stops[0]).toEqual({
+      poiId: "poi-b",
+      toNext: "self_drive",
+      toNextEstimate: ZERO_ESTIMATE,
     });
   });
 

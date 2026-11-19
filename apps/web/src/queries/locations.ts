@@ -39,6 +39,7 @@ export interface LocationSummary {
   typeCode: string;
   typeGroup: string;
   address: string | null;
+  description: string | null;
   longitude: number | null;
   latitude: number | null;
   regionCode: string | null;
@@ -65,6 +66,7 @@ export interface LocationBrowseDetail {
   typeCode: string;
   typeGroup: string;
   address: string | null;
+  description?: string | null;
   longitude?: number | null;
   latitude?: number | null;
   regionCode: string | null;

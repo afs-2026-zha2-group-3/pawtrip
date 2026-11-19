@@ -78,6 +78,13 @@ test("shows an empty state without trips", async ({ page }) => {
   await expect(page.getByRole("link", { name: "去创建行程" })).toBeVisible();
 });
 
+test("keeps the trips page frame cream with no shadow", async ({ page }) => {
+  await openTrips(page);
+  const frame = page.locator("main > section").first();
+  await expect(frame).toHaveCSS("border-top-color", "rgb(255, 239, 214)");
+  await expect(frame).toHaveCSS("box-shadow", "none");
+});
+
 test("creates a new trip while another trip is active", async ({ page }) => {
   const pet = (await pets(page))[0];
   await createTripViaApi(page, {

@@ -21,6 +21,7 @@ function summary(
     longitude: null,
     latitude: null,
     regionCode: "440402",
+    description: null,
     minVisitHours: null,
     maxVisitHours: null,
     maxPetsPerPerson: 1,

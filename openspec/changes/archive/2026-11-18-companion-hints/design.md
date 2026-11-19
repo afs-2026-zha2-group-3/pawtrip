@@ -8,7 +8,7 @@
 
 - 复用现有 Chatbot 入口，在其上方提供统一的非模态伙伴气泡。
 - 每次路由切换自动展示当前页情境提示，5 秒后自动关闭。
-- 业务事件经统一 `say(text, mood)` 反馈，四种情绪对应不同边框色。
+- 业务事件经统一 `say(text, mood)` 反馈，四种情绪共用统一边框色，仅状态点颜色不同。
 - `/login` 无入口；`/admin/*` 无气泡但保留既有入口。
 
 ## Non-goals
@@ -83,10 +83,12 @@ interface CompanionState {
 
 | 情绪 | 边框 | 状态点 |
 |---|---|---|
-| `ok` | `border-emerald-300` | `bg-emerald-500` |
+| `ok` | `border-[#EC9455]` | `bg-emerald-500` |
 | `info` | `border-[#EC9455]` | `bg-[#EC9455]` |
-| `warn` | `border-amber-400` | `bg-amber-500` |
-| `danger` | `border-red-400` | `bg-red-500` |
+| `warn` | `border-[#EC9455]` | `bg-amber-500` |
+| `danger` | `border-[#EC9455]` | `bg-red-500` |
+
+- 边框色在所有情绪下统一为品牌橙色 `#EC9455`（2026-11-19 用户反馈：绿色边框与其他气泡不一致）；情绪仅通过状态点表达。
 
 - 气泡：`absolute right-0 bottom-full mb-3 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border-2 bg-card p-3 shadow-xl`。
 - 标题：`<宠物名> · 伙伴提示`，前缀状态点；无档案默认「豆包」。

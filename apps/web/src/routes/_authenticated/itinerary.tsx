@@ -214,7 +214,10 @@ function ItineraryPage() {
   if (!active || !itinerary) {
     if (hydration === "idle" || hydration === "loading") {
       return (
-        <PageFrame above={<TripSectionNav active="itinerary" />}>
+        <PageFrame
+          above={<TripSectionNav active="itinerary" />}
+          className="border-2 border-paw-accent-soft print:border-0"
+        >
           <div
             className="h-[420px] animate-pulse rounded-[26px] bg-muted/60"
             aria-busy="true"
@@ -225,7 +228,10 @@ function ItineraryPage() {
       );
     }
     return (
-      <PageFrame above={<TripSectionNav active="itinerary" />}>
+      <PageFrame
+        above={<TripSectionNav active="itinerary" />}
+        className="border-2 border-paw-accent-soft print:border-0"
+      >
         <section className="flex flex-col items-center gap-3 rounded-[26px] bg-muted/40 p-8 text-center">
           <PawPrint
             aria-hidden="true"
@@ -252,7 +258,10 @@ function ItineraryPage() {
 
   if (!active.planCompleted) {
     return (
-      <PageFrame above={<TripSectionNav active="itinerary" />}>
+      <PageFrame
+        above={<TripSectionNav active="itinerary" />}
+        className="border-2 border-paw-accent-soft print:border-0"
+      >
         <section className="flex flex-col items-center gap-3 rounded-[26px] bg-muted/40 p-8 text-center">
           <PawPrint
             aria-hidden="true"
@@ -329,7 +338,10 @@ function ItineraryPage() {
   }
 
   return (
-    <PageFrame above={<TripSectionNav active="itinerary" />}>
+    <PageFrame
+      above={<TripSectionNav active="itinerary" />}
+      className="border-2 border-paw-accent-soft print:border-0"
+    >
 
 <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">

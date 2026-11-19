@@ -72,7 +72,7 @@ const chipClass =
   "inline-flex h-[21px] w-fit items-center rounded-md px-1.5 text-xs font-medium";
 const figureClass = "text-[18px] font-medium leading-[21.6px] text-[#262626]";
 const panelClass =
-  "rounded-[22px] border-2 border-[#EC9455] bg-card p-6 shadow-md";
+  "rounded-[22px] border-2 border-paw-accent-soft bg-card p-6";
 
 // 容器要求/办理流程概要按分号拆分为要点短句，分点展示（2026-11-17 精简）
 function RulePoints({ text }: { text: string }) {

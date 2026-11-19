@@ -23,9 +23,9 @@ final class LocationQueryResponses {
 	}
 
 	record LocationSummary(String poiId, String name, String typeCode, String typeGroup, String address,
-			Double longitude, Double latitude, String regionCode, Integer minVisitHours, Integer maxVisitHours,
-			Integer maxPetsPerPerson, PetPolicies petPolicies, String coverPhotoUrl, String rating, String keytag,
-			Long distanceMeters) {
+			String description, Double longitude, Double latitude, String regionCode, Integer minVisitHours,
+			Integer maxVisitHours, Integer maxPetsPerPerson, PetPolicies petPolicies, String coverPhotoUrl,
+			String rating, String keytag, Long distanceMeters) {
 
 		static LocationSummary from(PawtripLocation location, String coverPhotoUrl, String rating, String keytag,
 				Long distanceMeters) {
@@ -35,6 +35,7 @@ final class LocationQueryResponses {
 					location.getTypeCode(),
 					location.getTypeGroup(),
 					location.getAddress(),
+					location.getDescription(),
 					location.getLongitude(),
 					location.getLatitude(),
 					location.getRegionCode(),
@@ -74,9 +75,9 @@ final class LocationQueryResponses {
 	}
 
 	record LocationDetail(String poiId, String name, String typeCode, String typeGroup, String address,
-			Double longitude, Double latitude, String regionCode, String typeName, String regionName,
-			PetPolicies petPolicies, String coverPhotoUrl, String rating, String keytag, String businessArea,
-			String openingHours, String openTime, String tel) {
+			String description, Double longitude, Double latitude, String regionCode, String typeName,
+			String regionName, PetPolicies petPolicies, String coverPhotoUrl, String rating, String keytag,
+			String businessArea, String openingHours, String openTime, String tel) {
 
 		static LocationDetail from(PawtripLocation location, String coverPhotoUrl, String rating, String keytag,
 				String businessArea, String typeName, String regionName, String openingHours, String openTime,
@@ -87,6 +88,7 @@ final class LocationQueryResponses {
 					location.getTypeCode(),
 					location.getTypeGroup(),
 					location.getAddress(),
+					location.getDescription(),
 					location.getLongitude(),
 					location.getLatitude(),
 					location.getRegionCode(),
