@@ -157,6 +157,11 @@ function AttractionsPage() {
     setActiveKeytag(null);
   }, [typeGroup]);
 
+  const listRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    listRef.current?.scrollTo({ top: 0 });
+  }, [page]);
+
   const locationTypes = useQuery({
     ...locationTypesQueryOptions(),
     enabled: isClient && active !== null,
@@ -519,9 +524,11 @@ function AttractionsPage() {
           className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[22px] border border-paw-accent-soft bg-card lg:col-start-2 lg:col-span-1 lg:row-start-1 lg:h-full lg:flex-row"
         >
         <div
+          ref={listRef}
           data-testid="location-list"
-          className="min-h-0 min-w-0 flex-1 p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:overflow-y-auto"
+          className="flex min-h-0 min-w-0 flex-1 flex-col p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:overflow-y-auto"
         >
+          <div className="z-20 -mx-4 shrink-0 border-b border-paw-accent-soft bg-gradient-to-b from-card to-card/85 px-4 backdrop-blur-sm lg:sticky lg:top-0 lg:pt-4 lg:pb-2">
           <div className="mb-3 flex min-w-0 flex-nowrap items-center gap-3 overflow-hidden">
             <h1 className="shrink-0 whitespace-nowrap text-2xl leading-8 font-medium">
               {typeLabel}
@@ -640,6 +647,7 @@ function AttractionsPage() {
           <div className="mt-4">
             <PolicySubjectNotice subjects={policySubjects} />
           </div>
+          </div>
 
           <div className="mt-5 flex min-w-0 flex-col gap-4">
             {locations.isError ? (
@@ -694,8 +702,10 @@ function AttractionsPage() {
             ) : (
               renderCards()
             )}
+          </div>
 
-            {!locations.isError && gridTotalPages > 1 ? (
+          {!locations.isError && gridTotalPages > 1 ? (
+            <div className="z-20 mt-auto -mx-4 shrink-0 border-t border-paw-accent-soft bg-gradient-to-t from-card to-card/85 px-4 backdrop-blur-sm lg:sticky lg:bottom-0 lg:pt-4 lg:pb-4">
               <div className="flex items-center justify-between">
                 <Button
                   variant="outline"
@@ -717,8 +727,8 @@ function AttractionsPage() {
                   下一页
                 </Button>
               </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
 
         <aside

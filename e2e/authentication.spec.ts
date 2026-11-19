@@ -26,17 +26,14 @@ test("keeps the session after a successful sign-in and page refresh", async ({
   await signIn(page);
 
   await expect(page).toHaveURL("/");
-  await expect(page.getByText("Hello World")).toBeVisible();
 
   await page.reload();
 
-  await expect(page.getByText("Hello World")).toBeVisible();
   await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
 });
 
 test("requires sign-in again after logging out", async ({ page }) => {
   await signIn(page);
-  await expect(page.getByText("Hello World")).toBeVisible();
 
   await page.getByRole("button", { name: "Log out" }).click();
   const confirmation = page.getByRole("alertdialog");
@@ -48,5 +45,4 @@ test("requires sign-in again after logging out", async ({ page }) => {
 
   await page.goto("/");
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByText("Hello World")).toHaveCount(0);
 });

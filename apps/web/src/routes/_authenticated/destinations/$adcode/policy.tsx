@@ -84,7 +84,7 @@ function CityPetPolicyPage() {
               <li key={item}>{item}</li>
             ))}
           </ul>
-          <div id="banned-breeds" className="scroll-mt-6">
+          <div id="banned-breeds" className="scroll-mt-[calc(var(--app-header-height)+1.5rem)]">
             <BreedExamples
               title="禁养犬种名单"
               scope={policy.areaScope}
