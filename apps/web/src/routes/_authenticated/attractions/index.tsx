@@ -19,6 +19,9 @@ import { PolicySubjectNotice } from "@/components/trip/policy-tags";
 import { TripPanel } from "@/components/trip/trip-panel";
 import { petRulesApplyTo } from "@/lib/attraction-pet-rules";
 import { useAgentOpen } from "@/lib/agent/selectors";
+import { companionActions } from "@/lib/companion/store";
+import { useCompanionHint } from "@/lib/companion/use-companion-hint";
+import { violatedLimitTags } from "@/lib/trip/policy-match";
 import { cn } from "@/lib/utils";
 import { amapJsKey } from "../../../lib/amap/loader";
 import { ApiError } from "../../../lib/http/api-error";
@@ -85,6 +88,28 @@ function AttractionsPage() {
   const anchorName = anchorPoiId
     ? (anchors.find((anchor) => anchor.poiId === anchorPoiId)?.name ?? null)
     : null;
+
+  useCompanionHint(
+    !active
+      ? "先创建或激活行程，我才能按城市帮你挑地点"
+      : nearbyType && anchorPoiId === null
+        ? "先选一个景点当锚点，我再帮你挑附近的餐厅和住宿"
+        : anchors.length > 0
+          ? "快来挑适合我的景点吧！和我一起游玩！点击「下一步」来帮我挑选适合我的餐厅和酒店吧！"
+          : "把想去的景点加进来吧，我帮你串成每天的路线",
+    Route.fullPath,
+  );
+
+  const transportNudgedRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!active || active.transportMode !== null) return;
+    if (transportNudgedRef.current === active.id) return;
+    transportNudgedRef.current = active.id;
+    companionActions.say(
+      "我们还没选大交通方式，去交通规则对照一下携宠要求吧",
+      "info",
+    );
+  }, [active?.id, active?.transportMode]);
 
   const activeTripId = active?.id ?? null;
   const previousTripId = useRef(activeTripId);
@@ -303,6 +328,15 @@ function AttractionsPage() {
     if (!firstAnchor || anchorsLoading) {
       return;
     }
+    const missingIntraCity = active?.plan.days.some((day) =>
+      day.stops.some((stop) => stop.toNext == null),
+    );
+    if (missingIntraCity) {
+      companionActions.say(
+        "有几段路还没定途内交通，在左边行程里逐段选一下吧",
+        "info",
+      );
+    }
     setAnchorPoiId(firstAnchor.poiId);
     changeType("hotel");
   };
@@ -328,9 +362,11 @@ function AttractionsPage() {
       const updated = await completeTrip(active.id);
       tripActions.setActive(updated);
       await queryClient.invalidateQueries({ queryKey: tripQueryKeys.all });
+      companionActions.say("行程单我生成好啦，按天核对交通和食宿吧", "ok");
       await navigate({ to: "/itinerary" });
     } catch {
       setCompleteError("创建行程单失败，请稍后重试。");
+      companionActions.say("行程单没生成成功，再试一次吧", "danger");
     } finally {
       setCompleting(false);
     }
@@ -399,6 +435,32 @@ function AttractionsPage() {
       </>
     );
 
+  const notifyStopAdded = (
+    poiId: string,
+    name: string,
+    target: number | "unscheduled",
+  ) => {
+    const pet = policySubjects.subjects[0] ?? null;
+    const location = [...(data?.items ?? []), ...(fullLocations.data ?? [])].find(
+      (item) => item.poiId === poiId,
+    );
+    const blocked =
+      pet && location ? violatedLimitTags(location.petPolicies, pet) : [];
+    if (pet && blocked.length > 0) {
+      companionActions.say(
+        `把${name}加进来啦，不过${pet.name}可能不满足：${blocked.join("、")}`,
+        "warn",
+      );
+      return;
+    }
+    companionActions.say(
+      target === "unscheduled"
+        ? `我把${name}放进未排期啦`
+        : `我把${name}排进第 ${target} 天啦`,
+      "ok",
+    );
+  };
+
   const renderCards = () => (
     <div
       className={cn(
@@ -418,8 +480,14 @@ function AttractionsPage() {
           highlighted={mapFocusPoiId === location.poiId}
           onLocate={mapEnabled ? () => setMapFocusPoiId(location.poiId) : undefined}
           onOpen={() => setSelectedPoiId(location.poiId)}
-          onAddStop={(day) => tripActions.addStop(day, location.poiId)}
-          onAddUnscheduled={() => tripActions.addStop("unscheduled", location.poiId)}
+          onAddStop={(day) => {
+            tripActions.addStop(day, location.poiId);
+            notifyStopAdded(location.poiId, location.name, day);
+          }}
+          onAddUnscheduled={() => {
+            tripActions.addStop("unscheduled", location.poiId);
+            notifyStopAdded(location.poiId, location.name, "unscheduled");
+          }}
         />
       ))}
     </div>
@@ -438,7 +506,10 @@ function AttractionsPage() {
             : "2xl:grid-cols-[280px_minmax(0,1fr)_minmax(320px,0.8fr)]",
         )}
       >
-        <aside className="flex min-h-0 min-w-0 flex-col gap-3 rounded-[22px] border border-paw-line bg-card p-4 shadow-[0_2px_8px_0_rgba(38,31,18,0.04)] lg:col-start-1 lg:col-span-1 lg:row-start-1 lg:h-full">
+        <aside
+          data-testid="trip-panel-column"
+          className="flex min-h-0 min-w-0 flex-col gap-3 rounded-[22px] border border-paw-line bg-card p-4 shadow-[0_2px_8px_0_rgba(38,31,18,0.04)] lg:col-start-1 lg:col-span-1 lg:row-start-1 lg:h-full"
+        >
           <TripDateCard />
           <div className="min-h-0 flex-1">
             <TripPanel embedded timeline footer={panelFooter} />

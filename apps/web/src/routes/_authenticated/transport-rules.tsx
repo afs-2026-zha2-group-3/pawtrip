@@ -22,6 +22,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { companionActions } from "@/lib/companion/store";
+import { useCompanionHint } from "@/lib/companion/use-companion-hint";
 import { cn } from "@/lib/utils";
 import {
   useActiveTrip,
@@ -135,6 +137,35 @@ function TransportRulesPage() {
     driveRule !== null &&
     pets.every((pet) => evaluateRuleForPet(driveRule, pet).recommended);
 
+  useCompanionHint(
+    !active
+      ? "先创建或激活行程，我才能对照携宠规则帮你选大交通"
+      : pets[0]
+        ? "快来选一个适合我的大交通吧！我已经迫不及待了！"
+        : "我帮你对比了各方式的携宠规则，选个能带上毛孩子的吧",
+    Route.fullPath,
+  );
+
+  const selectMode = (rule: TransportRule) => {
+    tripActions.setTransportMode(rule.mode);
+    const blocked = pets
+      .map((pet) => ({ pet, verdict: evaluateRuleForPet(rule, pet) }))
+      .find((entry) => !entry.verdict.recommended);
+    if (blocked) {
+      companionActions.say(
+        `选好${transportModeLabels[rule.mode]}啦，不过${blocked.pet.name}可能不满足：${
+          blocked.verdict.reasons.join("；") || "请核对承运方规则"
+        }`,
+        rule.allowanceStatus === "not_allowed" ? "danger" : "warn",
+      );
+      return;
+    }
+    companionActions.say(
+      `选好${transportModeLabels[rule.mode]}啦，下一步我带你去地点浏览挑景点`,
+      "ok",
+    );
+  };
+
   // 列配置：基础列固定在前，扩展列按需追加（取值来自规则 extra），表格结构无需改动。
   const transportRuleColumns: TransportRuleColumn[] = [
     {
@@ -149,7 +180,7 @@ function TransportRulesPage() {
             className="size-4 accent-[#EC9455]"
             aria-label={`选择${transportModeLabels[rule.mode]}`}
             checked={active?.transportMode === rule.mode}
-            onChange={() => tripActions.setTransportMode(rule.mode)}
+            onChange={() => selectMode(rule)}
           />
         </label>
       ),

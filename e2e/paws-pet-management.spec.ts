@@ -58,6 +58,10 @@ test("creates, switches, edits and deletes pets", async ({ page }) => {
   await createDialog.getByRole("button", { name: "创建宠物" }).click();
   await expect(createDialog).toHaveCount(0);
 
+  const bubble = page.getByTestId("companion-bubble");
+  await expect(bubble).toHaveAttribute("data-mood", "ok", { timeout: 3000 });
+  await expect(bubble).toContainText("Mimi的档案我记好啦");
+
   await expect(
     page.getByRole("button", { name: "Mimi", exact: true }),
   ).toBeVisible();

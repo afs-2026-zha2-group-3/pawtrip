@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, type UseQueryOptions } from "@tanstack/react-query";
 import { request } from "../lib/http/request";
 import type { SaveTripInput, Trip, TripPlan } from "../lib/trip/types";
 
@@ -33,6 +33,15 @@ export function tripsQueryOptions() {
     queryKey: tripQueryKeys.all,
     queryFn: ({ signal }) => request<TripSummary[]>("/api/trips", { signal }),
   });
+}
+
+// 只读预览缓存：首页提示不参与「我的行程」列表数据流，避免预热共享缓存。
+export function tripsPreviewQueryOptions(): UseQueryOptions<TripSummary[]> {
+  return {
+    queryKey: [...tripQueryKeys.all, "preview"],
+    queryFn: ({ signal }) => request<TripSummary[]>("/api/trips", { signal }),
+    staleTime: 0,
+  };
 }
 
 export function tripDetailQueryOptions(id: number) {

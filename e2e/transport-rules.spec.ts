@@ -55,14 +55,18 @@ test.describe("no-active-trip", () => {
     await resetTrips(page);
     await page.getByRole("tab", { name: "交通规则" }).click();
 
-    await expect(page.getByText("先创建或激活行程")).toBeVisible();
+    await expect(
+      page.getByText("先创建或激活行程", { exact: true }),
+    ).toBeVisible();
     await expect(page.getByRole("table", { name: tableName })).toHaveCount(0);
     await expect(page.getByRole("radio")).toHaveCount(0);
 
     await page.getByRole("button", { name: "去创建行程" }).click();
     await expect(page).toHaveURL("/cities");
     await page.goto("/transport-rules");
-    await expect(page.getByText("先创建或激活行程")).toBeVisible();
+    await expect(
+      page.getByText("先创建或激活行程", { exact: true }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "查看我的行程" }).click();
     await expect(page).toHaveURL("/trips");
   });

@@ -56,7 +56,11 @@ async function tripTo(page: Page, city: string) {
   await hideTripPanel(page);
 }
 
-async function scheduleAttractionAndSelectAnchor(page: Page, name: string) {
+async function scheduleAttractionAndSelectAnchor(
+  page: Page,
+  name: string,
+  addFeedback?: { mood: "warn" | "ok"; text: string },
+) {
   const put = page.waitForResponse(
     (response) =>
       /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
@@ -65,6 +69,13 @@ async function scheduleAttractionAndSelectAnchor(page: Page, name: string) {
   await attractionCard(page, name).getByRole("combobox", { name: "添加到行程" }).click();
   await page.getByRole("option", { name: "第 1 天" }).click();
   await put;
+  if (addFeedback) {
+    const bubble = page.getByTestId("companion-bubble");
+    await expect(bubble).toHaveAttribute("data-mood", addFeedback.mood, {
+      timeout: 3000,
+    });
+    await expect(bubble).toContainText(addFeedback.text);
+  }
 
   await page.getByRole("button", { name: "选择住宿/餐厅" }).click();
   const anchor = page.getByRole("combobox", { name: "离景点最近" });
@@ -291,7 +302,11 @@ async function showAllAttractions(page: Page) {
   await expect(toggle).toBeChecked();
 }
 
-async function selectType(page: Page, label: string) {
+async function selectType(
+  page: Page,
+  label: string,
+  addFeedback?: { mood: "warn" | "ok"; text: string },
+) {
   if (label === "景点") {
     const back = page.getByRole("button", { name: "返回景点选择" });
     if (await back.isVisible()) {
@@ -303,7 +318,7 @@ async function selectType(page: Page, label: string) {
   if (await entry.isVisible()) {
     await entry.click();
   } else if (await page.getByRole("combobox", { name: "地点类型筛选" }).count() === 0) {
-    await scheduleAttractionAndSelectAnchor(page, "情侣路");
+    await scheduleAttractionAndSelectAnchor(page, "情侣路", addFeedback);
   }
   await page.getByRole("combobox", { name: "地点类型筛选" }).click();
   await page.getByRole("option", { name: label, exact: true }).click();
@@ -340,7 +355,10 @@ test("media E5 only violated weight and shoulder limits render in red", async ({
   await expect(loverCard.getByText("≤40 cm")).toHaveClass(/text-destructive/);
   await expect(loverCard.getByText(/附加费/)).toHaveCount(0);
 
-  await selectType(page, "住宿");
+  await selectType(page, "住宿", {
+    mood: "warn",
+    text: "把情侣路加进来啦，不过毛毛可能不满足",
+  });
   const hotel = attractionCard(page, "珠海某酒店");
   await expect(hotel.getByText("≤15 kg")).toHaveClass(/text-destructive/);
   await expect(hotel.getByText(/cm/)).toHaveCount(0);
@@ -358,8 +376,24 @@ test("media E5b hides limit tags when the pet meets every cap", async ({ page })
 
   await expect(attractionCard(page, "情侣路").getByText(/≤|附加费/)).toHaveCount(0);
 
-  await selectType(page, "住宿");
-  await expect(attractionCard(page, "珠海某酒店").getByText(/≤|附加费/)).toHaveCount(0);
+  await selectType(page, "住宿", {
+    mood: "ok",
+    text: "我把情侣路排进第 1 天啦",
+  });
+  const hotel = attractionCard(page, "珠海某酒店");
+  await expect(hotel.getByText(/≤|附加费/)).toHaveCount(0);
+
+  const saved = page.waitForResponse(
+    (response) =>
+      /\/api\/trips\/\d+$/.test(new URL(response.url()).pathname) &&
+      response.request().method() === "PUT",
+  );
+  await hotel.getByRole("combobox", { name: "添加到行程" }).click();
+  await page.getByRole("option", { name: "第 1 天" }).click();
+  await saved;
+  const bubble = page.getByTestId("companion-bubble");
+  await expect(bubble).toHaveAttribute("data-mood", "ok", { timeout: 3000 });
+  await expect(bubble).toContainText("我把珠海某酒店排进第 1 天啦");
 
   await selectType(page, "景点");
   await showAllAttractions(page);
